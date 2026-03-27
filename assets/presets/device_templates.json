@@ -1,0 +1,2023 @@
+[
+  {
+    "name": "AirPods Max (USB-C)",
+    "category": "headphone",
+    "brand": "Apple",
+    "model": "AirPods Max (USB-C)",
+    "battery": "20 hours"
+  },
+  {
+    "name": "Apple AirPods 4",
+    "category": "headphone",
+    "brand": "Apple",
+    "model": "AirPods 4",
+    "battery": "30 hours (with case)"
+  },
+  {
+    "name": "Apple AirPods 4 (ANC)",
+    "category": "headphone",
+    "brand": "Apple",
+    "model": "AirPods 4 (Active Noise Cancellation)",
+    "battery": "30 hours (with case)"
+  },
+  {
+    "name": "Apple AirPods Pro 2",
+    "category": "headphone",
+    "brand": "Apple",
+    "model": "AirPods Pro (2nd generation)",
+    "battery": "6 hours (30 with case)"
+  },
+  {
+    "name": "Apple Watch SE (2nd gen)",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch SE (2nd generation) 44mm",
+    "cpu": "Apple S8",
+    "ram": "1 GB",
+    "storage": [
+      "32 GB"
+    ],
+    "screenSize": "1.78\"",
+    "screenResolutionW": 368,
+    "screenResolutionH": 448,
+    "battery": "296 mAh",
+    "os": "watchOS 9"
+  },
+  {
+    "name": "Apple Watch Series 10",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch Series 10 46mm",
+    "cpu": "Apple S10",
+    "ram": "1 GB",
+    "storage": [
+      "64 GB"
+    ],
+    "screenSize": "1.96\"",
+    "screenResolutionW": 416,
+    "screenResolutionH": 502,
+    "battery": "309 mAh",
+    "os": "watchOS 11"
+  },
+  {
+    "name": "Apple Watch Series 7",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch Series 7 45mm",
+    "cpu": "Apple S7",
+    "ram": "1 GB",
+    "storage": [
+      "32 GB"
+    ],
+    "screenSize": "1.9\"",
+    "screenResolutionW": 396,
+    "screenResolutionH": 484,
+    "battery": "309 mAh",
+    "os": "watchOS 8"
+  },
+  {
+    "name": "Apple Watch Series 8",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch Series 8 45mm",
+    "cpu": "Apple S8",
+    "ram": "1 GB",
+    "storage": [
+      "32 GB"
+    ],
+    "screenSize": "1.9\"",
+    "screenResolutionW": 396,
+    "screenResolutionH": 484,
+    "battery": "308 mAh",
+    "os": "watchOS 9"
+  },
+  {
+    "name": "Apple Watch Series 9",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch Series 9 45mm",
+    "cpu": "Apple S9",
+    "ram": "1 GB",
+    "storage": [
+      "64 GB"
+    ],
+    "screenSize": "1.9\"",
+    "screenResolutionW": 396,
+    "screenResolutionH": 484,
+    "battery": "308 mAh",
+    "os": "watchOS 10"
+  },
+  {
+    "name": "Apple Watch Ultra",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch Ultra 49mm",
+    "cpu": "Apple S8",
+    "ram": "1 GB",
+    "storage": [
+      "32 GB"
+    ],
+    "screenSize": "1.93\"",
+    "screenResolutionW": 410,
+    "screenResolutionH": 502,
+    "battery": "542 mAh",
+    "os": "watchOS 9"
+  },
+  {
+    "name": "Apple Watch Ultra 2",
+    "category": "watch",
+    "brand": "Apple",
+    "model": "Watch Ultra 2",
+    "cpu": "Apple S9",
+    "ram": "1 GB",
+    "storage": [
+      "64 GB"
+    ],
+    "screenSize": "1.93\"",
+    "screenResolutionW": 410,
+    "screenResolutionH": 502,
+    "battery": "564 mAh",
+    "os": "watchOS 11"
+  },
+  {
+    "name": "ASUS NUC 14 Pro (Core Ultra 5)",
+    "category": "desktop",
+    "brand": "ASUS",
+    "model": "NUC 14 Pro (Core Ultra 5 125H)",
+    "cpu": "Intel Core Ultra 5 125H",
+    "gpu": "Intel Arc (Meteor Lake)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "ASUS NUC 14 Pro+ (Core Ultra 9)",
+    "category": "desktop",
+    "brand": "ASUS",
+    "model": "NUC 14 Pro+ (Core Ultra 9 185H)",
+    "cpu": "Intel Core Ultra 9 185H",
+    "gpu": "Intel Arc (Meteor Lake)",
+    "ram": "32 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "ASUS ROG Phone 9",
+    "category": "phone",
+    "brand": "ASUS",
+    "model": "ROG Phone 9",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.78\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2400,
+    "battery": "5800 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Google Pixel 10",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 10",
+    "cpu": "Google Tensor G5",
+    "gpu": "Mali-G720 MC7",
+    "ram": "12 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2424,
+    "battery": "4700 mAh",
+    "os": "Android 16"
+  },
+  {
+    "name": "Google Pixel 10 Pro",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 10 Pro",
+    "cpu": "Google Tensor G5",
+    "gpu": "Mali-G720 MC12",
+    "ram": "16 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1280,
+    "screenResolutionH": 2856,
+    "battery": "4720 mAh",
+    "os": "Android 16"
+  },
+  {
+    "name": "Google Pixel 10 Pro XL",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 10 Pro XL",
+    "cpu": "Google Tensor G5",
+    "gpu": "Mali-G720 MC12",
+    "ram": "16 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.8\"",
+    "screenResolutionW": 1344,
+    "screenResolutionH": 2992,
+    "battery": "5100 mAh",
+    "os": "Android 16"
+  },
+  {
+    "name": "Google Pixel 8",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 8",
+    "cpu": "Google Tensor G3",
+    "gpu": "Mali-G715 MC7",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.2\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2400,
+    "battery": "4575 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Google Pixel 8 Pro",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 8 Pro",
+    "cpu": "Google Tensor G3",
+    "gpu": "Mali-G715 MC10",
+    "ram": "12 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1344,
+    "screenResolutionH": 2992,
+    "battery": "5050 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Google Pixel 8a",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 8a",
+    "cpu": "Google Tensor G3",
+    "gpu": "Mali-G715 MC7",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2400,
+    "battery": "4492 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Google Pixel 9",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 9",
+    "cpu": "Google Tensor G4",
+    "gpu": "Mali-G715 MC7",
+    "ram": "12 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2424,
+    "battery": "4700 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Google Pixel 9 Pro",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 9 Pro",
+    "cpu": "Google Tensor G4",
+    "gpu": "Mali-G715 MC7",
+    "ram": "16 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1280,
+    "screenResolutionH": 2856,
+    "battery": "4720 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Google Pixel 9 Pro XL",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 9 Pro XL",
+    "cpu": "Google Tensor G4",
+    "gpu": "Mali-G715 MC7",
+    "ram": "16 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.8\"",
+    "screenResolutionW": 1344,
+    "screenResolutionH": 2992,
+    "battery": "5060 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Huawei Mate 60 Pro",
+    "category": "phone",
+    "brand": "Huawei",
+    "model": "Mate 60 Pro",
+    "cpu": "HiSilicon Kirin 9000S",
+    "gpu": "Maleoon 910",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.82\"",
+    "screenResolutionW": 1260,
+    "screenResolutionH": 2720,
+    "battery": "5000 mAh",
+    "os": "HarmonyOS 4"
+  },
+  {
+    "name": "iMac 24\" (M4)",
+    "category": "desktop",
+    "brand": "Apple",
+    "model": "iMac 24-inch (M4)",
+    "cpu": "Apple M4",
+    "gpu": "Apple M4 GPU",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "23.5\"",
+    "screenResolutionW": 4480,
+    "screenResolutionH": 2520,
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "Intel NUC 11 (NUC11PAHi5)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC11PAHi5",
+    "cpu": "Intel Core i5-1135G7",
+    "gpu": "Intel Iris Xe (80EU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "Intel NUC 11 (NUC11PAHi7)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC11PAHi7",
+    "cpu": "Intel Core i7-1165G7",
+    "gpu": "Intel Iris Xe (96EU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "Intel NUC 12 Pro (NUC12WSHi5)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC12WSHi5",
+    "cpu": "Intel Core i5-1240P",
+    "gpu": "Intel Iris Xe (80EU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "Intel NUC 12 Pro (NUC12WSHi7)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC12WSHi7",
+    "cpu": "Intel Core i7-1260P",
+    "gpu": "Intel Iris Xe (96EU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "Intel NUC 13 Pro (NUC13ANHi5)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC13ANHi5",
+    "cpu": "Intel Core i5-1340P",
+    "gpu": "Intel Iris Xe (80EU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11"
+  },
+  {
+    "name": "Intel NUC 8 (NUC8i5BEH)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC8i5BEH",
+    "cpu": "Intel Core i5-8259U",
+    "gpu": "Intel Iris Plus Graphics 655",
+    "ram": "8 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "os": "Windows 10"
+  },
+  {
+    "name": "Intel NUC 8 (NUC8i7BEH)",
+    "category": "desktop",
+    "brand": "Intel",
+    "model": "NUC8i7BEH",
+    "cpu": "Intel Core i7-8559U",
+    "gpu": "Intel Iris Plus Graphics 655",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 10"
+  },
+  {
+    "name": "iPad Air 11\" (M3)",
+    "category": "tablet",
+    "brand": "Apple",
+    "model": "iPad Air 11-inch (M3)",
+    "cpu": "Apple M3",
+    "gpu": "Apple M3 GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "11\"",
+    "screenResolutionW": 1668,
+    "screenResolutionH": 2388,
+    "battery": "7607 mAh",
+    "os": "iPadOS 18"
+  },
+  {
+    "name": "iPad Air 13\" (M3)",
+    "category": "tablet",
+    "brand": "Apple",
+    "model": "iPad Air 13-inch (M3)",
+    "cpu": "Apple M3",
+    "gpu": "Apple M3 GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "13\"",
+    "screenResolutionW": 2064,
+    "screenResolutionH": 2752,
+    "battery": "10340 mAh",
+    "os": "iPadOS 18"
+  },
+  {
+    "name": "iPad mini (A17 Pro)",
+    "category": "tablet",
+    "brand": "Apple",
+    "model": "iPad mini (7th generation)",
+    "cpu": "Apple A17 Pro",
+    "gpu": "Apple A17 Pro GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "8.3\"",
+    "screenResolutionW": 1488,
+    "screenResolutionH": 2266,
+    "battery": "5078 mAh",
+    "os": "iPadOS 18"
+  },
+  {
+    "name": "iPad Pro 11\" (M4)",
+    "category": "tablet",
+    "brand": "Apple",
+    "model": "iPad Pro 11-inch (M4)",
+    "cpu": "Apple M4",
+    "gpu": "Apple M4 GPU",
+    "ram": "8 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "11\"",
+    "screenResolutionW": 1668,
+    "screenResolutionH": 2420,
+    "battery": "8061 mAh",
+    "os": "iPadOS 18"
+  },
+  {
+    "name": "iPad Pro 13\" (M4)",
+    "category": "tablet",
+    "brand": "Apple",
+    "model": "iPad Pro 13-inch (M4)",
+    "cpu": "Apple M4",
+    "gpu": "Apple M4 GPU",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "13\"",
+    "screenResolutionW": 2064,
+    "screenResolutionH": 2752,
+    "battery": "10290 mAh",
+    "os": "iPadOS 18"
+  },
+  {
+    "name": "iPhone 12",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 12",
+    "cpu": "Apple A14 Bionic",
+    "gpu": "Apple A14 GPU",
+    "ram": "4 GB",
+    "storage": [
+      "64 GB",
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "2815 mAh",
+    "os": "iOS 14"
+  },
+  {
+    "name": "iPhone 12 mini",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 12 mini",
+    "cpu": "Apple A14 Bionic",
+    "gpu": "Apple A14 GPU",
+    "ram": "4 GB",
+    "storage": [
+      "64 GB",
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "5.4\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "2227 mAh",
+    "os": "iOS 14"
+  },
+  {
+    "name": "iPhone 12 Pro",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 12 Pro",
+    "cpu": "Apple A14 Bionic",
+    "gpu": "Apple A14 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "2815 mAh",
+    "os": "iOS 14"
+  },
+  {
+    "name": "iPhone 12 Pro Max",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 12 Pro Max",
+    "cpu": "Apple A14 Bionic",
+    "gpu": "Apple A14 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1284,
+    "screenResolutionH": 2778,
+    "battery": "3687 mAh",
+    "os": "iOS 14"
+  },
+  {
+    "name": "iPhone 13",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 13",
+    "cpu": "Apple A15 Bionic",
+    "gpu": "Apple A15 GPU",
+    "ram": "4 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "3227 mAh",
+    "os": "iOS 15"
+  },
+  {
+    "name": "iPhone 13 mini",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 13 mini",
+    "cpu": "Apple A15 Bionic",
+    "gpu": "Apple A15 GPU",
+    "ram": "4 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "5.4\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "2406 mAh",
+    "os": "iOS 15"
+  },
+  {
+    "name": "iPhone 13 Pro",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 13 Pro",
+    "cpu": "Apple A15 Bionic",
+    "gpu": "Apple A15 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "3095 mAh",
+    "os": "iOS 15"
+  },
+  {
+    "name": "iPhone 13 Pro Max",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 13 Pro Max",
+    "cpu": "Apple A15 Bionic",
+    "gpu": "Apple A15 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1284,
+    "screenResolutionH": 2778,
+    "battery": "4352 mAh",
+    "os": "iOS 15"
+  },
+  {
+    "name": "iPhone 14",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 14",
+    "cpu": "Apple A15 Bionic",
+    "gpu": "Apple A15 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "3279 mAh",
+    "os": "iOS 16"
+  },
+  {
+    "name": "iPhone 14 Plus",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 14 Plus",
+    "cpu": "Apple A15 Bionic",
+    "gpu": "Apple A15 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1284,
+    "screenResolutionH": 2778,
+    "battery": "4325 mAh",
+    "os": "iOS 16"
+  },
+  {
+    "name": "iPhone 14 Pro",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 14 Pro",
+    "cpu": "Apple A16 Bionic",
+    "gpu": "Apple A16 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1179,
+    "screenResolutionH": 2556,
+    "battery": "3200 mAh",
+    "os": "iOS 16"
+  },
+  {
+    "name": "iPhone 14 Pro Max",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 14 Pro Max",
+    "cpu": "Apple A16 Bionic",
+    "gpu": "Apple A16 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1290,
+    "screenResolutionH": 2796,
+    "battery": "4323 mAh",
+    "os": "iOS 16"
+  },
+  {
+    "name": "iPhone 15",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 15",
+    "cpu": "Apple A16 Bionic",
+    "gpu": "Apple A16 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1179,
+    "screenResolutionH": 2556,
+    "battery": "3349 mAh",
+    "os": "iOS 17"
+  },
+  {
+    "name": "iPhone 15 Plus",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 15 Plus",
+    "cpu": "Apple A16 Bionic",
+    "gpu": "Apple A16 GPU",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1290,
+    "screenResolutionH": 2796,
+    "battery": "4383 mAh",
+    "os": "iOS 17"
+  },
+  {
+    "name": "iPhone 15 Pro",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 15 Pro",
+    "cpu": "Apple A17 Pro",
+    "gpu": "Apple A17 Pro GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1179,
+    "screenResolutionH": 2556,
+    "battery": "3274 mAh",
+    "os": "iOS 17"
+  },
+  {
+    "name": "iPhone 15 Pro Max",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 15 Pro Max",
+    "cpu": "Apple A17 Pro",
+    "gpu": "Apple A17 Pro GPU",
+    "ram": "8 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1290,
+    "screenResolutionH": 2796,
+    "battery": "4441 mAh",
+    "os": "iOS 17"
+  },
+  {
+    "name": "iPhone 16",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 16",
+    "cpu": "Apple A18",
+    "gpu": "Apple A18 GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1179,
+    "screenResolutionH": 2556,
+    "battery": "3561 mAh",
+    "os": "iOS 18",
+    "releaseDate": "2024-09-20"
+  },
+  {
+    "name": "iPhone 16 Plus",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 16 Plus",
+    "cpu": "Apple A18",
+    "gpu": "Apple A18 GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1290,
+    "screenResolutionH": 2796,
+    "battery": "4674 mAh",
+    "os": "iOS 18",
+    "releaseDate": "2024-09-20"
+  },
+  {
+    "name": "iPhone 16e",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 16e",
+    "cpu": "Apple A16 Bionic",
+    "gpu": "Apple A16 GPU (5-core)",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "3279 mAh",
+    "os": "iOS 18",
+    "releaseDate": "2025-02-28"
+  },
+  {
+    "name": "iPhone 16 Pro",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 16 Pro",
+    "cpu": "Apple A18 Pro",
+    "gpu": "Apple A18 Pro GPU",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1206,
+    "screenResolutionH": 2622,
+    "battery": "3582 mAh",
+    "os": "iOS 18",
+    "releaseDate": "2024-09-20"
+  },
+  {
+    "name": "iPhone 16 Pro Max",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 16 Pro Max",
+    "cpu": "Apple A18 Pro",
+    "gpu": "Apple A18 Pro GPU",
+    "ram": "8 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.9\"",
+    "screenResolutionW": 1320,
+    "screenResolutionH": 2868,
+    "battery": "4685 mAh",
+    "os": "iOS 18",
+    "releaseDate": "2024-09-20"
+  },
+  {
+    "name": "Mac Mini (M4 Pro)",
+    "category": "desktop",
+    "brand": "Apple",
+    "model": "Mac Mini (M4 Pro)",
+    "cpu": "Apple M4 Pro",
+    "gpu": "Apple M4 Pro GPU",
+    "ram": "24 GB",
+    "storage": [
+      "512 GB",
+      "1 TB",
+      "2 TB",
+      "4 TB"
+    ],
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "Mac Studio (M4 Ultra)",
+    "category": "desktop",
+    "brand": "Apple",
+    "model": "Mac Studio (M4 Ultra)",
+    "cpu": "Apple M4 Ultra",
+    "gpu": "Apple M4 Ultra GPU",
+    "ram": "64 GB",
+    "storage": [
+      "1 TB",
+      "2 TB",
+      "4 TB",
+      "8 TB"
+    ],
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Air 13\" (M4)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Air 13-inch (M4)",
+    "cpu": "Apple M4",
+    "gpu": "Apple M4 GPU",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "13.6\"",
+    "screenResolutionW": 2560,
+    "screenResolutionH": 1664,
+    "battery": "52.6 Wh",
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Air 15\" (M4)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Air 15-inch (M4)",
+    "cpu": "Apple M4",
+    "gpu": "Apple M4 GPU",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "15.3\"",
+    "screenResolutionW": 2880,
+    "screenResolutionH": 1864,
+    "battery": "66.5 Wh",
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Pro 14\" (M4 Pro)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Pro 14-inch (M4 Pro)",
+    "cpu": "Apple M4 Pro",
+    "gpu": "Apple M4 Pro GPU",
+    "ram": "24 GB",
+    "storage": [
+      "512 GB",
+      "1 TB",
+      "2 TB",
+      "4 TB"
+    ],
+    "screenSize": "14.2\"",
+    "screenResolutionW": 3024,
+    "screenResolutionH": 1964,
+    "battery": "72.4 Wh",
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Pro 14\" (M4)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Pro 14-inch (M4)",
+    "cpu": "Apple M4",
+    "gpu": "Apple M4 GPU",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "14.2\"",
+    "screenResolutionW": 3024,
+    "screenResolutionH": 1964,
+    "battery": "72.4 Wh",
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Pro 16\" (M4 Pro)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Pro 16-inch (M4 Pro)",
+    "cpu": "Apple M4 Pro",
+    "gpu": "Apple M4 Pro GPU",
+    "ram": "24 GB",
+    "storage": [
+      "512 GB",
+      "1 TB",
+      "2 TB",
+      "4 TB"
+    ],
+    "screenSize": "16.2\"",
+    "screenResolutionW": 3456,
+    "screenResolutionH": 2234,
+    "battery": "100 Wh",
+    "os": "macOS Sequoia"
+  },
+  {
+    "name": "Microsoft Surface Laptop 7",
+    "category": "laptop",
+    "brand": "Microsoft",
+    "model": "Surface Laptop 7 15\"",
+    "cpu": "Qualcomm Snapdragon X Elite (X1E-84-100)",
+    "gpu": "Qualcomm Adreno X1-85",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "15\"",
+    "screenResolutionW": 2496,
+    "screenResolutionH": 1664,
+    "battery": "66.0 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "Microsoft Surface Pro 11",
+    "category": "tablet",
+    "brand": "Microsoft",
+    "model": "Surface Pro 11",
+    "cpu": "Qualcomm Snapdragon X Elite (X1E-84-100)",
+    "gpu": "Qualcomm Adreno X1-85",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "13\"",
+    "screenResolutionW": 2880,
+    "screenResolutionH": 1920,
+    "battery": "53.0 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "Nintendo Switch (OLED Model)",
+    "category": "gameConsole",
+    "brand": "Nintendo",
+    "model": "Switch (OLED Model)",
+    "cpu": "NVIDIA Tegra X1",
+    "gpu": "NVIDIA Maxwell (256 CUDA cores)",
+    "ram": "4 GB",
+    "storage": [
+      "64 GB"
+    ],
+    "screenSize": "7\"",
+    "screenResolutionW": 1280,
+    "screenResolutionH": 720,
+    "battery": "4310 mAh"
+  },
+  {
+    "name": "Nintendo Switch 2",
+    "category": "gameConsole",
+    "brand": "Nintendo",
+    "model": "Switch 2",
+    "cpu": "NVIDIA T239",
+    "gpu": "NVIDIA Ampere (Custom)",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "8\"",
+    "screenResolutionW": 1920,
+    "screenResolutionH": 1080,
+    "battery": "5000 mAh"
+  },
+  {
+    "name": "OnePlus 12",
+    "category": "phone",
+    "brand": "OnePlus",
+    "model": "12",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.82\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3168,
+    "battery": "5400 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "OnePlus 13",
+    "category": "phone",
+    "brand": "OnePlus",
+    "model": "13",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.82\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3168,
+    "battery": "6000 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Raspberry Pi 5",
+    "category": "devBoard",
+    "brand": "Raspberry Pi",
+    "model": "Pi 5",
+    "cpu": "Broadcom BCM2712",
+    "gpu": "VideoCore VII",
+    "ram": "8 GB",
+    "storage": [],
+    "os": "Raspberry Pi OS"
+  },
+  {
+    "name": "Razer Blade 14 (2025)",
+    "category": "laptop",
+    "brand": "Razer",
+    "model": "Blade 14 (2025)",
+    "cpu": "AMD Ryzen AI 9 365",
+    "gpu": "NVIDIA RTX 5070 (Laptop)",
+    "ram": "24 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "screenSize": "14\"",
+    "screenResolutionW": 2560,
+    "screenResolutionH": 1600,
+    "battery": "68 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "Samsung Galaxy A35",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy A35",
+    "cpu": "Samsung Exynos 1380",
+    "gpu": "Mali-G68 MC4",
+    "ram": "6 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.6\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "5000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy A55",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy A55",
+    "cpu": "Samsung Exynos 1480",
+    "gpu": "Xclipse 540",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.6\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "5000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy Buds 2",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds2",
+    "battery": "5 hours (20 with case)"
+  },
+  {
+    "name": "Samsung Galaxy Buds 2 Pro",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds2 Pro",
+    "battery": "5 hours (18 with case)"
+  },
+  {
+    "name": "Samsung Galaxy Buds 3",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds3",
+    "battery": "6 hours (30 with case)"
+  },
+  {
+    "name": "Samsung Galaxy Buds 3 Pro",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds3 Pro",
+    "battery": "7 hours (30 with case)"
+  },
+  {
+    "name": "Samsung Galaxy Buds FE",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds FE",
+    "battery": "6 hours (21 with case)"
+  },
+  {
+    "name": "Samsung Galaxy Buds Live",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds Live",
+    "battery": "6 hours (21 with case)"
+  },
+  {
+    "name": "Samsung Galaxy Buds Pro",
+    "category": "headphone",
+    "brand": "Samsung",
+    "model": "Galaxy Buds Pro",
+    "battery": "5 hours (18 with case)"
+  },
+  {
+    "name": "Samsung Galaxy S24",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S24",
+    "cpu": "Samsung Exynos 2400",
+    "gpu": "Xclipse 940",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.2\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "4000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy S24 Ultra",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S24 Ultra",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.8\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3120,
+    "battery": "5000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy S25",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S25",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "12 GB",
+    "storage": [
+      "128 GB",
+      "256 GB"
+    ],
+    "screenSize": "6.2\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "4000 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Samsung Galaxy S25 Ultra",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S25 Ultra",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.9\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3120,
+    "battery": "5000 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Samsung Galaxy S25+",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S25+",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3120,
+    "battery": "4900 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Samsung Galaxy Tab S10 Ultra",
+    "category": "tablet",
+    "brand": "Samsung",
+    "model": "Galaxy Tab S10 Ultra",
+    "cpu": "MediaTek Dimensity 9300+",
+    "gpu": "Immortalis-G720 MC12",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "14.6\"",
+    "screenResolutionW": 1848,
+    "screenResolutionH": 2960,
+    "battery": "11200 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy Tab S10+",
+    "category": "tablet",
+    "brand": "Samsung",
+    "model": "Galaxy Tab S10+",
+    "cpu": "MediaTek Dimensity 9300+",
+    "gpu": "Immortalis-G720 MC12",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "12.4\"",
+    "screenResolutionW": 1752,
+    "screenResolutionH": 2800,
+    "battery": "10090 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy Watch 7",
+    "category": "watch",
+    "brand": "Samsung",
+    "model": "Galaxy Watch7 44mm",
+    "cpu": "Samsung Exynos W1000",
+    "ram": "2 GB",
+    "storage": [
+      "32 GB"
+    ],
+    "screenSize": "1.5\"",
+    "screenResolutionW": 480,
+    "screenResolutionH": 480,
+    "battery": "425 mAh",
+    "os": "Wear OS 5"
+  },
+  {
+    "name": "Samsung Galaxy Watch Ultra",
+    "category": "watch",
+    "brand": "Samsung",
+    "model": "Galaxy Watch Ultra 47mm",
+    "cpu": "Samsung Exynos W1000",
+    "ram": "2 GB",
+    "storage": [
+      "32 GB"
+    ],
+    "screenSize": "1.5\"",
+    "screenResolutionW": 480,
+    "screenResolutionH": 480,
+    "battery": "590 mAh",
+    "os": "Wear OS 5"
+  },
+  {
+    "name": "Samsung Galaxy Z Flip 6",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy Z Flip 6",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2640,
+    "battery": "4000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy Z Fold 6",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy Z Fold 6",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "7.6\"",
+    "screenResolutionW": 1856,
+    "screenResolutionH": 2160,
+    "battery": "4400 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Sony WH-1000XM5",
+    "category": "headphone",
+    "brand": "Sony",
+    "model": "WH-1000XM5",
+    "battery": "30 hours"
+  },
+  {
+    "name": "Sony Xperia 1 VI",
+    "category": "phone",
+    "brand": "Sony",
+    "model": "Xperia 1 VI",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.5\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "5000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Steam Deck OLED",
+    "category": "gameConsole",
+    "brand": "Valve",
+    "model": "Steam Deck OLED",
+    "cpu": "AMD Custom APU (Zen 2)",
+    "gpu": "AMD RDNA 2 (8 CU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "7.4\"",
+    "screenResolutionW": 1280,
+    "screenResolutionH": 800,
+    "battery": "50 Wh",
+    "os": "SteamOS 3"
+  },
+  {
+    "name": "Xiaomi 14",
+    "category": "phone",
+    "brand": "Xiaomi",
+    "model": "14",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.36\"",
+    "screenResolutionW": 1200,
+    "screenResolutionH": 2670,
+    "battery": "4610 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Xiaomi 14 Ultra",
+    "category": "phone",
+    "brand": "Xiaomi",
+    "model": "14 Ultra",
+    "cpu": "Qualcomm Snapdragon 8 Gen 3",
+    "gpu": "Qualcomm Adreno 750",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.73\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3200,
+    "battery": "5000 mAh",
+    "os": "Android 14"
+  },
+  {
+    "name": "Xiaomi 15",
+    "category": "phone",
+    "brand": "Xiaomi",
+    "model": "15",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.36\"",
+    "screenResolutionW": 1200,
+    "screenResolutionH": 2670,
+    "battery": "5400 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "Xiaomi 15 Pro",
+    "category": "phone",
+    "brand": "Xiaomi",
+    "model": "15 Pro",
+    "cpu": "Qualcomm Snapdragon 8 Elite",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.73\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3200,
+    "battery": "6100 mAh",
+    "os": "Android 15"
+  },
+  {
+    "name": "PlayStation 5",
+    "category": "gameConsole",
+    "brand": "Sony",
+    "model": "PlayStation 5",
+    "cpu": "AMD Zen 2 (8 cores, 3.5 GHz)",
+    "gpu": "AMD RDNA 2 (36 CU, 10.28 TFLOPS)",
+    "ram": "16 GB",
+    "storage": ["825 GB"],
+    "os": "PlayStation OS"
+  },
+  {
+    "name": "PlayStation 5 Pro",
+    "category": "gameConsole",
+    "brand": "Sony",
+    "model": "PlayStation 5 Pro",
+    "cpu": "AMD Zen 2 (8 cores, 3.85 GHz)",
+    "gpu": "AMD RDNA (60 CU, 16.7 TFLOPS)",
+    "ram": "16 GB",
+    "storage": ["2 TB"],
+    "os": "PlayStation OS"
+  },
+  {
+    "name": "Xbox Series X",
+    "category": "gameConsole",
+    "brand": "Microsoft",
+    "model": "Xbox Series X",
+    "cpu": "AMD Zen 2 (8 cores, 3.8 GHz)",
+    "gpu": "AMD RDNA 2 (52 CU, 12.15 TFLOPS)",
+    "ram": "16 GB",
+    "storage": ["1 TB"],
+    "os": "Xbox OS"
+  },
+  {
+    "name": "Xbox Series S",
+    "category": "gameConsole",
+    "brand": "Microsoft",
+    "model": "Xbox Series S",
+    "cpu": "AMD Zen 2 (8 cores, 3.6 GHz)",
+    "gpu": "AMD RDNA 2 (20 CU, 4 TFLOPS)",
+    "ram": "10 GB",
+    "storage": ["512 GB"],
+    "os": "Xbox OS"
+  },
+  {
+    "name": "ROG Ally X",
+    "category": "gameConsole",
+    "brand": "ASUS",
+    "model": "ROG Ally X",
+    "cpu": "AMD Ryzen Z1 Extreme",
+    "gpu": "AMD RDNA 3 (12 CU)",
+    "ram": "24 GB",
+    "storage": ["1 TB"],
+    "screenSize": "7\"",
+    "screenResolutionW": 1920,
+    "screenResolutionH": 1080,
+    "battery": "80 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "Lenovo Legion Go",
+    "category": "gameConsole",
+    "brand": "Lenovo",
+    "model": "Legion Go",
+    "cpu": "AMD Ryzen Z1 Extreme",
+    "gpu": "AMD RDNA 3 (12 CU)",
+    "ram": "16 GB",
+    "storage": ["512 GB", "1 TB"],
+    "screenSize": "8.8\"",
+    "screenResolutionW": 2560,
+    "screenResolutionH": 1600,
+    "battery": "49.2 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "Linksys MX8500 (Atlas Max 6E)",
+    "category": "router",
+    "brand": "Linksys",
+    "model": "MX8500",
+    "cpu": "Qualcomm IPQ8074A (4 cores, 2.2 GHz)",
+    "ram": "1 GB",
+    "storage": ["4 GB"],
+    "os": "Linksys OS"
+  },
+  {
+    "name": "Linksys WRT3200ACM",
+    "category": "router",
+    "brand": "Linksys",
+    "model": "WRT3200ACM",
+    "cpu": "Marvell Armada 385 (2 cores, 1.8 GHz)",
+    "ram": "512 MB",
+    "storage": ["256 MB"],
+    "os": "OpenWrt / Linksys OS"
+  },
+  {
+    "name": "Cudy TR3000",
+    "category": "router",
+    "brand": "Cudy",
+    "model": "TR3000",
+    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
+    "ram": "512 MB",
+    "storage": ["128 MB"],
+    "os": "OpenWrt / Cudy OS"
+  },
+  {
+    "name": "Cudy WR3000",
+    "category": "router",
+    "brand": "Cudy",
+    "model": "WR3000",
+    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
+    "ram": "256 MB",
+    "storage": ["128 MB"],
+    "os": "OpenWrt / Cudy OS"
+  },
+  {
+    "name": "GL.iNet GL-MT6000 (Flint 2)",
+    "category": "router",
+    "brand": "GL.iNet",
+    "model": "GL-MT6000",
+    "cpu": "MediaTek MT7986A (4 cores, 2.0 GHz)",
+    "ram": "1 GB",
+    "storage": ["8 GB"],
+    "os": "OpenWrt"
+  },
+  {
+    "name": "GL.iNet GL-MT3000 (Beryl AX)",
+    "category": "router",
+    "brand": "GL.iNet",
+    "model": "GL-MT3000",
+    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
+    "ram": "512 MB",
+    "storage": ["256 MB"],
+    "os": "OpenWrt"
+  },
+  {
+    "name": "TP-Link Archer AX6000",
+    "category": "router",
+    "brand": "TP-Link",
+    "model": "Archer AX6000",
+    "cpu": "Broadcom BCM4908 (4 cores, 1.8 GHz)",
+    "ram": "1 GB",
+    "storage": ["128 MB"],
+    "os": "TP-Link OS"
+  },
+  {
+    "name": "TP-Link Deco BE85",
+    "category": "router",
+    "brand": "TP-Link",
+    "model": "Deco BE85",
+    "cpu": "Qualcomm IPQ9574 (4 cores, 2.2 GHz)",
+    "ram": "2 GB",
+    "storage": ["4 GB"],
+    "os": "TP-Link OS"
+  },
+  {
+    "name": "NETGEAR Nighthawk RAXE500",
+    "category": "router",
+    "brand": "NETGEAR",
+    "model": "Nighthawk RAXE500",
+    "cpu": "Broadcom BCM4916 (4 cores, 2.0 GHz)",
+    "ram": "1 GB",
+    "storage": ["512 MB"],
+    "os": "NETGEAR OS"
+  },
+  {
+    "name": "NETGEAR Orbi 970 (RBE973)",
+    "category": "router",
+    "brand": "NETGEAR",
+    "model": "Orbi 970 (RBE973)",
+    "cpu": "Qualcomm IPQ9574 (4 cores, 2.2 GHz)",
+    "ram": "2 GB",
+    "storage": ["4 GB"],
+    "os": "NETGEAR OS"
+  },
+  {
+    "name": "ASUS RT-AX86U Pro",
+    "category": "router",
+    "brand": "ASUS",
+    "model": "RT-AX86U Pro",
+    "cpu": "Broadcom BCM4912 (4 cores, 2.0 GHz)",
+    "ram": "1 GB",
+    "storage": ["256 MB"],
+    "os": "ASUS Merlin / ASUS OS"
+  },
+  {
+    "name": "ASUS ROG Rapture GT-AXE16000",
+    "category": "router",
+    "brand": "ASUS",
+    "model": "ROG Rapture GT-AXE16000",
+    "cpu": "Broadcom BCM4916 (4 cores, 2.0 GHz)",
+    "ram": "2 GB",
+    "storage": ["256 MB"],
+    "os": "ASUS OS"
+  },
+  {
+    "name": "Ubiquiti UniFi Dream Machine Pro",
+    "category": "router",
+    "brand": "Ubiquiti",
+    "model": "UniFi Dream Machine Pro",
+    "cpu": "Annapurna Labs AL-324 (4 cores, 1.7 GHz)",
+    "ram": "4 GB",
+    "storage": ["16 GB"],
+    "os": "UniFi OS"
+  },
+  {
+    "name": "Xiaomi AX9000",
+    "category": "router",
+    "brand": "Xiaomi",
+    "model": "AX9000",
+    "cpu": "Qualcomm IPQ8072A (4 cores, 2.2 GHz)",
+    "ram": "1 GB",
+    "storage": ["256 MB"],
+    "os": "MiWiFi OS"
+  },
+
+  {
+    "name": "Cloudcone VPS 1C1G",
+    "category": "vps",
+    "brand": "Cloudcone",
+    "model": "VPS SC2",
+    "cpu": { "model": "Intel Xeon", "performanceCores": 1 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "20 GB", "type": "ssd" }],
+    "os": "Linux"
+  },
+  {
+    "name": "Cloudcone VPS 2C2G",
+    "category": "vps",
+    "brand": "Cloudcone",
+    "model": "VPS SC2",
+    "cpu": { "model": "Intel Xeon", "performanceCores": 2 },
+    "ram": "2 GB",
+    "storage": [{ "capacity": "40 GB", "type": "ssd" }],
+    "os": "Linux"
+  },
+  {
+    "name": "Oracle Cloud A1 Flex (4C24G)",
+    "category": "vps",
+    "brand": "Oracle",
+    "model": "VM.Standard.A1.Flex",
+    "cpu": { "model": "Ampere Altra", "architecture": "ARM64", "performanceCores": 4 },
+    "ram": "24 GB",
+    "storage": [{ "capacity": "200 GB", "type": "ssd" }],
+    "os": "Oracle Linux"
+  },
+  {
+    "name": "Oracle Cloud E2.1.Micro (Free Tier)",
+    "category": "vps",
+    "brand": "Oracle",
+    "model": "VM.Standard.E2.1.Micro",
+    "cpu": { "model": "AMD EPYC 7551", "architecture": "x86_64", "performanceCores": 1 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "50 GB", "type": "ssd" }],
+    "os": "Oracle Linux"
+  },
+  {
+    "name": "Google Cloud e2-micro (Free Tier)",
+    "category": "vps",
+    "brand": "Google Cloud",
+    "model": "e2-micro",
+    "cpu": { "model": "Intel / AMD shared-core", "performanceCores": 1 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "30 GB", "type": "ssd" }],
+    "os": "Debian / Ubuntu"
+  },
+  {
+    "name": "AWS EC2 t3.micro",
+    "category": "vps",
+    "brand": "AWS",
+    "model": "t3.micro",
+    "cpu": { "model": "Intel Xeon Platinum 8259CL", "architecture": "x86_64", "performanceCores": 2 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "30 GB", "type": "ssd" }],
+    "os": "Amazon Linux 2"
+  },
+  {
+    "name": "AWS EC2 t4g.micro (ARM)",
+    "category": "vps",
+    "brand": "AWS",
+    "model": "t4g.micro",
+    "cpu": { "model": "AWS Graviton2", "architecture": "ARM64", "performanceCores": 2 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "30 GB", "type": "ssd" }],
+    "os": "Amazon Linux 2"
+  },
+  {
+    "name": "BandwagonHost THE PLAN (KVM)",
+    "category": "vps",
+    "brand": "BandwagonHost",
+    "model": "THE PLAN",
+    "cpu": { "model": "Intel Xeon", "performanceCores": 2 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "20 GB", "type": "ssd" }],
+    "os": "Linux"
+  },
+  {
+    "name": "DigitalOcean Basic Droplet 1C1G",
+    "category": "vps",
+    "brand": "DigitalOcean",
+    "model": "Basic Droplet",
+    "cpu": { "model": "Intel / AMD shared", "performanceCores": 1 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "25 GB", "type": "ssd" }],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Vultr Cloud Compute 1C1G",
+    "category": "vps",
+    "brand": "Vultr",
+    "model": "Cloud Compute - Regular",
+    "cpu": { "model": "Intel / AMD", "performanceCores": 1 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "25 GB", "type": "ssd" }],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Hetzner CX22",
+    "category": "vps",
+    "brand": "Hetzner",
+    "model": "CX22",
+    "cpu": { "model": "Intel Xeon", "architecture": "x86_64", "performanceCores": 2 },
+    "ram": "4 GB",
+    "storage": [{ "capacity": "40 GB", "type": "ssd" }],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Hetzner CAX11 (ARM)",
+    "category": "vps",
+    "brand": "Hetzner",
+    "model": "CAX11",
+    "cpu": { "model": "Ampere Altra", "architecture": "ARM64", "performanceCores": 2 },
+    "ram": "4 GB",
+    "storage": [{ "capacity": "40 GB", "type": "ssd" }],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Cloudflare Workers VPS",
+    "category": "vps",
+    "brand": "Cloudflare",
+    "model": "Workers",
+    "os": "Cloudflare Workers Runtime"
+  },
+  {
+    "name": "OVH VPS Starter",
+    "category": "vps",
+    "brand": "OVH",
+    "model": "VPS Starter",
+    "cpu": { "model": "Intel / AMD", "performanceCores": 1 },
+    "ram": "2 GB",
+    "storage": [{ "capacity": "20 GB", "type": "ssd" }],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Akamai (Linode) Nanode 1 GB",
+    "category": "vps",
+    "brand": "Akamai",
+    "model": "Nanode 1 GB",
+    "cpu": { "model": "AMD EPYC", "performanceCores": 1 },
+    "ram": "1 GB",
+    "storage": [{ "capacity": "25 GB", "type": "ssd" }],
+    "os": "Ubuntu"
+  }
+]

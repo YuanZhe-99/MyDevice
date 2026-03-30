@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../app/flavor.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_service.dart';
 import '../../../shared/widgets/map_picker_page.dart';
@@ -685,11 +686,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       appBar: AppBar(
         title: Text(_isEditing ? l10n.editDevice : l10n.addDevice),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.travel_explore),
-            tooltip: l10n.fetchFromInternet,
-            onPressed: _showSearchDialog,
-          ),
+          if (AppFlavor.isFull)
+            IconButton(
+              icon: const Icon(Icons.travel_explore),
+              tooltip: l10n.fetchFromInternet,
+              onPressed: _showSearchDialog,
+            ),
           TextButton(onPressed: _save, child: Text(l10n.save)),
         ],
       ),
@@ -861,11 +863,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                       style: theme.textTheme.titleMedium
                           ?.copyWith(color: theme.colorScheme.primary)),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.travel_explore, size: 20),
-                  tooltip: l10n.fetchFromInternet,
-                  onPressed: _searchCpuOnline,
-                ),
+                if (AppFlavor.isFull)
+                  IconButton(
+                    icon: const Icon(Icons.travel_explore, size: 20),
+                    tooltip: l10n.fetchFromInternet,
+                    onPressed: _searchCpuOnline,
+                  ),
                 TextButton.icon(
                   icon: const Icon(Icons.list, size: 18),
                   label: Text(l10n.cpuInfo),
@@ -958,11 +961,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                       style: theme.textTheme.titleMedium
                           ?.copyWith(color: theme.colorScheme.primary)),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.travel_explore, size: 20),
-                  tooltip: l10n.fetchFromInternet,
-                  onPressed: _searchGpuOnline,
-                ),
+                if (AppFlavor.isFull)
+                  IconButton(
+                    icon: const Icon(Icons.travel_explore, size: 20),
+                    tooltip: l10n.fetchFromInternet,
+                    onPressed: _searchGpuOnline,
+                  ),
                 TextButton.icon(
                   icon: const Icon(Icons.list, size: 18),
                   label: Text(l10n.gpuInfo),

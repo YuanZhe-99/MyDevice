@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../../app/flavor.dart';
 import '../models/device.dart';
 
 /// Result from CPU/GPU online search.
@@ -86,18 +87,21 @@ class ChipSearchService {
       }
     }
 
-    // 2. Online sources in parallel
-    final futures = await Future.wait([
-      _searchTechPowerUpCpu(query).catchError((_) => null),
-      _searchAmdCpu(query).catchError((_) => null),
-      _searchIntelCpu(query).catchError((_) => null),
-    ]);
+    // 2. Online sources in parallel (full flavor only)
+    if (AppFlavor.isFull) {
+      final futures = await Future.wait([
+        _searchTechPowerUpCpu(query).catchError((_) => null),
+        _searchAmdCpu(query).catchError((_) => null),
+        _searchIntelCpu(query).catchError((_) => null),
+      ]);
 
-    final existing = results.map((r) => r.model?.toLowerCase()).toSet();
-    for (final online in futures) {
-      if (online != null && !existing.contains(online.model?.toLowerCase())) {
-        results.add(online);
-        existing.add(online.model?.toLowerCase());
+      final existing = results.map((r) => r.model?.toLowerCase()).toSet();
+      for (final online in futures) {
+        if (online != null &&
+            !existing.contains(online.model?.toLowerCase())) {
+          results.add(online);
+          existing.add(online.model?.toLowerCase());
+        }
       }
     }
 
@@ -124,17 +128,20 @@ class ChipSearchService {
       }
     }
 
-    // Online sources in parallel
-    final futures = await Future.wait([
-      _searchTechPowerUpGpu(query).catchError((_) => null),
-      _searchAmdGpu(query).catchError((_) => null),
-    ]);
+    // Online sources in parallel (full flavor only)
+    if (AppFlavor.isFull) {
+      final futures = await Future.wait([
+        _searchTechPowerUpGpu(query).catchError((_) => null),
+        _searchAmdGpu(query).catchError((_) => null),
+      ]);
 
-    final existing = results.map((r) => r.model?.toLowerCase()).toSet();
-    for (final online in futures) {
-      if (online != null && !existing.contains(online.model?.toLowerCase())) {
-        results.add(online);
-        existing.add(online.model?.toLowerCase());
+      final existing = results.map((r) => r.model?.toLowerCase()).toSet();
+      for (final online in futures) {
+        if (online != null &&
+            !existing.contains(online.model?.toLowerCase())) {
+          results.add(online);
+          existing.add(online.model?.toLowerCase());
+        }
       }
     }
 

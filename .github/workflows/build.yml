@@ -1,0 +1,174 @@
+name: Build All Platforms
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FLUTTER_VERSION: '3.41.6'
+
+jobs:
+  # ── Android APK (full) + AAB (store) ──
+  android:
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Setup Android signing
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          printf 'storeFile=upload-keystore.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
+
+      - name: Build APK (full)
+        run: flutter build apk --release --no-tree-shake-icons --dart-define=FLAVOR=full
+
+      - name: Build AAB (store)
+        run: flutter build appbundle --release --no-tree-shake-icons --dart-define=FLAVOR=store
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-full
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-aab-store
+          path: build/app/outputs/bundle/release/app-release.aab
+
+  # ── Windows installer (full) ──
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Build Windows (full)
+        run: flutter build windows --release --dart-define=FLAVOR=full
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build installer
+        run: iscc installer.iss
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-full
+          path: build/installer/*.exe
+
+  # ── iOS IPA (full sideload) ──
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Build iOS (full, no codesign)
+        run: flutter build ios --release --no-codesign --dart-define=FLAVOR=full
+
+      - name: Package sideload IPA
+        run: |
+          mkdir -p build/ios/ipa/Payload
+          cp -r build/ios/iphoneos/Runner.app build/ios/ipa/Payload/
+          cd build/ios/ipa && zip -r MyDevice_sideload.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-full-sideload
+          path: build/ios/ipa/MyDevice_sideload.ipa
+
+  # ── macOS DMG (full) ──
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+
+      - run: flutter pub get
+
+      - name: Add macOS platform if missing
+        run: |
+          if [ ! -d macos ]; then
+            flutter create --platforms=macos .
+          fi
+
+      - name: Build macOS (full)
+        run: flutter build macos --release --dart-define=FLAVOR=full
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          APP_PATH=$(find build/macos/Build/Products/Release -name "*.app" -maxdepth 1 | head -1)
+          create-dmg \
+            --volname "MyDevice!!!!!" \
+            --app-drop-link 400 150 \
+            "build/macos/MyDevice.dmg" \
+            "$APP_PATH" || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg-full
+          path: build/macos/MyDevice.dmg
+
+  # ── Create GitHub Release on tag push ──
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [android, windows, ios, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name "*.apk" -o -name "*.aab" -o -name "*.exe" -o -name "*.ipa" -o -name "*.dmg" \) -exec cp {} release/ \;
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

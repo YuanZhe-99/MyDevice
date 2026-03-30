@@ -14,7 +14,7 @@ All data you enter in the app — device information, specs, cover images, and s
 
 MyDevice!!!!! accesses the internet only in the following situations:
 
-- **CPU/GPU chip search**: When you actively search for chip specifications, the app sends requests to TechPowerUp (techpowerup.com), AMD (amd.com), and Intel (intel.com) to retrieve publicly available hardware information such as model names, architectures, core counts, and frequencies.
+- **CPU/GPU chip search** *(full flavor only)*: When you actively search for chip specifications, the app sends requests to TechPowerUp (techpowerup.com), AMD (amd.com), and Intel (intel.com) to retrieve publicly available hardware information such as model names, architectures, core counts, and frequencies. **This feature is not included in versions distributed through the App Store or Google Play.**
 - **Map tiles**: When you use the map view to set or display device locations, the app loads map tile images from OpenStreetMap (tile.openstreetmap.org).
 - **WebDAV sync**: If you enable WebDAV cloud sync, the app sends your data to a WebDAV server that you configure yourself. The app does not send data to any other server.
 
@@ -22,14 +22,19 @@ No other network communication takes place.
 
 ## Third-Party Services
 
-The app uses the following third-party services:
+The full-featured version of the app uses the following third-party data sources for chip search:
 
-- **TechPowerUp** (techpowerup.com) — CPU/GPU specification database
-- **AMD** (amd.com) — CPU/GPU specification database
-- **Intel** (intel.com) — CPU/GPU specification database
-- **OpenStreetMap** (openstreetmap.org) — Map tile provider
+- TechPowerUp (techpowerup.com)
+- AMD (amd.com)
+- Intel (intel.com)
+
+The app also uses the following service regardless of flavor:
+
+- OpenStreetMap (openstreetmap.org) — Map tile provider
 
 These services have their own privacy policies, which we encourage you to review. MyDevice!!!!! only retrieves publicly available hardware information and map tiles, and does not send any of your personal data to these services.
+
+**Note:** Versions distributed through the App Store and Google Play (store flavor) do not include the online chip search feature and do not connect to TechPowerUp, AMD, or Intel.
 
 ## Data Backup
 

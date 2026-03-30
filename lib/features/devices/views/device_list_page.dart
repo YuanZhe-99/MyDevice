@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../app/flavor.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_service.dart';
 import '../../../shared/views/device_map_page.dart';
@@ -387,13 +388,15 @@ class _DeviceListPageState extends State<DeviceListPage> {
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                FloatingActionButton.small(
-                  heroTag: 'search',
-                  onPressed: _addFromSearch,
-                  tooltip: l10n.fetchFromInternet,
-                  child: const Icon(Icons.travel_explore),
-                ),
-                const SizedBox(height: 8),
+                if (AppFlavor.isFull)
+                  FloatingActionButton.small(
+                    heroTag: 'search',
+                    onPressed: _addFromSearch,
+                    tooltip: l10n.fetchFromInternet,
+                    child: const Icon(Icons.travel_explore),
+                  ),
+                if (AppFlavor.isFull)
+                  const SizedBox(height: 8),
                 FloatingActionButton.small(
                   heroTag: 'template',
                   onPressed: _addFromTemplate,

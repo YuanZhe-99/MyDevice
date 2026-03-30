@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../../app/flavor.dart';
+
 /// A single search result from an online device database.
 class DeviceSearchResult {
   final String source;
@@ -87,6 +89,7 @@ class DeviceSearchService {
 
   /// Search for devices by name. Returns quick results (name + thumbnail).
   static Future<List<DeviceSearchResult>> search(String query) async {
+    if (AppFlavor.isStore) return [];
     final results = await Future.wait([
       _searchGSMArena(query).catchError((_) => <DeviceSearchResult>[]),
       _searchNotebookcheck(query).catchError((_) => <DeviceSearchResult>[]),
@@ -97,6 +100,7 @@ class DeviceSearchService {
   /// Fetch full detail for a search result (scrapes the detail page).
   static Future<DeviceSearchResult> fetchDetail(
       DeviceSearchResult result) async {
+    if (AppFlavor.isStore) return result;
     if (result.sourceUrl == null) return result;
     switch (result.source) {
       case 'GSMArena':

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../shared/services/sync_merge.dart';
 import '../../shared/services/webdav_service.dart';
 
 class WebDAVConfigPage extends StatefulWidget {
@@ -90,6 +91,12 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     final result = await WebDAVService.sync(_currentConfig);
     if (!mounted) return;
     setState(() => _syncing = false);
+
+    if (result.hasConflicts) {
+      await _resolveConflicts(result.pending!);
+      return;
+    }
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(result.success
@@ -97,6 +104,40 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
             : AppLocalizations.of(context)!.settingsWebDAVSyncFailed),
       ),
     );
+  }
+
+  Future<void> _resolveConflicts(PendingSync pending) async {
+    final resolutions = <String, dynamic>{};
+
+    for (final conflict in pending.allConflicts) {
+      if (!mounted) return;
+      final chosen = await showDialog<dynamic>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => _ConflictDialog(conflict: conflict),
+      );
+      if (chosen != null) {
+        resolutions[conflict.id] = chosen;
+      } else {
+        resolutions[conflict.id] = conflict.localRecord;
+      }
+    }
+
+    final ok = await WebDAVService.finalizePendingSync(
+      _currentConfig,
+      pending,
+      resolutions,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok
+              ? AppLocalizations.of(context)!.settingsWebDAVSyncSuccess
+              : AppLocalizations.of(context)!.settingsWebDAVSyncFailed),
+        ),
+      );
+    }
   }
 
   Future<void> _disconnect() async {
@@ -250,6 +291,48 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                 ],
               ],
             ),
+    );
+  }
+}
+
+class _ConflictDialog extends StatelessWidget {
+  final RecordConflict conflict;
+
+  const _ConflictDialog({required this.conflict});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Sync Conflict: ${conflict.displayName}'),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+                'This record was modified on both devices since last sync.'),
+            const SizedBox(height: 16),
+            const Text('Local version:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('ID: ${conflict.id}'),
+            const SizedBox(height: 12),
+            const Text('Remote version:',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('ID: ${conflict.id}'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(conflict.localRecord),
+          child: const Text('Keep Local'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(conflict.remoteRecord),
+          child: const Text('Keep Remote'),
+        ),
+      ],
     );
   }
 }

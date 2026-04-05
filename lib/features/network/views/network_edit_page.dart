@@ -152,8 +152,12 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
 
             TextFormField(
               controller: _notesCtrl,
-              decoration: InputDecoration(labelText: l10n.deviceNotes),
-              maxLines: 3,
+              decoration: InputDecoration(
+                labelText: l10n.networkNotes,
+                hintText: l10n.networkNotesHint,
+              ),
+              maxLines: null,
+              minLines: 3,
             ),
             const SizedBox(height: 32),
           ],

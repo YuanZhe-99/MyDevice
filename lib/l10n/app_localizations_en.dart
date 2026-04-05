@@ -408,6 +408,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get networkDns => 'DNS Servers';
 
   @override
+  String get networkNotes => 'Notes';
+
+  @override
+  String get networkNotesHint => 'Config info, keys, remarks…';
+
+  @override
   String get networkTypeLan => 'LAN';
 
   @override

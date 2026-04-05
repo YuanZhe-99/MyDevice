@@ -404,6 +404,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get networkDns => 'DNSサーバー';
 
   @override
+  String get networkNotes => 'メモ';
+
+  @override
+  String get networkNotesHint => '設定情報、キー、メモ…';
+
+  @override
   String get networkTypeLan => 'LAN';
 
   @override

@@ -404,6 +404,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get networkDns => 'DNS 服务器';
 
   @override
+  String get networkNotes => '备注';
+
+  @override
+  String get networkNotesHint => '配置信息、密钥、备注…';
+
+  @override
   String get networkTypeLan => '局域网';
 
   @override
@@ -1038,6 +1044,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get networkDns => 'DNS 伺服器';
+
+  @override
+  String get networkNotes => '備註';
+
+  @override
+  String get networkNotesHint => '配置資訊、金鑰、備註…';
 
   @override
   String get networkTypeLan => '區域網路';

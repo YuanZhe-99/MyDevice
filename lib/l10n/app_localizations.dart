@@ -875,6 +875,18 @@ abstract class AppLocalizations {
   /// **'DNS Servers'**
   String get networkDns;
 
+  /// No description provided for @networkNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get networkNotes;
+
+  /// No description provided for @networkNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Config info, keys, remarks…'**
+  String get networkNotesHint;
+
   /// No description provided for @networkTypeLan.
   ///
   /// In en, this message translates to:

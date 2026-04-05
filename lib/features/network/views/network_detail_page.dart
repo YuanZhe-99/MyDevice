@@ -443,7 +443,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                   if (net.dnsServers.isNotEmpty)
                     _infoRow(l10n.networkDns, net.dnsServers.join(', ')),
                   if (net.notes != null)
-                    _infoRow(l10n.deviceNotes, net.notes!),
+                    _infoRow(l10n.networkNotes, net.notes!),
                 ],
               ),
             ),

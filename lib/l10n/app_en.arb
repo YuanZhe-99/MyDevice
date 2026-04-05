@@ -165,6 +165,8 @@
   "networkSubnet": "Subnet",
   "networkGateway": "Gateway",
   "networkDns": "DNS Servers",
+  "networkNotes": "Notes",
+  "networkNotesHint": "Config info, keys, remarks…",
   "networkTypeLan": "LAN",
   "networkTypeTailscale": "Tailscale",
   "networkTypeZerotier": "ZeroTier",

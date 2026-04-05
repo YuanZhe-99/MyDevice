@@ -4,6 +4,10 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
+import '../../datasets/models/dataset.dart';
+import '../../datasets/services/dataset_storage.dart';
+import '../../network/models/network.dart';
+import '../../network/services/network_storage.dart';
 import '../models/device.dart';
 
 class DeviceStorage {
@@ -191,11 +195,37 @@ class DeviceStorage {
     await save(DeviceData(devices: devices));
   }
 
-  /// Delete a device by id.
+  /// Delete a device by id and clean up references in other modules.
   static Future<void> deleteDevice(String id) async {
     final data = await load();
     final devices = data.devices.where((d) => d.id != id).toList();
     await save(DeviceData(devices: devices));
+
+    // Remove network assignments referencing this device
+    final netData = await NetworkStorage.load();
+    final cleanedAssignments =
+        netData.assignments.where((a) => a.deviceId != id).toList();
+    if (cleanedAssignments.length != netData.assignments.length) {
+      await NetworkStorage.save(
+        NetworkData(networks: netData.networks, assignments: cleanedAssignments),
+      );
+    }
+
+    // Remove dataset storage links referencing this device
+    final dsData = await DataSetStorage.load();
+    var dsChanged = false;
+    final cleanedDatasets = dsData.datasets.map((ds) {
+      final filtered =
+          ds.storageLinks.where((link) => link.deviceId != id).toList();
+      if (filtered.length != ds.storageLinks.length) {
+        dsChanged = true;
+        return ds.copyWith(storageLinks: filtered);
+      }
+      return ds;
+    }).toList();
+    if (dsChanged) {
+      await DataSetStorage.save(DataSetData(datasets: cleanedDatasets));
+    }
   }
 
   // ── Config persistence (theme, locale) ──

@@ -155,6 +155,8 @@
   "networkSubnet": "子网",
   "networkGateway": "网关",
   "networkDns": "DNS 服务器",
+  "networkNotes": "备注",
+  "networkNotesHint": "配置信息、密钥、备注…",
   "networkTypeLan": "局域网",
   "networkTypeTailscale": "Tailscale",
   "networkTypeZerotier": "ZeroTier",

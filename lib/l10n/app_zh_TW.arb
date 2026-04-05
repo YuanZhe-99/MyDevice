@@ -165,6 +165,8 @@
   "networkSubnet": "子網路",
   "networkGateway": "閘道",
   "networkDns": "DNS 伺服器",
+  "networkNotes": "備註",
+  "networkNotesHint": "配置資訊、金鑰、備註…",
   "networkTypeLan": "區域網路",
   "networkTypeTailscale": "Tailscale",
   "networkTypeZerotier": "ZeroTier",

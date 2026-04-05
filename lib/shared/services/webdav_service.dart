@@ -105,6 +105,16 @@ class WebDAVService {
   /// Global lock to prevent concurrent syncs.
   static bool _syncing = false;
 
+  /// Set to true when sync writes merged data to local files.
+  static bool _localDataChanged = false;
+
+  /// Whether the last sync wrote local data files (reset after read).
+  static bool consumeLocalDataChanged() {
+    final v = _localDataChanged;
+    _localDataChanged = false;
+    return v;
+  }
+
   // ── Config persistence ──
 
   static Future<WebDAVConfig?> loadConfig() async {
@@ -155,7 +165,17 @@ class WebDAVService {
   static Future<void> _saveBase(String fileName, String content) async {
     final dir = await _getBaseDir();
     final file = File('${dir.path}/$fileName');
-    await file.writeAsString(content);
+    await _atomicWrite(file, content);
+  }
+
+  // ── Atomic file write ──
+
+  /// Write content to a temp file then atomically rename over the target.
+  /// Prevents data corruption if the app is killed during write.
+  static Future<void> _atomicWrite(File file, String content) async {
+    final tmp = File('${file.path}.tmp');
+    await tmp.writeAsString(content);
+    await tmp.rename(file.path);
   }
 
   // ── HTTP helpers ──
@@ -384,6 +404,7 @@ class WebDAVService {
       DeviceMergeResult? pendingDevice;
       NetworkMergeResult? pendingNetwork;
       DataSetMergeResult? pendingDataSet;
+      final perFileErrors = <String>[];
 
       for (final name in _dataFileNames) {
         final localFile = File('${appDir.path}/$name');
@@ -393,16 +414,17 @@ class WebDAVService {
         if (!localExists && remoteRaw == null) continue;
 
         if (!localExists && remoteRaw != null) {
-          await localFile.writeAsString(remoteRaw);
+          await _atomicWrite(localFile, remoteRaw);
           await _saveBase(name, remoteRaw);
+          _localDataChanged = true;
           continue;
         }
 
         final localRaw = await localFile.readAsString();
 
         if (localExists && remoteRaw == null) {
-          await _upload(config, name, localRaw);
-          await _saveBase(name, localRaw);
+          final uploaded = await _upload(config, name, localRaw);
+          if (uploaded) await _saveBase(name, localRaw);
           continue;
         }
 
@@ -413,66 +435,107 @@ class WebDAVService {
 
         final baseJson = await _readBase(name);
 
-        switch (name) {
-          case 'device_data.json':
-            final result = mergeDeviceData(
-              localRaw, remoteRaw!, baseJson,
-              autoResolve: autoResolve,
-            );
-            if (result.hasConflicts) {
-              pendingDevice = result;
-            } else {
-              final mergedData = DeviceData(devices: result.merged);
-              final mergedJson =
-                  const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-              await localFile.writeAsString(mergedJson);
-              await _upload(config, name, mergedJson);
-              await _saveBase(name, mergedJson);
-            }
-          case 'network_data.json':
-            final result = mergeNetworkData(
-              localRaw, remoteRaw!, baseJson,
-              autoResolve: autoResolve,
-            );
-            if (result.hasConflicts) {
-              pendingNetwork = result;
-            } else {
-              final mergedData = NetworkData(
-                networks: result.mergedNetworks,
-                assignments: result.mergedAssignments,
+        // Per-file try-catch: if one file fails to merge, others still sync.
+        try {
+          switch (name) {
+            case 'device_data.json':
+              var result = mergeDeviceData(
+                localRaw, remoteRaw!, baseJson,
+                autoResolve: autoResolve,
               );
-              final mergedJson =
-                  const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-              await localFile.writeAsString(mergedJson);
-              await _upload(config, name, mergedJson);
-              await _saveBase(name, mergedJson);
-            }
-          case 'dataset_data.json':
-            final result = mergeDataSetData(
-              localRaw, remoteRaw!, baseJson,
-              autoResolve: autoResolve,
-            );
-            if (result.hasConflicts) {
-              pendingDataSet = result;
-            } else {
-              final mergedData = DataSetData(datasets: result.merged);
-              final mergedJson =
-                  const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-              await localFile.writeAsString(mergedJson);
-              await _upload(config, name, mergedJson);
-              await _saveBase(name, mergedJson);
-            }
+              if (!result.hasConflicts) {
+                // Re-read local to detect concurrent saves during network I/O
+                final freshLocalRaw = await localFile.readAsString();
+                if (freshLocalRaw != localRaw) {
+                  result = mergeDeviceData(
+                    freshLocalRaw, remoteRaw, baseJson,
+                    autoResolve: autoResolve,
+                  );
+                }
+              }
+              if (result.hasConflicts) {
+                pendingDevice = result;
+              } else {
+                final mergedData = DeviceData(devices: result.merged);
+                final mergedJson =
+                    const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+                await _atomicWrite(localFile, mergedJson);
+                final uploaded = await _upload(config, name, mergedJson);
+                if (uploaded) await _saveBase(name, mergedJson);
+                _localDataChanged = true;
+              }
+            case 'network_data.json':
+              var result = mergeNetworkData(
+                localRaw, remoteRaw!, baseJson,
+                autoResolve: autoResolve,
+              );
+              if (!result.hasConflicts) {
+                final freshLocalRaw = await localFile.readAsString();
+                if (freshLocalRaw != localRaw) {
+                  result = mergeNetworkData(
+                    freshLocalRaw, remoteRaw, baseJson,
+                    autoResolve: autoResolve,
+                  );
+                }
+              }
+              if (result.hasConflicts) {
+                pendingNetwork = result;
+              } else {
+                final mergedData = NetworkData(
+                  networks: result.mergedNetworks,
+                  assignments: result.mergedAssignments,
+                );
+                final mergedJson =
+                    const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+                await _atomicWrite(localFile, mergedJson);
+                final uploaded = await _upload(config, name, mergedJson);
+                if (uploaded) await _saveBase(name, mergedJson);
+                _localDataChanged = true;
+              }
+            case 'dataset_data.json':
+              var result = mergeDataSetData(
+                localRaw, remoteRaw!, baseJson,
+                autoResolve: autoResolve,
+              );
+              if (!result.hasConflicts) {
+                final freshLocalRaw = await localFile.readAsString();
+                if (freshLocalRaw != localRaw) {
+                  result = mergeDataSetData(
+                    freshLocalRaw, remoteRaw, baseJson,
+                    autoResolve: autoResolve,
+                  );
+                }
+              }
+              if (result.hasConflicts) {
+                pendingDataSet = result;
+              } else {
+                final mergedData = DataSetData(datasets: result.merged);
+                final mergedJson =
+                    const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+                await _atomicWrite(localFile, mergedJson);
+                final uploaded = await _upload(config, name, mergedJson);
+                if (uploaded) await _saveBase(name, mergedJson);
+                _localDataChanged = true;
+              }
+          }
+        } catch (e) {
+          // Per-file merge error: skip this file, continue syncing others.
+          perFileErrors.add('$name: $e');
         }
       }
 
       // Sync images (additive, no conflict)
       await _syncImages(config, appDir);
 
-      if (pendingDevice != null ||
+      final hasConflicts =
+          pendingDevice != null ||
           pendingNetwork != null ||
-          pendingDataSet != null) {
+          pendingDataSet != null;
+
+      if (hasConflicts) {
         return SyncResult(
-          success: true,
+          success: perFileErrors.isEmpty,
+          error: perFileErrors.isNotEmpty ? perFileErrors.join('; ') : null,
           pending: PendingSync(
             deviceMerge: pendingDevice,
             networkMerge: pendingNetwork,
@@ -481,7 +544,10 @@ class WebDAVService {
         );
       }
 
-      return const SyncResult(success: true);
+      return SyncResult(
+        success: perFileErrors.isEmpty,
+        error: perFileErrors.isNotEmpty ? perFileErrors.join('; ') : null,
+      );
     } catch (e) {
       return SyncResult(success: false, error: e.toString());
     } finally {
@@ -507,9 +573,9 @@ class WebDAVService {
         final mergedData = pending.deviceMerge!.buildResolved(deviceResolutions);
         final mergedJson =
             const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-        await File('${appDir.path}/device_data.json').writeAsString(mergedJson);
-        await _upload(config, 'device_data.json', mergedJson);
-        await _saveBase('device_data.json', mergedJson);
+        await _atomicWrite(File('${appDir.path}/device_data.json'), mergedJson);
+        final uploaded = await _upload(config, 'device_data.json', mergedJson);
+        if (uploaded) await _saveBase('device_data.json', mergedJson);
       }
 
       if (pending.networkMerge != null) {
@@ -522,10 +588,9 @@ class WebDAVService {
             pending.networkMerge!.buildResolved(networkResolutions);
         final mergedJson =
             const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-        await File('${appDir.path}/network_data.json')
-            .writeAsString(mergedJson);
-        await _upload(config, 'network_data.json', mergedJson);
-        await _saveBase('network_data.json', mergedJson);
+        await _atomicWrite(File('${appDir.path}/network_data.json'), mergedJson);
+        final uploaded = await _upload(config, 'network_data.json', mergedJson);
+        if (uploaded) await _saveBase('network_data.json', mergedJson);
       }
 
       if (pending.dataSetMerge != null) {
@@ -538,10 +603,9 @@ class WebDAVService {
             pending.dataSetMerge!.buildResolved(dataSetResolutions);
         final mergedJson =
             const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-        await File('${appDir.path}/dataset_data.json')
-            .writeAsString(mergedJson);
-        await _upload(config, 'dataset_data.json', mergedJson);
-        await _saveBase('dataset_data.json', mergedJson);
+        await _atomicWrite(File('${appDir.path}/dataset_data.json'), mergedJson);
+        final uploaded = await _upload(config, 'dataset_data.json', mergedJson);
+        if (uploaded) await _saveBase('dataset_data.json', mergedJson);
       }
 
       return true;

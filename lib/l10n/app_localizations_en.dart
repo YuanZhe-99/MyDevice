@@ -265,6 +265,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportData => 'Export Data';
 
   @override
+  String get exportAsZip => 'Export as ZIP';
+
+  @override
+  String get exportAsZipDesc =>
+      'Full data archive (device data + images) for backup or migration';
+
+  @override
+  String get exportAsMarkdown => 'Export as Markdown';
+
+  @override
+  String get exportAsMarkdownDesc =>
+      'Device inventory with network & dataset info, for LLM personalization';
+
+  @override
   String get importData => 'Import Data';
 
   @override

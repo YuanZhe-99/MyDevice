@@ -599,6 +599,30 @@ abstract class AppLocalizations {
   /// **'Export Data'**
   String get exportData;
 
+  /// No description provided for @exportAsZip.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as ZIP'**
+  String get exportAsZip;
+
+  /// No description provided for @exportAsZipDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Full data archive (device data + images) for backup or migration'**
+  String get exportAsZipDesc;
+
+  /// No description provided for @exportAsMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as Markdown'**
+  String get exportAsMarkdown;
+
+  /// No description provided for @exportAsMarkdownDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Device inventory with network & dataset info, for LLM personalization'**
+  String get exportAsMarkdownDesc;
+
   /// No description provided for @importData.
   ///
   /// In en, this message translates to:

@@ -109,6 +109,10 @@
   "backupDeleteConfirm": "確定刪除這個備份嗎？",
 
   "exportData": "匯出資料",
+  "exportAsZip": "匯出為 ZIP",
+  "exportAsZipDesc": "完整資料壓縮檔（裝置資料 + 圖片），用於備份或遷移",
+  "exportAsMarkdown": "匯出為 Markdown",
+  "exportAsMarkdownDesc": "裝置清單及網路、資料集資訊，用於 LLM 個人化學習",
   "importData": "匯入資料",
   "exportSuccess": "資料匯出成功",
   "importSuccess": "資料匯入成功",

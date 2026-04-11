@@ -104,6 +104,10 @@
   "backupDeleteConfirm": "确定删除这个备份吗？",
 
   "exportData": "导出数据",
+  "exportAsZip": "导出为 ZIP",
+  "exportAsZipDesc": "完整数据压缩包（设备数据 + 图片），用于备份或迁移",
+  "exportAsMarkdown": "导出为 Markdown",
+  "exportAsMarkdownDesc": "设备清单及网络、资料集信息，用于 LLM 个性化学习",
   "importData": "导入数据",
   "exportSuccess": "数据导出成功",
   "importSuccess": "数据导入成功",

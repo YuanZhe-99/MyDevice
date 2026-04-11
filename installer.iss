@@ -1,14 +1,14 @@
 [Setup]
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 AppName=MyDevice!!!!!
-AppVersion=0.2.0
+AppVersion=0.2.1
 AppPublisher=yuanzhe
 AppPublisherURL=https://github.com/yuanzhe
 DefaultDirName={autopf}\MyDevice!!!!!
 DefaultGroupName=MyDevice!!!!!
 UninstallDisplayIcon={app}\my_device.exe
 OutputDir=build\installer
-OutputBaseFilename=MyDevice_0.2.0_Setup
+OutputBaseFilename=MyDevice_0.2.1_Setup
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesAllowed=x64compatible

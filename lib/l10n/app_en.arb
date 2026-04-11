@@ -109,6 +109,10 @@
   "backupDeleteConfirm": "Delete this backup?",
 
   "exportData": "Export Data",
+  "exportAsZip": "Export as ZIP",
+  "exportAsZipDesc": "Full data archive (device data + images) for backup or migration",
+  "exportAsMarkdown": "Export as Markdown",
+  "exportAsMarkdownDesc": "Device inventory with network & dataset info, for LLM personalization",
   "importData": "Import Data",
   "exportSuccess": "Data exported successfully",
   "importSuccess": "Data imported successfully",

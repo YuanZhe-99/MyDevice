@@ -264,6 +264,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get exportData => 'データをエクスポート';
 
   @override
+  String get exportAsZip => 'ZIPでエクスポート';
+
+  @override
+  String get exportAsZipDesc => '完全データアーカイブ（デバイスデータ＋画像）、バックアップや移行用';
+
+  @override
+  String get exportAsMarkdown => 'Markdownでエクスポート';
+
+  @override
+  String get exportAsMarkdownDesc => 'ネットワーク・データセット情報付きデバイス一覧、LLMパーソナライズ用';
+
+  @override
   String get importData => 'データをインポート';
 
   @override

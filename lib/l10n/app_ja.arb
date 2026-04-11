@@ -104,6 +104,10 @@
   "backupDeleteConfirm": "このバックアップを削除しますか？",
 
   "exportData": "データをエクスポート",
+  "exportAsZip": "ZIPでエクスポート",
+  "exportAsZipDesc": "完全データアーカイブ（デバイスデータ＋画像）、バックアップや移行用",
+  "exportAsMarkdown": "Markdownでエクスポート",
+  "exportAsMarkdownDesc": "ネットワーク・データセット情報付きデバイス一覧、LLMパーソナライズ用",
   "importData": "データをインポート",
   "exportSuccess": "データをエクスポートしました",
   "importSuccess": "データをインポートしました",

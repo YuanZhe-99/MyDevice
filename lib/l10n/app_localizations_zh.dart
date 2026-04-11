@@ -264,6 +264,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get exportData => '导出数据';
 
   @override
+  String get exportAsZip => '导出为 ZIP';
+
+  @override
+  String get exportAsZipDesc => '完整数据压缩包（设备数据 + 图片），用于备份或迁移';
+
+  @override
+  String get exportAsMarkdown => '导出为 Markdown';
+
+  @override
+  String get exportAsMarkdownDesc => '设备清单及网络、资料集信息，用于 LLM 个性化学习';
+
+  @override
   String get importData => '导入数据';
 
   @override
@@ -984,6 +996,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get exportData => '匯出資料';
+
+  @override
+  String get exportAsZip => '匯出為 ZIP';
+
+  @override
+  String get exportAsZipDesc => '完整資料壓縮檔（裝置資料 + 圖片），用於備份或遷移';
+
+  @override
+  String get exportAsMarkdown => '匯出為 Markdown';
+
+  @override
+  String get exportAsMarkdownDesc => '裝置清單及網路、資料集資訊，用於 LLM 個人化學習';
 
   @override
   String get importData => '匯入資料';

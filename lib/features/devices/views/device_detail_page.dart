@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -313,15 +314,12 @@ class DeviceDetailPage extends StatelessWidget {
 
   Widget _buildHeader(ThemeData theme, ColorScheme cs, AppLocalizations l10n) {
     final logoPath = _detectBrandLogo();
+    final dateFmt = DateFormat.yMd(l10n.localeName);
     final purchaseStr = device.purchaseDate != null
-        ? '${device.purchaseDate!.year}-'
-            '${device.purchaseDate!.month.toString().padLeft(2, '0')}-'
-            '${device.purchaseDate!.day.toString().padLeft(2, '0')}'
+        ? dateFmt.format(device.purchaseDate!)
         : null;
     final releaseStr = device.releaseDate != null
-        ? '${device.releaseDate!.year}-'
-            '${device.releaseDate!.month.toString().padLeft(2, '0')}-'
-            '${device.releaseDate!.day.toString().padLeft(2, '0')}'
+        ? dateFmt.format(device.releaseDate!)
         : null;
 
     return Card(

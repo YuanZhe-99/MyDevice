@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -802,9 +803,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               title: Text(l10n.devicePurchaseDate),
               subtitle: Text(
                 _purchaseDate != null
-                    ? '${_purchaseDate!.year}-'
-                        '${_purchaseDate!.month.toString().padLeft(2, '0')}-'
-                        '${_purchaseDate!.day.toString().padLeft(2, '0')}'
+                    ? DateFormat.yMd(l10n.localeName).format(_purchaseDate!)
                     : '—',
               ),
               trailing: Row(
@@ -830,9 +829,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               title: Text(l10n.deviceReleaseDate),
               subtitle: Text(
                 _releaseDate != null
-                    ? '${_releaseDate!.year}-'
-                        '${_releaseDate!.month.toString().padLeft(2, '0')}-'
-                        '${_releaseDate!.day.toString().padLeft(2, '0')}'
+                    ? DateFormat.yMd(l10n.localeName).format(_releaseDate!)
                     : '—',
               ),
               trailing: Row(
@@ -902,7 +899,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _cpuArchCtrl,
               decoration: InputDecoration(
                 labelText: l10n.cpuArchitecture,
-                hintText: 'e.g. ARM Cortex-A78, x86-64',
+                hintText: l10n.cpuArchHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -910,7 +907,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _cpuFreqCtrl,
               decoration: InputDecoration(
                 labelText: l10n.cpuFrequency,
-                hintText: 'e.g. 3.5 GHz',
+                hintText: l10n.cpuFreqHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -946,7 +943,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _cpuCacheCtrl,
               decoration: InputDecoration(
                 labelText: l10n.cpuCache,
-                hintText: 'e.g. L2 4MB / L3 32MB',
+                hintText: l10n.cpuCacheHint,
               ),
             ),
 
@@ -1000,7 +997,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _gpuArchCtrl,
               decoration: InputDecoration(
                 labelText: l10n.gpuArchitecture,
-                hintText: 'e.g. Ada Lovelace, RDNA 3',
+                hintText: l10n.gpuArchHint,
               ),
             ),
 
@@ -1014,7 +1011,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                     controller: _ramCtrl,
                     decoration: InputDecoration(
                       labelText: l10n.ram,
-                      hintText: 'e.g. 16',
+                      hintText: l10n.ramHint,
                     ),
                     keyboardType: TextInputType.number,
                   ),
@@ -1085,7 +1082,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                             initialValue: _storageEntries[i],
                             decoration: InputDecoration(
                               labelText: '${l10n.storage} ${i + 1}',
-                              hintText: 'e.g. 512',
+                              hintText: l10n.storageCapacityHint,
                             ),
                             keyboardType: TextInputType.number,
                             onChanged: (v) => _storageEntries[i] = v,
@@ -1178,7 +1175,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                             decoration: InputDecoration(
                               labelText: l10n.storageBrand,
                               isDense: true,
-                              hintText: 'e.g. Samsung, WD',
+                              hintText: l10n.storageBrandHint,
                             ),
                           ),
                         ),
@@ -1203,7 +1200,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _screenSizeCtrl,
               decoration: InputDecoration(
                 labelText: l10n.screenSize,
-                hintText: 'e.g. 6.7"',
+                hintText: l10n.screenSizeHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -1264,7 +1261,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _batteryCtrl,
               decoration: InputDecoration(
                 labelText: l10n.battery,
-                hintText: 'e.g. 5000 mAh',
+                hintText: l10n.batteryHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -1272,7 +1269,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _osCtrl,
               decoration: InputDecoration(
                 labelText: l10n.os,
-                hintText: 'e.g. Windows 11, Android 15',
+                hintText: l10n.osHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -1280,7 +1277,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               controller: _locationCtrl,
               decoration: InputDecoration(
                 labelText: l10n.deviceLocation,
-                hintText: 'e.g. Home, Office, Tokyo DC',
+                hintText: l10n.locationHint,
                 prefixIcon: const Icon(Icons.location_on_outlined),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.map_outlined),
@@ -1370,44 +1367,47 @@ class _CpuPresetPickerState extends State<_CpuPresetPicker> {
       initialChildSize: 0.6,
       maxChildSize: 0.9,
       minChildSize: 0.3,
-      builder: (context, scrollController) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search CPU...',
-                border: OutlineInputBorder(),
-                isDense: true,
+      builder: (context, scrollController) {
+        final l10n = AppLocalizations.of(context)!;
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: l10n.cpuPresetSearch,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (v) => setState(() => _query = v),
               ),
-              onChanged: (v) => setState(() => _query = v),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final cpu = items[index];
-                return ListTile(
-                  title: Text(cpu.model ?? ''),
-                  subtitle: Text(
-                    [
-                      if (cpu.architecture != null) cpu.architecture!,
-                      if (cpu.frequency != null) cpu.frequency!,
-                      _coresLabel(cpu),
-                    ].where((s) => s.isNotEmpty).join(' · '),
-                  ),
-                  dense: true,
-                  onTap: () => Navigator.pop(context, cpu),
-                );
-              },
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final cpu = items[index];
+                  return ListTile(
+                    title: Text(cpu.model ?? ''),
+                    subtitle: Text(
+                      [
+                        if (cpu.architecture != null) cpu.architecture!,
+                        if (cpu.frequency != null) cpu.frequency!,
+                        _coresLabel(cpu),
+                      ].where((s) => s.isNotEmpty).join(' · '),
+                    ),
+                    dense: true,
+                    onTap: () => Navigator.pop(context, cpu),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1443,40 +1443,43 @@ class _GpuPresetPickerState extends State<_GpuPresetPicker> {
       initialChildSize: 0.6,
       maxChildSize: 0.9,
       minChildSize: 0.3,
-      builder: (context, scrollController) => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search GPU...',
-                border: OutlineInputBorder(),
-                isDense: true,
+      builder: (context, scrollController) {
+        final l10n = AppLocalizations.of(context)!;
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.search),
+                  hintText: l10n.gpuPresetSearch,
+                  border: const OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onChanged: (v) => setState(() => _query = v),
               ),
-              onChanged: (v) => setState(() => _query = v),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              controller: scrollController,
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final gpu = items[index];
-                return ListTile(
-                  title: Text(gpu.model ?? ''),
-                  subtitle: gpu.architecture != null
-                      ? Text(gpu.architecture!)
-                      : null,
-                  dense: true,
-                  onTap: () => Navigator.pop(context, gpu),
-                );
-              },
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final gpu = items[index];
+                  return ListTile(
+                    title: Text(gpu.model ?? ''),
+                    subtitle: gpu.architecture != null
+                        ? Text(gpu.architecture!)
+                        : null,
+                    dense: true,
+                    onTap: () => Navigator.pop(context, gpu),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }

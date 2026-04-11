@@ -635,10 +635,10 @@ class _TemplatePickerState extends State<_TemplatePicker> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: TextField(
               autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search...',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: l10n.searchTemplatePlaceholder,
+                border: const OutlineInputBorder(),
                 isDense: true,
               ),
               onChanged: (v) => setState(() => _query = v),

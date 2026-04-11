@@ -302,23 +302,23 @@ class _ConflictDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text('Sync Conflict: ${conflict.displayName}'),
+      title: Text(l10n.syncConflictTitle(conflict.displayName)),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-                'This record was modified on both devices since last sync.'),
+            Text(l10n.syncConflictBody),
             const SizedBox(height: 16),
-            const Text('Local version:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(l10n.syncConflictLocalVersion,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             Text('ID: ${conflict.id}'),
             const SizedBox(height: 12),
-            const Text('Remote version:',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(l10n.syncConflictRemoteVersion,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             Text('ID: ${conflict.id}'),
           ],
         ),
@@ -326,11 +326,11 @@ class _ConflictDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(conflict.localRecord),
-          child: const Text('Keep Local'),
+          child: Text(l10n.syncConflictKeepLocal),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(conflict.remoteRecord),
-          child: const Text('Keep Remote'),
+          child: Text(l10n.syncConflictKeepRemote),
         ),
       ],
     );

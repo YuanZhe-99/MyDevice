@@ -244,5 +244,41 @@
   "searchCpuInfo": "CPU を検索",
   "searchGpuInfo": "GPU を検索",
   "searchCpuHint": "CPUモデルを入力...",
-  "searchGpuHint": "GPUモデルを入力..."
+  "searchGpuHint": "GPUモデルを入力...",
+
+  "searchTemplatePlaceholder": "検索…",
+  "cpuPresetSearch": "CPUを検索…",
+  "gpuPresetSearch": "GPUを検索…",
+
+  "cpuArchHint": "例：ARM Cortex-A78、x86-64",
+  "cpuFreqHint": "例：3.5 GHz",
+  "cpuCacheHint": "例：L2 4MB / L3 32MB",
+  "gpuArchHint": "例：Ada Lovelace、RDNA 3",
+  "ramHint": "例：16",
+  "storageCapacityHint": "例：512",
+  "storageBrandHint": "例：Samsung、WD",
+  "screenSizeHint": "例：6.7\"",
+  "batteryHint": "例：5000 mAh",
+  "osHint": "例：Windows 11、Android 15",
+  "locationHint": "例：自宅、オフィス、東京DC",
+
+  "networkSubnetHint": "例：192.168.1.0/24、100.64.0.0/10",
+  "networkGatewayHint": "例：192.168.1.1",
+  "networkDnsHint": "例：8.8.8.8、1.1.1.1",
+  "networkIpHint": "例：192.168.1.100",
+  "networkHostnameHint": "例：my-server",
+
+  "backupModuleImages": "画像",
+
+  "syncConflictTitle": "同期の競合：{name}",
+  "@syncConflictTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "syncConflictBody": "このレコードは最後の同期以降、両端で変更されています。",
+  "syncConflictLocalVersion": "ローカル版：",
+  "syncConflictRemoteVersion": "リモート版：",
+  "syncConflictKeepLocal": "ローカルを保持",
+  "syncConflictKeepRemote": "リモートを保持"
 }

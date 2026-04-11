@@ -649,4 +649,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchGpuHint => 'Enter GPU model...';
+
+  @override
+  String get searchTemplatePlaceholder => 'Search...';
+
+  @override
+  String get cpuPresetSearch => 'Search CPU...';
+
+  @override
+  String get gpuPresetSearch => 'Search GPU...';
+
+  @override
+  String get cpuArchHint => 'e.g. ARM Cortex-A78, x86-64';
+
+  @override
+  String get cpuFreqHint => 'e.g. 3.5 GHz';
+
+  @override
+  String get cpuCacheHint => 'e.g. L2 4MB / L3 32MB';
+
+  @override
+  String get gpuArchHint => 'e.g. Ada Lovelace, RDNA 3';
+
+  @override
+  String get ramHint => 'e.g. 16';
+
+  @override
+  String get storageCapacityHint => 'e.g. 512';
+
+  @override
+  String get storageBrandHint => 'e.g. Samsung, WD';
+
+  @override
+  String get screenSizeHint => 'e.g. 6.7\"';
+
+  @override
+  String get batteryHint => 'e.g. 5000 mAh';
+
+  @override
+  String get osHint => 'e.g. Windows 11, Android 15';
+
+  @override
+  String get locationHint => 'e.g. Home, Office, Tokyo DC';
+
+  @override
+  String get networkSubnetHint => 'e.g. 192.168.1.0/24, 100.64.0.0/10';
+
+  @override
+  String get networkGatewayHint => 'e.g. 192.168.1.1';
+
+  @override
+  String get networkDnsHint => 'e.g. 8.8.8.8, 1.1.1.1';
+
+  @override
+  String get networkIpHint => 'e.g. 192.168.1.100';
+
+  @override
+  String get networkHostnameHint => 'e.g. my-server';
+
+  @override
+  String get backupModuleImages => 'Images';
+
+  @override
+  String syncConflictTitle(String name) {
+    return 'Sync Conflict: $name';
+  }
+
+  @override
+  String get syncConflictBody =>
+      'This record was modified on both devices since last sync.';
+
+  @override
+  String get syncConflictLocalVersion => 'Local version:';
+
+  @override
+  String get syncConflictRemoteVersion => 'Remote version:';
+
+  @override
+  String get syncConflictKeepLocal => 'Keep Local';
+
+  @override
+  String get syncConflictKeepRemote => 'Keep Remote';
 }

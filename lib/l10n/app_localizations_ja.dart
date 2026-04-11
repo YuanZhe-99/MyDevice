@@ -644,4 +644,84 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get searchGpuHint => 'GPUモデルを入力...';
+
+  @override
+  String get searchTemplatePlaceholder => '検索…';
+
+  @override
+  String get cpuPresetSearch => 'CPUを検索…';
+
+  @override
+  String get gpuPresetSearch => 'GPUを検索…';
+
+  @override
+  String get cpuArchHint => '例：ARM Cortex-A78、x86-64';
+
+  @override
+  String get cpuFreqHint => '例：3.5 GHz';
+
+  @override
+  String get cpuCacheHint => '例：L2 4MB / L3 32MB';
+
+  @override
+  String get gpuArchHint => '例：Ada Lovelace、RDNA 3';
+
+  @override
+  String get ramHint => '例：16';
+
+  @override
+  String get storageCapacityHint => '例：512';
+
+  @override
+  String get storageBrandHint => '例：Samsung、WD';
+
+  @override
+  String get screenSizeHint => '例：6.7\"';
+
+  @override
+  String get batteryHint => '例：5000 mAh';
+
+  @override
+  String get osHint => '例：Windows 11、Android 15';
+
+  @override
+  String get locationHint => '例：自宅、オフィス、東京DC';
+
+  @override
+  String get networkSubnetHint => '例：192.168.1.0/24、100.64.0.0/10';
+
+  @override
+  String get networkGatewayHint => '例：192.168.1.1';
+
+  @override
+  String get networkDnsHint => '例：8.8.8.8、1.1.1.1';
+
+  @override
+  String get networkIpHint => '例：192.168.1.100';
+
+  @override
+  String get networkHostnameHint => '例：my-server';
+
+  @override
+  String get backupModuleImages => '画像';
+
+  @override
+  String syncConflictTitle(String name) {
+    return '同期の競合：$name';
+  }
+
+  @override
+  String get syncConflictBody => 'このレコードは最後の同期以降、両端で変更されています。';
+
+  @override
+  String get syncConflictLocalVersion => 'ローカル版：';
+
+  @override
+  String get syncConflictRemoteVersion => 'リモート版：';
+
+  @override
+  String get syncConflictKeepLocal => 'ローカルを保持';
+
+  @override
+  String get syncConflictKeepRemote => 'リモートを保持';
 }

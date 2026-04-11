@@ -127,7 +127,7 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
               controller: _subnetCtrl,
               decoration: InputDecoration(
                 labelText: l10n.networkSubnet,
-                hintText: 'e.g. 192.168.1.0/24, 100.64.0.0/10',
+                hintText: l10n.networkSubnetHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -136,7 +136,7 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
               controller: _gatewayCtrl,
               decoration: InputDecoration(
                 labelText: l10n.networkGateway,
-                hintText: 'e.g. 192.168.1.1',
+                hintText: l10n.networkGatewayHint,
               ),
             ),
             const SizedBox(height: 12),
@@ -145,7 +145,7 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
               controller: _dnsCtrl,
               decoration: InputDecoration(
                 labelText: l10n.networkDns,
-                hintText: 'e.g. 8.8.8.8, 1.1.1.1',
+                hintText: l10n.networkDnsHint,
               ),
             ),
             const SizedBox(height: 12),

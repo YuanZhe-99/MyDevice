@@ -478,9 +478,9 @@ class _SearchDialogState extends State<_SearchDialog> {
             'releaseDate',
             l10n.deviceReleaseDate,
             widget.currentReleaseDate != null
-                ? DateFormat.yMd().format(widget.currentReleaseDate!)
+                ? DateFormat.yMd(l10n.localeName).format(widget.currentReleaseDate!)
                 : null,
-            DateFormat.yMd().format(r.releaseDate!),
+            DateFormat.yMd(l10n.localeName).format(r.releaseDate!),
           ),
         // Device image section
         if (r.imageUrl != null) ...[

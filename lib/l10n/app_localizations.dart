@@ -1354,6 +1354,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter GPU model...'**
   String get searchGpuHint;
+
+  /// No description provided for @searchTemplatePlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get searchTemplatePlaceholder;
+
+  /// No description provided for @cpuPresetSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search CPU...'**
+  String get cpuPresetSearch;
+
+  /// No description provided for @gpuPresetSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search GPU...'**
+  String get gpuPresetSearch;
+
+  /// No description provided for @cpuArchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. ARM Cortex-A78, x86-64'**
+  String get cpuArchHint;
+
+  /// No description provided for @cpuFreqHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 3.5 GHz'**
+  String get cpuFreqHint;
+
+  /// No description provided for @cpuCacheHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. L2 4MB / L3 32MB'**
+  String get cpuCacheHint;
+
+  /// No description provided for @gpuArchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Ada Lovelace, RDNA 3'**
+  String get gpuArchHint;
+
+  /// No description provided for @ramHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 16'**
+  String get ramHint;
+
+  /// No description provided for @storageCapacityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 512'**
+  String get storageCapacityHint;
+
+  /// No description provided for @storageBrandHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Samsung, WD'**
+  String get storageBrandHint;
+
+  /// No description provided for @screenSizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 6.7\"'**
+  String get screenSizeHint;
+
+  /// No description provided for @batteryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 5000 mAh'**
+  String get batteryHint;
+
+  /// No description provided for @osHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Windows 11, Android 15'**
+  String get osHint;
+
+  /// No description provided for @locationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Home, Office, Tokyo DC'**
+  String get locationHint;
+
+  /// No description provided for @networkSubnetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 192.168.1.0/24, 100.64.0.0/10'**
+  String get networkSubnetHint;
+
+  /// No description provided for @networkGatewayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 192.168.1.1'**
+  String get networkGatewayHint;
+
+  /// No description provided for @networkDnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 8.8.8.8, 1.1.1.1'**
+  String get networkDnsHint;
+
+  /// No description provided for @networkIpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 192.168.1.100'**
+  String get networkIpHint;
+
+  /// No description provided for @networkHostnameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. my-server'**
+  String get networkHostnameHint;
+
+  /// No description provided for @backupModuleImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Images'**
+  String get backupModuleImages;
+
+  /// No description provided for @syncConflictTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync Conflict: {name}'**
+  String syncConflictTitle(String name);
+
+  /// No description provided for @syncConflictBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This record was modified on both devices since last sync.'**
+  String get syncConflictBody;
+
+  /// No description provided for @syncConflictLocalVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Local version:'**
+  String get syncConflictLocalVersion;
+
+  /// No description provided for @syncConflictRemoteVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote version:'**
+  String get syncConflictRemoteVersion;
+
+  /// No description provided for @syncConflictKeepLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Local'**
+  String get syncConflictKeepLocal;
+
+  /// No description provided for @syncConflictKeepRemote.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Remote'**
+  String get syncConflictKeepRemote;
 }
 
 class _AppLocalizationsDelegate

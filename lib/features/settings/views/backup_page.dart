@@ -149,7 +149,8 @@ class _BackupPageState extends State<BackupPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final dateFormat = DateFormat.yMd().add_Hms();
+    final locale = Localizations.localeOf(context).toString();
+    final dateFormat = DateFormat.yMd(locale).add_Hms();
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.backupTitle)),
@@ -280,13 +281,6 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
   late final Set<String> _selected;
   bool _selectAll = true;
 
-  static const _moduleLabels = {
-    'devices': ('Devices', Icons.devices),
-    'networks': ('Networks', Icons.lan),
-    'datasets': ('Data Sets', Icons.folder_outlined),
-    'images': ('Images', Icons.image_outlined),
-  };
-
   @override
   void initState() {
     super.initState();
@@ -296,6 +290,12 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final moduleLabels = {
+      'devices': (l10n.backupModuleDevices, Icons.devices),
+      'networks': (l10n.backupModuleNetworks, Icons.lan),
+      'datasets': (l10n.backupModuleDatasets, Icons.folder_outlined),
+      'images': (l10n.backupModuleImages, Icons.image_outlined),
+    };
     return AlertDialog(
       title: Text(l10n.backupRestoreModules),
       content: Column(
@@ -317,7 +317,7 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
           ),
           const Divider(),
           ...widget.availableModules.map((m) {
-            final label = _moduleLabels[m];
+            final label = moduleLabels[m];
             return CheckboxListTile(
               secondary: Icon(label?.$2 ?? Icons.data_object),
               title: Text(label?.$1 ?? m),

@@ -256,5 +256,41 @@
   "searchCpuInfo": "Search CPU",
   "searchGpuInfo": "Search GPU",
   "searchCpuHint": "Enter CPU model...",
-  "searchGpuHint": "Enter GPU model..."
+  "searchGpuHint": "Enter GPU model...",
+
+  "searchTemplatePlaceholder": "Search...",
+  "cpuPresetSearch": "Search CPU...",
+  "gpuPresetSearch": "Search GPU...",
+
+  "cpuArchHint": "e.g. ARM Cortex-A78, x86-64",
+  "cpuFreqHint": "e.g. 3.5 GHz",
+  "cpuCacheHint": "e.g. L2 4MB / L3 32MB",
+  "gpuArchHint": "e.g. Ada Lovelace, RDNA 3",
+  "ramHint": "e.g. 16",
+  "storageCapacityHint": "e.g. 512",
+  "storageBrandHint": "e.g. Samsung, WD",
+  "screenSizeHint": "e.g. 6.7\"",
+  "batteryHint": "e.g. 5000 mAh",
+  "osHint": "e.g. Windows 11, Android 15",
+  "locationHint": "e.g. Home, Office, Tokyo DC",
+
+  "networkSubnetHint": "e.g. 192.168.1.0/24, 100.64.0.0/10",
+  "networkGatewayHint": "e.g. 192.168.1.1",
+  "networkDnsHint": "e.g. 8.8.8.8, 1.1.1.1",
+  "networkIpHint": "e.g. 192.168.1.100",
+  "networkHostnameHint": "e.g. my-server",
+
+  "backupModuleImages": "Images",
+
+  "syncConflictTitle": "Sync Conflict: {name}",
+  "@syncConflictTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "syncConflictBody": "This record was modified on both devices since last sync.",
+  "syncConflictLocalVersion": "Local version:",
+  "syncConflictRemoteVersion": "Remote version:",
+  "syncConflictKeepLocal": "Keep Local",
+  "syncConflictKeepRemote": "Keep Remote"
 }

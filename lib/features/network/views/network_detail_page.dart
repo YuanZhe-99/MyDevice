@@ -310,7 +310,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                   controller: ipCtrl,
                   decoration: InputDecoration(
                     labelText: l10n.networkIpAddress,
-                    hintText: 'e.g. 192.168.1.100',
+                    hintText: l10n.networkIpHint,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -318,7 +318,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                   controller: hostnameCtrl,
                   decoration: InputDecoration(
                     labelText: l10n.networkHostname,
-                    hintText: 'e.g. my-server',
+                    hintText: l10n.networkHostnameHint,
                   ),
                 ),
                 const SizedBox(height: 8),

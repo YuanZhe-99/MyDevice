@@ -256,5 +256,41 @@
   "searchCpuInfo": "搜尋 CPU",
   "searchGpuInfo": "搜尋 GPU",
   "searchCpuHint": "輸入 CPU 型號...",
-  "searchGpuHint": "輸入 GPU 型號..."
+  "searchGpuHint": "輸入 GPU 型號...",
+
+  "searchTemplatePlaceholder": "搜尋…",
+  "cpuPresetSearch": "搜尋 CPU…",
+  "gpuPresetSearch": "搜尋 GPU…",
+
+  "cpuArchHint": "例：ARM Cortex-A78、x86-64",
+  "cpuFreqHint": "例：3.5 GHz",
+  "cpuCacheHint": "例：L2 4MB / L3 32MB",
+  "gpuArchHint": "例：Ada Lovelace、RDNA 3",
+  "ramHint": "例：16",
+  "storageCapacityHint": "例：512",
+  "storageBrandHint": "例：Samsung、WD",
+  "screenSizeHint": "例：6.7\"",
+  "batteryHint": "例：5000 mAh",
+  "osHint": "例：Windows 11、Android 15",
+  "locationHint": "例：家、辦公室、東京機房",
+
+  "networkSubnetHint": "例：192.168.1.0/24、100.64.0.0/10",
+  "networkGatewayHint": "例：192.168.1.1",
+  "networkDnsHint": "例：8.8.8.8、1.1.1.1",
+  "networkIpHint": "例：192.168.1.100",
+  "networkHostnameHint": "例：my-server",
+
+  "backupModuleImages": "圖片",
+
+  "syncConflictTitle": "同步衝突：{name}",
+  "@syncConflictTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "syncConflictBody": "此記錄在上次同步後在兩端均有修改。",
+  "syncConflictLocalVersion": "本機版本：",
+  "syncConflictRemoteVersion": "遠端版本：",
+  "syncConflictKeepLocal": "保留本機",
+  "syncConflictKeepRemote": "保留遠端"
 }

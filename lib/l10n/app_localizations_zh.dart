@@ -644,6 +644,86 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get searchGpuHint => '输入 GPU 型号...';
+
+  @override
+  String get searchTemplatePlaceholder => '搜索…';
+
+  @override
+  String get cpuPresetSearch => '搜索 CPU…';
+
+  @override
+  String get gpuPresetSearch => '搜索 GPU…';
+
+  @override
+  String get cpuArchHint => '例：ARM Cortex-A78、x86-64';
+
+  @override
+  String get cpuFreqHint => '例：3.5 GHz';
+
+  @override
+  String get cpuCacheHint => '例：L2 4MB / L3 32MB';
+
+  @override
+  String get gpuArchHint => '例：Ada Lovelace、RDNA 3';
+
+  @override
+  String get ramHint => '例：16';
+
+  @override
+  String get storageCapacityHint => '例：512';
+
+  @override
+  String get storageBrandHint => '例：三星、WD';
+
+  @override
+  String get screenSizeHint => '例：6.7\"';
+
+  @override
+  String get batteryHint => '例：5000 mAh';
+
+  @override
+  String get osHint => '例：Windows 11、Android 15';
+
+  @override
+  String get locationHint => '例：家、办公室、东京机房';
+
+  @override
+  String get networkSubnetHint => '例：192.168.1.0/24、100.64.0.0/10';
+
+  @override
+  String get networkGatewayHint => '例：192.168.1.1';
+
+  @override
+  String get networkDnsHint => '例：8.8.8.8、1.1.1.1';
+
+  @override
+  String get networkIpHint => '例：192.168.1.100';
+
+  @override
+  String get networkHostnameHint => '例：my-server';
+
+  @override
+  String get backupModuleImages => '图片';
+
+  @override
+  String syncConflictTitle(String name) {
+    return '同步冲突：$name';
+  }
+
+  @override
+  String get syncConflictBody => '此记录在上次同步后在两端均有修改。';
+
+  @override
+  String get syncConflictLocalVersion => '本地版本：';
+
+  @override
+  String get syncConflictRemoteVersion => '远端版本：';
+
+  @override
+  String get syncConflictKeepLocal => '保留本地';
+
+  @override
+  String get syncConflictKeepRemote => '保留远端';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1286,4 +1366,84 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get searchGpuHint => '輸入 GPU 型號...';
+
+  @override
+  String get searchTemplatePlaceholder => '搜尋…';
+
+  @override
+  String get cpuPresetSearch => '搜尋 CPU…';
+
+  @override
+  String get gpuPresetSearch => '搜尋 GPU…';
+
+  @override
+  String get cpuArchHint => '例：ARM Cortex-A78、x86-64';
+
+  @override
+  String get cpuFreqHint => '例：3.5 GHz';
+
+  @override
+  String get cpuCacheHint => '例：L2 4MB / L3 32MB';
+
+  @override
+  String get gpuArchHint => '例：Ada Lovelace、RDNA 3';
+
+  @override
+  String get ramHint => '例：16';
+
+  @override
+  String get storageCapacityHint => '例：512';
+
+  @override
+  String get storageBrandHint => '例：Samsung、WD';
+
+  @override
+  String get screenSizeHint => '例：6.7\"';
+
+  @override
+  String get batteryHint => '例：5000 mAh';
+
+  @override
+  String get osHint => '例：Windows 11、Android 15';
+
+  @override
+  String get locationHint => '例：家、辦公室、東京機房';
+
+  @override
+  String get networkSubnetHint => '例：192.168.1.0/24、100.64.0.0/10';
+
+  @override
+  String get networkGatewayHint => '例：192.168.1.1';
+
+  @override
+  String get networkDnsHint => '例：8.8.8.8、1.1.1.1';
+
+  @override
+  String get networkIpHint => '例：192.168.1.100';
+
+  @override
+  String get networkHostnameHint => '例：my-server';
+
+  @override
+  String get backupModuleImages => '圖片';
+
+  @override
+  String syncConflictTitle(String name) {
+    return '同步衝突：$name';
+  }
+
+  @override
+  String get syncConflictBody => '此記錄在上次同步後在兩端均有修改。';
+
+  @override
+  String get syncConflictLocalVersion => '本機版本：';
+
+  @override
+  String get syncConflictRemoteVersion => '遠端版本：';
+
+  @override
+  String get syncConflictKeepLocal => '保留本機';
+
+  @override
+  String get syncConflictKeepRemote => '保留遠端';
 }

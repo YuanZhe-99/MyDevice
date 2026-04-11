@@ -246,5 +246,41 @@
   "searchCpuInfo": "搜索 CPU",
   "searchGpuInfo": "搜索 GPU",
   "searchCpuHint": "输入 CPU 型号...",
-  "searchGpuHint": "输入 GPU 型号..."
+  "searchGpuHint": "输入 GPU 型号...",
+
+  "searchTemplatePlaceholder": "搜索…",
+  "cpuPresetSearch": "搜索 CPU…",
+  "gpuPresetSearch": "搜索 GPU…",
+
+  "cpuArchHint": "例：ARM Cortex-A78、x86-64",
+  "cpuFreqHint": "例：3.5 GHz",
+  "cpuCacheHint": "例：L2 4MB / L3 32MB",
+  "gpuArchHint": "例：Ada Lovelace、RDNA 3",
+  "ramHint": "例：16",
+  "storageCapacityHint": "例：512",
+  "storageBrandHint": "例：三星、WD",
+  "screenSizeHint": "例：6.7\"",
+  "batteryHint": "例：5000 mAh",
+  "osHint": "例：Windows 11、Android 15",
+  "locationHint": "例：家、办公室、东京机房",
+
+  "networkSubnetHint": "例：192.168.1.0/24、100.64.0.0/10",
+  "networkGatewayHint": "例：192.168.1.1",
+  "networkDnsHint": "例：8.8.8.8、1.1.1.1",
+  "networkIpHint": "例：192.168.1.100",
+  "networkHostnameHint": "例：my-server",
+
+  "backupModuleImages": "图片",
+
+  "syncConflictTitle": "同步冲突：{name}",
+  "@syncConflictTitle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "syncConflictBody": "此记录在上次同步后在两端均有修改。",
+  "syncConflictLocalVersion": "本地版本：",
+  "syncConflictRemoteVersion": "远端版本：",
+  "syncConflictKeepLocal": "保留本地",
+  "syncConflictKeepRemote": "保留远端"
 }

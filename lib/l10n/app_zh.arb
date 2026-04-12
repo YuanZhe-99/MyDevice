@@ -286,5 +286,24 @@
   "syncConflictLocalVersion": "本地版本：",
   "syncConflictRemoteVersion": "远端版本：",
   "syncConflictKeepLocal": "保留本地",
-  "syncConflictKeepRemote": "保留远端"
+  "syncConflictKeepRemote": "保留远端",
+
+  "trayShow": "显示",
+  "trayQuit": "退出",
+  "settingsMinimizeToTray": "最小化到托盘",
+  "settingsCloseToTray": "关闭时最小化到托盘",
+  "settingsAutoStart": "开机自启",
+  "settingsApiServer": "API 服务器设置",
+  "settingsApiEnabled": "本地 API 服务器",
+  "settingsApiListenAddress": "监听地址",
+  "settingsApiPort": "端口",
+  "settingsApiUsername": "用户名",
+  "settingsApiPassword": "密码",
+  "settingsApiRunning": "正在端口 {port} 上运行",
+  "@settingsApiRunning": { "placeholders": { "port": { "type": "int" } } },
+  "settingsApiStopped": "已停止",
+  "settingsApiNeedCredentials": "监听非 localhost 时需设置用户名和密码",
+  "settingsApiRestarted": "API 服务器已在端口 {port} 上重启",
+  "@settingsApiRestarted": { "placeholders": { "port": { "type": "int" } } },
+  "settingsDesktop": "桌面端"
 }

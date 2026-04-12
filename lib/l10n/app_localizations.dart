@@ -1534,6 +1534,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep Remote'**
   String get syncConflictKeepRemote;
+
+  /// No description provided for @trayShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get trayShow;
+
+  /// No description provided for @trayQuit.
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get trayQuit;
+
+  /// No description provided for @settingsMinimizeToTray.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimize to Tray'**
+  String get settingsMinimizeToTray;
+
+  /// No description provided for @settingsCloseToTray.
+  ///
+  /// In en, this message translates to:
+  /// **'Close to Tray'**
+  String get settingsCloseToTray;
+
+  /// No description provided for @settingsAutoStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Launch at Startup'**
+  String get settingsAutoStart;
+
+  /// No description provided for @settingsApiServer.
+  ///
+  /// In en, this message translates to:
+  /// **'API Server Settings'**
+  String get settingsApiServer;
+
+  /// No description provided for @settingsApiEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Local API Server'**
+  String get settingsApiEnabled;
+
+  /// No description provided for @settingsApiListenAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Listen Address'**
+  String get settingsApiListenAddress;
+
+  /// No description provided for @settingsApiPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get settingsApiPort;
+
+  /// No description provided for @settingsApiUsername.
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get settingsApiUsername;
+
+  /// No description provided for @settingsApiPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get settingsApiPassword;
+
+  /// No description provided for @settingsApiRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running on port {port}'**
+  String settingsApiRunning(int port);
+
+  /// No description provided for @settingsApiStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get settingsApiStopped;
+
+  /// No description provided for @settingsApiNeedCredentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Set username and password before listening on non-localhost'**
+  String get settingsApiNeedCredentials;
+
+  /// No description provided for @settingsApiRestarted.
+  ///
+  /// In en, this message translates to:
+  /// **'API server restarted on port {port}'**
+  String settingsApiRestarted(int port);
+
+  /// No description provided for @settingsDesktop.
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop'**
+  String get settingsDesktop;
 }
 
 class _AppLocalizationsDelegate

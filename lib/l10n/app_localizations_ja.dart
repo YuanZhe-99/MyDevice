@@ -736,4 +736,57 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get syncConflictKeepRemote => 'リモートを保持';
+
+  @override
+  String get trayShow => '表示';
+
+  @override
+  String get trayQuit => '終了';
+
+  @override
+  String get settingsMinimizeToTray => 'トレイに最小化';
+
+  @override
+  String get settingsCloseToTray => '閉じるときトレイに格納';
+
+  @override
+  String get settingsAutoStart => '起動時に自動実行';
+
+  @override
+  String get settingsApiServer => 'APIサーバー設定';
+
+  @override
+  String get settingsApiEnabled => 'ローカルAPIサーバー';
+
+  @override
+  String get settingsApiListenAddress => 'リッスンアドレス';
+
+  @override
+  String get settingsApiPort => 'ポート';
+
+  @override
+  String get settingsApiUsername => 'ユーザー名';
+
+  @override
+  String get settingsApiPassword => 'パスワード';
+
+  @override
+  String settingsApiRunning(int port) {
+    return 'ポート$portで実行中';
+  }
+
+  @override
+  String get settingsApiStopped => '停止中';
+
+  @override
+  String get settingsApiNeedCredentials =>
+      'localhost以外でリッスンする場合、ユーザー名とパスワードを設定してください';
+
+  @override
+  String settingsApiRestarted(int port) {
+    return 'APIサーバーをポート$portで再起動しました';
+  }
+
+  @override
+  String get settingsDesktop => 'デスクトップ';
 }

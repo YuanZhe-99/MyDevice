@@ -284,5 +284,24 @@
   "syncConflictLocalVersion": "ローカル版：",
   "syncConflictRemoteVersion": "リモート版：",
   "syncConflictKeepLocal": "ローカルを保持",
-  "syncConflictKeepRemote": "リモートを保持"
+  "syncConflictKeepRemote": "リモートを保持",
+
+  "trayShow": "表示",
+  "trayQuit": "終了",
+  "settingsMinimizeToTray": "トレイに最小化",
+  "settingsCloseToTray": "閉じるときトレイに格納",
+  "settingsAutoStart": "起動時に自動実行",
+  "settingsApiServer": "APIサーバー設定",
+  "settingsApiEnabled": "ローカルAPIサーバー",
+  "settingsApiListenAddress": "リッスンアドレス",
+  "settingsApiPort": "ポート",
+  "settingsApiUsername": "ユーザー名",
+  "settingsApiPassword": "パスワード",
+  "settingsApiRunning": "ポート{port}で実行中",
+  "@settingsApiRunning": { "placeholders": { "port": { "type": "int" } } },
+  "settingsApiStopped": "停止中",
+  "settingsApiNeedCredentials": "localhost以外でリッスンする場合、ユーザー名とパスワードを設定してください",
+  "settingsApiRestarted": "APIサーバーをポート{port}で再起動しました",
+  "@settingsApiRestarted": { "placeholders": { "port": { "type": "int" } } },
+  "settingsDesktop": "デスクトップ"
 }

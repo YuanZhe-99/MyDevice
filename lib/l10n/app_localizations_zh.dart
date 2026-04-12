@@ -736,6 +736,58 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncConflictKeepRemote => '保留远端';
+
+  @override
+  String get trayShow => '显示';
+
+  @override
+  String get trayQuit => '退出';
+
+  @override
+  String get settingsMinimizeToTray => '最小化到托盘';
+
+  @override
+  String get settingsCloseToTray => '关闭时最小化到托盘';
+
+  @override
+  String get settingsAutoStart => '开机自启';
+
+  @override
+  String get settingsApiServer => 'API 服务器设置';
+
+  @override
+  String get settingsApiEnabled => '本地 API 服务器';
+
+  @override
+  String get settingsApiListenAddress => '监听地址';
+
+  @override
+  String get settingsApiPort => '端口';
+
+  @override
+  String get settingsApiUsername => '用户名';
+
+  @override
+  String get settingsApiPassword => '密码';
+
+  @override
+  String settingsApiRunning(int port) {
+    return '正在端口 $port 上运行';
+  }
+
+  @override
+  String get settingsApiStopped => '已停止';
+
+  @override
+  String get settingsApiNeedCredentials => '监听非 localhost 时需设置用户名和密码';
+
+  @override
+  String settingsApiRestarted(int port) {
+    return 'API 服务器已在端口 $port 上重启';
+  }
+
+  @override
+  String get settingsDesktop => '桌面端';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1470,4 +1522,56 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get syncConflictKeepRemote => '保留遠端';
+
+  @override
+  String get trayShow => '顯示';
+
+  @override
+  String get trayQuit => '結束';
+
+  @override
+  String get settingsMinimizeToTray => '最小化至系統匣';
+
+  @override
+  String get settingsCloseToTray => '關閉時最小化至系統匣';
+
+  @override
+  String get settingsAutoStart => '開機自動啟動';
+
+  @override
+  String get settingsApiServer => 'API 伺服器設定';
+
+  @override
+  String get settingsApiEnabled => '本機 API 伺服器';
+
+  @override
+  String get settingsApiListenAddress => '監聽位址';
+
+  @override
+  String get settingsApiPort => '連接埠';
+
+  @override
+  String get settingsApiUsername => '使用者名稱';
+
+  @override
+  String get settingsApiPassword => '密碼';
+
+  @override
+  String settingsApiRunning(int port) {
+    return '正在連接埠 $port 上執行';
+  }
+
+  @override
+  String get settingsApiStopped => '已停止';
+
+  @override
+  String get settingsApiNeedCredentials => '監聽非 localhost 時需設定使用者名稱和密碼';
+
+  @override
+  String settingsApiRestarted(int port) {
+    return 'API 伺服器已在連接埠 $port 上重啟';
+  }
+
+  @override
+  String get settingsDesktop => '桌面端';
 }

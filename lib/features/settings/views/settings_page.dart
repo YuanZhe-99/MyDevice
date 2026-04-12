@@ -4,11 +4,14 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/providers/app_settings.dart';
 import '../../../shared/services/import_export_service.dart';
+import '../../../shared/services/local_api_server.dart';
+import '../../../shared/services/tray_service.dart';
 import '../../../shared/views/webdav_config_page.dart';
 import '../../devices/services/device_storage.dart';
 import 'backup_page.dart';
@@ -25,12 +28,27 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _version = '';
   String _storagePath = '';
+  // Tray settings
+  bool _minimizeToTray = false;
+  bool _closeToTray = false;
+  bool _autoStart = false;
+  // API server settings
+  bool _apiEnabled = false;
+  int _apiPort = 7789;
+  String _apiListenAddress = 'localhost';
+  String _apiUsername = '';
+  String _apiPassword = '';
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
     _loadStoragePath();
+    if (_isDesktop) {
+      _loadTraySettings();
+      _loadAutoStartStatus();
+      _loadApiSettings();
+    }
   }
 
   Future<void> _loadStoragePath() async {
@@ -230,6 +248,111 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  Future<void> _loadTraySettings() async {
+    final config = await DeviceStorage.readConfig();
+    if (!mounted) return;
+    setState(() {
+      _minimizeToTray = config['minimizeToTray'] as bool? ?? false;
+      _closeToTray = config['closeToTray'] as bool? ?? false;
+    });
+  }
+
+  Future<void> _loadAutoStartStatus() async {
+    final enabled = await launchAtStartup.isEnabled();
+    if (!mounted) return;
+    setState(() => _autoStart = enabled);
+  }
+
+  Future<void> _loadApiSettings() async {
+    final config = await DeviceStorage.readConfig();
+    if (!mounted) return;
+    setState(() {
+      _apiEnabled = config['apiEnabled'] as bool? ?? false;
+      _apiPort = config['apiPort'] as int? ?? 7789;
+      _apiListenAddress = config['apiListenAddress'] as String? ?? 'localhost';
+      _apiUsername = config['apiUsername'] as String? ?? '';
+      _apiPassword = config['apiPassword'] as String? ?? '';
+    });
+  }
+
+  Future<void> _showApiSettingsDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final portCtrl = TextEditingController(text: _apiPort.toString());
+    final addrCtrl = TextEditingController(text: _apiListenAddress);
+    final userCtrl = TextEditingController(text: _apiUsername);
+    final passCtrl = TextEditingController(text: _apiPassword);
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.settingsApiServer),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: addrCtrl,
+              decoration:
+                  InputDecoration(labelText: l10n.settingsApiListenAddress),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: portCtrl,
+              decoration: InputDecoration(labelText: l10n.settingsApiPort),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: userCtrl,
+              decoration: InputDecoration(labelText: l10n.settingsApiUsername),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: passCtrl,
+              decoration: InputDecoration(labelText: l10n.settingsApiPassword),
+              obscureText: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+    if (saved != true || !mounted) return;
+
+    final newPort = int.tryParse(portCtrl.text.trim()) ?? 7789;
+    final newAddr =
+        addrCtrl.text.trim().isEmpty ? 'localhost' : addrCtrl.text.trim();
+    final newUser = userCtrl.text.trim();
+    final newPass = passCtrl.text.trim();
+    final config = await DeviceStorage.readConfig();
+    config['apiPort'] = newPort;
+    config['apiListenAddress'] = newAddr;
+    config['apiUsername'] = newUser.isEmpty ? null : newUser;
+    config['apiPassword'] = newPass.isEmpty ? null : newPass;
+    await DeviceStorage.writeConfig(config);
+    setState(() {
+      _apiPort = newPort;
+      _apiListenAddress = newAddr;
+      _apiUsername = newUser;
+      _apiPassword = newPass;
+    });
+    await LocalApiServer.restart();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(l10n.settingsApiRestarted(LocalApiServer.port))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -354,6 +477,81 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 onTap: _openDataFolder,
               ),
           ]),
+
+          // ── Desktop ──
+          if (_isDesktop)
+            _buildSection(l10n.settingsDesktop, [
+              SwitchListTile(
+                secondary: const Icon(Icons.minimize_outlined),
+                title: Text(l10n.settingsMinimizeToTray),
+                value: _minimizeToTray,
+                onChanged: (v) {
+                  setState(() => _minimizeToTray = v);
+                  TrayService.instance.setMinimizeToTray(v);
+                },
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.close_outlined),
+                title: Text(l10n.settingsCloseToTray),
+                value: _closeToTray,
+                onChanged: (v) {
+                  setState(() => _closeToTray = v);
+                  TrayService.instance.setCloseToTray(v);
+                },
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.login_outlined),
+                title: Text(l10n.settingsAutoStart),
+                value: _autoStart,
+                onChanged: (v) async {
+                  if (v) {
+                    await launchAtStartup.enable();
+                  } else {
+                    await launchAtStartup.disable();
+                  }
+                  setState(() => _autoStart = v);
+                },
+              ),
+              const Divider(height: 1, indent: 16, endIndent: 16),
+              SwitchListTile(
+                secondary: const Icon(Icons.dns_outlined),
+                title: Text(l10n.settingsApiEnabled),
+                subtitle: Text(
+                  LocalApiServer.isRunning
+                      ? l10n.settingsApiRunning(LocalApiServer.port)
+                      : LocalApiServer.lastError == 'credentials_required'
+                          ? l10n.settingsApiNeedCredentials
+                          : LocalApiServer.lastError != null
+                              ? '${l10n.settingsApiStopped} (${LocalApiServer.lastError})'
+                              : l10n.settingsApiStopped,
+                  style: !LocalApiServer.isRunning &&
+                          LocalApiServer.lastError != null
+                      ? TextStyle(
+                          color: Theme.of(context).colorScheme.error)
+                      : null,
+                ),
+                value: _apiEnabled,
+                onChanged: (v) async {
+                  final config = await DeviceStorage.readConfig();
+                  config['apiEnabled'] = v;
+                  await DeviceStorage.writeConfig(config);
+                  setState(() => _apiEnabled = v);
+                  if (v) {
+                    await LocalApiServer.start();
+                  } else {
+                    await LocalApiServer.stop();
+                  }
+                  if (mounted) setState(() {});
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.settings_outlined),
+                title: Text(l10n.settingsApiServer),
+                trailing: const Icon(Icons.chevron_right),
+                enabled: _apiEnabled,
+                onTap: _apiEnabled ? _showApiSettingsDialog : null,
+              ),
+            ]),
 
           // ── About ──
           _buildSection(l10n.settingsAbout, [

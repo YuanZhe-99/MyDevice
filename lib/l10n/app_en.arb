@@ -206,6 +206,8 @@
   "settingsWebDAVSyncing": "Syncing…",
   "settingsWebDAVSyncSuccess": "Sync completed",
   "settingsWebDAVSyncFailed": "Sync failed",
+  "settingsWebDAVSyncImageWarnings": "Sync completed, but {count} image(s) failed to transfer",
+  "@settingsWebDAVSyncImageWarnings": { "placeholders": { "count": { "type": "int" } } },
   "settingsWebDAVAutoSync": "Auto Sync",
   "settingsWebDAVAutoSyncDesc": "Sync automatically when data changes",
   "settingsWebDAVDisconnect": "Disconnect",

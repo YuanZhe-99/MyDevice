@@ -1109,6 +1109,12 @@ abstract class AppLocalizations {
   /// **'Sync failed'**
   String get settingsWebDAVSyncFailed;
 
+  /// No description provided for @settingsWebDAVSyncImageWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync completed, but {count} image(s) failed to transfer'**
+  String settingsWebDAVSyncImageWarnings(int count);
+
   /// No description provided for @settingsWebDAVAutoSync.
   ///
   /// In en, this message translates to:

@@ -206,6 +206,8 @@
   "settingsWebDAVSyncing": "同步中…",
   "settingsWebDAVSyncSuccess": "同步完成",
   "settingsWebDAVSyncFailed": "同步失敗",
+  "settingsWebDAVSyncImageWarnings": "同步完成，但{count}張圖片傳輸失敗",
+  "@settingsWebDAVSyncImageWarnings": { "placeholders": { "count": { "type": "int" } } },
   "settingsWebDAVAutoSync": "自動同步",
   "settingsWebDAVAutoSyncDesc": "資料變更時自動同步",
   "settingsWebDAVDisconnect": "中斷連線",

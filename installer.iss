@@ -1,7 +1,7 @@
 [Setup]
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 AppName=MyDevice!!!!!
-AppVersion=0.3.1
+AppVersion=0.3.2
 AppPublisher=yuanzhe
 AppPublisherURL=https://github.com/yuanzhe
 DefaultDirName={autopf}\MyDevice!!!!!
@@ -9,9 +9,9 @@ DefaultGroupName=MyDevice!!!!!
 UninstallDisplayIcon={app}\my_device.exe
 OutputDir=build\installer
 #ifdef ARM64
-OutputBaseFilename=MyDevice_0.3.1_arm64_Setup
+OutputBaseFilename=MyDevice_0.3.2_arm64_Setup
 #else
-OutputBaseFilename=MyDevice_0.3.1_Setup
+OutputBaseFilename=MyDevice_0.3.2_Setup
 #endif
 Compression=lzma2
 SolidCompression=yes

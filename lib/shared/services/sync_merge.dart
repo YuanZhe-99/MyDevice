@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../features/datasets/models/dataset.dart';
 import '../../features/devices/models/device.dart';
 import '../../features/network/models/network.dart';
+import '../utils/json_preservation.dart';
 
 // ─── Generic record merge ───────────────────────────────────────────
 
@@ -46,16 +47,20 @@ RecordMergeResult<T> mergeRecords<T>({
   required String Function(T) getId,
   required DateTime Function(T) getModifiedAt,
   required String Function(T) getDisplayName,
+  T Function(T primary, T secondary, T? base)? mergeUnknownFields,
   bool autoResolve = false,
 }) {
   final localMap = {for (final r in local) getId(r): r};
   final remoteMap = {for (final r in remote) getId(r): r};
-  final baseMap =
-      base != null ? {for (final r in base) getId(r): r} : <String, T>{};
+  final baseMap = base != null
+      ? {for (final r in base) getId(r): r}
+      : <String, T>{};
 
   final allIds = {...localMap.keys, ...remoteMap.keys, ...baseMap.keys};
   final merged = <T>[];
   final conflicts = <RecordConflict<T>>[];
+  T preserveUnknown(T primary, T secondary, T? base) =>
+      mergeUnknownFields?.call(primary, secondary, base) ?? primary;
 
   for (final id in allIds) {
     final l = localMap[id];
@@ -71,25 +76,31 @@ RecordMergeResult<T> mergeRecords<T>({
 
         if (localChanged && remoteChanged) {
           if (autoResolve) {
-            merged.add(getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r);
+            final primary = getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r;
+            final secondary = identical(primary, l) ? r : l;
+            merged.add(preserveUnknown(primary, secondary, b));
           } else {
-            conflicts.add(RecordConflict(
-              id: id,
-              localRecord: l,
-              remoteRecord: r,
-              displayName: getDisplayName(l),
-            ));
+            conflicts.add(
+              RecordConflict(
+                id: id,
+                localRecord: preserveUnknown(l, r, b),
+                remoteRecord: preserveUnknown(r, l, b),
+                displayName: getDisplayName(l),
+              ),
+            );
           }
         } else if (localChanged) {
-          merged.add(l);
+          merged.add(preserveUnknown(l, r, b));
         } else if (remoteChanged) {
-          merged.add(r);
+          merged.add(preserveUnknown(r, l, b));
         } else {
-          merged.add(l); // neither changed
+          merged.add(preserveUnknown(l, r, b)); // neither changed
         }
       } else {
         // No base — first sync or both added same ID
-        merged.add(getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r);
+        final primary = getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r;
+        final secondary = identical(primary, l) ? r : l;
+        merged.add(preserveUnknown(primary, secondary, null));
       }
     } else if (l != null && r == null) {
       if (b != null) {
@@ -132,10 +143,12 @@ List<NetworkDevice> mergeAssignments(
 
   final localMap = {for (final a in local) key(a): a};
   final remoteMap = {for (final a in remote) key(a): a};
-  final baseMap =
-      base != null ? {for (final a in base) key(a): a} : <String, NetworkDevice>{};
-  final baseContent =
-      base != null ? {for (final a in base) key(a): content(a)} : <String, String>{};
+  final baseMap = base != null
+      ? {for (final a in base) key(a): a}
+      : <String, NetworkDevice>{};
+  final baseContent = base != null
+      ? {for (final a in base) key(a): content(a)}
+      : <String, String>{};
 
   final allKeys = {...localMap.keys, ...remoteMap.keys, ...baseMap.keys};
   final merged = <NetworkDevice>[];
@@ -151,12 +164,12 @@ List<NetworkDevice> mergeAssignments(
         final remoteChanged = content(r) != baseContent[k];
         // Both changed → use local (no timestamp to pick winner)
         if (remoteChanged && !localChanged) {
-          merged.add(r);
+          merged.add(r.mergeUnknownFieldsFrom(l, base: b));
         } else {
-          merged.add(l);
+          merged.add(l.mergeUnknownFieldsFrom(r, base: b));
         }
       } else {
-        merged.add(l); // both new, use local
+        merged.add(l.mergeUnknownFieldsFrom(r)); // both new, use local
       }
     } else if (l != null && r == null) {
       if (b != null) {
@@ -184,8 +197,13 @@ List<NetworkDevice> mergeAssignments(
 class DeviceMergeResult {
   final List<Device> merged;
   final List<RecordConflict<Device>> conflicts;
+  final Map<String, dynamic> extraJson;
 
-  const DeviceMergeResult({required this.merged, this.conflicts = const []});
+  const DeviceMergeResult({
+    required this.merged,
+    this.conflicts = const [],
+    this.extraJson = const {},
+  });
 
   bool get hasConflicts => conflicts.isNotEmpty;
 
@@ -194,7 +212,7 @@ class DeviceMergeResult {
     for (final c in conflicts) {
       all.add(resolutions[c.id] ?? c.localRecord);
     }
-    return DeviceData(devices: all);
+    return DeviceData(devices: all, extraJson: extraJson);
   }
 }
 
@@ -204,13 +222,20 @@ DeviceMergeResult mergeDeviceData(
   String? baseJson, {
   bool autoResolve = false,
 }) {
-  final local =
-      DeviceData.fromJson(jsonDecode(localJson) as Map<String, dynamic>);
-  final remote =
-      DeviceData.fromJson(jsonDecode(remoteJson) as Map<String, dynamic>);
+  final local = DeviceData.fromJson(
+    jsonDecode(localJson) as Map<String, dynamic>,
+  );
+  final remote = DeviceData.fromJson(
+    jsonDecode(remoteJson) as Map<String, dynamic>,
+  );
   final base = baseJson != null
       ? DeviceData.fromJson(jsonDecode(baseJson) as Map<String, dynamic>)
       : null;
+  final extraJson = mergeUnknownJsonFields(
+    primary: local.extraJson,
+    secondary: remote.extraJson,
+    base: base?.extraJson,
+  );
 
   final result = mergeRecords<Device>(
     local: local.devices,
@@ -219,12 +244,15 @@ DeviceMergeResult mergeDeviceData(
     getId: (d) => d.id,
     getModifiedAt: (d) => d.modifiedAt,
     getDisplayName: (d) => d.name,
+    mergeUnknownFields: (primary, secondary, base) =>
+        primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
   );
 
   return DeviceMergeResult(
     merged: result.merged,
     conflicts: result.conflicts,
+    extraJson: extraJson,
   );
 }
 
@@ -234,11 +262,13 @@ class NetworkMergeResult {
   final List<Network> mergedNetworks;
   final List<NetworkDevice> mergedAssignments;
   final List<RecordConflict<Network>> conflicts;
+  final Map<String, dynamic> extraJson;
 
   const NetworkMergeResult({
     required this.mergedNetworks,
     required this.mergedAssignments,
     this.conflicts = const [],
+    this.extraJson = const {},
   });
 
   bool get hasConflicts => conflicts.isNotEmpty;
@@ -248,7 +278,11 @@ class NetworkMergeResult {
     for (final c in conflicts) {
       all.add(resolutions[c.id] ?? c.localRecord);
     }
-    return NetworkData(networks: all, assignments: mergedAssignments);
+    return NetworkData(
+      networks: all,
+      assignments: mergedAssignments,
+      extraJson: extraJson,
+    );
   }
 }
 
@@ -258,13 +292,20 @@ NetworkMergeResult mergeNetworkData(
   String? baseJson, {
   bool autoResolve = false,
 }) {
-  final local =
-      NetworkData.fromJson(jsonDecode(localJson) as Map<String, dynamic>);
-  final remote =
-      NetworkData.fromJson(jsonDecode(remoteJson) as Map<String, dynamic>);
+  final local = NetworkData.fromJson(
+    jsonDecode(localJson) as Map<String, dynamic>,
+  );
+  final remote = NetworkData.fromJson(
+    jsonDecode(remoteJson) as Map<String, dynamic>,
+  );
   final base = baseJson != null
       ? NetworkData.fromJson(jsonDecode(baseJson) as Map<String, dynamic>)
       : null;
+  final extraJson = mergeUnknownJsonFields(
+    primary: local.extraJson,
+    secondary: remote.extraJson,
+    base: base?.extraJson,
+  );
 
   final networkResult = mergeRecords<Network>(
     local: local.networks,
@@ -273,6 +314,8 @@ NetworkMergeResult mergeNetworkData(
     getId: (n) => n.id,
     getModifiedAt: (n) => n.modifiedAt,
     getDisplayName: (n) => n.name,
+    mergeUnknownFields: (primary, secondary, base) =>
+        primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
   );
 
@@ -286,6 +329,7 @@ NetworkMergeResult mergeNetworkData(
     mergedNetworks: networkResult.merged,
     mergedAssignments: assignmentResult,
     conflicts: networkResult.conflicts,
+    extraJson: extraJson,
   );
 }
 
@@ -294,8 +338,13 @@ NetworkMergeResult mergeNetworkData(
 class DataSetMergeResult {
   final List<DataSet> merged;
   final List<RecordConflict<DataSet>> conflicts;
+  final Map<String, dynamic> extraJson;
 
-  const DataSetMergeResult({required this.merged, this.conflicts = const []});
+  const DataSetMergeResult({
+    required this.merged,
+    this.conflicts = const [],
+    this.extraJson = const {},
+  });
 
   bool get hasConflicts => conflicts.isNotEmpty;
 
@@ -304,7 +353,7 @@ class DataSetMergeResult {
     for (final c in conflicts) {
       all.add(resolutions[c.id] ?? c.localRecord);
     }
-    return DataSetData(datasets: all);
+    return DataSetData(datasets: all, extraJson: extraJson);
   }
 }
 
@@ -314,13 +363,20 @@ DataSetMergeResult mergeDataSetData(
   String? baseJson, {
   bool autoResolve = false,
 }) {
-  final local =
-      DataSetData.fromJson(jsonDecode(localJson) as Map<String, dynamic>);
-  final remote =
-      DataSetData.fromJson(jsonDecode(remoteJson) as Map<String, dynamic>);
+  final local = DataSetData.fromJson(
+    jsonDecode(localJson) as Map<String, dynamic>,
+  );
+  final remote = DataSetData.fromJson(
+    jsonDecode(remoteJson) as Map<String, dynamic>,
+  );
   final base = baseJson != null
       ? DataSetData.fromJson(jsonDecode(baseJson) as Map<String, dynamic>)
       : null;
+  final extraJson = mergeUnknownJsonFields(
+    primary: local.extraJson,
+    secondary: remote.extraJson,
+    base: base?.extraJson,
+  );
 
   final result = mergeRecords<DataSet>(
     local: local.datasets,
@@ -329,11 +385,14 @@ DataSetMergeResult mergeDataSetData(
     getId: (d) => d.id,
     getModifiedAt: (d) => d.modifiedAt,
     getDisplayName: (d) => d.name,
+    mergeUnknownFields: (primary, secondary, base) =>
+        primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
   );
 
   return DataSetMergeResult(
     merged: result.merged,
     conflicts: result.conflicts,
+    extraJson: extraJson,
   );
 }

@@ -16,15 +16,16 @@ class AutoSyncService with WidgetsBindingObserver {
   static final instance = AutoSyncService._();
 
   Timer? _debounce;
+  Timer? _periodic;
   bool _started = false;
 
   static const _debounceDuration = Duration(seconds: 30);
+  static const _periodicDuration = Duration(minutes: 15);
 
   /// Callbacks invoked when sync writes merged data to local files.
   /// UI pages should register to reload their data.
   final List<void Function()> _onLocalDataChanged = [];
-  void addOnLocalDataChanged(void Function() cb) =>
-      _onLocalDataChanged.add(cb);
+  void addOnLocalDataChanged(void Function() cb) => _onLocalDataChanged.add(cb);
   void removeOnLocalDataChanged(void Function() cb) =>
       _onLocalDataChanged.remove(cb);
 
@@ -34,17 +35,21 @@ class AutoSyncService with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // Sync once on first launch
     _trySync();
+    _periodic = Timer.periodic(_periodicDuration, (_) => _trySync());
   }
 
   void stop() {
     _debounce?.cancel();
     _debounce = null;
+    _periodic?.cancel();
+    _periodic = null;
     WidgetsBinding.instance.removeObserver(this);
     _started = false;
   }
 
   /// Called by storage save methods to schedule a debounced sync.
   void notifySaved() {
+    if (!_started) return;
     _debounce?.cancel();
     _debounce = Timer(_debounceDuration, _trySync);
   }

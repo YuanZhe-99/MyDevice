@@ -9,6 +9,7 @@ import '../../datasets/services/dataset_storage.dart';
 import '../../network/models/network.dart';
 import '../../network/services/network_storage.dart';
 import '../models/device.dart';
+import '../../../shared/services/auto_sync_service.dart';
 
 class DeviceStorage {
   static const _dataFileName = 'device_data.json';
@@ -180,6 +181,7 @@ class DeviceStorage {
     final file = await _getFile(_dataFileName);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
     await file.writeAsString(jsonStr);
+    AutoSyncService.instance.notifySaved();
   }
 
   /// Add a new device or update an existing one (matched by id).
@@ -203,11 +205,15 @@ class DeviceStorage {
 
     // Remove network assignments referencing this device
     final netData = await NetworkStorage.load();
-    final cleanedAssignments =
-        netData.assignments.where((a) => a.deviceId != id).toList();
+    final cleanedAssignments = netData.assignments
+        .where((a) => a.deviceId != id)
+        .toList();
     if (cleanedAssignments.length != netData.assignments.length) {
       await NetworkStorage.save(
-        NetworkData(networks: netData.networks, assignments: cleanedAssignments),
+        NetworkData(
+          networks: netData.networks,
+          assignments: cleanedAssignments,
+        ),
       );
     }
 
@@ -215,8 +221,9 @@ class DeviceStorage {
     final dsData = await DataSetStorage.load();
     var dsChanged = false;
     final cleanedDatasets = dsData.datasets.map((ds) {
-      final filtered =
-          ds.storageLinks.where((link) => link.deviceId != id).toList();
+      final filtered = ds.storageLinks
+          .where((link) => link.deviceId != id)
+          .toList();
       if (filtered.length != ds.storageLinks.length) {
         dsChanged = true;
         return ds.copyWith(storageLinks: filtered);

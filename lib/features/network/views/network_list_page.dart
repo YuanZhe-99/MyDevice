@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/services/auto_sync_service.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/network.dart';
 import '../services/network_storage.dart';
@@ -26,7 +27,18 @@ class _NetworkListPageState extends State<NetworkListPage> {
   @override
   void initState() {
     super.initState();
+    AutoSyncService.instance.addOnLocalDataChanged(_handleLocalDataChanged);
     _loadSortPrefs().then((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
+    super.dispose();
+  }
+
+  void _handleLocalDataChanged() {
+    if (mounted) _load();
   }
 
   Future<void> _loadSortPrefs() async {
@@ -34,9 +46,8 @@ class _NetworkListPageState extends State<NetworkListPage> {
     final mode = config['networkSortMode'] as String?;
     final asc = config['networkSortAscending'] as bool? ?? false;
     setState(() {
-      _sortMode = NetworkSortMode.values
-              .where((e) => e.name == mode)
-              .firstOrNull ??
+      _sortMode =
+          NetworkSortMode.values.where((e) => e.name == mode).firstOrNull ??
           NetworkSortMode.custom;
       _sortAscending = asc;
     });
@@ -54,8 +65,8 @@ class _NetworkListPageState extends State<NetworkListPage> {
     if (_sortMode == NetworkSortMode.custom) return list;
     int Function(Network, Network) comparator;
     if (_sortMode == NetworkSortMode.alphabetical) {
-      comparator =
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      comparator = (a, b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase());
     } else {
       // subnet: nulls last
       comparator = (a, b) {
@@ -84,17 +95,18 @@ class _NetworkListPageState extends State<NetworkListPage> {
     setState(() {});
     final data = await NetworkStorage.load();
     await NetworkStorage.save(
-        NetworkData(networks: _networks, assignments: data.assignments));
+      NetworkData(networks: _networks, assignments: data.assignments),
+    );
   }
 
   IconData _typeIcon(NetworkType type) => switch (type) {
-        NetworkType.lan => Icons.router,
-        NetworkType.tailscale => Icons.vpn_lock,
-        NetworkType.zerotier => Icons.vpn_lock,
-        NetworkType.easytier => Icons.vpn_lock,
-        NetworkType.wireguard => Icons.vpn_lock,
-        NetworkType.other => Icons.lan,
-      };
+    NetworkType.lan => Icons.router,
+    NetworkType.tailscale => Icons.vpn_lock,
+    NetworkType.zerotier => Icons.vpn_lock,
+    NetworkType.easytier => Icons.vpn_lock,
+    NetworkType.wireguard => Icons.vpn_lock,
+    NetworkType.other => Icons.lan,
+  };
 
   static const _typeLogo = {
     NetworkType.tailscale: 'assets/logos/tailscale.svg',
@@ -103,13 +115,13 @@ class _NetworkListPageState extends State<NetworkListPage> {
   };
 
   String _typeLabel(AppLocalizations l10n, NetworkType type) => switch (type) {
-        NetworkType.lan => l10n.networkTypeLan,
-        NetworkType.tailscale => l10n.networkTypeTailscale,
-        NetworkType.zerotier => l10n.networkTypeZerotier,
-        NetworkType.easytier => l10n.networkTypeEasytier,
-        NetworkType.wireguard => l10n.networkTypeWireguard,
-        NetworkType.other => l10n.networkTypeOther,
-      };
+    NetworkType.lan => l10n.networkTypeLan,
+    NetworkType.tailscale => l10n.networkTypeTailscale,
+    NetworkType.zerotier => l10n.networkTypeZerotier,
+    NetworkType.easytier => l10n.networkTypeEasytier,
+    NetworkType.wireguard => l10n.networkTypeWireguard,
+    NetworkType.other => l10n.networkTypeOther,
+  };
 
   String _sortModeLabel(AppLocalizations l10n, NetworkSortMode mode) =>
       switch (mode) {
@@ -118,26 +130,36 @@ class _NetworkListPageState extends State<NetworkListPage> {
         NetworkSortMode.subnet => l10n.sortSubnet,
       };
 
-  Widget _buildNetworkCard(Network net, ColorScheme cs, AppLocalizations l10n,
-      {Widget? trailing}) {
+  Widget _buildNetworkCard(
+    Network net,
+    ColorScheme cs,
+    AppLocalizations l10n, {
+    Widget? trailing,
+  }) {
     final logo = _typeLogo[net.type];
     return Card(
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: cs.primaryContainer,
           child: logo != null
-              ? SvgPicture.asset(logo,
+              ? SvgPicture.asset(
+                  logo,
                   width: 24,
                   height: 24,
                   colorFilter: ColorFilter.mode(
-                      cs.onPrimaryContainer, BlendMode.srcIn))
+                    cs.onPrimaryContainer,
+                    BlendMode.srcIn,
+                  ),
+                )
               : Icon(_typeIcon(net.type), color: cs.onPrimaryContainer),
         ),
         title: Text(net.name),
-        subtitle: Text([
-          _typeLabel(l10n, net.type),
-          if (net.subnet != null) net.subnet,
-        ].join(' · ')),
+        subtitle: Text(
+          [
+            _typeLabel(l10n, net.type),
+            if (net.subnet != null) net.subnet,
+          ].join(' · '),
+        ),
         trailing: trailing ?? const Icon(Icons.chevron_right),
         onTap: trailing != null
             ? null
@@ -214,39 +236,41 @@ class _NetworkListPageState extends State<NetworkListPage> {
           ? Center(
               child: Padding(
                 padding: const EdgeInsets.all(32),
-                child: Text(l10n.noNetworks,
-                    style: TextStyle(color: cs.onSurfaceVariant)),
+                child: Text(
+                  l10n.noNetworks,
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
               ),
             )
           : _reordering
-              ? ReorderableListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: _networks.length,
-                  onReorder: _onReorder,
-                  itemBuilder: (context, index) {
-                    final net = _networks[index];
-                    return KeyedSubtree(
-                      key: ValueKey(net.id),
-                      child: _buildNetworkCard(
-                        net,
-                        cs,
-                        l10n,
-                        trailing: ReorderableDragStartListener(
-                          index: index,
-                          child: const Icon(Icons.drag_handle),
-                        ),
-                      ),
-                    );
-                  },
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(8),
-                  itemCount: _sortedNetworks.length,
-                  itemBuilder: (context, index) {
-                    final net = _sortedNetworks[index];
-                    return _buildNetworkCard(net, cs, l10n);
-                  },
-                ),
+          ? ReorderableListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: _networks.length,
+              onReorder: _onReorder,
+              itemBuilder: (context, index) {
+                final net = _networks[index];
+                return KeyedSubtree(
+                  key: ValueKey(net.id),
+                  child: _buildNetworkCard(
+                    net,
+                    cs,
+                    l10n,
+                    trailing: ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(Icons.drag_handle),
+                    ),
+                  ),
+                );
+              },
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: _sortedNetworks.length,
+              itemBuilder: (context, index) {
+                final net = _sortedNetworks[index];
+                return _buildNetworkCard(net, cs, l10n);
+              },
+            ),
       floatingActionButton: _reordering
           ? null
           : FloatingActionButton(

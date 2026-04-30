@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../../features/devices/services/device_storage.dart';
+import '../../../shared/services/auto_sync_service.dart';
 import '../models/network.dart';
 
 class NetworkStorage {
@@ -25,6 +26,7 @@ class NetworkStorage {
     final file = await _getFile();
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
     await file.writeAsString(jsonStr);
+    AutoSyncService.instance.notifySaved();
   }
 
   static Future<void> addOrUpdateNetwork(Network network) async {
@@ -42,16 +44,20 @@ class NetworkStorage {
   static Future<void> deleteNetwork(String id) async {
     final data = await load();
     final networks = data.networks.where((n) => n.id != id).toList();
-    final assignments = data.assignments.where((a) => a.networkId != id).toList();
+    final assignments = data.assignments
+        .where((a) => a.networkId != id)
+        .toList();
     await save(NetworkData(networks: networks, assignments: assignments));
   }
 
   static Future<void> setAssignment(NetworkDevice assignment) async {
     final data = await load();
     final assignments = List<NetworkDevice>.of(data.assignments);
-    final idx = assignments.indexWhere((a) =>
-        a.networkId == assignment.networkId &&
-        a.deviceId == assignment.deviceId);
+    final idx = assignments.indexWhere(
+      (a) =>
+          a.networkId == assignment.networkId &&
+          a.deviceId == assignment.deviceId,
+    );
     if (idx >= 0) {
       assignments[idx] = assignment;
     } else {
@@ -60,7 +66,10 @@ class NetworkStorage {
     await save(NetworkData(networks: data.networks, assignments: assignments));
   }
 
-  static Future<void> removeAssignment(String networkId, String deviceId) async {
+  static Future<void> removeAssignment(
+    String networkId,
+    String deviceId,
+  ) async {
     final data = await load();
     final assignments = data.assignments
         .where((a) => !(a.networkId == networkId && a.deviceId == deviceId))

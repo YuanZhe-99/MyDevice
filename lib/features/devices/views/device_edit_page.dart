@@ -110,21 +110,26 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _cpuModelCtrl = TextEditingController(text: d?.cpu.model ?? '');
     _cpuArchCtrl = TextEditingController(text: d?.cpu.architecture ?? '');
     _cpuFreqCtrl = TextEditingController(text: d?.cpu.frequency ?? '');
-    _cpuPCoresCtrl =
-        TextEditingController(text: d?.cpu.performanceCores?.toString() ?? '');
-    _cpuECoresCtrl =
-        TextEditingController(text: d?.cpu.efficiencyCores?.toString() ?? '');
-    _cpuThreadsCtrl =
-        TextEditingController(text: d?.cpu.threads?.toString() ?? '');
+    _cpuPCoresCtrl = TextEditingController(
+      text: d?.cpu.performanceCores?.toString() ?? '',
+    );
+    _cpuECoresCtrl = TextEditingController(
+      text: d?.cpu.efficiencyCores?.toString() ?? '',
+    );
+    _cpuThreadsCtrl = TextEditingController(
+      text: d?.cpu.threads?.toString() ?? '',
+    );
     _cpuCacheCtrl = TextEditingController(text: d?.cpu.cache ?? '');
 
     _gpuModelCtrl = TextEditingController(text: d?.gpu.model ?? '');
     _gpuArchCtrl = TextEditingController(text: d?.gpu.architecture ?? '');
 
-    _screenResWCtrl =
-        TextEditingController(text: d?.screenResolutionW?.toString() ?? '');
-    _screenResHCtrl =
-        TextEditingController(text: d?.screenResolutionH?.toString() ?? '');
+    _screenResWCtrl = TextEditingController(
+      text: d?.screenResolutionW?.toString() ?? '',
+    );
+    _screenResHCtrl = TextEditingController(
+      text: d?.screenResolutionH?.toString() ?? '',
+    );
 
     _category = d?.category ?? DeviceCategory.phone;
     _purchaseDate = d?.purchaseDate;
@@ -143,7 +148,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         _storageTypes.add(s.type);
         _storageInterfaces.add(s.interface_);
         _storageBrandCtrls.add(TextEditingController(text: s.brand ?? ''));
-        _storageSerialCtrls.add(TextEditingController(text: s.serialNumber ?? ''));
+        _storageSerialCtrls.add(
+          TextEditingController(text: s.serialNumber ?? ''),
+        );
       }
     } else {
       _storageEntries = [''];
@@ -180,8 +187,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _modelCtrl.dispose();
     _serialNumberCtrl.dispose();
     _ramCtrl.dispose();
-    for (final c in _storageBrandCtrls) c.dispose();
-    for (final c in _storageSerialCtrls) c.dispose();
+    for (final c in _storageBrandCtrls) {
+      c.dispose();
+    }
+    for (final c in _storageSerialCtrls) {
+      c.dispose();
+    }
     _screenSizeCtrl.dispose();
     _batteryCtrl.dispose();
     _osCtrl.dispose();
@@ -208,8 +219,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   static (String, String) _parseValueUnit(String? value) {
     if (value == null || value.trim().isEmpty) return ('', 'GB');
     final trimmed = value.trim();
-    final match = RegExp(r'^(\d+(?:\.\d+)?)\s*(MB|GB|TB)\b', caseSensitive: false)
-        .firstMatch(trimmed);
+    final match = RegExp(
+      r'^(\d+(?:\.\d+)?)\s*(MB|GB|TB)\b',
+      caseSensitive: false,
+    ).firstMatch(trimmed);
     if (match != null) {
       return (match.group(1)!, match.group(2)!.toUpperCase());
     }
@@ -222,8 +235,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     return '$v $unit';
   }
 
-  String? _nonEmpty(String value) =>
-      value.trim().isEmpty ? null : value.trim();
+  String? _nonEmpty(String value) => value.trim().isEmpty ? null : value.trim();
 
   int? _parseInt(String value) => int.tryParse(value.trim());
 
@@ -235,14 +247,24 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       final v = _storageEntries[i].trim();
       final brand = _nonEmpty(_storageBrandCtrls[i].text);
       final serial = _nonEmpty(_storageSerialCtrls[i].text);
-      if (v.isNotEmpty || _storageTypes[i] != null || _storageInterfaces[i] != null || brand != null || serial != null) {
-        storageList.add(StorageInfo(
-          capacity: v.isNotEmpty ? '$v ${_storageUnits[i]}' : null,
-          type: _storageTypes[i],
-          interface_: _storageInterfaces[i],
-          brand: brand,
-          serialNumber: serial,
-        ));
+      if (v.isNotEmpty ||
+          _storageTypes[i] != null ||
+          _storageInterfaces[i] != null ||
+          brand != null ||
+          serial != null) {
+        storageList.add(
+          StorageInfo(
+            capacity: v.isNotEmpty ? '$v ${_storageUnits[i]}' : null,
+            type: _storageTypes[i],
+            interface_: _storageInterfaces[i],
+            brand: brand,
+            serialNumber: serial,
+            extraJson:
+                widget.device != null && i < widget.device!.storage.length
+                ? widget.device!.storage[i].extraJson
+                : const {},
+          ),
+        );
       }
     }
 
@@ -263,10 +285,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         efficiencyCores: _parseInt(_cpuECoresCtrl.text),
         threads: _parseInt(_cpuThreadsCtrl.text),
         cache: _nonEmpty(_cpuCacheCtrl.text),
+        extraJson: widget.device?.cpu.extraJson ?? const {},
       ),
       gpu: GpuInfo(
         model: _nonEmpty(_gpuModelCtrl.text),
         architecture: _nonEmpty(_gpuArchCtrl.text),
+        extraJson: widget.device?.gpu.extraJson ?? const {},
       ),
       ram: _combineValueUnit(_ramCtrl.text, _ramUnit),
       ramType: _ramType,
@@ -282,6 +306,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       purchaseDate: _purchaseDate,
       releaseDate: _releaseDate,
       notes: _nonEmpty(_notesCtrl.text),
+      extraJson: widget.device?.extraJson ?? const {},
     );
 
     await DeviceStorage.addOrUpdate(device);
@@ -417,7 +442,8 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       currentChipset: _nonEmpty(_cpuModelCtrl.text),
       currentGpu: _nonEmpty(_gpuModelCtrl.text),
       currentRam: _combineValueUnit(_ramCtrl.text, _ramUnit),
-      currentStorage: _storageEntries.isNotEmpty && _storageEntries.first.trim().isNotEmpty
+      currentStorage:
+          _storageEntries.isNotEmpty && _storageEntries.first.trim().isNotEmpty
           ? '${_storageEntries.first.trim()} ${_storageUnits.first}'
           : null,
       currentScreenSize: _nonEmpty(_screenSizeCtrl.text),
@@ -554,10 +580,38 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   }
 
   static const _commonEmojis = [
-    '💻', '📱', '🖥️', '🎮', '🎧', '⌚', '📡', '🖨️',
-    '🔌', '💾', '📷', '🔧', '🛠️', '🏠', '🏢', '🌐',
-    '☁️', '🔒', '🎯', '⚡', '🚀', '🌟', '💡', '🔬',
-    '📊', '🎵', '🎬', '📺', '🕹️', '🤖', '📟', '🧮',
+    '💻',
+    '📱',
+    '🖥️',
+    '🎮',
+    '🎧',
+    '⌚',
+    '📡',
+    '🖨️',
+    '🔌',
+    '💾',
+    '📷',
+    '🔧',
+    '🛠️',
+    '🏠',
+    '🏢',
+    '🌐',
+    '☁️',
+    '🔒',
+    '🎯',
+    '⚡',
+    '🚀',
+    '🌟',
+    '💡',
+    '🔬',
+    '📊',
+    '🎵',
+    '🎬',
+    '📺',
+    '🕹️',
+    '🤖',
+    '📟',
+    '🧮',
   ];
 
   void _showEmojiPicker(AppLocalizations l10n) {
@@ -570,8 +624,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.deviceEmoji,
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                l10n.deviceEmoji,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
@@ -633,7 +689,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
           if (snap.hasData && snap.data!.existsSync()) {
             return ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.file(snap.data!, width: 40, height: 40, fit: BoxFit.cover),
+              child: Image.file(
+                snap.data!,
+                width: 40,
+                height: 40,
+                fit: BoxFit.cover,
+              ),
             );
           }
           return const Icon(Icons.image, size: 32);
@@ -662,7 +723,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               ),
               ActionChip(
                 avatar: const Icon(Icons.image, size: 18),
-                label: Text(_imagePath != null ? l10n.deviceChangeImage : l10n.devicePickImage),
+                label: Text(
+                  _imagePath != null
+                      ? l10n.deviceChangeImage
+                      : l10n.devicePickImage,
+                ),
                 onPressed: _pickImage,
               ),
               if (_emoji != null || _imagePath != null)
@@ -713,16 +778,18 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               initialValue: _category,
               decoration: InputDecoration(labelText: l10n.deviceCategory),
               items: DeviceCategory.values
-                  .map((cat) => DropdownMenuItem(
-                        value: cat,
-                        child: Row(
-                          children: [
-                            Icon(deviceCategoryIcon(cat), size: 20),
-                            const SizedBox(width: 8),
-                            Text(_categoryLabel(l10n, cat)),
-                          ],
-                        ),
-                      ))
+                  .map(
+                    (cat) => DropdownMenuItem(
+                      value: cat,
+                      child: Row(
+                        children: [
+                          Icon(deviceCategoryIcon(cat), size: 20),
+                          const SizedBox(width: 8),
+                          Text(_categoryLabel(l10n, cat)),
+                        ],
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _category = v);
@@ -734,8 +801,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               optionsBuilder: (textEditingValue) {
                 if (textEditingValue.text.isEmpty) return _brandPresets;
                 final query = textEditingValue.text.toLowerCase();
-                return _brandPresets
-                    .where((b) => b.name.toLowerCase().contains(query));
+                return _brandPresets.where(
+                  (b) => b.name.toLowerCase().contains(query),
+                );
               },
               displayStringForOption: (b) => b.name,
               fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
@@ -753,7 +821,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                   child: Material(
                     elevation: 4,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 240, maxWidth: 360),
+                      constraints: const BoxConstraints(
+                        maxHeight: 240,
+                        maxWidth: 360,
+                      ),
                       child: ListView.builder(
                         padding: EdgeInsets.zero,
                         shrinkWrap: true,
@@ -816,8 +887,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                   if (_purchaseDate != null)
                     IconButton(
                       icon: const Icon(Icons.clear),
-                      onPressed: () =>
-                          setState(() => _purchaseDate = null),
+                      onPressed: () => setState(() => _purchaseDate = null),
                     ),
                 ],
               ),
@@ -842,8 +912,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                   if (_releaseDate != null)
                     IconButton(
                       icon: const Icon(Icons.clear),
-                      onPressed: () =>
-                          setState(() => _releaseDate = null),
+                      onPressed: () => setState(() => _releaseDate = null),
                     ),
                 ],
               ),
@@ -856,9 +925,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               children: [
                 _brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text)),
                 Expanded(
-                  child: Text(l10n.cpuInfo,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(color: theme.colorScheme.primary)),
+                  child: Text(
+                    l10n.cpuInfo,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
                 if (AppFlavor.isFull)
                   IconButton(
@@ -880,8 +952,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               optionsBuilder: (textEditingValue) {
                 if (textEditingValue.text.isEmpty) return const [];
                 final query = textEditingValue.text.toLowerCase();
-                return _cpuPresets
-                    .where((c) => (c.model ?? '').toLowerCase().contains(query));
+                return _cpuPresets.where(
+                  (c) => (c.model ?? '').toLowerCase().contains(query),
+                );
               },
               displayStringForOption: (c) => c.model ?? '',
               fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
@@ -954,9 +1027,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               children: [
                 _brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text)),
                 Expanded(
-                  child: Text(l10n.gpuInfo,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(color: theme.colorScheme.primary)),
+                  child: Text(
+                    l10n.gpuInfo,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
                 if (AppFlavor.isFull)
                   IconButton(
@@ -978,8 +1054,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               optionsBuilder: (textEditingValue) {
                 if (textEditingValue.text.isEmpty) return const [];
                 final query = textEditingValue.text.toLowerCase();
-                return _gpuPresets
-                    .where((g) => (g.model ?? '').toLowerCase().contains(query));
+                return _gpuPresets.where(
+                  (g) => (g.model ?? '').toLowerCase().contains(query),
+                );
               },
               displayStringForOption: (g) => g.model ?? '',
               fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
@@ -1031,16 +1108,13 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<RamType>(
-              value: _ramType,
+              initialValue: _ramType,
               decoration: InputDecoration(
                 labelText: l10n.ramType,
                 isDense: true,
               ),
               items: [
-                DropdownMenuItem<RamType>(
-                  value: null,
-                  child: Text('-'),
-                ),
+                DropdownMenuItem<RamType>(value: null, child: Text('-')),
                 ...RamType.values.map(
                   (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
                 ),
@@ -1053,9 +1127,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
             Row(
               children: [
                 Expanded(
-                  child: Text(l10n.storage,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(color: theme.colorScheme.primary)),
+                  child: Text(
+                    l10n.storage,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline, size: 20),
@@ -1093,8 +1170,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                           value: _storageUnits[i],
                           underline: const SizedBox.shrink(),
                           items: _memoryUnits
-                              .map((u) => DropdownMenuItem(
-                                  value: u, child: Text(u)))
+                              .map(
+                                (u) =>
+                                    DropdownMenuItem(value: u, child: Text(u)),
+                              )
                               .toList(),
                           onChanged: (v) {
                             if (v != null) setState(() => _storageUnits[i] = v);
@@ -1102,7 +1181,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                         ),
                         if (_storageEntries.length > 1)
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline, size: 20),
+                            icon: const Icon(
+                              Icons.remove_circle_outline,
+                              size: 20,
+                            ),
                             onPressed: () => setState(() {
                               _storageBrandCtrls[i].dispose();
                               _storageSerialCtrls[i].dispose();
@@ -1121,21 +1203,26 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<StorageType?>(
-                            value: _storageTypes[i],
+                            initialValue: _storageTypes[i],
                             decoration: InputDecoration(
                               labelText: l10n.storageType,
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                             items: [
                               DropdownMenuItem<StorageType?>(
-                                  value: null, child: Text('-')),
-                              ...StorageType.values.map((t) =>
-                                  DropdownMenuItem(
-                                    value: t,
-                                    child: Text(_storageTypeLabel(l10n, t)),
-                                  )),
+                                value: null,
+                                child: Text('-'),
+                              ),
+                              ...StorageType.values.map(
+                                (t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(_storageTypeLabel(l10n, t)),
+                                ),
+                              ),
                             ],
                             onChanged: (v) =>
                                 setState(() => _storageTypes[i] = v),
@@ -1144,21 +1231,26 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: DropdownButtonFormField<StorageInterface?>(
-                            value: _storageInterfaces[i],
+                            initialValue: _storageInterfaces[i],
                             decoration: InputDecoration(
                               labelText: l10n.storageInterface,
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                             ),
                             items: [
                               DropdownMenuItem<StorageInterface?>(
-                                  value: null, child: Text('-')),
-                              ...StorageInterface.values.map((t) =>
-                                  DropdownMenuItem(
-                                    value: t,
-                                    child: Text(_storageInterfaceLabel(l10n, t)),
-                                  )),
+                                value: null,
+                                child: Text('-'),
+                              ),
+                              ...StorageInterface.values.map(
+                                (t) => DropdownMenuItem(
+                                  value: t,
+                                  child: Text(_storageInterfaceLabel(l10n, t)),
+                                ),
+                              ),
                             ],
                             onChanged: (v) =>
                                 setState(() => _storageInterfaces[i] = v),
@@ -1234,28 +1326,31 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                 ),
               ],
             ),
-            Builder(builder: (context) {
-              final w = int.tryParse(_screenResWCtrl.text.trim());
-              final h = int.tryParse(_screenResHCtrl.text.trim());
-              if (w == null || h == null) return const SizedBox.shrink();
-              final tempDevice = Device(
-                name: '',
-                category: _category,
-                screenSize: _nonEmpty(_screenSizeCtrl.text),
-                screenResolutionW: w,
-                screenResolutionH: h,
-              );
-              final ppi = tempDevice.ppi;
-              if (ppi == null) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '${l10n.ppi}: ${ppi.toStringAsFixed(0)}',
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.secondary),
-                ),
-              );
-            }),
+            Builder(
+              builder: (context) {
+                final w = int.tryParse(_screenResWCtrl.text.trim());
+                final h = int.tryParse(_screenResHCtrl.text.trim());
+                if (w == null || h == null) return const SizedBox.shrink();
+                final tempDevice = Device(
+                  name: '',
+                  category: _category,
+                  screenSize: _nonEmpty(_screenSizeCtrl.text),
+                  screenResolutionW: w,
+                  screenResolutionH: h,
+                );
+                final ppi = tempDevice.ppi;
+                if (ppi == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '${l10n.ppi}: ${ppi.toStringAsFixed(0)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                );
+              },
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _batteryCtrl,
@@ -1286,11 +1381,16 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                     final initial = (_latitude != null && _longitude != null)
                         ? LatLng(_latitude!, _longitude!)
                         : null;
-                    final result = await Navigator.of(context, rootNavigator: true).push<LatLng>(
-                      MaterialPageRoute(
-                        builder: (_) => MapPickerPage(initialPosition: initial),
-                      ),
-                    );
+                    final result =
+                        await Navigator.of(
+                          context,
+                          rootNavigator: true,
+                        ).push<LatLng>(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                MapPickerPage(initialPosition: initial),
+                          ),
+                        );
                     if (result != null && mounted) {
                       setState(() {
                         _latitude = result.latitude;
@@ -1307,8 +1407,8 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                 child: Text(
                   '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
 

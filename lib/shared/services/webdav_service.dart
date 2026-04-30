@@ -32,36 +32,38 @@ class WebDAVConfig {
       serverUrl.isNotEmpty && username.isNotEmpty && password.isNotEmpty;
 
   WebDAVConfig copyWith({bool? autoSync}) => WebDAVConfig(
-        serverUrl: serverUrl,
-        username: username,
-        password: password,
-        remotePath: remotePath,
-        autoSync: autoSync ?? this.autoSync,
-      );
+    serverUrl: serverUrl,
+    username: username,
+    password: password,
+    remotePath: remotePath,
+    autoSync: autoSync ?? this.autoSync,
+  );
 
   Map<String, dynamic> toJson() => {
-        'serverUrl': serverUrl,
-        'username': username,
-        'password': password,
-        'remotePath': remotePath,
-        'autoSync': autoSync,
-      };
+    'serverUrl': serverUrl,
+    'username': username,
+    'password': password,
+    'remotePath': remotePath,
+    'autoSync': autoSync,
+  };
 
   factory WebDAVConfig.fromJson(Map<String, dynamic> json) => WebDAVConfig(
-        serverUrl: json['serverUrl'] as String? ?? '',
-        username: json['username'] as String? ?? '',
-        password: json['password'] as String? ?? '',
-        remotePath: json['remotePath'] as String? ?? '/MyDevice',
-        autoSync: json['autoSync'] as bool? ?? false,
-      );
+    serverUrl: json['serverUrl'] as String? ?? '',
+    username: json['username'] as String? ?? '',
+    password: json['password'] as String? ?? '',
+    remotePath: json['remotePath'] as String? ?? '/MyDevice',
+    autoSync: json['autoSync'] as bool? ?? false,
+  );
 
   factory WebDAVConfig.nextcloud(
-          String host, String username, String password) =>
-      WebDAVConfig(
-        serverUrl: 'https://$host/remote.php/dav/files/$username',
-        username: username,
-        password: password,
-      );
+    String host,
+    String username,
+    String password,
+  ) => WebDAVConfig(
+    serverUrl: 'https://$host/remote.php/dav/files/$username',
+    username: username,
+    password: password,
+  );
 }
 
 /// Result of a sync operation.
@@ -69,6 +71,7 @@ class SyncResult {
   final bool success;
   final String? error;
   final PendingSync? pending;
+
   /// Non-fatal warnings collected during sync (e.g. individual image failures).
   final List<String> warnings;
 
@@ -91,10 +94,10 @@ class PendingSync {
   const PendingSync({this.deviceMerge, this.networkMerge, this.dataSetMerge});
 
   List<RecordConflict> get allConflicts => [
-        ...?deviceMerge?.conflicts,
-        ...?networkMerge?.conflicts,
-        ...?dataSetMerge?.conflicts,
-      ];
+    ...?deviceMerge?.conflicts,
+    ...?networkMerge?.conflicts,
+    ...?dataSetMerge?.conflicts,
+  ];
 }
 
 class WebDAVService {
@@ -185,8 +188,9 @@ class WebDAVService {
   // ── HTTP helpers ──
 
   static Map<String, String> _authHeaders(WebDAVConfig config) {
-    final creds =
-        base64Encode(utf8.encode('${config.username}:${config.password}'));
+    final creds = base64Encode(
+      utf8.encode('${config.username}:${config.password}'),
+    );
     return {'Authorization': 'Basic $creds'};
   }
 
@@ -235,7 +239,10 @@ class WebDAVService {
   }
 
   static Future<bool> _upload(
-      WebDAVConfig config, String fileName, String content) async {
+    WebDAVConfig config,
+    String fileName,
+    String content,
+  ) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, fileName));
       final response = await http
@@ -254,8 +261,7 @@ class WebDAVService {
     }
   }
 
-  static Future<String?> _download(
-      WebDAVConfig config, String fileName) async {
+  static Future<String?> _download(WebDAVConfig config, String fileName) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, fileName));
       final response = await http
@@ -271,7 +277,10 @@ class WebDAVService {
   // ── Binary upload / download for images ──
 
   static Future<bool> _uploadBytes(
-      WebDAVConfig config, String remotePath, Uint8List bytes) async {
+    WebDAVConfig config,
+    String remotePath,
+    Uint8List bytes,
+  ) async {
     final url = Uri.parse(_remoteFileUrl(config, remotePath));
     final response = await http
         .put(
@@ -290,7 +299,9 @@ class WebDAVService {
   }
 
   static Future<Uint8List?> _downloadBytes(
-      WebDAVConfig config, String remotePath) async {
+    WebDAVConfig config,
+    String remotePath,
+  ) async {
     final url = Uri.parse(_remoteFileUrl(config, remotePath));
     final response = await http
         .get(url, headers: _authHeaders(config))
@@ -300,7 +311,9 @@ class WebDAVService {
   }
 
   static Future<void> _ensureRemoteSubDir(
-      WebDAVConfig config, String subDir) async {
+    WebDAVConfig config,
+    String subDir,
+  ) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, '$subDir/'));
       final request = http.Request('MKCOL', url);
@@ -311,7 +324,9 @@ class WebDAVService {
 
   /// List file names in a remote sub-directory via PROPFIND.
   static Future<Set<String>> _listRemoteFiles(
-      WebDAVConfig config, String subDir) async {
+    WebDAVConfig config,
+    String subDir,
+  ) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, '$subDir/'));
       final request = http.Request('PROPFIND', url);
@@ -328,7 +343,10 @@ class WebDAVService {
 
       final body = await streamed.stream.bytesToString();
       // Parse <d:href> entries; skip the directory itself
-      final hrefPattern = RegExp(r'<(?:\w+:)?href>([^<]+)</(?:\w+:)?href>', caseSensitive: false);
+      final hrefPattern = RegExp(
+        r'<(?:\w+:)?href>([^<]+)</(?:\w+:)?href>',
+        caseSensitive: false,
+      );
       final names = <String>{};
       for (final m in hrefPattern.allMatches(body)) {
         final href = Uri.decodeFull(m.group(1)!);
@@ -347,7 +365,8 @@ class WebDAVService {
     if (json == null) return {};
     try {
       final data = DeviceData.fromJson(
-          jsonDecode(json) as Map<String, dynamic>);
+        jsonDecode(json) as Map<String, dynamic>,
+      );
       return data.devices
           .map((d) => d.imagePath)
           .whereType<String>()
@@ -365,9 +384,10 @@ class WebDAVService {
   ///
   /// Returns a list of non-fatal error strings for individual transfer failures.
   static Future<List<String>> _syncImages(
-      WebDAVConfig config,
-      Directory appDir,
-      Set<String> referencedImages) async {
+    WebDAVConfig config,
+    Directory appDir,
+    Set<String> referencedImages,
+  ) async {
     final errors = <String>[];
     if (referencedImages.isEmpty) return errors;
 
@@ -429,11 +449,15 @@ class WebDAVService {
   ///
   /// When [autoResolve] is true, conflicts are resolved automatically using
   /// last-writer-wins per record. Used by auto-sync to prevent blocking.
-  static Future<SyncResult> sync(WebDAVConfig config,
-      {bool autoResolve = false}) async {
+  static Future<SyncResult> sync(
+    WebDAVConfig config, {
+    bool autoResolve = false,
+  }) async {
     if (_syncing) {
       return const SyncResult(
-          success: false, error: 'Sync already in progress');
+        success: false,
+        error: 'Sync already in progress',
+      );
     }
     _syncing = true;
     try {
@@ -487,7 +511,9 @@ class WebDAVService {
           switch (name) {
             case 'device_data.json':
               var result = mergeDeviceData(
-                localRaw, remoteRaw!, baseJson,
+                localRaw,
+                remoteRaw!,
+                baseJson,
                 autoResolve: autoResolve,
               );
               if (!result.hasConflicts) {
@@ -495,7 +521,9 @@ class WebDAVService {
                 final freshLocalRaw = await localFile.readAsString();
                 if (freshLocalRaw != localRaw) {
                   result = mergeDeviceData(
-                    freshLocalRaw, remoteRaw, baseJson,
+                    freshLocalRaw,
+                    remoteRaw,
+                    baseJson,
                     autoResolve: autoResolve,
                   );
                 }
@@ -503,9 +531,13 @@ class WebDAVService {
               if (result.hasConflicts) {
                 pendingDevice = result;
               } else {
-                final mergedData = DeviceData(devices: result.merged);
-                final mergedJson =
-                    const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+                final mergedData = DeviceData(
+                  devices: result.merged,
+                  extraJson: result.extraJson,
+                );
+                final mergedJson = const JsonEncoder.withIndent(
+                  '  ',
+                ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 final uploaded = await _upload(config, name, mergedJson);
                 if (uploaded) await _saveBase(name, mergedJson);
@@ -515,14 +547,18 @@ class WebDAVService {
               }
             case 'network_data.json':
               var result = mergeNetworkData(
-                localRaw, remoteRaw!, baseJson,
+                localRaw,
+                remoteRaw!,
+                baseJson,
                 autoResolve: autoResolve,
               );
               if (!result.hasConflicts) {
                 final freshLocalRaw = await localFile.readAsString();
                 if (freshLocalRaw != localRaw) {
                   result = mergeNetworkData(
-                    freshLocalRaw, remoteRaw, baseJson,
+                    freshLocalRaw,
+                    remoteRaw,
+                    baseJson,
                     autoResolve: autoResolve,
                   );
                 }
@@ -533,9 +569,11 @@ class WebDAVService {
                 final mergedData = NetworkData(
                   networks: result.mergedNetworks,
                   assignments: result.mergedAssignments,
+                  extraJson: result.extraJson,
                 );
-                final mergedJson =
-                    const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+                final mergedJson = const JsonEncoder.withIndent(
+                  '  ',
+                ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 final uploaded = await _upload(config, name, mergedJson);
                 if (uploaded) await _saveBase(name, mergedJson);
@@ -543,14 +581,18 @@ class WebDAVService {
               }
             case 'dataset_data.json':
               var result = mergeDataSetData(
-                localRaw, remoteRaw!, baseJson,
+                localRaw,
+                remoteRaw!,
+                baseJson,
                 autoResolve: autoResolve,
               );
               if (!result.hasConflicts) {
                 final freshLocalRaw = await localFile.readAsString();
                 if (freshLocalRaw != localRaw) {
                   result = mergeDataSetData(
-                    freshLocalRaw, remoteRaw, baseJson,
+                    freshLocalRaw,
+                    remoteRaw,
+                    baseJson,
                     autoResolve: autoResolve,
                   );
                 }
@@ -558,9 +600,13 @@ class WebDAVService {
               if (result.hasConflicts) {
                 pendingDataSet = result;
               } else {
-                final mergedData = DataSetData(datasets: result.merged);
-                final mergedJson =
-                    const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+                final mergedData = DataSetData(
+                  datasets: result.merged,
+                  extraJson: result.extraJson,
+                );
+                final mergedJson = const JsonEncoder.withIndent(
+                  '  ',
+                ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 final uploaded = await _upload(config, name, mergedJson);
                 if (uploaded) await _saveBase(name, mergedJson);
@@ -627,9 +673,12 @@ class WebDAVService {
           final chosen = resolutions[c.id];
           if (chosen is Device) deviceResolutions[c.id] = chosen;
         }
-        final mergedData = pending.deviceMerge!.buildResolved(deviceResolutions);
-        final mergedJson =
-            const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
+        final mergedData = pending.deviceMerge!.buildResolved(
+          deviceResolutions,
+        );
+        final mergedJson = const JsonEncoder.withIndent(
+          '  ',
+        ).convert(mergedData.toJson());
         await _atomicWrite(File('${appDir.path}/device_data.json'), mergedJson);
         final uploaded = await _upload(config, 'device_data.json', mergedJson);
         if (uploaded) await _saveBase('device_data.json', mergedJson);
@@ -641,11 +690,16 @@ class WebDAVService {
           final chosen = resolutions[c.id];
           if (chosen is Network) networkResolutions[c.id] = chosen;
         }
-        final mergedData =
-            pending.networkMerge!.buildResolved(networkResolutions);
-        final mergedJson =
-            const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-        await _atomicWrite(File('${appDir.path}/network_data.json'), mergedJson);
+        final mergedData = pending.networkMerge!.buildResolved(
+          networkResolutions,
+        );
+        final mergedJson = const JsonEncoder.withIndent(
+          '  ',
+        ).convert(mergedData.toJson());
+        await _atomicWrite(
+          File('${appDir.path}/network_data.json'),
+          mergedJson,
+        );
         final uploaded = await _upload(config, 'network_data.json', mergedJson);
         if (uploaded) await _saveBase('network_data.json', mergedJson);
       }
@@ -656,11 +710,16 @@ class WebDAVService {
           final chosen = resolutions[c.id];
           if (chosen is DataSet) dataSetResolutions[c.id] = chosen;
         }
-        final mergedData =
-            pending.dataSetMerge!.buildResolved(dataSetResolutions);
-        final mergedJson =
-            const JsonEncoder.withIndent('  ').convert(mergedData.toJson());
-        await _atomicWrite(File('${appDir.path}/dataset_data.json'), mergedJson);
+        final mergedData = pending.dataSetMerge!.buildResolved(
+          dataSetResolutions,
+        );
+        final mergedJson = const JsonEncoder.withIndent(
+          '  ',
+        ).convert(mergedData.toJson());
+        await _atomicWrite(
+          File('${appDir.path}/dataset_data.json'),
+          mergedJson,
+        );
         final uploaded = await _upload(config, 'dataset_data.json', mergedJson);
         if (uploaded) await _saveBase('dataset_data.json', mergedJson);
       }

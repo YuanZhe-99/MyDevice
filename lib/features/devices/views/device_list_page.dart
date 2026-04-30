@@ -34,7 +34,18 @@ class _DeviceListPageState extends State<DeviceListPage> {
   @override
   void initState() {
     super.initState();
+    AutoSyncService.instance.addOnLocalDataChanged(_handleLocalDataChanged);
     _loadSortPrefs().then((_) => _loadDevices());
+  }
+
+  @override
+  void dispose() {
+    AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
+    super.dispose();
+  }
+
+  void _handleLocalDataChanged() {
+    if (mounted) _loadDevices();
   }
 
   Future<void> _loadSortPrefs() async {
@@ -43,7 +54,8 @@ class _DeviceListPageState extends State<DeviceListPage> {
     final group = config['groupByCategory'] as bool? ?? false;
     final asc = config['sortAscending'] as bool? ?? false;
     setState(() {
-      _sortMode = SortMode.values.where((e) => e.name == mode).firstOrNull ??
+      _sortMode =
+          SortMode.values.where((e) => e.name == mode).firstOrNull ??
           SortMode.custom;
       _groupByCategory = group;
       _sortAscending = asc;
@@ -75,7 +87,8 @@ class _DeviceListPageState extends State<DeviceListPage> {
     }
     int Function(Device, Device) comparator;
     if (_sortMode == SortMode.alphabetical) {
-      comparator = (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      comparator = (a, b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase());
     } else if (_sortMode == SortMode.releaseDate) {
       // releaseDate: nulls last
       comparator = (a, b) {
@@ -118,9 +131,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
   }
 
   Future<void> _addDevice() async {
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(builder: (_) => const DeviceEditPage()),
-    );
+    await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => const DeviceEditPage()));
     await _loadDevices();
   }
 
@@ -128,29 +142,24 @@ class _DeviceListPageState extends State<DeviceListPage> {
     final result = await showDeviceSearchDialog(context);
     if (result == null || !mounted) return;
     await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => DeviceEditPage(searchResult: result),
-      ),
+      MaterialPageRoute(builder: (_) => DeviceEditPage(searchResult: result)),
     );
     await _loadDevices();
   }
 
   Future<void> _editDevice(Device device) async {
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (_) => DeviceEditPage(device: device),
-      ),
-    );
+    await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => DeviceEditPage(device: device)));
     await _loadDevices();
   }
 
   Future<void> _viewDevice(Device device) async {
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (_) => DeviceDetailPage(
-          device: device,
-          onDeviceChanged: () {},
-        ),
+        builder: (_) =>
+            DeviceDetailPage(device: device, onDeviceChanged: () {}),
       ),
     );
     await _loadDevices();
@@ -195,12 +204,12 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (template != null && mounted) {
       final cpus = await PresetService.loadCpus();
       final gpus = await PresetService.loadGpus();
+      if (!mounted) return;
       final device = template.toDevice(cpuPresets: cpus, gpuPresets: gpus);
-      await Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (_) => DeviceEditPage(device: device),
-        ),
-      );
+      await Navigator.of(
+        context,
+        rootNavigator: true,
+      ).push(MaterialPageRoute(builder: (_) => DeviceEditPage(device: device)));
       await _loadDevices();
     }
   }
@@ -223,11 +232,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
   }
 
   String _sortModeLabel(AppLocalizations l10n, SortMode mode) => switch (mode) {
-        SortMode.custom => l10n.sortCustom,
-        SortMode.alphabetical => l10n.sortAlphabetical,
-        SortMode.purchaseDate => l10n.sortPurchaseDate,
-        SortMode.releaseDate => l10n.sortReleaseDate,
-      };
+    SortMode.custom => l10n.sortCustom,
+    SortMode.alphabetical => l10n.sortAlphabetical,
+    SortMode.purchaseDate => l10n.sortPurchaseDate,
+    SortMode.releaseDate => l10n.sortReleaseDate,
+  };
 
   void _setSortMode(SortMode mode) {
     setState(() => _sortMode = mode);
@@ -342,47 +351,47 @@ class _DeviceListPageState extends State<DeviceListPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _devices.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.devices_other,
-                          size: 64,
-                          color: theme.colorScheme.primary.withAlpha(128),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.noDevices,
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                      ],
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.devices_other,
+                      size: 64,
+                      color: theme.colorScheme.primary.withAlpha(128),
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.noDevices,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : _reordering
+          ? ReorderableListView.builder(
+              padding: const EdgeInsets.only(bottom: 80),
+              itemCount: _devices.length,
+              onReorder: _onReorder,
+              itemBuilder: (context, index) {
+                final device = _devices[index];
+                return _DeviceCard(
+                  key: ValueKey(device.id),
+                  device: device,
+                  categoryLabel: _categoryLabel(context, device.category),
+                  onTap: () {},
+                  trailing: ReorderableDragStartListener(
+                    index: index,
+                    child: const Icon(Icons.drag_handle),
                   ),
-                )
-              : _reordering
-                  ? ReorderableListView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: _devices.length,
-                      onReorder: _onReorder,
-                      itemBuilder: (context, index) {
-                        final device = _devices[index];
-                        return _DeviceCard(
-                          key: ValueKey(device.id),
-                          device: device,
-                          categoryLabel: _categoryLabel(context, device.category),
-                          onTap: () {},
-                          trailing: ReorderableDragStartListener(
-                            index: index,
-                            child: const Icon(Icons.drag_handle),
-                          ),
-                        );
-                      },
-                    )
-                  : _buildDeviceList(l10n, theme),
+                );
+              },
+            )
+          : _buildDeviceList(l10n, theme),
       floatingActionButton: _reordering
           ? null
           : Column(
@@ -395,8 +404,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
                     tooltip: l10n.fetchFromInternet,
                     child: const Icon(Icons.travel_explore),
                   ),
-                if (AppFlavor.isFull)
-                  const SizedBox(height: 8),
+                if (AppFlavor.isFull) const SizedBox(height: 8),
                 FloatingActionButton.small(
                   heroTag: 'template',
                   onPressed: _addFromTemplate,
@@ -428,8 +436,9 @@ class _DeviceListPageState extends State<DeviceListPage> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Text(
                 _categoryLabel(context, device.category),
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(color: theme.colorScheme.primary),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
               ),
             ),
           );
@@ -450,7 +459,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
   }
 
   Widget _buildDismissibleCard(
-      Device device, AppLocalizations l10n, ThemeData theme) {
+    Device device,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) {
     return Dismissible(
       key: ValueKey(device.id),
       background: Container(
@@ -628,8 +640,10 @@ class _TemplatePickerState extends State<_TemplatePicker> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text(l10n.fromTemplate,
-                style: Theme.of(context).textTheme.titleMedium),
+            child: Text(
+              l10n.fromTemplate,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
@@ -654,9 +668,7 @@ class _TemplatePickerState extends State<_TemplatePicker> {
                   leading: Icon(deviceCategoryIcon(t.category)),
                   title: Text(t.name),
                   subtitle: Text(
-                    [t.brand, t.cpu, t.ram]
-                        .where((s) => s != null)
-                        .join(' · '),
+                    [t.brand, t.cpu, t.ram].where((s) => s != null).join(' · '),
                   ),
                   dense: true,
                   onTap: () => Navigator.pop(context, t),

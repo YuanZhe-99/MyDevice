@@ -9,8 +9,22 @@ import '../services/dataset_storage.dart';
 
 /// Common emoji options for quick pick.
 const _emojiOptions = [
-  '📁', '💾', '🎵', '🎬', '📷', '📚', '🎮', '💻',
-  '📦', '🗂️', '🔒', '☁️', '📝', '🎨', '🏠', '🔧',
+  '📁',
+  '💾',
+  '🎵',
+  '🎬',
+  '📷',
+  '📚',
+  '🎮',
+  '💻',
+  '📦',
+  '🗂️',
+  '🔒',
+  '☁️',
+  '📝',
+  '🎨',
+  '🏠',
+  '🔧',
 ];
 
 class DataSetEditPage extends StatefulWidget {
@@ -61,21 +75,26 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     if (name.isEmpty) return;
 
     final links = <DataSetStorageLink>[];
+    final existingLinks = {
+      for (final link
+          in widget.dataSet?.storageLinks ?? const <DataSetStorageLink>[])
+        link.deviceId: link,
+    };
     for (final entry in _selectedStorages.entries) {
       if (entry.value.isNotEmpty) {
-        links.add(DataSetStorageLink(
-          deviceId: entry.key,
-          storageIndices: entry.value.toList()..sort(),
-        ));
+        links.add(
+          DataSetStorageLink(
+            deviceId: entry.key,
+            storageIndices: entry.value.toList()..sort(),
+            extraJson: existingLinks[entry.key]?.extraJson ?? const {},
+          ),
+        );
       }
     }
 
-    final ds = (_isEditing ? widget.dataSet! : DataSet(name: name, emoji: _emoji))
-        .copyWith(
-      name: name,
-      emoji: _emoji,
-      storageLinks: links,
-    );
+    final ds =
+        (_isEditing ? widget.dataSet! : DataSet(name: name, emoji: _emoji))
+            .copyWith(name: name, emoji: _emoji, storageLinks: links);
 
     await DataSetStorage.addOrUpdate(ds);
     AutoSyncService.instance.notifySaved();
@@ -124,12 +143,7 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? l10n.editDataSet : l10n.addDataSet),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: Text(l10n.save),
-          ),
-        ],
+        actions: [TextButton(onPressed: _save, child: Text(l10n.save))],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
@@ -147,13 +161,15 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
                         height: 56,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(_emoji,
-                            style: const TextStyle(fontSize: 28)),
+                        child: Text(
+                          _emoji,
+                          style: const TextStyle(fontSize: 28),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -174,8 +190,8 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
                 Text(
                   l10n.dataSetStorages,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 if (_devices.isEmpty)
@@ -184,10 +200,8 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
                     child: Text(
                       l10n.dataSetNoDeviceStorages,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ..._devices.map((device) {
@@ -214,7 +228,9 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
                             onChanged: (val) {
                               setState(() {
                                 final set = _selectedStorages.putIfAbsent(
-                                    device.id, () => {});
+                                  device.id,
+                                  () => {},
+                                );
                                 if (val == true) {
                                   set.add(i);
                                 } else {

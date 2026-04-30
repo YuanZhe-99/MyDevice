@@ -28,7 +28,18 @@ class _DataSetListPageState extends State<DataSetListPage> {
   @override
   void initState() {
     super.initState();
+    AutoSyncService.instance.addOnLocalDataChanged(_handleLocalDataChanged);
     _loadSortPrefs().then((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
+    super.dispose();
+  }
+
+  void _handleLocalDataChanged() {
+    if (mounted) _load();
   }
 
   Future<void> _loadSortPrefs() async {
@@ -36,9 +47,8 @@ class _DataSetListPageState extends State<DataSetListPage> {
     final mode = config['datasetSortMode'] as String?;
     final asc = config['datasetSortAscending'] as bool? ?? false;
     setState(() {
-      _sortMode = DataSetSortMode.values
-              .where((e) => e.name == mode)
-              .firstOrNull ??
+      _sortMode =
+          DataSetSortMode.values.where((e) => e.name == mode).firstOrNull ??
           DataSetSortMode.custom;
       _sortAscending = asc;
     });
@@ -54,8 +64,8 @@ class _DataSetListPageState extends State<DataSetListPage> {
   List<DataSet> get _sortedDatasets {
     var list = List<DataSet>.of(_datasets);
     if (_sortMode == DataSetSortMode.custom) return list;
-    int Function(DataSet, DataSet) comparator =
-        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    int comparator(DataSet a, DataSet b) =>
+        a.name.toLowerCase().compareTo(b.name.toLowerCase());
     final effectiveComparator = _sortAscending
         ? (DataSet a, DataSet b) => comparator(b, a)
         : comparator;
@@ -96,9 +106,10 @@ class _DataSetListPageState extends State<DataSetListPage> {
   }
 
   Future<void> _addDataSet() async {
-    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
-      MaterialPageRoute(builder: (_) => const DataSetEditPage()),
-    );
+    final result = await Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const DataSetEditPage()));
     if (result == true) _load();
   }
 
@@ -150,11 +161,7 @@ class _DataSetListPageState extends State<DataSetListPage> {
       leading: Text(ds.emoji, style: const TextStyle(fontSize: 28)),
       title: Text(ds.name),
       subtitle: lines.isNotEmpty
-          ? Text(
-              lines.join('\n'),
-              maxLines: 4,
-              overflow: TextOverflow.ellipsis,
-            )
+          ? Text(lines.join('\n'), maxLines: 4, overflow: TextOverflow.ellipsis)
           : null,
       trailing: trailing ?? const Icon(Icons.chevron_right),
       onTap: trailing != null ? null : () => _editDataSet(ds),
@@ -229,63 +236,60 @@ class _DataSetListPageState extends State<DataSetListPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _datasets.isEmpty
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Text(
-                      l10n.noDataSets,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
-                          ),
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Text(
+                  l10n.noDataSets,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            )
+          : _reordering
+          ? ReorderableListView.builder(
+              itemCount: _datasets.length,
+              onReorder: _onReorder,
+              itemBuilder: (context, index) {
+                final ds = _datasets[index];
+                return KeyedSubtree(
+                  key: ValueKey(ds.id),
+                  child: _buildDataSetTile(
+                    ds,
+                    trailing: ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(Icons.drag_handle),
                     ),
                   ),
-                )
-              : _reordering
-                  ? ReorderableListView.builder(
-                      itemCount: _datasets.length,
-                      onReorder: _onReorder,
-                      itemBuilder: (context, index) {
-                        final ds = _datasets[index];
-                        return KeyedSubtree(
-                          key: ValueKey(ds.id),
-                          child: _buildDataSetTile(
-                            ds,
-                            trailing: ReorderableDragStartListener(
-                              index: index,
-                              child: const Icon(Icons.drag_handle),
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  : ListView.builder(
-                      itemCount: _sortedDatasets.length,
-                      itemBuilder: (context, index) {
-                        final ds = _sortedDatasets[index];
-                        return Dismissible(
-                          key: ValueKey(ds.id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 16),
-                            color:
-                                Theme.of(context).colorScheme.errorContainer,
-                            child: Icon(Icons.delete,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onErrorContainer),
-                          ),
-                          confirmDismiss: (_) async {
-                            await _deleteDataSet(ds);
-                            return false;
-                          },
-                          child: _buildDataSetTile(ds),
-                        );
-                      },
+                );
+              },
+            )
+          : ListView.builder(
+              itemCount: _sortedDatasets.length,
+              itemBuilder: (context, index) {
+                final ds = _sortedDatasets[index];
+                return Dismissible(
+                  key: ValueKey(ds.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 16),
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    child: Icon(
+                      Icons.delete,
+                      color: Theme.of(context).colorScheme.onErrorContainer,
                     ),
+                  ),
+                  confirmDismiss: (_) async {
+                    await _deleteDataSet(ds);
+                    return false;
+                  },
+                  child: _buildDataSetTile(ds),
+                );
+              },
+            ),
     );
   }
 }

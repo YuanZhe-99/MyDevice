@@ -43,7 +43,8 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     final group = config['netDetailGroupByCategory'] as bool? ?? false;
     final exitFirst = config['netDetailExitFirst'] as bool? ?? false;
     setState(() {
-      _sortMode = NetworkDeviceSortMode.values
+      _sortMode =
+          NetworkDeviceSortMode.values
               .where((e) => e.name == mode)
               .firstOrNull ??
           NetworkDeviceSortMode.deviceOrder;
@@ -102,10 +103,8 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
 
     if (_groupByCategory) {
       list.sort((a, b) {
-        final aCat =
-            _findDevice(a.deviceId)?.category ?? DeviceCategory.other;
-        final bCat =
-            _findDevice(b.deviceId)?.category ?? DeviceCategory.other;
+        final aCat = _findDevice(a.deviceId)?.category ?? DeviceCategory.other;
+        final bCat = _findDevice(b.deviceId)?.category ?? DeviceCategory.other;
         final cmp = aCat.index.compareTo(bCat.index);
         if (cmp != 0) return cmp;
         return effectiveComparator(a, b);
@@ -172,13 +171,13 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
   };
 
   String _typeLabel(AppLocalizations l10n, NetworkType type) => switch (type) {
-        NetworkType.lan => l10n.networkTypeLan,
-        NetworkType.tailscale => l10n.networkTypeTailscale,
-        NetworkType.zerotier => l10n.networkTypeZerotier,
-        NetworkType.easytier => l10n.networkTypeEasytier,
-        NetworkType.wireguard => l10n.networkTypeWireguard,
-        NetworkType.other => l10n.networkTypeOther,
-      };
+    NetworkType.lan => l10n.networkTypeLan,
+    NetworkType.tailscale => l10n.networkTypeTailscale,
+    NetworkType.zerotier => l10n.networkTypeZerotier,
+    NetworkType.easytier => l10n.networkTypeEasytier,
+    NetworkType.wireguard => l10n.networkTypeWireguard,
+    NetworkType.other => l10n.networkTypeOther,
+  };
 
   String _addressModeLabel(AppLocalizations l10n, AddressMode mode) =>
       switch (mode) {
@@ -214,7 +213,9 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
 
   Future<void> _addDevice() async {
     final assignedIds = _assignments.map((a) => a.deviceId).toSet();
-    final available = _allDevices.where((d) => !assignedIds.contains(d.id)).toList();
+    final available = _allDevices
+        .where((d) => !assignedIds.contains(d.id))
+        .toList();
     if (available.isEmpty) return;
 
     final l10n = AppLocalizations.of(context)!;
@@ -227,10 +228,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     // Show configuration dialog
     final result = await _showAssignmentDialog(
       l10n,
-      NetworkDevice(
-        networkId: widget.networkId,
-        deviceId: device.id,
-      ),
+      NetworkDevice(networkId: widget.networkId, deviceId: device.id),
     );
     if (result != null) {
       await NetworkStorage.setAssignment(result);
@@ -270,14 +268,18 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     );
     if (confirm == true) {
       await NetworkStorage.removeAssignment(
-          assignment.networkId, assignment.deviceId);
+        assignment.networkId,
+        assignment.deviceId,
+      );
       AutoSyncService.instance.notifySaved();
       _load();
     }
   }
 
   Future<NetworkDevice?> _showAssignmentDialog(
-      AppLocalizations l10n, NetworkDevice initial) async {
+    AppLocalizations l10n,
+    NetworkDevice initial,
+  ) async {
     var mode = initial.addressMode;
     final ipCtrl = TextEditingController(text: initial.ipAddress ?? '');
     final hostnameCtrl = TextEditingController(text: initial.hostname ?? '');
@@ -293,13 +295,17 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<AddressMode>(
-                  value: mode,
-                  decoration: InputDecoration(labelText: l10n.networkAddressMode),
+                  initialValue: mode,
+                  decoration: InputDecoration(
+                    labelText: l10n.networkAddressMode,
+                  ),
                   items: AddressMode.values
-                      .map((m) => DropdownMenuItem(
-                            value: m,
-                            child: Text(_addressModeLabel(l10n, m)),
-                          ))
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m,
+                          child: Text(_addressModeLabel(l10n, m)),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) {
                     if (v != null) setDialogState(() => mode = v);
@@ -326,8 +332,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                   value: isExit,
                   title: Text(l10n.networkExitNode),
                   contentPadding: EdgeInsets.zero,
-                  onChanged: (v) =>
-                      setDialogState(() => isExit = v ?? false),
+                  onChanged: (v) => setDialogState(() => isExit = v ?? false),
                 ),
               ],
             ),
@@ -350,6 +355,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                     ipAddress: ip.isEmpty ? null : ip,
                     hostname: hostname.isEmpty ? null : hostname,
                     isExitNode: isExit,
+                    extraJson: initial.extraJson,
                   ),
                 );
               },
@@ -408,10 +414,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
               _load();
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: _deleteNetwork,
-          ),
+          IconButton(icon: const Icon(Icons.delete), onPressed: _deleteNetwork),
         ],
       ),
       body: ListView(
@@ -432,7 +435,9 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                         width: 32,
                         height: 32,
                         colorFilter: ColorFilter.mode(
-                            cs.onSurface, BlendMode.srcIn),
+                          cs.onSurface,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   _infoRow(l10n.networkType, _typeLabel(l10n, net.type)),
@@ -455,9 +460,13 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
             children: [
               Icon(Icons.devices, size: 20, color: cs.primary),
               const SizedBox(width: 8),
-              Text(l10n.networkDevices,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      color: cs.primary, fontWeight: FontWeight.w600)),
+              Text(
+                l10n.networkDevices,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const Spacer(),
               PopupMenuButton<dynamic>(
                 icon: const Icon(Icons.sort, size: 20),
@@ -493,11 +502,9 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                   } else if (value == 'ascending') {
                     setState(() => _sortAscending = !_sortAscending);
                   } else if (value == 'group') {
-                    setState(
-                        () => _groupByCategory = !_groupByCategory);
+                    setState(() => _groupByCategory = !_groupByCategory);
                   } else if (value == 'exitFirst') {
-                    setState(
-                        () => _exitNodeFirst = !_exitNodeFirst);
+                    setState(() => _exitNodeFirst = !_exitNodeFirst);
                   }
                   _saveSortPrefs();
                 },
@@ -516,8 +523,10 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Center(
-                  child: Text(l10n.noNetworkDevices,
-                      style: TextStyle(color: cs.onSurfaceVariant)),
+                  child: Text(
+                    l10n.noNetworkDevices,
+                    style: TextStyle(color: cs.onSurfaceVariant),
+                  ),
                 ),
               ),
             )
@@ -541,16 +550,15 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
       final cat = dev?.category ?? DeviceCategory.other;
       if (cat != lastCat) {
         lastCat = cat;
-        widgets.add(Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 4, left: 4),
-          child: Text(
-            _categoryLabel(context, cat),
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: cs.primary,
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4, left: 4),
+            child: Text(
+              _categoryLabel(context, cat),
+              style: TextStyle(fontWeight: FontWeight.w600, color: cs.primary),
             ),
           ),
-        ));
+        );
       }
       widgets.add(_buildDeviceCard(a, l10n, cs));
     }
@@ -558,7 +566,10 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
   }
 
   Widget _buildDeviceCard(
-      NetworkDevice a, AppLocalizations l10n, ColorScheme cs) {
+    NetworkDevice a,
+    AppLocalizations l10n,
+    ColorScheme cs,
+  ) {
     final dev = _findDevice(a.deviceId);
     final subtitle = [
       _addressModeLabel(l10n, a.addressMode),
@@ -594,8 +605,10 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Expanded(child: Text(value)),
         ],
@@ -631,9 +644,9 @@ class _DevicePicker extends StatelessWidget {
               return ListTile(
                 leading: const Icon(Icons.device_hub),
                 title: Text(d.name),
-                subtitle: Text([d.brand, d.model]
-                    .where((s) => s != null)
-                    .join(' ')),
+                subtitle: Text(
+                  [d.brand, d.model].where((s) => s != null).join(' '),
+                ),
                 onTap: () => Navigator.pop(context, d),
               );
             },

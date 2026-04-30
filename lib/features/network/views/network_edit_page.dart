@@ -48,17 +48,16 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
     super.dispose();
   }
 
-  String? _nonEmpty(String value) =>
-      value.trim().isEmpty ? null : value.trim();
+  String? _nonEmpty(String value) => value.trim().isEmpty ? null : value.trim();
 
   String _typeLabel(AppLocalizations l10n, NetworkType type) => switch (type) {
-        NetworkType.lan => l10n.networkTypeLan,
-        NetworkType.tailscale => l10n.networkTypeTailscale,
-        NetworkType.zerotier => l10n.networkTypeZerotier,
-        NetworkType.easytier => l10n.networkTypeEasytier,
-        NetworkType.wireguard => l10n.networkTypeWireguard,
-        NetworkType.other => l10n.networkTypeOther,
-      };
+    NetworkType.lan => l10n.networkTypeLan,
+    NetworkType.tailscale => l10n.networkTypeTailscale,
+    NetworkType.zerotier => l10n.networkTypeZerotier,
+    NetworkType.easytier => l10n.networkTypeEasytier,
+    NetworkType.wireguard => l10n.networkTypeWireguard,
+    NetworkType.other => l10n.networkTypeOther,
+  };
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -76,6 +75,7 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
       gateway: _nonEmpty(_gatewayCtrl.text),
       dnsServers: dnsServers,
       notes: _nonEmpty(_notesCtrl.text),
+      extraJson: widget.network?.extraJson ?? const {},
     );
 
     await NetworkStorage.addOrUpdateNetwork(network);
@@ -90,9 +90,7 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? l10n.editNetwork : l10n.addNetwork),
-        actions: [
-          TextButton(onPressed: _save, child: Text(l10n.save)),
-        ],
+        actions: [TextButton(onPressed: _save, child: Text(l10n.save))],
       ),
       body: Form(
         key: _formKey,
@@ -109,13 +107,15 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
 
             // Network type dropdown
             DropdownButtonFormField<NetworkType>(
-              value: _type,
+              initialValue: _type,
               decoration: InputDecoration(labelText: l10n.networkType),
               items: NetworkType.values
-                  .map((t) => DropdownMenuItem(
-                        value: t,
-                        child: Text(_typeLabel(l10n, t)),
-                      ))
+                  .map(
+                    (t) => DropdownMenuItem(
+                      value: t,
+                      child: Text(_typeLabel(l10n, t)),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _type = v);

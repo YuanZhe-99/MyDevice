@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../../../features/devices/services/device_storage.dart';
+import '../../../shared/services/auto_sync_service.dart';
 import '../models/dataset.dart';
 
 class DataSetStorage {
@@ -25,6 +26,7 @@ class DataSetStorage {
     final file = await _getFile();
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
     await file.writeAsString(jsonStr);
+    AutoSyncService.instance.notifySaved();
   }
 
   static Future<void> addOrUpdate(DataSet dataset) async {

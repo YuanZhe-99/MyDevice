@@ -214,7 +214,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
   Future<void> _addDevice() async {
     final assignedIds = _assignments.map((a) => a.deviceId).toSet();
     final available = _allDevices
-        .where((d) => !assignedIds.contains(d.id))
+        .where((d) => d.isInService && !assignedIds.contains(d.id))
         .toList();
     if (available.isEmpty) return;
 

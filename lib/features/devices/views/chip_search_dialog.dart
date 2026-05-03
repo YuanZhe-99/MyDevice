@@ -135,8 +135,10 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(title,
-                        style: Theme.of(context).textTheme.titleMedium),
+                    child: Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -162,7 +164,9 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
                         border: const OutlineInputBorder(),
                         isDense: true,
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                       ),
                       onSubmitted: (_) => _search(),
                     ),
@@ -243,11 +247,9 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
               : null,
           trailing: r.source != 'preset'
               ? Chip(
-                  label: Text(r.source,
-                      style: const TextStyle(fontSize: 10)),
+                  label: Text(r.source, style: const TextStyle(fontSize: 10)),
                   visualDensity: VisualDensity.compact,
-                  materialTapTargetSize:
-                      MaterialTapTargetSize.shrinkWrap,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 )
               : null,
           dense: true,

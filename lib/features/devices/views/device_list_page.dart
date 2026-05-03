@@ -9,6 +9,7 @@ import '../../../shared/services/image_service.dart';
 import '../../../shared/views/device_map_page.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
+import '../services/exchange_rate_service.dart';
 import '../services/preset_service.dart';
 import 'device_detail_page.dart';
 import 'device_edit_page.dart';
@@ -16,6 +17,8 @@ import 'device_search_dialog.dart';
 import '../widgets/device_category_icon.dart';
 
 enum SortMode { custom, alphabetical, purchaseDate, releaseDate }
+
+enum DeviceStatusFilter { all, inService, retired, sold }
 
 class DeviceListPage extends StatefulWidget {
   const DeviceListPage({super.key});
@@ -30,11 +33,14 @@ class _DeviceListPageState extends State<DeviceListPage> {
   SortMode _sortMode = SortMode.custom;
   bool _groupByCategory = false;
   bool _sortAscending = false;
+  DeviceStatusFilter _statusFilter = DeviceStatusFilter.all;
+  String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
 
   @override
   void initState() {
     super.initState();
     AutoSyncService.instance.addOnLocalDataChanged(_handleLocalDataChanged);
+    _loadFinancialPrefs();
     _loadSortPrefs().then((_) => _loadDevices());
   }
 
@@ -62,6 +68,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     });
   }
 
+  Future<void> _loadFinancialPrefs() async {
+    final currency = await DeviceExchangeRateService.getDefaultCurrency();
+    if (mounted) setState(() => _defaultCurrency = currency);
+  }
+
   Future<void> _saveSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     config['sortMode'] = _sortMode.name;
@@ -70,9 +81,22 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await DeviceStorage.writeConfig(config);
   }
 
+  List<Device> get _visibleDevices {
+    return _devices.where((device) {
+      return switch (_statusFilter) {
+        DeviceStatusFilter.all => true,
+        DeviceStatusFilter.inService => device.isInService,
+        DeviceStatusFilter.retired =>
+          device.lifecycleStatus == DeviceLifecycleStatus.retired,
+        DeviceStatusFilter.sold =>
+          device.lifecycleStatus == DeviceLifecycleStatus.sold,
+      };
+    }).toList();
+  }
+
   /// Returns the sorted / grouped list for display.
   List<Device> get _sortedDevices {
-    var list = List<Device>.of(_devices);
+    var list = List<Device>.of(_visibleDevices);
     if (_sortMode == SortMode.custom) {
       // Custom order = storage order; grouping still applies
       if (_groupByCategory) {
@@ -238,6 +262,28 @@ class _DeviceListPageState extends State<DeviceListPage> {
     SortMode.releaseDate => l10n.sortReleaseDate,
   };
 
+  String _filterLabel(AppLocalizations l10n, DeviceStatusFilter filter) =>
+      switch (filter) {
+        DeviceStatusFilter.all => l10n.filterAll,
+        DeviceStatusFilter.inService => l10n.statusInService,
+        DeviceStatusFilter.retired => l10n.statusRetired,
+        DeviceStatusFilter.sold => l10n.statusSold,
+      };
+
+  int _statusCount(DeviceLifecycleStatus status) =>
+      _devices.where((d) => d.lifecycleStatus == status).length;
+
+  double _totalFinancialCost() =>
+      _devices.fold(0, (sum, device) => sum + device.totalCost());
+
+  double _totalDailyCost() =>
+      _devices.fold(0, (sum, device) => sum + (device.averageDailyCost() ?? 0));
+
+  String _moneyText(double amount) {
+    final symbol = DeviceExchangeRateService.currencySymbol(_defaultCurrency);
+    return '$symbol${amount.toStringAsFixed(2)}';
+  }
+
   void _setSortMode(SortMode mode) {
     setState(() => _sortMode = mode);
     _saveSortPrefs();
@@ -316,7 +362,8 @@ class _DeviceListPageState extends State<DeviceListPage> {
                   checked: _groupByCategory,
                   child: Text(l10n.sortGroupByCategory),
                 ),
-                if (_sortMode == SortMode.custom) ...[
+                if (_sortMode == SortMode.custom &&
+                    _statusFilter == DeviceStatusFilter.all) ...[
                   const PopupMenuDivider(),
                   PopupMenuItem<String>(
                     value: 'reorder',
@@ -423,9 +470,26 @@ class _DeviceListPageState extends State<DeviceListPage> {
 
   Widget _buildDeviceList(AppLocalizations l10n, ThemeData theme) {
     final sorted = _sortedDevices;
+    final header = _buildHomeHeader(l10n, theme);
+    if (sorted.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.only(bottom: 80),
+        children: [
+          header,
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Text(
+              l10n.noDevices,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+          ),
+        ],
+      );
+    }
     // Insert category headers when grouping
-    if (_groupByCategory && sorted.isNotEmpty) {
-      final widgets = <Widget>[];
+    if (_groupByCategory) {
+      final widgets = <Widget>[header];
       DeviceCategory? lastCat;
       for (final device in sorted) {
         if (device.category != lastCat) {
@@ -452,9 +516,187 @@ class _DeviceListPageState extends State<DeviceListPage> {
     }
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
-      itemCount: sorted.length,
-      itemBuilder: (context, index) =>
-          _buildDismissibleCard(sorted[index], l10n, theme),
+      itemCount: sorted.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) return header;
+        return _buildDismissibleCard(sorted[index - 1], l10n, theme);
+      },
+    );
+  }
+
+  Widget _buildHomeHeader(AppLocalizations l10n, ThemeData theme) {
+    final cs = theme.colorScheme;
+    final inService = _statusCount(DeviceLifecycleStatus.inService);
+    final retired = _statusCount(DeviceLifecycleStatus.retired);
+    final sold = _statusCount(DeviceLifecycleStatus.sold);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            elevation: 0,
+            color: cs.surfaceContainerHighest.withAlpha(128),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.financialOverview,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${_devices.length}',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildMetric(
+                          theme,
+                          l10n.financialTotalCost,
+                          _moneyText(_totalFinancialCost()),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildMetric(
+                          theme,
+                          l10n.financialDailyCost,
+                          _moneyText(_totalDailyCost()),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatusCount(
+                          theme,
+                          l10n.statusInService,
+                          inService,
+                          cs.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildStatusCount(
+                          theme,
+                          l10n.statusRetired,
+                          retired,
+                          cs.secondary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildStatusCount(
+                          theme,
+                          l10n.statusSold,
+                          sold,
+                          cs.tertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<DeviceStatusFilter>(
+              showSelectedIcon: false,
+              segments: DeviceStatusFilter.values
+                  .map(
+                    (filter) => ButtonSegment(
+                      value: filter,
+                      label: Text(_filterLabel(l10n, filter)),
+                    ),
+                  )
+                  .toList(),
+              selected: {_statusFilter},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _statusFilter = selection.first;
+                  if (_statusFilter != DeviceStatusFilter.all) {
+                    _reordering = false;
+                  }
+                });
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetric(ThemeData theme, String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: theme.textTheme.labelMedium),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusCount(
+    ThemeData theme,
+    String label,
+    int count,
+    Color color,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        LinearProgressIndicator(
+          minHeight: 4,
+          value: _devices.isEmpty ? 0 : count / _devices.length,
+          color: color,
+          backgroundColor: color.withAlpha(28),
+        ),
+        const SizedBox(height: 4),
+        Text('$count', style: theme.textTheme.labelMedium),
+      ],
     );
   }
 

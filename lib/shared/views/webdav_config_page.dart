@@ -51,12 +51,12 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
   }
 
   WebDAVConfig get _currentConfig => WebDAVConfig(
-        serverUrl: _urlController.text.trim(),
-        username: _userController.text.trim(),
-        password: _passController.text.trim(),
-        remotePath: _pathController.text.trim(),
-        autoSync: _autoSync,
-      );
+    serverUrl: _urlController.text.trim(),
+    username: _userController.text.trim(),
+    password: _passController.text.trim(),
+    remotePath: _pathController.text.trim(),
+    autoSync: _autoSync,
+  );
 
   Future<void> _saveConfig() async {
     final config = _currentConfig;
@@ -65,8 +65,10 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.settingsWebDAVConfigSaved)),
+          content: Text(
+            AppLocalizations.of(context)!.settingsWebDAVConfigSaved,
+          ),
+        ),
       );
     }
   }
@@ -78,9 +80,11 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
       setState(() => _testing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ok
-              ? AppLocalizations.of(context)!.settingsWebDAVConnectionSuccess
-              : AppLocalizations.of(context)!.settingsWebDAVConnectionFailed),
+          content: Text(
+            ok
+                ? AppLocalizations.of(context)!.settingsWebDAVConnectionSuccess
+                : AppLocalizations.of(context)!.settingsWebDAVConnectionFailed,
+          ),
         ),
       );
     }
@@ -104,9 +108,7 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(l10n.settingsWebDAVSyncFailed),
-          content: SingleChildScrollView(
-            child: Text(result.error ?? '-'),
-          ),
+          content: SingleChildScrollView(child: Text(result.error ?? '-')),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
@@ -128,14 +130,14 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(l10n.settingsWebDAVSyncImageWarnings(
-                    result.warnings.length)),
+                Text(
+                  l10n.settingsWebDAVSyncImageWarnings(result.warnings.length),
+                ),
                 const SizedBox(height: 8),
                 ...result.warnings.map(
                   (w) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
-                    child: Text(w,
-                        style: Theme.of(ctx).textTheme.bodySmall),
+                    child: Text(w, style: Theme.of(ctx).textTheme.bodySmall),
                   ),
                 ),
               ],
@@ -152,9 +154,9 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.settingsWebDAVSyncSuccess)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.settingsWebDAVSyncSuccess)));
   }
 
   Future<void> _resolveConflicts(PendingSync pending) async {
@@ -183,9 +185,11 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(ok
-              ? AppLocalizations.of(context)!.settingsWebDAVSyncSuccess
-              : AppLocalizations.of(context)!.settingsWebDAVSyncFailed),
+          content: Text(
+            ok
+                ? AppLocalizations.of(context)!.settingsWebDAVSyncSuccess
+                : AppLocalizations.of(context)!.settingsWebDAVSyncFailed,
+          ),
         ),
       );
     }
@@ -204,8 +208,10 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.settingsWebDAVConfigRemoved)),
+          content: Text(
+            AppLocalizations.of(context)!.settingsWebDAVConfigRemoved,
+          ),
+        ),
       );
     }
   }
@@ -223,10 +229,7 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.settingsWebDAVSync),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text(l10n.settingsWebDAVSync), centerTitle: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
@@ -249,8 +252,7 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                   controller: _urlController,
                   decoration: InputDecoration(
                     labelText: l10n.settingsWebDAVServerURL,
-                    hintText:
-                        'https://example.com/remote.php/dav/files/user',
+                    hintText: 'https://example.com/remote.php/dav/files/user',
                   ),
                   keyboardType: TextInputType.url,
                 ),
@@ -258,15 +260,17 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
 
                 TextField(
                   controller: _userController,
-                  decoration:
-                      InputDecoration(labelText: l10n.settingsWebDAVUsername),
+                  decoration: InputDecoration(
+                    labelText: l10n.settingsWebDAVUsername,
+                  ),
                 ),
                 const SizedBox(height: 12),
 
                 TextField(
                   controller: _passController,
-                  decoration:
-                      InputDecoration(labelText: l10n.settingsWebDAVPassword),
+                  decoration: InputDecoration(
+                    labelText: l10n.settingsWebDAVPassword,
+                  ),
                   obscureText: true,
                 ),
                 const SizedBox(height: 12),
@@ -298,7 +302,9 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                                 width: 16,
                                 height: 16,
                                 child: CircularProgressIndicator(
-                                    strokeWidth: 2))
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : Text(l10n.settingsWebDAVTestConnection),
                       ),
                     ),
@@ -313,12 +319,14 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                         ? const SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2))
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.sync),
-                    label: Text(_syncing
-                        ? l10n.settingsWebDAVSyncing
-                        : l10n.settingsWebDAVSyncNow),
+                    label: Text(
+                      _syncing
+                          ? l10n.settingsWebDAVSyncing
+                          : l10n.settingsWebDAVSyncNow,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   SwitchListTile(
@@ -364,12 +372,16 @@ class _ConflictDialog extends StatelessWidget {
           children: [
             Text(l10n.syncConflictBody),
             const SizedBox(height: 16),
-            Text(l10n.syncConflictLocalVersion,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              l10n.syncConflictLocalVersion,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text('ID: ${conflict.id}'),
             const SizedBox(height: 12),
-            Text(l10n.syncConflictRemoteVersion,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(
+              l10n.syncConflictRemoteVersion,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             Text('ID: ${conflict.id}'),
           ],
         ),

@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import '../../features/datasets/services/dataset_storage.dart';
 import '../../features/devices/models/device.dart';
 import '../../features/devices/services/device_storage.dart';
+import '../../features/devices/services/exchange_rate_service.dart';
 import '../../features/network/models/network.dart';
 import '../../features/network/services/network_storage.dart';
 
@@ -107,9 +108,11 @@ class ImportExportService {
       buf.writeln('# MyDevice!!!!! — Device Inventory');
       buf.writeln();
       buf.writeln(
-          'Exported: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}');
+        'Exported: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+      );
       buf.writeln(
-          'Total: ${devices.length} devices, ${networkData.networks.length} networks, ${datasetData.datasets.length} datasets');
+        'Total: ${devices.length} devices, ${networkData.networks.length} networks, ${datasetData.datasets.length} datasets',
+      );
       buf.writeln();
       buf.writeln('---');
 
@@ -154,7 +157,9 @@ class ImportExportService {
           if (!d.gpu.isEmpty) {
             final parts = <String>[];
             if (d.gpu.model != null) parts.add(d.gpu.model!);
-            if (d.gpu.architecture != null) parts.add('(${d.gpu.architecture})');
+            if (d.gpu.architecture != null) {
+              parts.add('(${d.gpu.architecture})');
+            }
             buf.writeln('- **GPU:** ${parts.join(' ')}');
           }
 
@@ -189,11 +194,39 @@ class ImportExportService {
           }
           if (d.purchaseDate != null) {
             buf.writeln(
-                '- **Purchase Date:** ${DateFormat('yyyy-MM-dd').format(d.purchaseDate!)}');
+              '- **Purchase Date:** ${DateFormat('yyyy-MM-dd').format(d.purchaseDate!)}',
+            );
           }
           if (d.releaseDate != null) {
             buf.writeln(
-                '- **Release Date:** ${DateFormat('yyyy-MM-dd').format(d.releaseDate!)}');
+              '- **Release Date:** ${DateFormat('yyyy-MM-dd').format(d.releaseDate!)}',
+            );
+          }
+          if (d.lifecycleStatus != DeviceLifecycleStatus.inService) {
+            buf.writeln('- **Status:** ${_statusLabel(d.lifecycleStatus)}');
+          }
+          if (d.retiredDate != null) {
+            buf.writeln(
+              '- **Retirement Date:** ${DateFormat('yyyy-MM-dd').format(d.retiredDate!)}',
+            );
+          }
+          if (d.acquisitionType != null) {
+            buf.writeln(
+              '- **Acquisition:** ${_acquisitionTypeLabel(d.acquisitionType!)}',
+            );
+          }
+          if (d.purchasePrice != null) {
+            buf.writeln(
+              '- **Purchase Price:** ${_moneyText(d.purchasePrice!)}',
+            );
+          }
+          if (d.soldPrice != null) {
+            buf.writeln('- **Sold Price:** ${_moneyText(d.soldPrice!)}');
+          }
+          for (final cost in d.recurringCosts) {
+            buf.writeln(
+              '- **Recurring ${_recurringCostKindLabel(cost.kind)}:** ${_moneyText(cost.price)} / ${_billingCycleLabel(cost.billingCycle)}${cost.name != null ? ' (${cost.name})' : ''}',
+            );
           }
           if (d.notes != null && d.notes!.isNotEmpty) {
             buf.writeln('- **Notes:** ${d.notes}');
@@ -237,9 +270,9 @@ class ImportExportService {
               final parts = <String>[];
               if (a.ipAddress != null) parts.add(a.ipAddress!);
               if (a.hostname != null) parts.add(a.hostname!);
-              parts.add(a.addressMode == AddressMode.static_
-                  ? 'Static'
-                  : 'DHCP');
+              parts.add(
+                a.addressMode == AddressMode.static_ ? 'Static' : 'DHCP',
+              );
               if (a.isExitNode) parts.add('Exit Node');
               buf.writeln('- $name — ${parts.join(', ')}');
             }
@@ -294,25 +327,63 @@ class ImportExportService {
   }
 
   static String _categoryLabel(DeviceCategory c) => switch (c) {
-        DeviceCategory.desktop => 'Desktop',
-        DeviceCategory.laptop => 'Laptop',
-        DeviceCategory.phone => 'Phone',
-        DeviceCategory.tablet => 'Tablet',
-        DeviceCategory.headphone => 'Headphone',
-        DeviceCategory.watch => 'Watch',
-        DeviceCategory.router => 'Router',
-        DeviceCategory.gameConsole => 'Game Console',
-        DeviceCategory.vps => 'VPS',
-        DeviceCategory.devBoard => 'Dev Board',
-        DeviceCategory.other => 'Other',
+    DeviceCategory.desktop => 'Desktop',
+    DeviceCategory.laptop => 'Laptop',
+    DeviceCategory.phone => 'Phone',
+    DeviceCategory.tablet => 'Tablet',
+    DeviceCategory.headphone => 'Headphone',
+    DeviceCategory.watch => 'Watch',
+    DeviceCategory.router => 'Router',
+    DeviceCategory.gameConsole => 'Game Console',
+    DeviceCategory.vps => 'VPS',
+    DeviceCategory.devBoard => 'Dev Board',
+    DeviceCategory.other => 'Other',
+  };
+
+  static String _statusLabel(DeviceLifecycleStatus status) => switch (status) {
+    DeviceLifecycleStatus.inService => 'In Service',
+    DeviceLifecycleStatus.retired => 'Retired',
+    DeviceLifecycleStatus.sold => 'Sold',
+  };
+
+  static String _acquisitionTypeLabel(DeviceAcquisitionType type) =>
+      switch (type) {
+        DeviceAcquisitionType.purchased => 'One-time Purchase',
+        DeviceAcquisitionType.leased => 'Lease',
+        DeviceAcquisitionType.purchasedWithSubscription =>
+          'Purchase + Subscription',
+        DeviceAcquisitionType.other => 'Other',
       };
 
-  static String _networkTypeLabel(NetworkType t) => switch (t) {
-        NetworkType.lan => 'LAN',
-        NetworkType.tailscale => 'Tailscale',
-        NetworkType.zerotier => 'ZeroTier',
-        NetworkType.easytier => 'EasyTier',
-        NetworkType.wireguard => 'WireGuard',
-        NetworkType.other => 'Other',
+  static String _recurringCostKindLabel(RecurringCostKind kind) =>
+      switch (kind) {
+        RecurringCostKind.lease => 'Lease',
+        RecurringCostKind.insurance => 'Insurance',
+        RecurringCostKind.subscription => 'Subscription',
+        RecurringCostKind.other => 'Other',
       };
+
+  static String _billingCycleLabel(BillingCycle cycle) => switch (cycle) {
+    BillingCycle.monthly => 'month',
+    BillingCycle.yearly => 'year',
+  };
+
+  static String _moneyText(MoneyValue money) {
+    final symbol = DeviceExchangeRateService.currencySymbol(money.currency);
+    final baseSymbol = DeviceExchangeRateService.currencySymbol(
+      money.defaultCurrency,
+    );
+    final original = '$symbol${money.amount.toStringAsFixed(2)}';
+    if (money.currency == money.defaultCurrency) return original;
+    return '$original ($baseSymbol${money.convertedAmount.toStringAsFixed(2)} ${money.defaultCurrency})';
+  }
+
+  static String _networkTypeLabel(NetworkType t) => switch (t) {
+    NetworkType.lan => 'LAN',
+    NetworkType.tailscale => 'Tailscale',
+    NetworkType.zerotier => 'ZeroTier',
+    NetworkType.easytier => 'EasyTier',
+    NetworkType.wireguard => 'WireGuard',
+    NetworkType.other => 'Other',
+  };
 }

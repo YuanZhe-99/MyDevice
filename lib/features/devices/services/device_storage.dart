@@ -195,6 +195,9 @@ class DeviceStorage {
       devices.add(device);
     }
     await save(DeviceData(devices: devices));
+    if (!device.isInService) {
+      await _removeDeviceReferences(device.id);
+    }
   }
 
   /// Delete a device by id and clean up references in other modules.
@@ -202,7 +205,10 @@ class DeviceStorage {
     final data = await load();
     final devices = data.devices.where((d) => d.id != id).toList();
     await save(DeviceData(devices: devices));
+    await _removeDeviceReferences(id);
+  }
 
+  static Future<void> _removeDeviceReferences(String id) async {
     // Remove network assignments referencing this device
     final netData = await NetworkStorage.load();
     final cleanedAssignments = netData.assignments

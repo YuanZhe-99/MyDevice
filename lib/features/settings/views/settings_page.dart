@@ -14,6 +14,7 @@ import '../../../shared/services/local_api_server.dart';
 import '../../../shared/services/tray_service.dart';
 import '../../../shared/views/webdav_config_page.dart';
 import '../../devices/services/device_storage.dart';
+import '../../devices/services/exchange_rate_service.dart';
 import 'backup_page.dart';
 import 'license_page.dart' as app_license;
 import 'privacy_policy_page.dart';
@@ -38,12 +39,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _apiListenAddress = 'localhost';
   String _apiUsername = '';
   String _apiPassword = '';
+  String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
+  bool _autoUpdateExchangeRates = true;
 
   @override
   void initState() {
     super.initState();
     _loadVersion();
     _loadStoragePath();
+    _loadExchangeRateSettings();
     if (_isDesktop) {
       _loadTraySettings();
       _loadAutoStartStatus();
@@ -63,6 +67,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  Future<void> _loadExchangeRateSettings() async {
+    final currency = await DeviceExchangeRateService.getDefaultCurrency();
+    final autoUpdate = await DeviceExchangeRateService.getAutoUpdateEnabled();
+    if (!mounted) return;
+    setState(() {
+      _defaultCurrency = currency;
+      _autoUpdateExchangeRates = autoUpdate;
+    });
+  }
+
   Widget _buildSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -72,8 +86,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
         ...children,
@@ -82,8 +96,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   bool get _isDesktop =>
-      !kIsWeb &&
-      (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+      !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
   Future<void> _exportData() async {
     final l10n = AppLocalizations.of(context)!;
@@ -133,9 +146,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
     if (!mounted) return;
     if (path != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.exportSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.exportSuccess)));
     }
   }
 
@@ -166,13 +179,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (ok != true || !mounted) return;
 
-    final success =
-        await ImportExportService.importZip(result.files.single.path!);
+    final success = await ImportExportService.importZip(
+      result.files.single.path!,
+    );
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(success ? l10n.importSuccess : l10n.importFailed),
-      ),
+      SnackBar(content: Text(success ? l10n.importSuccess : l10n.importFailed)),
     );
   }
 
@@ -239,9 +251,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(pathToSet == null
-                ? l10n.settingsResetDefaultLocation
-                : l10n.settingsStoragePathUpdated),
+            content: Text(
+              pathToSet == null
+                  ? l10n.settingsResetDefaultLocation
+                  : l10n.settingsStoragePathUpdated,
+            ),
           ),
         );
       }
@@ -291,8 +305,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           children: [
             TextField(
               controller: addrCtrl,
-              decoration:
-                  InputDecoration(labelText: l10n.settingsApiListenAddress),
+              decoration: InputDecoration(
+                labelText: l10n.settingsApiListenAddress,
+              ),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -328,8 +343,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     if (saved != true || !mounted) return;
 
     final newPort = int.tryParse(portCtrl.text.trim()) ?? 7789;
-    final newAddr =
-        addrCtrl.text.trim().isEmpty ? 'localhost' : addrCtrl.text.trim();
+    final newAddr = addrCtrl.text.trim().isEmpty
+        ? 'localhost'
+        : addrCtrl.text.trim();
     final newUser = userCtrl.text.trim();
     final newPass = passCtrl.text.trim();
     final config = await DeviceStorage.readConfig();
@@ -347,10 +363,26 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     await LocalApiServer.restart();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(l10n.settingsApiRestarted(LocalApiServer.port))),
+        SnackBar(content: Text(l10n.settingsApiRestarted(LocalApiServer.port))),
       );
     }
+  }
+
+  Future<void> _refreshExchangeRates() async {
+    final l10n = AppLocalizations.of(context)!;
+    final result = await DeviceExchangeRateService.fetchAndSaveLatest(
+      _defaultCurrency,
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result != null
+              ? l10n.exchangeRateUpdated
+              : l10n.exchangeRateUpdateFailed,
+        ),
+      ),
+    );
   }
 
   @override
@@ -424,6 +456,43 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 onChanged: (locale) => notifier.setLocale(locale),
               ),
             ),
+            ListTile(
+              leading: const Icon(Icons.currency_exchange),
+              title: Text(l10n.settingsDefaultCurrency),
+              trailing: DropdownButton<String>(
+                value: _defaultCurrency,
+                underline: const SizedBox.shrink(),
+                items: DeviceExchangeRateService.supportedCurrencies
+                    .map(
+                      (code) => DropdownMenuItem(
+                        value: code,
+                        child: Text(
+                          '${DeviceExchangeRateService.currencySymbol(code)} $code',
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) async {
+                  if (value == null) return;
+                  await DeviceExchangeRateService.setDefaultCurrency(value);
+                  if (mounted) setState(() => _defaultCurrency = value);
+                },
+              ),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.sync_outlined),
+              title: Text(l10n.settingsAutoUpdateExchangeRates),
+              value: _autoUpdateExchangeRates,
+              onChanged: (value) async {
+                await DeviceExchangeRateService.setAutoUpdateEnabled(value);
+                if (mounted) setState(() => _autoUpdateExchangeRates = value);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.refresh),
+              title: Text(l10n.settingsRefreshExchangeRates),
+              onTap: _refreshExchangeRates,
+            ),
           ]),
 
           // ── Data ──
@@ -442,9 +511,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               title: Text(l10n.backupTitle),
               subtitle: Text(l10n.backupSubtitle),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(builder: (_) => const BackupPage()),
-              ),
+              onTap: () => Navigator.of(
+                context,
+                rootNavigator: true,
+              ).push(MaterialPageRoute(builder: (_) => const BackupPage())),
             ),
             ListTile(
               leading: const Icon(Icons.file_upload_outlined),
@@ -520,14 +590,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   LocalApiServer.isRunning
                       ? l10n.settingsApiRunning(LocalApiServer.port)
                       : LocalApiServer.lastError == 'credentials_required'
-                          ? l10n.settingsApiNeedCredentials
-                          : LocalApiServer.lastError != null
-                              ? '${l10n.settingsApiStopped} (${LocalApiServer.lastError})'
-                              : l10n.settingsApiStopped,
-                  style: !LocalApiServer.isRunning &&
+                      ? l10n.settingsApiNeedCredentials
+                      : LocalApiServer.lastError != null
+                      ? '${l10n.settingsApiStopped} (${LocalApiServer.lastError})'
+                      : l10n.settingsApiStopped,
+                  style:
+                      !LocalApiServer.isRunning &&
                           LocalApiServer.lastError != null
-                      ? TextStyle(
-                          color: Theme.of(context).colorScheme.error)
+                      ? TextStyle(color: Theme.of(context).colorScheme.error)
                       : null,
                 ),
                 value: _apiEnabled,
@@ -561,8 +631,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               trailing: Text(
                 _version,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
             ListTile(
@@ -570,8 +640,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               title: Text(l10n.settingsPrivacyPolicy),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                    builder: (_) => const PrivacyPolicyPage()),
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
               ),
             ),
             ListTile(
@@ -580,7 +649,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(
-                    builder: (_) => const app_license.LicensePage()),
+                  builder: (_) => const app_license.LicensePage(),
+                ),
               ),
             ),
             ListTile(

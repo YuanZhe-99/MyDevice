@@ -11,11 +11,7 @@ class DeviceMapPage extends StatelessWidget {
   final String title;
   final List<Device> devices;
 
-  const DeviceMapPage({
-    super.key,
-    required this.title,
-    required this.devices,
-  });
+  const DeviceMapPage({super.key, required this.title, required this.devices});
 
   List<Device> get _locatedDevices =>
       devices.where((d) => d.latitude != null && d.longitude != null).toList();
@@ -69,21 +65,17 @@ class DeviceMapPage extends StatelessWidget {
                 child: Text(
                   l10n.mapNoLocations,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: cs.onSurfaceVariant,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyLarge?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ),
             )
           : FlutterMap(
-              options: MapOptions(
-                initialCenter: center,
-                initialZoom: zoom,
-              ),
+              options: MapOptions(initialCenter: center, initialZoom: zoom),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.mydevice',
                 ),
                 MarkerLayer(
@@ -142,11 +134,7 @@ class _DeviceMarker extends StatelessWidget {
             ],
           ),
         ),
-        Icon(
-          Icons.location_pin,
-          size: 20,
-          color: colorScheme.primary,
-        ),
+        Icon(Icons.location_pin, size: 20, color: colorScheme.primary),
       ],
     );
   }

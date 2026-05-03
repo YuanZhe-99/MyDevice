@@ -139,11 +139,7 @@ class BackupService {
         } catch (_) {
           date = stat.modified;
         }
-        files.add(BackupInfo(
-          file: entity,
-          date: date,
-          sizeBytes: stat.size,
-        ));
+        files.add(BackupInfo(file: entity, date: date, sizeBytes: stat.size));
       }
     }
     files.sort((a, b) => b.date.compareTo(a.date));
@@ -191,8 +187,8 @@ class BackupService {
       // Restore images
       if (bundle.containsKey('_images') &&
           (moduleKeys == null || moduleKeys.contains('images'))) {
-        final imageBundle =
-            (bundle['_images'] as Map<String, dynamic>).cast<String, String>();
+        final imageBundle = (bundle['_images'] as Map<String, dynamic>)
+            .cast<String, String>();
         final imagesDir = Directory(p.join(appDir.path, 'images'));
         if (!await imagesDir.exists()) {
           await imagesDir.create(recursive: true);

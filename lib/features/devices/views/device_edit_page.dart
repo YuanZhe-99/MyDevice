@@ -12,6 +12,7 @@ import '../../../shared/services/image_service.dart';
 import '../../../shared/widgets/map_picker_page.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
+import '../services/exchange_rate_service.dart';
 import '../services/preset_service.dart';
 import '../widgets/device_category_icon.dart';
 import 'chip_search_dialog.dart';
@@ -40,6 +41,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   late final TextEditingController _osCtrl;
   late final TextEditingController _locationCtrl;
   late final TextEditingController _notesCtrl;
+  late final TextEditingController _purchasePriceCtrl;
+  late final TextEditingController _purchaseRateCtrl;
+  late final TextEditingController _soldPriceCtrl;
+  late final TextEditingController _soldRateCtrl;
 
   // CPU
   late final TextEditingController _cpuModelCtrl;
@@ -64,6 +69,17 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   late DeviceCategory _category;
   DateTime? _purchaseDate;
   DateTime? _releaseDate;
+  DeviceAcquisitionType? _acquisitionType;
+  bool _isRetired = false;
+  DateTime? _retiredDate;
+  bool _isSold = false;
+  String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
+  bool _autoUpdateRates = true;
+  String _purchaseCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
+  bool _purchaseAutoRate = true;
+  String _soldCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
+  bool _soldAutoRate = true;
+  final List<_RecurringCostDraft> _recurringCostDrafts = [];
   late List<String> _storageEntries;
   late List<String> _storageUnits;
   late List<StorageType?> _storageTypes;
@@ -106,6 +122,26 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _latitude = d?.latitude;
     _longitude = d?.longitude;
     _notesCtrl = TextEditingController(text: d?.notes ?? '');
+    _purchasePriceCtrl = TextEditingController(
+      text: d?.purchasePrice?.amount.toString() ?? '',
+    );
+    _purchaseRateCtrl = TextEditingController(
+      text:
+          d?.purchasePrice != null &&
+              d!.purchasePrice!.currency != d.purchasePrice!.defaultCurrency
+          ? d.purchasePrice!.exchangeRate.toString()
+          : '',
+    );
+    _soldPriceCtrl = TextEditingController(
+      text: d?.soldPrice?.amount.toString() ?? '',
+    );
+    _soldRateCtrl = TextEditingController(
+      text:
+          d?.soldPrice != null &&
+              d!.soldPrice!.currency != d.soldPrice!.defaultCurrency
+          ? d.soldPrice!.exchangeRate.toString()
+          : '',
+    );
 
     _cpuModelCtrl = TextEditingController(text: d?.cpu.model ?? '');
     _cpuArchCtrl = TextEditingController(text: d?.cpu.architecture ?? '');
@@ -134,6 +170,21 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _category = d?.category ?? DeviceCategory.phone;
     _purchaseDate = d?.purchaseDate;
     _releaseDate = d?.releaseDate;
+    _acquisitionType = d?.acquisitionType;
+    _isRetired = d?.isRetired ?? false;
+    _retiredDate = d?.retiredDate;
+    _isSold = d?.isSold ?? false;
+    _purchaseCurrency =
+        d?.purchasePrice?.currency ??
+        DeviceExchangeRateService.defaultDefaultCurrency;
+    _purchaseAutoRate = d?.purchasePrice?.autoRate ?? true;
+    _soldCurrency =
+        d?.soldPrice?.currency ??
+        DeviceExchangeRateService.defaultDefaultCurrency;
+    _soldAutoRate = d?.soldPrice?.autoRate ?? true;
+    _recurringCostDrafts.addAll(
+      d?.recurringCosts.map(_RecurringCostDraft.fromCost) ?? const [],
+    );
     if (d != null && d.storage.isNotEmpty) {
       _storageEntries = <String>[];
       _storageUnits = <String>[];
@@ -162,6 +213,26 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
 
     _loadPresets();
+    _loadFinancialSettings();
+  }
+
+  Future<void> _loadFinancialSettings() async {
+    final defaultCurrency =
+        await DeviceExchangeRateService.getDefaultCurrency();
+    final autoUpdate = await DeviceExchangeRateService.getAutoUpdateEnabled();
+    if (!mounted) return;
+    setState(() {
+      final oldDefault = _defaultCurrency;
+      _defaultCurrency = defaultCurrency;
+      _autoUpdateRates = autoUpdate;
+      if (widget.device?.purchasePrice == null &&
+          _purchaseCurrency == oldDefault) {
+        _purchaseCurrency = defaultCurrency;
+      }
+      if (widget.device?.soldPrice == null && _soldCurrency == oldDefault) {
+        _soldCurrency = defaultCurrency;
+      }
+    });
   }
 
   Future<void> _loadPresets() async {
@@ -198,6 +269,13 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _osCtrl.dispose();
     _locationCtrl.dispose();
     _notesCtrl.dispose();
+    _purchasePriceCtrl.dispose();
+    _purchaseRateCtrl.dispose();
+    _soldPriceCtrl.dispose();
+    _soldRateCtrl.dispose();
+    for (final draft in _recurringCostDrafts) {
+      draft.dispose();
+    }
     _cpuModelCtrl.dispose();
     _cpuArchCtrl.dispose();
     _cpuFreqCtrl.dispose();
@@ -239,8 +317,52 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
 
   int? _parseInt(String value) => int.tryParse(value.trim());
 
+  double? _parseMoney(String value) {
+    final cleaned = value.trim().replaceAll(',', '');
+    if (cleaned.isEmpty) return null;
+    return double.tryParse(cleaned);
+  }
+
+  double? _parseRate(TextEditingController controller, String currency) {
+    if (currency == _defaultCurrency) return null;
+    return _parseMoney(controller.text);
+  }
+
+  String _acquisitionTypeLabel(
+    AppLocalizations l10n,
+    DeviceAcquisitionType type,
+  ) {
+    return switch (type) {
+      DeviceAcquisitionType.purchased => l10n.acquisitionPurchased,
+      DeviceAcquisitionType.leased => l10n.acquisitionLeased,
+      DeviceAcquisitionType.purchasedWithSubscription =>
+        l10n.acquisitionPurchasedWithSubscription,
+      DeviceAcquisitionType.other => l10n.acquisitionOther,
+    };
+  }
+
+  String _recurringCostKindLabel(
+    AppLocalizations l10n,
+    RecurringCostKind kind,
+  ) {
+    return switch (kind) {
+      RecurringCostKind.lease => l10n.recurringCostLease,
+      RecurringCostKind.insurance => l10n.recurringCostInsurance,
+      RecurringCostKind.subscription => l10n.recurringCostSubscription,
+      RecurringCostKind.other => l10n.recurringCostOther,
+    };
+  }
+
+  String _billingCycleLabel(AppLocalizations l10n, BillingCycle cycle) {
+    return switch (cycle) {
+      BillingCycle.monthly => l10n.billingMonthly,
+      BillingCycle.yearly => l10n.billingYearly,
+    };
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
 
     final storageList = <StorageInfo>[];
     for (int i = 0; i < _storageEntries.length; i++) {
@@ -268,6 +390,68 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       }
     }
 
+    late final MoneyValue? purchasePrice;
+    late final MoneyValue? soldPrice;
+    late final List<DeviceRecurringCost> recurringCosts;
+    try {
+      purchasePrice = await DeviceExchangeRateService.convertOptional(
+        amount: _parseMoney(_purchasePriceCtrl.text),
+        currency: _purchaseCurrency,
+        defaultCurrency: _defaultCurrency,
+        autoRate: _purchaseAutoRate,
+        manualRate: _purchaseAutoRate
+            ? null
+            : _parseRate(_purchaseRateCtrl, _purchaseCurrency),
+        extraJson: widget.device?.purchasePrice?.extraJson ?? const {},
+      );
+      soldPrice = await DeviceExchangeRateService.convertOptional(
+        amount: _parseMoney(_soldPriceCtrl.text),
+        currency: _soldCurrency,
+        defaultCurrency: _defaultCurrency,
+        autoRate: _soldAutoRate,
+        manualRate: _soldAutoRate
+            ? null
+            : _parseRate(_soldRateCtrl, _soldCurrency),
+        extraJson: widget.device?.soldPrice?.extraJson ?? const {},
+      );
+      recurringCosts = [];
+      for (final draft in _recurringCostDrafts) {
+        final amount = _parseMoney(draft.amountCtrl.text);
+        if (amount == null) continue;
+        final price = await DeviceExchangeRateService.convert(
+          amount: amount,
+          currency: draft.currency,
+          defaultCurrency: _defaultCurrency,
+          autoRate: draft.autoRate,
+          manualRate: draft.autoRate
+              ? null
+              : _parseRate(draft.rateCtrl, draft.currency),
+          extraJson: draft.existing?.price.extraJson ?? const {},
+        );
+        recurringCosts.add(
+          DeviceRecurringCost(
+            id: draft.existing?.id,
+            kind: draft.kind,
+            name: _nonEmpty(draft.nameCtrl.text),
+            billingCycle: draft.billingCycle,
+            price: price,
+            extraJson: draft.existing?.extraJson ?? const {},
+          ),
+        );
+      }
+    } on ExchangeRateException catch (e) {
+      if (!mounted) return;
+      final message = e.message == 'manual_rate_required'
+          ? l10n.exchangeRateManualRequired
+          : l10n.exchangeRateUnavailable;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+      return;
+    }
+
+    final isSold = _isSold;
+    final isRetired = _isRetired || isSold;
     final device = Device(
       id: widget.device?.id,
       name: _nameCtrl.text.trim(),
@@ -305,6 +489,13 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       longitude: _longitude,
       purchaseDate: _purchaseDate,
       releaseDate: _releaseDate,
+      acquisitionType: _acquisitionType,
+      isRetired: isRetired,
+      retiredDate: isRetired ? _retiredDate : null,
+      purchasePrice: purchasePrice,
+      isSold: isSold,
+      soldPrice: isSold ? soldPrice : null,
+      recurringCosts: recurringCosts,
       notes: _nonEmpty(_notesCtrl.text),
       extraJson: widget.device?.extraJson ?? const {},
     );
@@ -335,6 +526,18 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
     if (picked != null) {
       setState(() => _releaseDate = picked);
+    }
+  }
+
+  Future<void> _pickRetiredDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _retiredDate ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _retiredDate = picked);
     }
   }
 
@@ -743,6 +946,336 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
+  List<DropdownMenuItem<String>> _currencyItems(String current) {
+    final currencies = [
+      ...DeviceExchangeRateService.supportedCurrencies,
+      if (!DeviceExchangeRateService.supportedCurrencies.contains(current))
+        current,
+    ];
+    return currencies
+        .map(
+          (code) => DropdownMenuItem(
+            value: code,
+            child: Text(
+              '${DeviceExchangeRateService.currencySymbol(code)} $code',
+            ),
+          ),
+        )
+        .toList();
+  }
+
+  Widget _buildMoneyFields({
+    required AppLocalizations l10n,
+    required String title,
+    required TextEditingController amountCtrl,
+    required String currency,
+    required ValueChanged<String> onCurrencyChanged,
+    required bool autoRate,
+    required ValueChanged<bool> onAutoRateChanged,
+    required TextEditingController rateCtrl,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: amountCtrl,
+                decoration: InputDecoration(
+                  labelText: l10n.priceAmount,
+                  prefixText:
+                      '${DeviceExchangeRateService.currencySymbol(currency)} ',
+                ),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            DropdownButton<String>(
+              value: currency,
+              items: _currencyItems(currency),
+              onChanged: (v) {
+                if (v != null) onCurrencyChanged(v);
+              },
+            ),
+          ],
+        ),
+        if (currency != _defaultCurrency) ...[
+          CheckboxListTile(
+            value: autoRate,
+            onChanged: (v) => onAutoRateChanged(v ?? true),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: Text(l10n.exchangeRateAuto),
+            subtitle: _autoUpdateRates
+                ? null
+                : Text(l10n.exchangeRateAutoDisabled),
+          ),
+          if (!autoRate)
+            TextFormField(
+              controller: rateCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.exchangeRateManual,
+                hintText: l10n.exchangeRateManualHint(
+                  currency,
+                  _defaultCurrency,
+                ),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  void _addRecurringCost({RecurringCostKind kind = RecurringCostKind.other}) {
+    setState(() {
+      _recurringCostDrafts.add(
+        _RecurringCostDraft(kind: kind, currency: _defaultCurrency),
+      );
+    });
+  }
+
+  Widget _buildRecurringCostCard(
+    AppLocalizations l10n,
+    int index,
+    _RecurringCostDraft draft,
+  ) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<RecurringCostKind>(
+                    initialValue: draft.kind,
+                    decoration: InputDecoration(
+                      labelText: l10n.recurringCostType,
+                      isDense: true,
+                    ),
+                    items: RecurringCostKind.values
+                        .map(
+                          (kind) => DropdownMenuItem(
+                            value: kind,
+                            child: Text(_recurringCostKindLabel(l10n, kind)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) setState(() => draft.kind = value);
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () {
+                    setState(() {
+                      final removed = _recurringCostDrafts.removeAt(index);
+                      removed.dispose();
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: draft.nameCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.recurringCostName,
+                hintText: l10n.recurringCostNameHint,
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<BillingCycle>(
+              initialValue: draft.billingCycle,
+              decoration: InputDecoration(
+                labelText: l10n.billingCycle,
+                isDense: true,
+              ),
+              items: BillingCycle.values
+                  .map(
+                    (cycle) => DropdownMenuItem(
+                      value: cycle,
+                      child: Text(_billingCycleLabel(l10n, cycle)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => draft.billingCycle = value);
+              },
+            ),
+            const SizedBox(height: 8),
+            _buildMoneyFields(
+              l10n: l10n,
+              title: l10n.recurringCostPrice,
+              amountCtrl: draft.amountCtrl,
+              currency: draft.currency,
+              onCurrencyChanged: (value) =>
+                  setState(() => draft.currency = value),
+              autoRate: draft.autoRate,
+              onAutoRateChanged: (value) =>
+                  setState(() => draft.autoRate = value),
+              rateCtrl: draft.rateCtrl,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFinancialSection(AppLocalizations l10n, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.lifecycleAndFinance,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<DeviceAcquisitionType?>(
+          initialValue: _acquisitionType,
+          decoration: InputDecoration(labelText: l10n.acquisitionType),
+          items: [
+            DropdownMenuItem<DeviceAcquisitionType?>(
+              value: null,
+              child: Text(l10n.optionalNone),
+            ),
+            ...DeviceAcquisitionType.values.map(
+              (type) => DropdownMenuItem<DeviceAcquisitionType?>(
+                value: type,
+                child: Text(_acquisitionTypeLabel(l10n, type)),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _acquisitionType = value;
+              if (value == DeviceAcquisitionType.leased &&
+                  _recurringCostDrafts.isEmpty) {
+                _recurringCostDrafts.add(
+                  _RecurringCostDraft(
+                    kind: RecurringCostKind.lease,
+                    currency: _defaultCurrency,
+                  ),
+                );
+              }
+              if (value == DeviceAcquisitionType.purchasedWithSubscription &&
+                  _recurringCostDrafts.isEmpty) {
+                _recurringCostDrafts.add(
+                  _RecurringCostDraft(
+                    kind: RecurringCostKind.insurance,
+                    currency: _defaultCurrency,
+                  ),
+                );
+              }
+            });
+          },
+        ),
+        const SizedBox(height: 12),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.deviceRetired),
+          value: _isRetired || _isSold,
+          onChanged: _isSold
+              ? null
+              : (value) => setState(() {
+                  _isRetired = value;
+                  if (!value) _retiredDate = null;
+                }),
+        ),
+        if (_isRetired || _isSold)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.deviceRetiredDate),
+            subtitle: Text(
+              _retiredDate != null
+                  ? DateFormat.yMd(l10n.localeName).format(_retiredDate!)
+                  : '—',
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: _pickRetiredDate,
+                ),
+                if (_retiredDate != null)
+                  IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => setState(() => _retiredDate = null),
+                  ),
+              ],
+            ),
+          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.deviceSold),
+          value: _isSold,
+          onChanged: (value) => setState(() {
+            _isSold = value;
+            if (value) _isRetired = true;
+          }),
+        ),
+        const SizedBox(height: 8),
+        _buildMoneyFields(
+          l10n: l10n,
+          title: l10n.purchasePrice,
+          amountCtrl: _purchasePriceCtrl,
+          currency: _purchaseCurrency,
+          onCurrencyChanged: (value) =>
+              setState(() => _purchaseCurrency = value),
+          autoRate: _purchaseAutoRate,
+          onAutoRateChanged: (value) =>
+              setState(() => _purchaseAutoRate = value),
+          rateCtrl: _purchaseRateCtrl,
+        ),
+        if (_isSold) ...[
+          const SizedBox(height: 16),
+          _buildMoneyFields(
+            l10n: l10n,
+            title: l10n.soldPrice,
+            amountCtrl: _soldPriceCtrl,
+            currency: _soldCurrency,
+            onCurrencyChanged: (value) => setState(() => _soldCurrency = value),
+            autoRate: _soldAutoRate,
+            onAutoRateChanged: (value) => setState(() => _soldAutoRate = value),
+            rateCtrl: _soldRateCtrl,
+          ),
+        ],
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                l10n.recurringCosts,
+                style: theme.textTheme.titleSmall,
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => _addRecurringCost(),
+            ),
+          ],
+        ),
+        for (var i = 0; i < _recurringCostDrafts.length; i++)
+          _buildRecurringCostCard(l10n, i, _recurringCostDrafts[i]),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -917,6 +1450,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                 ],
               ),
             ),
+
+            const Divider(height: 32),
+            _buildFinancialSection(l10n, theme),
 
             const Divider(height: 32),
 
@@ -1425,6 +1961,50 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         ),
       ),
     );
+  }
+}
+
+class _RecurringCostDraft {
+  RecurringCostKind kind;
+  BillingCycle billingCycle;
+  String currency;
+  bool autoRate;
+  final TextEditingController nameCtrl;
+  final TextEditingController amountCtrl;
+  final TextEditingController rateCtrl;
+  final DeviceRecurringCost? existing;
+
+  _RecurringCostDraft({
+    required this.kind,
+    required this.currency,
+    this.billingCycle = BillingCycle.monthly,
+    this.autoRate = true,
+    String? name,
+    String? amount,
+    String? rate,
+    this.existing,
+  }) : nameCtrl = TextEditingController(text: name ?? ''),
+       amountCtrl = TextEditingController(text: amount ?? ''),
+       rateCtrl = TextEditingController(text: rate ?? '');
+
+  factory _RecurringCostDraft.fromCost(DeviceRecurringCost cost) =>
+      _RecurringCostDraft(
+        kind: cost.kind,
+        billingCycle: cost.billingCycle,
+        currency: cost.price.currency,
+        autoRate: cost.price.autoRate,
+        name: cost.name,
+        amount: cost.price.amount.toString(),
+        rate: cost.price.currency != cost.price.defaultCurrency
+            ? cost.price.exchangeRate.toString()
+            : '',
+        existing: cost,
+      );
+
+  void dispose() {
+    nameCtrl.dispose();
+    amountCtrl.dispose();
+    rateCtrl.dispose();
   }
 }
 

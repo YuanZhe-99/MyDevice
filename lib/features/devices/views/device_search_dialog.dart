@@ -191,8 +191,7 @@ class _SearchDialogState extends State<_SearchDialog> {
     if (_selected?.imageUrl == null) return;
     setState(() => _fetchingImage = true);
     try {
-      final path =
-          await ImageService.saveImageFromUrl(_selected!.imageUrl!);
+      final path = await ImageService.saveImageFromUrl(_selected!.imageUrl!);
       if (path != null && mounted) {
         final file = await ImageService.resolve(path);
         setState(() {
@@ -207,8 +206,9 @@ class _SearchDialogState extends State<_SearchDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _fetchingImage = false);
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -295,7 +295,9 @@ class _SearchDialogState extends State<_SearchDialog> {
                     border: const OutlineInputBorder(),
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
                   ),
                   onSubmitted: (_) => _search(),
                 ),
@@ -349,20 +351,14 @@ class _SearchDialogState extends State<_SearchDialog> {
                         const Icon(Icons.phone_android, size: 20),
                   ),
                 )
-              : const SizedBox(
-                  width: 36,
-                  child: Icon(Icons.devices_outlined),
-                ),
+              : const SizedBox(width: 36, child: Icon(Icons.devices_outlined)),
           title: Text(
             r.name ?? '?',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
-            [
-              r.source,
-              if (r.brand != null) r.brand!,
-            ].join(' · '),
+            [r.source, if (r.brand != null) r.brand!].join(' · '),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall,
@@ -448,17 +444,29 @@ class _SearchDialogState extends State<_SearchDialog> {
           _fieldTile('model', l10n.deviceModel, widget.currentModel, r.model!),
         if (r.chipset?.isNotEmpty == true)
           _fieldTile(
-              'chipset', l10n.cpuInfo, widget.currentChipset, r.chipset!),
+            'chipset',
+            l10n.cpuInfo,
+            widget.currentChipset,
+            r.chipset!,
+          ),
         if (r.gpuName?.isNotEmpty == true)
           _fieldTile('gpu', l10n.gpuInfo, widget.currentGpu, r.gpuName!),
         if (r.ram?.isNotEmpty == true)
           _fieldTile('ram', l10n.ram, widget.currentRam, r.ram!),
         if (r.storage?.isNotEmpty == true)
           _fieldTile(
-              'storage', l10n.storage, widget.currentStorage, r.storage!),
+            'storage',
+            l10n.storage,
+            widget.currentStorage,
+            r.storage!,
+          ),
         if (r.screenSize?.isNotEmpty == true)
-          _fieldTile('screenSize', l10n.screenSize, widget.currentScreenSize,
-              r.screenSize!),
+          _fieldTile(
+            'screenSize',
+            l10n.screenSize,
+            widget.currentScreenSize,
+            r.screenSize!,
+          ),
         if (r.screenResolutionW != null && r.screenResolutionH != null)
           _fieldTile(
             'resolution',
@@ -470,7 +478,11 @@ class _SearchDialogState extends State<_SearchDialog> {
           ),
         if (r.battery?.isNotEmpty == true)
           _fieldTile(
-              'battery', l10n.battery, widget.currentBattery, r.battery!),
+            'battery',
+            l10n.battery,
+            widget.currentBattery,
+            r.battery!,
+          ),
         if (r.os?.isNotEmpty == true)
           _fieldTile('os', l10n.os, widget.currentOs, r.os!),
         if (r.releaseDate != null)
@@ -478,7 +490,9 @@ class _SearchDialogState extends State<_SearchDialog> {
             'releaseDate',
             l10n.deviceReleaseDate,
             widget.currentReleaseDate != null
-                ? DateFormat.yMd(l10n.localeName).format(widget.currentReleaseDate!)
+                ? DateFormat.yMd(
+                    l10n.localeName,
+                  ).format(widget.currentReleaseDate!)
                 : null,
             DateFormat.yMd(l10n.localeName).format(r.releaseDate!),
           ),
@@ -492,13 +506,14 @@ class _SearchDialogState extends State<_SearchDialog> {
                 Checkbox(
                   value: _toggles['image'] ?? false,
                   onChanged: _fetchedImagePath != null
-                      ? (v) =>
-                          setState(() => _toggles['image'] = v ?? false)
+                      ? (v) => setState(() => _toggles['image'] = v ?? false)
                       : null,
                 ),
                 Expanded(
-                  child: Text(l10n.searchDeviceImage,
-                      style: Theme.of(context).textTheme.titleSmall),
+                  child: Text(
+                    l10n.searchDeviceImage,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
                 ),
                 if (_fetchingImage)
                   const SizedBox(
@@ -517,22 +532,24 @@ class _SearchDialogState extends State<_SearchDialog> {
           ),
           if (_imagePreview != null)
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
                   if (widget.currentImagePath != null) ...[
                     _imageColumn(
                       l10n.searchCurrent,
                       FutureBuilder<File>(
-                        future:
-                            ImageService.resolve(widget.currentImagePath!),
+                        future: ImageService.resolve(widget.currentImagePath!),
                         builder: (context, snap) {
                           if (snap.hasData && snap.data!.existsSync()) {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(4),
-                              child: Image.file(snap.data!,
-                                  width: 55, height: 77, fit: BoxFit.cover),
+                              child: Image.file(
+                                snap.data!,
+                                width: 55,
+                                height: 77,
+                                fit: BoxFit.cover,
+                              ),
                             );
                           }
                           return const SizedBox(width: 55, height: 77);
@@ -574,17 +591,17 @@ class _SearchDialogState extends State<_SearchDialog> {
     );
   }
 
-  Widget _fieldTile(
-      String key, String label, String? current, String fetched) {
+  Widget _fieldTile(String key, String label, String? current, String fetched) {
     final l10n = AppLocalizations.of(context)!;
     return CheckboxListTile(
       value: _toggles[key] ?? false,
       onChanged: (v) => setState(() => _toggles[key] = v ?? false),
-      title: Text(label,
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(fontWeight: FontWeight.w600)),
+      title: Text(
+        label,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -592,16 +609,16 @@ class _SearchDialogState extends State<_SearchDialog> {
             Text(
               '${l10n.searchCurrent}: $current',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           Text(
             '${l10n.searchFetched}: $fetched',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+            ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -625,12 +642,17 @@ class _SearchDialogState extends State<_SearchDialog> {
               onPressed: () => setState(() => _phase = _Phase.search),
               visualDensity: VisualDensity.compact,
             ),
-          Icon(Icons.travel_explore,
-              color: Theme.of(context).colorScheme.primary, size: 20),
+          Icon(
+            Icons.travel_explore,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(l10n.searchDeviceInfo,
-                style: Theme.of(context).textTheme.titleMedium),
+            child: Text(
+              l10n.searchDeviceInfo,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 20),

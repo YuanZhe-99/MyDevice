@@ -32,19 +32,16 @@ class ChipSearchResult {
   });
 
   CpuInfo toCpuInfo() => CpuInfo(
-        model: model,
-        architecture: architecture,
-        frequency: frequency,
-        performanceCores: performanceCores,
-        efficiencyCores: efficiencyCores,
-        threads: threads,
-        cache: cache,
-      );
+    model: model,
+    architecture: architecture,
+    frequency: frequency,
+    performanceCores: performanceCores,
+    efficiencyCores: efficiencyCores,
+    threads: threads,
+    cache: cache,
+  );
 
-  GpuInfo toGpuInfo() => GpuInfo(
-        model: model,
-        architecture: architecture,
-      );
+  GpuInfo toGpuInfo() => GpuInfo(model: model, architecture: architecture);
 }
 
 /// Service to search for CPU/GPU specs from online databases.
@@ -74,16 +71,18 @@ class ChipSearchService {
     for (final cpu in presets) {
       if (cpu.model == null) continue;
       if (cpu.model!.toLowerCase().contains(queryLower)) {
-        results.add(ChipSearchResult(
-          source: 'preset',
-          model: cpu.model,
-          architecture: cpu.architecture,
-          frequency: cpu.frequency,
-          performanceCores: cpu.performanceCores,
-          efficiencyCores: cpu.efficiencyCores,
-          threads: cpu.threads,
-          cache: cpu.cache,
-        ));
+        results.add(
+          ChipSearchResult(
+            source: 'preset',
+            model: cpu.model,
+            architecture: cpu.architecture,
+            frequency: cpu.frequency,
+            performanceCores: cpu.performanceCores,
+            efficiencyCores: cpu.efficiencyCores,
+            threads: cpu.threads,
+            cache: cpu.cache,
+          ),
+        );
       }
     }
 
@@ -97,8 +96,7 @@ class ChipSearchService {
 
       final existing = results.map((r) => r.model?.toLowerCase()).toSet();
       for (final online in futures) {
-        if (online != null &&
-            !existing.contains(online.model?.toLowerCase())) {
+        if (online != null && !existing.contains(online.model?.toLowerCase())) {
           results.add(online);
           existing.add(online.model?.toLowerCase());
         }
@@ -120,11 +118,13 @@ class ChipSearchService {
     for (final gpu in presets) {
       if (gpu.model == null) continue;
       if (gpu.model!.toLowerCase().contains(queryLower)) {
-        results.add(ChipSearchResult(
-          source: 'preset',
-          model: gpu.model,
-          architecture: gpu.architecture,
-        ));
+        results.add(
+          ChipSearchResult(
+            source: 'preset',
+            model: gpu.model,
+            architecture: gpu.architecture,
+          ),
+        );
       }
     }
 
@@ -137,8 +137,7 @@ class ChipSearchService {
 
       final existing = results.map((r) => r.model?.toLowerCase()).toSet();
       for (final online in futures) {
-        if (online != null &&
-            !existing.contains(online.model?.toLowerCase())) {
+        if (online != null && !existing.contains(online.model?.toLowerCase())) {
           results.add(online);
           existing.add(online.model?.toLowerCase());
         }
@@ -152,16 +151,20 @@ class ChipSearchService {
 
   /// Find TechPowerUp URL via Startpage search.
   static Future<String?> _findTechPowerUpUrl(
-      String query, String section) async {
-    final resp = await http.post(
-      Uri.parse('https://www.startpage.com/sp/search'),
-      headers: {
-        'User-Agent': _userAgent,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body:
-          'query=${Uri.encodeComponent("$query site:techpowerup.com/$section")}',
-    ).timeout(const Duration(seconds: 15));
+    String query,
+    String section,
+  ) async {
+    final resp = await http
+        .post(
+          Uri.parse('https://www.startpage.com/sp/search'),
+          headers: {
+            'User-Agent': _userAgent,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body:
+              'query=${Uri.encodeComponent("$query site:techpowerup.com/$section")}',
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (resp.statusCode != 200) return null;
 
@@ -173,15 +176,16 @@ class ChipSearchService {
 
   // ──── TechPowerUp CPU ────
 
-  static Future<ChipSearchResult?> _searchTechPowerUpCpu(
-      String query) async {
+  static Future<ChipSearchResult?> _searchTechPowerUpCpu(String query) async {
     final tpuUrl = await _findTechPowerUpUrl(query, 'cpu-specs');
     if (tpuUrl == null) return null;
 
-    final resp = await http.get(
-      Uri.parse(tpuUrl),
-      headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
-    ).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(
+          Uri.parse(tpuUrl),
+          headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (resp.statusCode != 200) return null;
 
@@ -245,11 +249,13 @@ class ChipSearchService {
     final eCoreStr = specs['Efficiency Cores'];
     if (pCoreStr != null) {
       pCores = int.tryParse(
-          RegExp(r'(\d+)').firstMatch(pCoreStr)?.group(1) ?? '');
+        RegExp(r'(\d+)').firstMatch(pCoreStr)?.group(1) ?? '',
+      );
     }
     if (eCoreStr != null) {
       eCores = int.tryParse(
-          RegExp(r'(\d+)').firstMatch(eCoreStr)?.group(1) ?? '');
+        RegExp(r'(\d+)').firstMatch(eCoreStr)?.group(1) ?? '',
+      );
     }
 
     // Cache
@@ -278,15 +284,16 @@ class ChipSearchService {
 
   // ──── TechPowerUp GPU (via og:meta) ────
 
-  static Future<ChipSearchResult?> _searchTechPowerUpGpu(
-      String query) async {
+  static Future<ChipSearchResult?> _searchTechPowerUpGpu(String query) async {
     final tpuUrl = await _findTechPowerUpUrl(query, 'gpu-specs');
     if (tpuUrl == null) return null;
 
-    final resp = await http.get(
-      Uri.parse(tpuUrl),
-      headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
-    ).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(
+          Uri.parse(tpuUrl),
+          headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (resp.statusCode != 200) return null;
 
@@ -315,7 +322,13 @@ class ChipSearchService {
     if (parts.isNotEmpty) {
       String chip = parts[0];
       // Strip vendor prefix
-      for (final vendor in ['NVIDIA ', 'AMD ', 'Intel ', 'Apple ', 'Qualcomm ']) {
+      for (final vendor in [
+        'NVIDIA ',
+        'AMD ',
+        'Intel ',
+        'Apple ',
+        'Qualcomm ',
+      ]) {
         if (chip.startsWith(vendor)) {
           chip = chip.substring(vendor.length);
           break;
@@ -335,25 +348,26 @@ class ChipSearchService {
   // ──── AMD (official) ────
 
   /// Find AMD product URL via Startpage.
-  static Future<String?> _findAmdUrl(
-      String query, String category) async {
-    final resp = await http.post(
-      Uri.parse('https://www.startpage.com/sp/search'),
-      headers: {
-        'User-Agent': _userAgent,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body:
-          'query=${Uri.encodeComponent("$query specifications site:amd.com/en/products/$category")}',
-    ).timeout(const Duration(seconds: 15));
+  static Future<String?> _findAmdUrl(String query, String category) async {
+    final resp = await http
+        .post(
+          Uri.parse('https://www.startpage.com/sp/search'),
+          headers: {
+            'User-Agent': _userAgent,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body:
+              'query=${Uri.encodeComponent("$query specifications site:amd.com/en/products/$category")}',
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (resp.statusCode != 200) return null;
 
-    final match = RegExp(
-      r'https?://www\.amd\.com/en/products/[^\s"<>&\\]+\.html',
-    ).allMatches(resp.body).map((m) => m.group(0)!).where(
-          (u) => !u.endsWith(r'\'),
-        );
+    final match =
+        RegExp(r'https?://www\.amd\.com/en/products/[^\s"<>&\\]+\.html')
+            .allMatches(resp.body)
+            .map((m) => m.group(0)!)
+            .where((u) => !u.endsWith(r'\'));
     return match.isNotEmpty ? match.first : null;
   }
 
@@ -410,10 +424,12 @@ class ChipSearchService {
     final url = await _findAmdUrl(query, 'processors');
     if (url == null) return null;
 
-    final resp = await http.get(
-      Uri.parse(url),
-      headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
-    ).timeout(const Duration(seconds: 20));
+    final resp = await http
+        .get(
+          Uri.parse(url),
+          headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
+        )
+        .timeout(const Duration(seconds: 20));
     if (resp.statusCode != 200) return null;
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
@@ -421,16 +437,15 @@ class ChipSearchService {
     if (specs.isEmpty) return null;
 
     final model = specs['Name'];
-    final architecture = specs['Processor Architecture'] ??
-        specs['Former Codename'];
+    final architecture =
+        specs['Processor Architecture'] ?? specs['Former Codename'];
 
     // Frequency
     String? frequency;
     final base = specs['Base Clock'];
     final boost = specs['Max. Boost Clock'];
     if (base != null) {
-      frequency =
-          boost != null ? '$base (boost $boost)' : base;
+      frequency = boost != null ? '$base (boost $boost)' : base;
     } else if (boost != null) {
       frequency = boost;
     }
@@ -473,10 +488,12 @@ class ChipSearchService {
     final url = await _findAmdUrl(query, 'graphics');
     if (url == null) return null;
 
-    final resp = await http.get(
-      Uri.parse(url),
-      headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
-    ).timeout(const Duration(seconds: 20));
+    final resp = await http
+        .get(
+          Uri.parse(url),
+          headers: {'User-Agent': _userAgent, 'Accept': 'text/html'},
+        )
+        .timeout(const Duration(seconds: 20));
     if (resp.statusCode != 200) return null;
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
@@ -509,15 +526,17 @@ class ChipSearchService {
     }
 
     // Find Intel product spec URL via Startpage
-    final resp = await http.post(
-      Uri.parse('https://www.startpage.com/sp/search'),
-      headers: {
-        'User-Agent': _userAgent,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body:
-          'query=${Uri.encodeComponent("$query specifications site:intel.com/content/www/us/en/products/sku")}',
-    ).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .post(
+          Uri.parse('https://www.startpage.com/sp/search'),
+          headers: {
+            'User-Agent': _userAgent,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body:
+              'query=${Uri.encodeComponent("$query specifications site:intel.com/content/www/us/en/products/sku")}',
+        )
+        .timeout(const Duration(seconds: 15));
 
     if (resp.statusCode != 200) return null;
 
@@ -534,20 +553,23 @@ class ChipSearchService {
     // Convert slug to readable name
     var model = nameSlug
         .split('-')
-        .map((w) => w == 'intel'
-            ? 'Intel'
-            : w == 'processor'
-                ? ''
-                : w)
+        .map(
+          (w) => w == 'intel'
+              ? 'Intel'
+              : w == 'processor'
+              ? ''
+              : w,
+        )
         .where((w) => w.isNotEmpty)
         .join(' ');
     // Capitalize known tokens
-    model = model
-        .replaceAllMapped(RegExp(r'\b(core|ultra|xeon|celeron|pentium)\b',
-            caseSensitive: false), (m) {
-      final w = m.group(1)!;
-      return w[0].toUpperCase() + w.substring(1);
-    });
+    model = model.replaceAllMapped(
+      RegExp(r'\b(core|ultra|xeon|celeron|pentium)\b', caseSensitive: false),
+      (m) {
+        final w = m.group(1)!;
+        return w[0].toUpperCase() + w.substring(1);
+      },
+    );
     // Fix model numbers like "i52520m" → "i5-2520M" (best effort)
     model = model.replaceAllMapped(
       RegExp(r'\b(i\d)(\d{3,})([a-z]*)\b', caseSensitive: false),
@@ -561,11 +583,9 @@ class ChipSearchService {
 
     // Extract max frequency from slug
     String? frequency;
-    final freqMatch =
-        RegExp(r'up-to-(\d+)-(\d+)-ghz').firstMatch(slug);
+    final freqMatch = RegExp(r'up-to-(\d+)-(\d+)-ghz').firstMatch(slug);
     if (freqMatch != null) {
-      frequency =
-          'Up to ${freqMatch.group(1)}.${freqMatch.group(2)} GHz';
+      frequency = 'Up to ${freqMatch.group(1)}.${freqMatch.group(2)} GHz';
     }
 
     return ChipSearchResult(

@@ -794,4 +794,139 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsDesktop => 'デスクトップ';
+
+  @override
+  String get lifecycleAndFinance => 'ライフサイクルと費用';
+
+  @override
+  String get deviceStatus => 'ステータス';
+
+  @override
+  String get statusInService => '稼働中';
+
+  @override
+  String get statusRetired => '退役済み';
+
+  @override
+  String get statusSold => '売却済み';
+
+  @override
+  String get filterAll => 'すべて';
+
+  @override
+  String get deviceRetired => '退役済み';
+
+  @override
+  String get deviceRetiredDate => '退役日';
+
+  @override
+  String get deviceSold => '売却済み';
+
+  @override
+  String get acquisitionType => '取得方法';
+
+  @override
+  String get acquisitionPurchased => '一括購入';
+
+  @override
+  String get acquisitionLeased => 'リース';
+
+  @override
+  String get acquisitionPurchasedWithSubscription => '購入 + サブスク';
+
+  @override
+  String get acquisitionOther => 'その他';
+
+  @override
+  String get optionalNone => '未設定';
+
+  @override
+  String get purchasePrice => '購入価格';
+
+  @override
+  String get soldPrice => '売却価格';
+
+  @override
+  String get priceAmount => '金額';
+
+  @override
+  String get exchangeRateAuto => '自動為替レートを使う';
+
+  @override
+  String get exchangeRateAutoDisabled =>
+      '設定で自動更新が無効です。保存済みレートまたは内蔵の予備レートを使用します。';
+
+  @override
+  String get exchangeRateManual => '手動為替レート';
+
+  @override
+  String exchangeRateManualHint(String from, String to) {
+    return '1 $from = ? $to';
+  }
+
+  @override
+  String get exchangeRateManualRequired => '手動為替レートを入力してください。';
+
+  @override
+  String get exchangeRateUnavailable => '為替レートを取得できません。レートを更新するか手動で入力してください。';
+
+  @override
+  String get recurringCosts => '継続費用';
+
+  @override
+  String get recurringCostType => '種類';
+
+  @override
+  String get recurringCostName => '名前';
+
+  @override
+  String get recurringCostNameHint => '例: AppleCare+、リース料金';
+
+  @override
+  String get recurringCostPrice => '継続価格';
+
+  @override
+  String get recurringCostLease => 'リース';
+
+  @override
+  String get recurringCostInsurance => '保険';
+
+  @override
+  String get recurringCostSubscription => 'サブスク';
+
+  @override
+  String get recurringCostOther => 'その他';
+
+  @override
+  String get billingCycle => '請求周期';
+
+  @override
+  String get billingMonthly => '毎月';
+
+  @override
+  String get billingYearly => '毎年';
+
+  @override
+  String get financialOverview => '財務概要';
+
+  @override
+  String get financialTotalCost => '総コスト';
+
+  @override
+  String get financialDailyCost => '日次コスト';
+
+  @override
+  String get settingsDefaultCurrency => '既定通貨';
+
+  @override
+  String get settingsAutoUpdateExchangeRates => '為替レートを自動更新';
+
+  @override
+  String get settingsRefreshExchangeRates => '為替レートを更新';
+
+  @override
+  String get exchangeRateUpdated => '為替レートを更新しました';
+
+  @override
+  String get exchangeRateUpdateFailed => '為替レートの更新に失敗しました';
 }

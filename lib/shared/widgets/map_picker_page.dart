@@ -45,9 +45,10 @@ class _MapPickerPageState extends State<MapPickerPage> {
         'format': 'json',
         'limit': '1',
       });
-      final response = await http.get(uri, headers: {
-        'User-Agent': 'MyDevice/0.2.0',
-      });
+      final response = await http.get(
+        uri,
+        headers: {'User-Agent': 'MyDevice/0.2.0'},
+      );
       if (response.statusCode == 200) {
         final results = jsonDecode(response.body) as List;
         if (results.isNotEmpty) {
@@ -119,9 +120,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Text(
               '${_selected.latitude.toStringAsFixed(5)}, ${_selected.longitude.toStringAsFixed(5)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
             ),
           ),
           // Map

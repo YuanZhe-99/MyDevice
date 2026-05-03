@@ -58,27 +58,26 @@ class DeviceSearchResult {
     String? battery,
     String? os,
     DateTime? releaseDate,
-  }) =>
-      DeviceSearchResult(
-        source: source,
-        sourceUrl: sourceUrl,
-        name: name,
-        brand: brand,
-        model: model,
-        thumbnailUrl: thumbnailUrl,
-        imageUrl: imageUrl ?? this.imageUrl,
-        chipset: chipset ?? this.chipset,
-        gpuName: gpuName ?? this.gpuName,
-        ram: ram ?? this.ram,
-        storage: storage ?? this.storage,
-        screenSize: screenSize ?? this.screenSize,
-        screenResolutionW: screenResolutionW ?? this.screenResolutionW,
-        screenResolutionH: screenResolutionH ?? this.screenResolutionH,
-        battery: battery ?? this.battery,
-        os: os ?? this.os,
-        releaseDate: releaseDate ?? this.releaseDate,
-        detailFetched: true,
-      );
+  }) => DeviceSearchResult(
+    source: source,
+    sourceUrl: sourceUrl,
+    name: name,
+    brand: brand,
+    model: model,
+    thumbnailUrl: thumbnailUrl,
+    imageUrl: imageUrl ?? this.imageUrl,
+    chipset: chipset ?? this.chipset,
+    gpuName: gpuName ?? this.gpuName,
+    ram: ram ?? this.ram,
+    storage: storage ?? this.storage,
+    screenSize: screenSize ?? this.screenSize,
+    screenResolutionW: screenResolutionW ?? this.screenResolutionW,
+    screenResolutionH: screenResolutionH ?? this.screenResolutionH,
+    battery: battery ?? this.battery,
+    os: os ?? this.os,
+    releaseDate: releaseDate ?? this.releaseDate,
+    detailFetched: true,
+  );
 }
 
 /// Service to search for device specs from online databases.
@@ -99,7 +98,8 @@ class DeviceSearchService {
 
   /// Fetch full detail for a search result (scrapes the detail page).
   static Future<DeviceSearchResult> fetchDetail(
-      DeviceSearchResult result) async {
+    DeviceSearchResult result,
+  ) async {
     if (AppFlavor.isStore) return result;
     if (result.sourceUrl == null) return result;
     switch (result.source) {
@@ -114,25 +114,30 @@ class DeviceSearchService {
 
   // ──── GSMArena ────
 
-  static Future<List<DeviceSearchResult>> _searchGSMArena(
-      String query) async {
+  static Future<List<DeviceSearchResult>> _searchGSMArena(String query) async {
     final url = Uri.parse(
       'https://www.gsmarena.com/results.php3'
       '?sQuickSearch=yes&sName=${Uri.encodeComponent(query)}',
     );
-    final resp = await http.get(url, headers: {
-      'User-Agent': _userAgent,
-      'Accept': 'text/html,application/xhtml+xml',
-      'Accept-Language': 'en-US,en;q=0.9',
-    }).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(
+          url,
+          headers: {
+            'User-Agent': _userAgent,
+            'Accept': 'text/html,application/xhtml+xml',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        )
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return [];
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
 
     // Find the <div class="makers"> section
-    final makersMatch =
-        RegExp(r'<div\s+class="makers">(.*?)</div>', dotAll: true)
-            .firstMatch(html);
+    final makersMatch = RegExp(
+      r'<div\s+class="makers">(.*?)</div>',
+      dotAll: true,
+    ).firstMatch(html);
     if (makersMatch == null) return [];
     final makersHtml = makersMatch.group(1)!;
 
@@ -147,8 +152,10 @@ class DeviceSearchService {
       final imgMatch = RegExp(r'<img[^>]*src="([^"]*)"').firstMatch(li);
       // Device name is inside <span>...</span>, may contain <br> between
       // brand and model, e.g. <span>Apple<br>iPhone 15 Pro</span>
-      final spanMatch =
-          RegExp(r'<span>(.*?)</span>', dotAll: true).firstMatch(li);
+      final spanMatch = RegExp(
+        r'<span>(.*?)</span>',
+        dotAll: true,
+      ).firstMatch(li);
       final name = spanMatch
           ?.group(1)
           ?.replaceAll(RegExp(r'<[^>]+>'), ' ')
@@ -160,14 +167,16 @@ class DeviceSearchService {
 
       if (href != null && name != null && name.isNotEmpty) {
         final (brand, model) = _splitBrandModel(name);
-        results.add(DeviceSearchResult(
-          source: 'GSMArena',
-          sourceUrl: 'https://www.gsmarena.com/$href',
-          name: name,
-          brand: brand,
-          model: model,
-          thumbnailUrl: thumbnail,
-        ));
+        results.add(
+          DeviceSearchResult(
+            source: 'GSMArena',
+            sourceUrl: 'https://www.gsmarena.com/$href',
+            name: name,
+            brand: brand,
+            model: model,
+            thumbnailUrl: thumbnail,
+          ),
+        );
       }
     }
 
@@ -175,13 +184,19 @@ class DeviceSearchService {
   }
 
   static Future<DeviceSearchResult> _fetchGSMArenaDetail(
-      DeviceSearchResult result) async {
+    DeviceSearchResult result,
+  ) async {
     final url = Uri.parse(result.sourceUrl!);
-    final resp = await http.get(url, headers: {
-      'User-Agent': _userAgent,
-      'Accept': 'text/html,application/xhtml+xml',
-      'Accept-Language': 'en-US,en;q=0.9',
-    }).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(
+          url,
+          headers: {
+            'User-Agent': _userAgent,
+            'Accept': 'text/html,application/xhtml+xml',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        )
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return result;
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
@@ -208,8 +223,9 @@ class DeviceSearchService {
     final (resW, resH) = _parseResolution(_spec(html, 'displayresolution'));
     final battery = _parseBattery(_spec(html, 'batdescription1'));
     final os = _spec(html, 'os');
-    final releaseDate =
-        _parseReleaseDate(_spec(html, 'released-hl') ?? _spec(html, 'status'));
+    final releaseDate = _parseReleaseDate(
+      _spec(html, 'released-hl') ?? _spec(html, 'status'),
+    );
 
     return result.withDetail(
       imageUrl: deviceImageUrl,
@@ -255,23 +271,28 @@ class DeviceSearchService {
     final segment = raw.split(',').first.trim();
 
     // "128GB 8GB RAM" or "128 GB 8 GB RAM"
-    final full = RegExp(r'(\d+)\s*GB\s+(\d+)\s*GB\s*RAM', caseSensitive: false)
-        .firstMatch(segment);
+    final full = RegExp(
+      r'(\d+)\s*GB\s+(\d+)\s*GB\s*RAM',
+      caseSensitive: false,
+    ).firstMatch(segment);
     if (full != null) {
       return ('${full.group(2)} GB', '${full.group(1)} GB');
     }
 
     // "1TB 16GB RAM"
-    final tbFull =
-        RegExp(r'(\d+)\s*TB\s+(\d+)\s*GB\s*RAM', caseSensitive: false)
-            .firstMatch(segment);
+    final tbFull = RegExp(
+      r'(\d+)\s*TB\s+(\d+)\s*GB\s*RAM',
+      caseSensitive: false,
+    ).firstMatch(segment);
     if (tbFull != null) {
       return ('${tbFull.group(2)} GB', '${tbFull.group(1)} TB');
     }
 
     // RAM only: "8GB RAM"
-    final ramOnly =
-        RegExp(r'(\d+)\s*(GB|MB)\s*RAM', caseSensitive: false).firstMatch(raw);
+    final ramOnly = RegExp(
+      r'(\d+)\s*(GB|MB)\s*RAM',
+      caseSensitive: false,
+    ).firstMatch(raw);
     if (ramOnly != null) {
       return ('${ramOnly.group(1)} ${ramOnly.group(2)!.toUpperCase()}', null);
     }
@@ -301,8 +322,7 @@ class DeviceSearchService {
   static DateTime? _parseReleaseDate(String? raw) {
     if (raw == null) return null;
     // "Released 2024, September 20" or "2024, September"
-    final fullMatch =
-        RegExp(r'(\d{4}),?\s+(\w+)\s+(\d{1,2})').firstMatch(raw);
+    final fullMatch = RegExp(r'(\d{4}),?\s+(\w+)\s+(\d{1,2})').firstMatch(raw);
     if (fullMatch != null) {
       final year = int.parse(fullMatch.group(1)!);
       final month = _parseMonth(fullMatch.group(2)!);
@@ -320,9 +340,18 @@ class DeviceSearchService {
 
   static int? _parseMonth(String m) {
     const months = {
-      'january': 1, 'february': 2, 'march': 3, 'april': 4,
-      'may': 5, 'june': 6, 'july': 7, 'august': 8,
-      'september': 9, 'october': 10, 'november': 11, 'december': 12,
+      'january': 1,
+      'february': 2,
+      'march': 3,
+      'april': 4,
+      'may': 5,
+      'june': 6,
+      'july': 7,
+      'august': 8,
+      'september': 9,
+      'october': 10,
+      'november': 11,
+      'december': 12,
     };
     return months[m.toLowerCase()];
   }
@@ -371,16 +400,22 @@ class DeviceSearchService {
   // Search results include inline specs (GPU, CPU, screen, resolution, weight).
 
   static Future<List<DeviceSearchResult>> _searchNotebookcheck(
-      String query) async {
+    String query,
+  ) async {
     final url = Uri.parse(
       'https://www.notebookcheck.net/Laptop_Search.8223.0.html'
       '?model=${Uri.encodeComponent(query)}',
     );
-    final resp = await http.get(url, headers: {
-      'User-Agent': _userAgent,
-      'Accept': 'text/html',
-      'Accept-Language': 'en-US,en;q=0.9',
-    }).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(
+          url,
+          headers: {
+            'User-Agent': _userAgent,
+            'Accept': 'text/html',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        )
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return [];
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
@@ -416,9 +451,10 @@ class DeviceSearchService {
       // Skip review articles — device entries are short names,
       // review titles are long or contain keywords like "review".
       if (name.length > 80 ||
-          RegExp(r'review|comparison|versus|benchmark|test[:\s]',
-                  caseSensitive: false)
-              .hasMatch(name)) {
+          RegExp(
+            r'review|comparison|versus|benchmark|test[:\s]',
+            caseSensitive: false,
+          ).hasMatch(name)) {
         continue;
       }
 
@@ -436,8 +472,9 @@ class DeviceSearchService {
         if (parts.length > 1) chipset = parts[1];
         // Screen + resolution is in the part containing " (inches) and x
         for (final p in parts) {
-          final screenMatch =
-              RegExp(r'([\d.]+)"\s*(\d+)\s*x\s*(\d+)').firstMatch(p);
+          final screenMatch = RegExp(
+            r'([\d.]+)"\s*(\d+)\s*x\s*(\d+)',
+          ).firstMatch(p);
           if (screenMatch != null) {
             screenSize = '${screenMatch.group(1)}"';
             resW = int.parse(screenMatch.group(2)!);
@@ -448,30 +485,38 @@ class DeviceSearchService {
       }
 
       final (brand, model) = _splitBrandModel(name);
-      results.add(DeviceSearchResult(
-        source: 'Notebookcheck',
-        sourceUrl: href,
-        name: name,
-        brand: brand,
-        model: model,
-        chipset: chipset,
-        gpuName: gpuName,
-        screenSize: screenSize,
-        screenResolutionW: resW,
-        screenResolutionH: resH,
-      ));
+      results.add(
+        DeviceSearchResult(
+          source: 'Notebookcheck',
+          sourceUrl: href,
+          name: name,
+          brand: brand,
+          model: model,
+          chipset: chipset,
+          gpuName: gpuName,
+          screenSize: screenSize,
+          screenResolutionW: resW,
+          screenResolutionH: resH,
+        ),
+      );
     }
 
     return results;
   }
 
   static Future<DeviceSearchResult> _fetchNotebookcheckDetail(
-      DeviceSearchResult result) async {
-    final resp = await http.get(Uri.parse(result.sourceUrl!), headers: {
-      'User-Agent': _userAgent,
-      'Accept': 'text/html',
-      'Accept-Language': 'en-US,en;q=0.9',
-    }).timeout(const Duration(seconds: 15));
+    DeviceSearchResult result,
+  ) async {
+    final resp = await http
+        .get(
+          Uri.parse(result.sourceUrl!),
+          headers: {
+            'User-Agent': _userAgent,
+            'Accept': 'text/html',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        )
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return result;
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);

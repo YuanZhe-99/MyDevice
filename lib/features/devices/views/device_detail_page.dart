@@ -9,6 +9,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/image_service.dart';
 import '../models/device.dart';
+import '../services/exchange_rate_service.dart';
 import '../widgets/device_category_icon.dart';
 import 'device_edit_page.dart';
 
@@ -145,6 +146,64 @@ class DeviceDetailPage extends StatelessWidget {
     return null;
   }
 
+  String _statusLabel(AppLocalizations l10n) =>
+      switch (device.lifecycleStatus) {
+        DeviceLifecycleStatus.inService => l10n.statusInService,
+        DeviceLifecycleStatus.retired => l10n.statusRetired,
+        DeviceLifecycleStatus.sold => l10n.statusSold,
+      };
+
+  String _acquisitionTypeLabel(
+    AppLocalizations l10n,
+    DeviceAcquisitionType type,
+  ) {
+    return switch (type) {
+      DeviceAcquisitionType.purchased => l10n.acquisitionPurchased,
+      DeviceAcquisitionType.leased => l10n.acquisitionLeased,
+      DeviceAcquisitionType.purchasedWithSubscription =>
+        l10n.acquisitionPurchasedWithSubscription,
+      DeviceAcquisitionType.other => l10n.acquisitionOther,
+    };
+  }
+
+  String _recurringCostKindLabel(
+    AppLocalizations l10n,
+    RecurringCostKind kind,
+  ) {
+    return switch (kind) {
+      RecurringCostKind.lease => l10n.recurringCostLease,
+      RecurringCostKind.insurance => l10n.recurringCostInsurance,
+      RecurringCostKind.subscription => l10n.recurringCostSubscription,
+      RecurringCostKind.other => l10n.recurringCostOther,
+    };
+  }
+
+  String _billingCycleLabel(AppLocalizations l10n, BillingCycle cycle) {
+    return switch (cycle) {
+      BillingCycle.monthly => l10n.billingMonthly,
+      BillingCycle.yearly => l10n.billingYearly,
+    };
+  }
+
+  String _moneyText(MoneyValue money) {
+    final symbol = DeviceExchangeRateService.currencySymbol(money.currency);
+    final baseSymbol = DeviceExchangeRateService.currencySymbol(
+      money.defaultCurrency,
+    );
+    final original = '$symbol${money.amount.toStringAsFixed(2)}';
+    if (money.currency == money.defaultCurrency) return original;
+    return '$original ($baseSymbol${money.convertedAmount.toStringAsFixed(2)} ${money.defaultCurrency})';
+  }
+
+  String _defaultMoneyText(double amount) {
+    final currency =
+        device.purchasePrice?.defaultCurrency ??
+        device.soldPrice?.defaultCurrency ??
+        device.recurringCosts.firstOrNull?.price.defaultCurrency ??
+        '';
+    return '${DeviceExchangeRateService.currencySymbol(currency)}${amount.toStringAsFixed(2)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -176,10 +235,68 @@ class DeviceDetailPage extends StatelessWidget {
           _buildHeader(theme, cs, l10n),
           const SizedBox(height: 24),
 
+          if (device.hasFinancialData ||
+              device.acquisitionType != null ||
+              device.lifecycleStatus != DeviceLifecycleStatus.inService) ...[
+            _sectionTitle(
+              theme,
+              cs,
+              l10n.lifecycleAndFinance,
+              Icons.payments_outlined,
+            ),
+            _specCard(theme, [
+              _specRow(l10n.deviceStatus, _statusLabel(l10n)),
+              if (device.acquisitionType != null)
+                _specRow(
+                  l10n.acquisitionType,
+                  _acquisitionTypeLabel(l10n, device.acquisitionType!),
+                ),
+              _specRow(
+                l10n.deviceRetiredDate,
+                device.retiredDate != null
+                    ? DateFormat.yMd(
+                        l10n.localeName,
+                      ).format(device.retiredDate!)
+                    : null,
+              ),
+              _specRow(
+                l10n.purchasePrice,
+                device.purchasePrice != null
+                    ? _moneyText(device.purchasePrice!)
+                    : null,
+              ),
+              _specRow(
+                l10n.soldPrice,
+                device.soldPrice != null ? _moneyText(device.soldPrice!) : null,
+              ),
+              for (final cost in device.recurringCosts)
+                _specRow(
+                  cost.name ?? _recurringCostKindLabel(l10n, cost.kind),
+                  '${_moneyText(cost.price)} / ${_billingCycleLabel(l10n, cost.billingCycle)}',
+                ),
+              if (device.hasFinancialData)
+                _specRow(
+                  l10n.financialTotalCost,
+                  _defaultMoneyText(device.totalCost()),
+                ),
+              if (device.averageDailyCost() != null)
+                _specRow(
+                  l10n.financialDailyCost,
+                  _defaultMoneyText(device.averageDailyCost()!),
+                ),
+            ]),
+            const SizedBox(height: 16),
+          ],
+
           // ── CPU ──
           if (device.cpu.model != null) ...[
-            _sectionTitle(theme, cs, l10n.cpuInfo, Icons.memory,
-                logoPath: _detectModelLogo(device.cpu.model)),
+            _sectionTitle(
+              theme,
+              cs,
+              l10n.cpuInfo,
+              Icons.memory,
+              logoPath: _detectModelLogo(device.cpu.model),
+            ),
             _specCard(theme, [
               _specRow(l10n.cpuModel, device.cpu.model),
               _specRow(l10n.cpuArchitecture, device.cpu.architecture),
@@ -194,8 +311,13 @@ class DeviceDetailPage extends StatelessWidget {
 
           // ── GPU ──
           if (device.gpu.model != null) ...[
-            _sectionTitle(theme, cs, l10n.gpuInfo, Icons.graphic_eq,
-                logoPath: _detectModelLogo(device.gpu.model)),
+            _sectionTitle(
+              theme,
+              cs,
+              l10n.gpuInfo,
+              Icons.graphic_eq,
+              logoPath: _detectModelLogo(device.gpu.model),
+            ),
             _specCard(theme, [
               _specRow(l10n.gpuModel, device.gpu.model),
               _specRow(l10n.gpuArchitecture, device.gpu.architecture),
@@ -207,17 +329,31 @@ class DeviceDetailPage extends StatelessWidget {
           if (device.ram != null || device.storage.isNotEmpty) ...[
             _sectionTitle(theme, cs, l10n.ram, Icons.sd_storage),
             _specCard(theme, [
-              _specRow(l10n.ram, device.ram != null
-                  ? device.ramType != null
-                      ? '${device.ram} ${device.ramType!.displayName}'
-                      : device.ram
-                  : null),
+              _specRow(
+                l10n.ram,
+                device.ram != null
+                    ? device.ramType != null
+                          ? '${device.ram} ${device.ramType!.displayName}'
+                          : device.ram
+                    : null,
+              ),
               for (int i = 0; i < device.storage.length; i++) ...[
-                _specRow('${l10n.storage} ${i + 1}', device.storage[i].displayString),
+                _specRow(
+                  '${l10n.storage} ${i + 1}',
+                  device.storage[i].displayString,
+                ),
                 if (device.storage[i].brand != null)
-                  _specRowWithLogo(l10n.storageBrand, device.storage[i].brand!, _detectStorageBrandLogo(device.storage[i].brand), cs),
+                  _specRowWithLogo(
+                    l10n.storageBrand,
+                    device.storage[i].brand!,
+                    _detectStorageBrandLogo(device.storage[i].brand),
+                    cs,
+                  ),
                 if (device.storage[i].serialNumber != null)
-                  _specRow(l10n.storageSerialNumber, device.storage[i].serialNumber),
+                  _specRow(
+                    l10n.storageSerialNumber,
+                    device.storage[i].serialNumber,
+                  ),
               ],
             ]),
             const SizedBox(height: 16),
@@ -242,9 +378,17 @@ class DeviceDetailPage extends StatelessWidget {
           ],
 
           // ── Other ──
-          if (device.battery != null || device.os != null || device.locationName != null || device.serialNumber != null) ...[
-            _sectionTitle(theme, cs, l10n.os, Icons.info_outline,
-                logoPath: _detectOsLogo(device.os)),
+          if (device.battery != null ||
+              device.os != null ||
+              device.locationName != null ||
+              device.serialNumber != null) ...[
+            _sectionTitle(
+              theme,
+              cs,
+              l10n.os,
+              Icons.info_outline,
+              logoPath: _detectOsLogo(device.os),
+            ),
             _specCard(theme, [
               _specRow(l10n.deviceSerialNumber, device.serialNumber),
               _specRow(l10n.battery, device.battery),
@@ -271,7 +415,8 @@ class DeviceDetailPage extends StatelessWidget {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.mydevice',
                     ),
                     MarkerLayer(
@@ -301,8 +446,7 @@ class DeviceDetailPage extends StatelessWidget {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(device.notes!,
-                    style: theme.textTheme.bodyMedium),
+                child: Text(device.notes!, style: theme.textTheme.bodyMedium),
               ),
             ),
             const SizedBox(height: 16),
@@ -336,16 +480,21 @@ class DeviceDetailPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(device.name,
-                          style: theme.textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        device.name,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       if (device.brand != null || device.model != null)
                         Text(
-                          [device.brand, device.model]
-                              .where((s) => s != null)
-                              .join(' '),
-                          style: theme.textTheme.bodyLarge
-                              ?.copyWith(color: cs.onSurfaceVariant),
+                          [
+                            device.brand,
+                            device.model,
+                          ].where((s) => s != null).join(' '),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                     ],
                   ),
@@ -366,13 +515,17 @@ class DeviceDetailPage extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.calendar_today,
-                      size: 16, color: cs.onSurfaceVariant),
+                  Icon(
+                    Icons.calendar_today,
+                    size: 16,
+                    color: cs.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     '${l10n.devicePurchaseDate}: $purchaseStr',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -381,13 +534,17 @@ class DeviceDetailPage extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  Icon(Icons.new_releases_outlined,
-                      size: 16, color: cs.onSurfaceVariant),
+                  Icon(
+                    Icons.new_releases_outlined,
+                    size: 16,
+                    color: cs.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     '${l10n.deviceReleaseDate}: $releaseStr',
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
                 ],
               ),
@@ -427,7 +584,11 @@ class DeviceDetailPage extends StatelessWidget {
           return CircleAvatar(
             radius: 28,
             backgroundColor: cs.primaryContainer,
-            child: Icon(deviceCategoryIcon(device.category), size: 28, color: cs.onPrimaryContainer),
+            child: Icon(
+              deviceCategoryIcon(device.category),
+              size: 28,
+              color: cs.onPrimaryContainer,
+            ),
           );
         },
       );
@@ -435,22 +596,34 @@ class DeviceDetailPage extends StatelessWidget {
     return CircleAvatar(
       radius: 28,
       backgroundColor: cs.primaryContainer,
-      child: Icon(deviceCategoryIcon(device.category), size: 28, color: cs.onPrimaryContainer),
+      child: Icon(
+        deviceCategoryIcon(device.category),
+        size: 28,
+        color: cs.onPrimaryContainer,
+      ),
     );
   }
 
   Widget _sectionTitle(
-      ThemeData theme, ColorScheme cs, String title, IconData icon,
-      {String? logoPath}) {
+    ThemeData theme,
+    ColorScheme cs,
+    String title,
+    IconData icon, {
+    String? logoPath,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
           Icon(icon, size: 20, color: cs.primary),
           const SizedBox(width: 8),
-          Text(title,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(color: cs.primary, fontWeight: FontWeight.w600)),
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: cs.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           if (logoPath != null) ...[
             const Spacer(),
             SvgPicture.asset(
@@ -485,8 +658,10 @@ class DeviceDetailPage extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           Expanded(child: Text(value)),
         ],
@@ -494,7 +669,12 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _specRowWithLogo(String label, String value, String? logoPath, ColorScheme cs) {
+  Widget _specRowWithLogo(
+    String label,
+    String value,
+    String? logoPath,
+    ColorScheme cs,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -502,17 +682,16 @@ class DeviceDetailPage extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
           ),
           if (logoPath != null) ...[
             SvgPicture.asset(
               logoPath,
               height: 16,
-              colorFilter: ColorFilter.mode(
-                cs.onSurface,
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(cs.onSurface, BlendMode.srcIn),
             ),
             const SizedBox(width: 6),
           ],

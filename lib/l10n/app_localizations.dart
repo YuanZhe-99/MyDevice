@@ -1636,6 +1636,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Desktop'**
   String get settingsDesktop;
+
+  /// No description provided for @lifecycleAndFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifecycle & Finance'**
+  String get lifecycleAndFinance;
+
+  /// No description provided for @deviceStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get deviceStatus;
+
+  /// No description provided for @statusInService.
+  ///
+  /// In en, this message translates to:
+  /// **'In Service'**
+  String get statusInService;
+
+  /// No description provided for @statusRetired.
+  ///
+  /// In en, this message translates to:
+  /// **'Retired'**
+  String get statusRetired;
+
+  /// No description provided for @statusSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold'**
+  String get statusSold;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @deviceRetired.
+  ///
+  /// In en, this message translates to:
+  /// **'Retired'**
+  String get deviceRetired;
+
+  /// No description provided for @deviceRetiredDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Retirement Date'**
+  String get deviceRetiredDate;
+
+  /// No description provided for @deviceSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold'**
+  String get deviceSold;
+
+  /// No description provided for @acquisitionType.
+  ///
+  /// In en, this message translates to:
+  /// **'Acquisition Type'**
+  String get acquisitionType;
+
+  /// No description provided for @acquisitionPurchased.
+  ///
+  /// In en, this message translates to:
+  /// **'One-time Purchase'**
+  String get acquisitionPurchased;
+
+  /// No description provided for @acquisitionLeased.
+  ///
+  /// In en, this message translates to:
+  /// **'Lease'**
+  String get acquisitionLeased;
+
+  /// No description provided for @acquisitionPurchasedWithSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase + Subscription'**
+  String get acquisitionPurchasedWithSubscription;
+
+  /// No description provided for @acquisitionOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get acquisitionOther;
+
+  /// No description provided for @optionalNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get optionalNone;
+
+  /// No description provided for @purchasePrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Price'**
+  String get purchasePrice;
+
+  /// No description provided for @soldPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Sold Price'**
+  String get soldPrice;
+
+  /// No description provided for @priceAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get priceAmount;
+
+  /// No description provided for @exchangeRateAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Use automatic exchange rate'**
+  String get exchangeRateAuto;
+
+  /// No description provided for @exchangeRateAutoDisabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic updates are disabled in Settings; saved rates or fallback rates will be used.'**
+  String get exchangeRateAutoDisabled;
+
+  /// No description provided for @exchangeRateManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Exchange Rate'**
+  String get exchangeRateManual;
+
+  /// No description provided for @exchangeRateManualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'1 {from} = ? {to}'**
+  String exchangeRateManualHint(String from, String to);
+
+  /// No description provided for @exchangeRateManualRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a manual exchange rate.'**
+  String get exchangeRateManualRequired;
+
+  /// No description provided for @exchangeRateUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate unavailable. Try refreshing rates or enter a manual rate.'**
+  String get exchangeRateUnavailable;
+
+  /// No description provided for @recurringCosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring Costs'**
+  String get recurringCosts;
+
+  /// No description provided for @recurringCostType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get recurringCostType;
+
+  /// No description provided for @recurringCostName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get recurringCostName;
+
+  /// No description provided for @recurringCostNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. AppleCare+, lease payment'**
+  String get recurringCostNameHint;
+
+  /// No description provided for @recurringCostPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurring Price'**
+  String get recurringCostPrice;
+
+  /// No description provided for @recurringCostLease.
+  ///
+  /// In en, this message translates to:
+  /// **'Lease'**
+  String get recurringCostLease;
+
+  /// No description provided for @recurringCostInsurance.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get recurringCostInsurance;
+
+  /// No description provided for @recurringCostSubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get recurringCostSubscription;
+
+  /// No description provided for @recurringCostOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get recurringCostOther;
+
+  /// No description provided for @billingCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing Cycle'**
+  String get billingCycle;
+
+  /// No description provided for @billingMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get billingMonthly;
+
+  /// No description provided for @billingYearly.
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get billingYearly;
+
+  /// No description provided for @financialOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Financial Overview'**
+  String get financialOverview;
+
+  /// No description provided for @financialTotalCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Cost'**
+  String get financialTotalCost;
+
+  /// No description provided for @financialDailyCost.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Cost'**
+  String get financialDailyCost;
+
+  /// No description provided for @settingsDefaultCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Currency'**
+  String get settingsDefaultCurrency;
+
+  /// No description provided for @settingsAutoUpdateExchangeRates.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-update Exchange Rates'**
+  String get settingsAutoUpdateExchangeRates;
+
+  /// No description provided for @settingsRefreshExchangeRates.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh Exchange Rates'**
+  String get settingsRefreshExchangeRates;
+
+  /// No description provided for @exchangeRateUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rates updated'**
+  String get exchangeRateUpdated;
+
+  /// No description provided for @exchangeRateUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update exchange rates'**
+  String get exchangeRateUpdateFailed;
 }
 
 class _AppLocalizationsDelegate

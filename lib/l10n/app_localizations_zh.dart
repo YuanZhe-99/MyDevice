@@ -793,6 +793,140 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsDesktop => '桌面端';
+
+  @override
+  String get lifecycleAndFinance => '生命周期与财务';
+
+  @override
+  String get deviceStatus => '状态';
+
+  @override
+  String get statusInService => '服役中';
+
+  @override
+  String get statusRetired => '已退役';
+
+  @override
+  String get statusSold => '已卖出';
+
+  @override
+  String get filterAll => '全部';
+
+  @override
+  String get deviceRetired => '是否退役';
+
+  @override
+  String get deviceRetiredDate => '退役时间';
+
+  @override
+  String get deviceSold => '是否卖出';
+
+  @override
+  String get acquisitionType => '获取方式';
+
+  @override
+  String get acquisitionPurchased => '一次性买断';
+
+  @override
+  String get acquisitionLeased => '租赁';
+
+  @override
+  String get acquisitionPurchasedWithSubscription => '买断 + 订阅';
+
+  @override
+  String get acquisitionOther => '其他';
+
+  @override
+  String get optionalNone => '不设置';
+
+  @override
+  String get purchasePrice => '购买价格';
+
+  @override
+  String get soldPrice => '卖出价格';
+
+  @override
+  String get priceAmount => '金额';
+
+  @override
+  String get exchangeRateAuto => '使用自动汇率';
+
+  @override
+  String get exchangeRateAutoDisabled => '设置中已关闭自动更新，将使用已保存汇率或内置备用汇率。';
+
+  @override
+  String get exchangeRateManual => '手动汇率';
+
+  @override
+  String exchangeRateManualHint(String from, String to) {
+    return '1 $from = ? $to';
+  }
+
+  @override
+  String get exchangeRateManualRequired => '请输入手动汇率。';
+
+  @override
+  String get exchangeRateUnavailable => '无法获取汇率。请刷新汇率或输入手动汇率。';
+
+  @override
+  String get recurringCosts => '周期费用';
+
+  @override
+  String get recurringCostType => '类型';
+
+  @override
+  String get recurringCostName => '名称';
+
+  @override
+  String get recurringCostNameHint => '例如 AppleCare+、租赁月费';
+
+  @override
+  String get recurringCostPrice => '周期价格';
+
+  @override
+  String get recurringCostLease => '租赁';
+
+  @override
+  String get recurringCostInsurance => '保险';
+
+  @override
+  String get recurringCostSubscription => '订阅';
+
+  @override
+  String get recurringCostOther => '其他';
+
+  @override
+  String get billingCycle => '计费周期';
+
+  @override
+  String get billingMonthly => '每月';
+
+  @override
+  String get billingYearly => '每年';
+
+  @override
+  String get financialOverview => '财务总览';
+
+  @override
+  String get financialTotalCost => '总成本';
+
+  @override
+  String get financialDailyCost => '日均成本';
+
+  @override
+  String get settingsDefaultCurrency => '默认币种';
+
+  @override
+  String get settingsAutoUpdateExchangeRates => '自动更新汇率';
+
+  @override
+  String get settingsRefreshExchangeRates => '刷新汇率';
+
+  @override
+  String get exchangeRateUpdated => '汇率已更新';
+
+  @override
+  String get exchangeRateUpdateFailed => '汇率更新失败';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1584,4 +1718,138 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsDesktop => '桌面端';
+
+  @override
+  String get lifecycleAndFinance => '生命週期與財務';
+
+  @override
+  String get deviceStatus => '狀態';
+
+  @override
+  String get statusInService => '服役中';
+
+  @override
+  String get statusRetired => '已退役';
+
+  @override
+  String get statusSold => '已售出';
+
+  @override
+  String get filterAll => '全部';
+
+  @override
+  String get deviceRetired => '是否退役';
+
+  @override
+  String get deviceRetiredDate => '退役時間';
+
+  @override
+  String get deviceSold => '是否售出';
+
+  @override
+  String get acquisitionType => '取得方式';
+
+  @override
+  String get acquisitionPurchased => '一次性買斷';
+
+  @override
+  String get acquisitionLeased => '租賃';
+
+  @override
+  String get acquisitionPurchasedWithSubscription => '買斷 + 訂閱';
+
+  @override
+  String get acquisitionOther => '其他';
+
+  @override
+  String get optionalNone => '不設定';
+
+  @override
+  String get purchasePrice => '購買價格';
+
+  @override
+  String get soldPrice => '售出價格';
+
+  @override
+  String get priceAmount => '金額';
+
+  @override
+  String get exchangeRateAuto => '使用自動匯率';
+
+  @override
+  String get exchangeRateAutoDisabled => '設定中已關閉自動更新，將使用已儲存匯率或內建備用匯率。';
+
+  @override
+  String get exchangeRateManual => '手動匯率';
+
+  @override
+  String exchangeRateManualHint(String from, String to) {
+    return '1 $from = ? $to';
+  }
+
+  @override
+  String get exchangeRateManualRequired => '請輸入手動匯率。';
+
+  @override
+  String get exchangeRateUnavailable => '無法取得匯率。請刷新匯率或輸入手動匯率。';
+
+  @override
+  String get recurringCosts => '週期費用';
+
+  @override
+  String get recurringCostType => '類型';
+
+  @override
+  String get recurringCostName => '名稱';
+
+  @override
+  String get recurringCostNameHint => '例如 AppleCare+、租賃月費';
+
+  @override
+  String get recurringCostPrice => '週期價格';
+
+  @override
+  String get recurringCostLease => '租賃';
+
+  @override
+  String get recurringCostInsurance => '保險';
+
+  @override
+  String get recurringCostSubscription => '訂閱';
+
+  @override
+  String get recurringCostOther => '其他';
+
+  @override
+  String get billingCycle => '計費週期';
+
+  @override
+  String get billingMonthly => '每月';
+
+  @override
+  String get billingYearly => '每年';
+
+  @override
+  String get financialOverview => '財務總覽';
+
+  @override
+  String get financialTotalCost => '總成本';
+
+  @override
+  String get financialDailyCost => '日均成本';
+
+  @override
+  String get settingsDefaultCurrency => '預設幣種';
+
+  @override
+  String get settingsAutoUpdateExchangeRates => '自動更新匯率';
+
+  @override
+  String get settingsRefreshExchangeRates => '刷新匯率';
+
+  @override
+  String get exchangeRateUpdated => '匯率已更新';
+
+  @override
+  String get exchangeRateUpdateFailed => '匯率更新失敗';
 }

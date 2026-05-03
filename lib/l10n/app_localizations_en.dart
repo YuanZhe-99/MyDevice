@@ -802,4 +802,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDesktop => 'Desktop';
+
+  @override
+  String get lifecycleAndFinance => 'Lifecycle & Finance';
+
+  @override
+  String get deviceStatus => 'Status';
+
+  @override
+  String get statusInService => 'In Service';
+
+  @override
+  String get statusRetired => 'Retired';
+
+  @override
+  String get statusSold => 'Sold';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get deviceRetired => 'Retired';
+
+  @override
+  String get deviceRetiredDate => 'Retirement Date';
+
+  @override
+  String get deviceSold => 'Sold';
+
+  @override
+  String get acquisitionType => 'Acquisition Type';
+
+  @override
+  String get acquisitionPurchased => 'One-time Purchase';
+
+  @override
+  String get acquisitionLeased => 'Lease';
+
+  @override
+  String get acquisitionPurchasedWithSubscription => 'Purchase + Subscription';
+
+  @override
+  String get acquisitionOther => 'Other';
+
+  @override
+  String get optionalNone => 'None';
+
+  @override
+  String get purchasePrice => 'Purchase Price';
+
+  @override
+  String get soldPrice => 'Sold Price';
+
+  @override
+  String get priceAmount => 'Amount';
+
+  @override
+  String get exchangeRateAuto => 'Use automatic exchange rate';
+
+  @override
+  String get exchangeRateAutoDisabled =>
+      'Automatic updates are disabled in Settings; saved rates or fallback rates will be used.';
+
+  @override
+  String get exchangeRateManual => 'Manual Exchange Rate';
+
+  @override
+  String exchangeRateManualHint(String from, String to) {
+    return '1 $from = ? $to';
+  }
+
+  @override
+  String get exchangeRateManualRequired =>
+      'Please enter a manual exchange rate.';
+
+  @override
+  String get exchangeRateUnavailable =>
+      'Exchange rate unavailable. Try refreshing rates or enter a manual rate.';
+
+  @override
+  String get recurringCosts => 'Recurring Costs';
+
+  @override
+  String get recurringCostType => 'Type';
+
+  @override
+  String get recurringCostName => 'Name';
+
+  @override
+  String get recurringCostNameHint => 'e.g. AppleCare+, lease payment';
+
+  @override
+  String get recurringCostPrice => 'Recurring Price';
+
+  @override
+  String get recurringCostLease => 'Lease';
+
+  @override
+  String get recurringCostInsurance => 'Insurance';
+
+  @override
+  String get recurringCostSubscription => 'Subscription';
+
+  @override
+  String get recurringCostOther => 'Other';
+
+  @override
+  String get billingCycle => 'Billing Cycle';
+
+  @override
+  String get billingMonthly => 'Monthly';
+
+  @override
+  String get billingYearly => 'Yearly';
+
+  @override
+  String get financialOverview => 'Financial Overview';
+
+  @override
+  String get financialTotalCost => 'Total Cost';
+
+  @override
+  String get financialDailyCost => 'Daily Cost';
+
+  @override
+  String get settingsDefaultCurrency => 'Default Currency';
+
+  @override
+  String get settingsAutoUpdateExchangeRates => 'Auto-update Exchange Rates';
+
+  @override
+  String get settingsRefreshExchangeRates => 'Refresh Exchange Rates';
+
+  @override
+  String get exchangeRateUpdated => 'Exchange rates updated';
+
+  @override
+  String get exchangeRateUpdateFailed => 'Failed to update exchange rates';
 }

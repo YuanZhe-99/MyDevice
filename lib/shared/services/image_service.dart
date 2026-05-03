@@ -53,9 +53,9 @@ class ImageService {
   /// Download an image from a URL and save it into app storage.
   /// Returns the relative path e.g. "images/xxx.jpg", or null on failure.
   static Future<String?> saveImageFromUrl(String url) async {
-    final resp = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'MyDevice/0.1',
-    }).timeout(const Duration(seconds: 15));
+    final resp = await http
+        .get(Uri.parse(url), headers: {'User-Agent': 'MyDevice/0.1'})
+        .timeout(const Duration(seconds: 15));
     if (resp.statusCode != 200) return null;
 
     final imgDir = await _getImageDir();

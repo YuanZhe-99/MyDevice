@@ -38,9 +38,11 @@ class LocalApiServer {
     _lastError = null;
     if (!_enabled) return;
 
-    final isNonLoopback = _listenAddress == '0.0.0.0' ||
+    final isNonLoopback =
+        _listenAddress == '0.0.0.0' ||
         (_listenAddress != 'localhost' && _listenAddress != '127.0.0.1');
-    final hasCredentials = _username != null &&
+    final hasCredentials =
+        _username != null &&
         _username!.isNotEmpty &&
         _password != null &&
         _password!.isNotEmpty;
@@ -70,8 +72,10 @@ class LocalApiServer {
           _listenAddress == '127.0.0.1') {
         bindAddress = InternetAddress.loopbackIPv4;
       } else {
-        bindAddress =
-            InternetAddress(_listenAddress, type: InternetAddressType.any);
+        bindAddress = InternetAddress(
+          _listenAddress,
+          type: InternetAddressType.any,
+        );
       }
       _server = await shelf_io.serve(handler, bindAddress, _port);
       // ignore: avoid_print
@@ -222,11 +226,7 @@ class LocalApiServer {
     );
 
     await DeviceStorage.addOrUpdate(device);
-    return _json({
-      'success': true,
-      'id': device.id,
-      'name': device.name,
-    });
+    return _json({'success': true, 'id': device.id, 'name': device.name});
   }
 
   static Future<Response> _handleStats(Request request) async {
@@ -235,17 +235,15 @@ class LocalApiServer {
 
     final byCategory = <String, int>{};
     for (final d in devices) {
-      byCategory[d.category.name] =
-          (byCategory[d.category.name] ?? 0) + 1;
+      byCategory[d.category.name] = (byCategory[d.category.name] ?? 0) + 1;
     }
 
     final sorted = List<Device>.of(devices)
       ..sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
-    final recent = sorted.take(5).map((d) => {
-      'id': d.id,
-      'name': d.name,
-      'category': d.category.name,
-    }).toList();
+    final recent = sorted
+        .take(5)
+        .map((d) => {'id': d.id, 'name': d.name, 'category': d.category.name})
+        .toList();
 
     return _json({
       'total': devices.length,
@@ -257,52 +255,52 @@ class LocalApiServer {
   // ── Helpers ──
 
   static Map<String, dynamic> _deviceToJson(Device d) => {
-        'id': d.id,
-        'name': d.name,
-        'category': d.category.name,
-        'emoji': d.emoji,
-        'brand': d.brand,
-        'model': d.model,
-        'serialNumber': d.serialNumber,
-        'cpu': {
-          'model': d.cpu.model,
-          'performanceCores': d.cpu.performanceCores,
-          'efficiencyCores': d.cpu.efficiencyCores,
-          'threads': d.cpu.threads,
-          'frequency': d.cpu.frequency,
-        },
-        'gpu': {
-          'model': d.gpu.model,
-        },
-        'ram': d.ram,
-        'ramType': d.ramType?.name,
-        'storage': d.storage
-            .map((s) => {
-                  'capacity': s.capacity,
-                  'type': s.type?.name,
-                  'interface': s.interface_?.name,
-                })
-            .toList(),
-        'screenSize': d.screenSize,
-        'battery': d.battery,
-        'os': d.os,
-        'locationName': d.locationName,
-        'purchaseDate': d.purchaseDate?.toIso8601String(),
-        'releaseDate': d.releaseDate?.toIso8601String(),
-        'notes': d.notes,
-        'modifiedAt': d.modifiedAt.toIso8601String(),
-      };
+    'id': d.id,
+    'name': d.name,
+    'category': d.category.name,
+    'emoji': d.emoji,
+    'brand': d.brand,
+    'model': d.model,
+    'serialNumber': d.serialNumber,
+    'cpu': {
+      'model': d.cpu.model,
+      'performanceCores': d.cpu.performanceCores,
+      'efficiencyCores': d.cpu.efficiencyCores,
+      'threads': d.cpu.threads,
+      'frequency': d.cpu.frequency,
+    },
+    'gpu': {'model': d.gpu.model},
+    'ram': d.ram,
+    'ramType': d.ramType?.name,
+    'storage': d.storage
+        .map(
+          (s) => {
+            'capacity': s.capacity,
+            'type': s.type?.name,
+            'interface': s.interface_?.name,
+          },
+        )
+        .toList(),
+    'screenSize': d.screenSize,
+    'battery': d.battery,
+    'os': d.os,
+    'locationName': d.locationName,
+    'purchaseDate': d.purchaseDate?.toIso8601String(),
+    'releaseDate': d.releaseDate?.toIso8601String(),
+    'notes': d.notes,
+    'modifiedAt': d.modifiedAt.toIso8601String(),
+  };
 
   static Response _json(Object data) => Response.ok(
-        jsonEncode(data),
-        headers: {'Content-Type': 'application/json'},
-      );
+    jsonEncode(data),
+    headers: {'Content-Type': 'application/json'},
+  );
 
   static Response _error(int status, String message) => Response(
-        status,
-        body: jsonEncode({'error': message}),
-        headers: {'Content-Type': 'application/json'},
-      );
+    status,
+    body: jsonEncode({'error': message}),
+    headers: {'Content-Type': 'application/json'},
+  );
 
   static Future<Map<String, dynamic>?> _parseBody(Request request) async {
     try {
@@ -342,13 +340,16 @@ class LocalApiServer {
                 ?.remoteAddress;
         final isLoopback = remoteAddr == null || remoteAddr.isLoopback;
 
-        final hasCredentials = _username != null &&
+        final hasCredentials =
+            _username != null &&
             _username!.isNotEmpty &&
             _password != null &&
             _password!.isNotEmpty;
         if (!isLoopback && !hasCredentials) {
           return _error(
-              403, 'authentication required for non-localhost access');
+            403,
+            'authentication required for non-localhost access',
+          );
         }
         if (hasCredentials && !isLoopback) {
           final authHeader = request.headers['authorization'];

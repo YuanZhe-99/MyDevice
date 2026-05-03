@@ -21,8 +21,7 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     Locale? locale;
     if (localeTag != null) {
       final parts = localeTag.split('_');
-      locale =
-          parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
+      locale = parts.length > 1 ? Locale(parts[0], parts[1]) : Locale(parts[0]);
     }
 
     state = AppSettings(themeMode: themeMode, locale: locale);
@@ -55,10 +54,7 @@ class AppSettings {
   final ThemeMode themeMode;
   final Locale? locale;
 
-  const AppSettings({
-    this.themeMode = ThemeMode.system,
-    this.locale,
-  });
+  const AppSettings({this.themeMode = ThemeMode.system, this.locale});
 
   AppSettings copyWith({
     ThemeMode? themeMode,
@@ -74,5 +70,5 @@ class AppSettings {
 
 final appSettingsProvider =
     StateNotifierProvider<AppSettingsNotifier, AppSettings>(
-  (ref) => AppSettingsNotifier(),
-);
+      (ref) => AppSettingsNotifier(),
+    );

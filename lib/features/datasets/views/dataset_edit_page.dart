@@ -65,7 +65,9 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     final data = await DeviceStorage.load();
     if (!mounted) return;
     setState(() {
-      _devices = data.devices.where((d) => d.storage.isNotEmpty).toList();
+      _devices = data.devices
+          .where((d) => d.isInService && d.storage.isNotEmpty)
+          .toList();
       _loading = false;
     });
   }

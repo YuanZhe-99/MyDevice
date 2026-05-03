@@ -1,4 +1,4 @@
-import 'dart:math' show sqrt;
+import 'dart:math' show max, sqrt;
 
 import 'package:uuid/uuid.dart';
 
@@ -25,6 +25,18 @@ const _storageInfoJsonKeys = {
   'brand',
 };
 
+const _moneyValueJsonKeys = {
+  'amount',
+  'currency',
+  'defaultCurrency',
+  'convertedAmount',
+  'exchangeRate',
+  'autoRate',
+  'rateUpdatedAt',
+};
+
+const _recurringCostJsonKeys = {'id', 'kind', 'name', 'price', 'billingCycle'};
+
 const _deviceJsonKeys = {
   'id',
   'name',
@@ -49,6 +61,13 @@ const _deviceJsonKeys = {
   'longitude',
   'purchaseDate',
   'releaseDate',
+  'acquisitionType',
+  'isRetired',
+  'retiredDate',
+  'purchasePrice',
+  'isSold',
+  'soldPrice',
+  'recurringCosts',
   'notes',
   'modifiedAt',
 };
@@ -73,6 +92,52 @@ enum DeviceCategory {
 
   static DeviceCategory fromJson(String value) => DeviceCategory.values
       .firstWhere((e) => e.name == value, orElse: () => DeviceCategory.other);
+}
+
+/// How a device is financially acquired or paid for.
+enum DeviceAcquisitionType {
+  purchased,
+  leased,
+  purchasedWithSubscription,
+  other;
+
+  String get jsonValue => name;
+
+  static DeviceAcquisitionType? fromJson(String? value) {
+    if (value == null) return null;
+    return DeviceAcquisitionType.values
+        .where((e) => e.name == value)
+        .firstOrNull;
+  }
+}
+
+/// Lifecycle bucket used by the home filter and financial summary.
+enum DeviceLifecycleStatus { inService, retired, sold }
+
+/// Type of recurring device cost.
+enum RecurringCostKind {
+  lease,
+  insurance,
+  subscription,
+  other;
+
+  String get jsonValue => name;
+
+  static RecurringCostKind fromJson(String? value) =>
+      RecurringCostKind.values.where((e) => e.name == value).firstOrNull ??
+      RecurringCostKind.other;
+}
+
+/// Billing cadence for recurring device costs.
+enum BillingCycle {
+  monthly,
+  yearly;
+
+  String get jsonValue => name;
+
+  static BillingCycle fromJson(String? value) =>
+      BillingCycle.values.where((e) => e.name == value).firstOrNull ??
+      BillingCycle.monthly;
 }
 
 /// CPU information for a device.
@@ -324,6 +389,137 @@ class StorageInfo {
   }
 }
 
+/// A price entered in any currency and converted to the app default currency.
+class MoneyValue {
+  final double amount;
+  final String currency;
+  final String defaultCurrency;
+  final double convertedAmount;
+  final double exchangeRate;
+  final bool autoRate;
+  final DateTime? rateUpdatedAt;
+  final Map<String, dynamic> extraJson;
+
+  const MoneyValue({
+    required this.amount,
+    required this.currency,
+    required this.defaultCurrency,
+    required this.convertedAmount,
+    required this.exchangeRate,
+    required this.autoRate,
+    this.rateUpdatedAt,
+    this.extraJson = const {},
+  });
+
+  Map<String, dynamic> toJson() => {
+    ...extraJson,
+    'amount': amount,
+    'currency': currency,
+    'defaultCurrency': defaultCurrency,
+    'convertedAmount': convertedAmount,
+    'exchangeRate': exchangeRate,
+    'autoRate': autoRate,
+    if (rateUpdatedAt != null)
+      'rateUpdatedAt': rateUpdatedAt!.toIso8601String(),
+  };
+
+  factory MoneyValue.fromJson(Map<String, dynamic> json) {
+    final amount = (json['amount'] as num).toDouble();
+    final currency = json['currency'] as String;
+    final defaultCurrency =
+        json['defaultCurrency'] as String? ?? json['baseCurrency'] as String?;
+    final exchangeRate = (json['exchangeRate'] as num?)?.toDouble() ?? 1.0;
+    return MoneyValue(
+      amount: amount,
+      currency: currency,
+      defaultCurrency: defaultCurrency ?? currency,
+      convertedAmount:
+          (json['convertedAmount'] as num?)?.toDouble() ??
+          (amount * exchangeRate),
+      exchangeRate: exchangeRate,
+      autoRate: json['autoRate'] as bool? ?? true,
+      rateUpdatedAt: json['rateUpdatedAt'] != null
+          ? DateTime.parse(json['rateUpdatedAt'] as String)
+          : null,
+      extraJson: unknownJsonFields(json, _moneyValueJsonKeys),
+    );
+  }
+
+  MoneyValue mergeUnknownFieldsFrom(MoneyValue other, {MoneyValue? base}) {
+    return MoneyValue.fromJson({
+      ...toJson(),
+      ...mergeUnknownJsonFields(
+        primary: extraJson,
+        secondary: other.extraJson,
+        base: base?.extraJson,
+      ),
+    });
+  }
+}
+
+/// A recurring lease, insurance, subscription, or other device cost.
+class DeviceRecurringCost {
+  final String id;
+  final RecurringCostKind kind;
+  final String? name;
+  final MoneyValue price;
+  final BillingCycle billingCycle;
+  final Map<String, dynamic> extraJson;
+
+  DeviceRecurringCost({
+    String? id,
+    required this.kind,
+    this.name,
+    required this.price,
+    this.billingCycle = BillingCycle.monthly,
+    this.extraJson = const {},
+  }) : id = id ?? const Uuid().v4();
+
+  double get annualConvertedAmount => switch (billingCycle) {
+    BillingCycle.monthly => price.convertedAmount * 12,
+    BillingCycle.yearly => price.convertedAmount,
+  };
+
+  double get dailyConvertedAmount => annualConvertedAmount / 365;
+
+  Map<String, dynamic> toJson() => {
+    ...extraJson,
+    'id': id,
+    'kind': kind.jsonValue,
+    if (name != null) 'name': name,
+    'price': price.toJson(),
+    'billingCycle': billingCycle.jsonValue,
+  };
+
+  factory DeviceRecurringCost.fromJson(Map<String, dynamic> json) =>
+      DeviceRecurringCost(
+        id: json['id'] as String?,
+        kind: RecurringCostKind.fromJson(json['kind'] as String?),
+        name: json['name'] as String?,
+        price: MoneyValue.fromJson(json['price'] as Map<String, dynamic>),
+        billingCycle: BillingCycle.fromJson(json['billingCycle'] as String?),
+        extraJson: unknownJsonFields(json, _recurringCostJsonKeys),
+      );
+
+  DeviceRecurringCost mergeUnknownFieldsFrom(
+    DeviceRecurringCost other, {
+    DeviceRecurringCost? base,
+  }) {
+    final json = toJson();
+    json.addAll(
+      mergeUnknownJsonFields(
+        primary: extraJson,
+        secondary: other.extraJson,
+        base: base?.extraJson,
+      ),
+    );
+    json['price'] = price
+        .mergeUnknownFieldsFrom(other.price, base: base?.price)
+        .toJson();
+    return DeviceRecurringCost.fromJson(json);
+  }
+}
+
 /// A device record.
 class Device {
   final String id;
@@ -349,6 +545,13 @@ class Device {
   final double? longitude;
   final DateTime? purchaseDate;
   final DateTime? releaseDate;
+  final DeviceAcquisitionType? acquisitionType;
+  final bool isRetired;
+  final DateTime? retiredDate;
+  final MoneyValue? purchasePrice;
+  final bool isSold;
+  final MoneyValue? soldPrice;
+  final List<DeviceRecurringCost> recurringCosts;
   final String? notes;
   final DateTime modifiedAt;
   final Map<String, dynamic> extraJson;
@@ -377,11 +580,57 @@ class Device {
     this.longitude,
     this.purchaseDate,
     this.releaseDate,
+    this.acquisitionType,
+    this.isRetired = false,
+    this.retiredDate,
+    this.purchasePrice,
+    this.isSold = false,
+    this.soldPrice,
+    this.recurringCosts = const [],
     this.notes,
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
        modifiedAt = modifiedAt ?? DateTime.now();
+
+  DeviceLifecycleStatus get lifecycleStatus {
+    if (isSold) return DeviceLifecycleStatus.sold;
+    if (isRetired) return DeviceLifecycleStatus.retired;
+    return DeviceLifecycleStatus.inService;
+  }
+
+  bool get isInService => lifecycleStatus == DeviceLifecycleStatus.inService;
+
+  bool get hasFinancialData =>
+      purchasePrice != null || soldPrice != null || recurringCosts.isNotEmpty;
+
+  int? serviceDays({DateTime? asOf}) {
+    if (purchaseDate == null) return null;
+    final now = asOf ?? DateTime.now();
+    final end = isInService ? now : (retiredDate ?? now);
+    return max(1, end.difference(purchaseDate!).inDays + 1);
+  }
+
+  double recurringCostThrough({DateTime? asOf}) {
+    final days = serviceDays(asOf: asOf);
+    if (days == null) return 0;
+    return recurringCosts.fold<double>(
+      0,
+      (sum, cost) => sum + cost.dailyConvertedAmount * days,
+    );
+  }
+
+  double totalCost({DateTime? asOf}) {
+    return (purchasePrice?.convertedAmount ?? 0) +
+        recurringCostThrough(asOf: asOf) -
+        (soldPrice?.convertedAmount ?? 0);
+  }
+
+  double? averageDailyCost({DateTime? asOf}) {
+    final days = serviceDays(asOf: asOf);
+    if (days == null || !hasFinancialData) return null;
+    return totalCost(asOf: asOf) / days;
+  }
 
   /// Compute PPI from resolution and screen diagonal (inches).
   double? get ppi {
@@ -425,6 +674,13 @@ class Device {
     double? longitude,
     DateTime? purchaseDate,
     DateTime? releaseDate,
+    DeviceAcquisitionType? acquisitionType,
+    bool? isRetired,
+    DateTime? retiredDate,
+    MoneyValue? purchasePrice,
+    bool? isSold,
+    MoneyValue? soldPrice,
+    List<DeviceRecurringCost>? recurringCosts,
     String? notes,
     DateTime? modifiedAt,
     bool clearEmoji = false,
@@ -444,6 +700,10 @@ class Device {
     bool clearLongitude = false,
     bool clearPurchaseDate = false,
     bool clearReleaseDate = false,
+    bool clearAcquisitionType = false,
+    bool clearRetiredDate = false,
+    bool clearPurchasePrice = false,
+    bool clearSoldPrice = false,
     bool clearNotes = false,
   }) {
     return Device(
@@ -480,6 +740,17 @@ class Device {
           ? null
           : (purchaseDate ?? this.purchaseDate),
       releaseDate: clearReleaseDate ? null : (releaseDate ?? this.releaseDate),
+      acquisitionType: clearAcquisitionType
+          ? null
+          : (acquisitionType ?? this.acquisitionType),
+      isRetired: isRetired ?? this.isRetired,
+      retiredDate: clearRetiredDate ? null : (retiredDate ?? this.retiredDate),
+      purchasePrice: clearPurchasePrice
+          ? null
+          : (purchasePrice ?? this.purchasePrice),
+      isSold: isSold ?? this.isSold,
+      soldPrice: clearSoldPrice ? null : (soldPrice ?? this.soldPrice),
+      recurringCosts: recurringCosts ?? this.recurringCosts,
       notes: clearNotes ? null : (notes ?? this.notes),
       modifiedAt: modifiedAt ?? DateTime.now(),
       extraJson: extraJson,
@@ -511,6 +782,14 @@ class Device {
     if (longitude != null) 'longitude': longitude,
     if (purchaseDate != null) 'purchaseDate': purchaseDate!.toIso8601String(),
     if (releaseDate != null) 'releaseDate': releaseDate!.toIso8601String(),
+    if (acquisitionType != null) 'acquisitionType': acquisitionType!.jsonValue,
+    if (isRetired) 'isRetired': isRetired,
+    if (retiredDate != null) 'retiredDate': retiredDate!.toIso8601String(),
+    if (purchasePrice != null) 'purchasePrice': purchasePrice!.toJson(),
+    if (isSold) 'isSold': isSold,
+    if (soldPrice != null) 'soldPrice': soldPrice!.toJson(),
+    if (recurringCosts.isNotEmpty)
+      'recurringCosts': recurringCosts.map((c) => c.toJson()).toList(),
     if (notes != null) 'notes': notes,
     'modifiedAt': modifiedAt.toIso8601String(),
   };
@@ -553,6 +832,27 @@ class Device {
     releaseDate: json['releaseDate'] != null
         ? DateTime.parse(json['releaseDate'] as String)
         : null,
+    acquisitionType: DeviceAcquisitionType.fromJson(
+      json['acquisitionType'] as String?,
+    ),
+    isRetired: json['isRetired'] as bool? ?? false,
+    retiredDate: json['retiredDate'] != null
+        ? DateTime.parse(json['retiredDate'] as String)
+        : null,
+    purchasePrice: json['purchasePrice'] != null
+        ? MoneyValue.fromJson(json['purchasePrice'] as Map<String, dynamic>)
+        : null,
+    isSold: json['isSold'] as bool? ?? false,
+    soldPrice: json['soldPrice'] != null
+        ? MoneyValue.fromJson(json['soldPrice'] as Map<String, dynamic>)
+        : null,
+    recurringCosts: json['recurringCosts'] != null
+        ? (json['recurringCosts'] as List<dynamic>)
+              .map(
+                (e) => DeviceRecurringCost.fromJson(e as Map<String, dynamic>),
+              )
+              .toList()
+        : const [],
     notes: json['notes'] as String?,
     modifiedAt: DateTime.parse(json['modifiedAt'] as String),
     extraJson: unknownJsonFields(json, _deviceJsonKeys),
@@ -592,6 +892,35 @@ class Device {
                     : const StorageInfo(),
                 base: base != null && i < base.storage.length
                     ? base.storage[i]
+                    : null,
+              )
+              .toJson(),
+      ];
+    }
+
+    if (purchasePrice != null && other.purchasePrice != null) {
+      json['purchasePrice'] = purchasePrice!
+          .mergeUnknownFieldsFrom(
+            other.purchasePrice!,
+            base: base?.purchasePrice,
+          )
+          .toJson();
+    }
+    if (soldPrice != null && other.soldPrice != null) {
+      json['soldPrice'] = soldPrice!
+          .mergeUnknownFieldsFrom(other.soldPrice!, base: base?.soldPrice)
+          .toJson();
+    }
+    if (recurringCosts.isNotEmpty) {
+      json['recurringCosts'] = [
+        for (var i = 0; i < recurringCosts.length; i++)
+          recurringCosts[i]
+              .mergeUnknownFieldsFrom(
+                i < other.recurringCosts.length
+                    ? other.recurringCosts[i]
+                    : recurringCosts[i],
+                base: base != null && i < base.recurringCosts.length
+                    ? base.recurringCosts[i]
                     : null,
               )
               .toJson(),

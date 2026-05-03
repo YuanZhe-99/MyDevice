@@ -8,6 +8,7 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'app/app.dart';
+import 'features/devices/services/exchange_rate_service.dart';
 import 'shared/services/auto_sync_service.dart';
 import 'shared/services/backup_service.dart';
 import 'shared/services/local_api_server.dart';
@@ -38,15 +39,16 @@ void main() async {
   // Run auto-backup if enabled (once per day, fire-and-forget)
   BackupService.runAutoBackupIfNeeded();
 
+  // Refresh exchange rates daily when the user enabled automatic updates.
+  DeviceExchangeRateService.refreshIfNeeded();
+
   // Start auto-sync lifecycle observer
   AutoSyncService.instance.start();
 
   runApp(
     DevicePreview(
       enabled: kDebugMode,
-      builder: (_) => const ProviderScope(
-        child: MyDeviceApp(),
-      ),
+      builder: (_) => const ProviderScope(child: MyDeviceApp()),
     ),
   );
 }

@@ -43,9 +43,9 @@ class _BackupPageState extends State<BackupPage> {
     final file = await BackupService.createBackup();
     if (!mounted) return;
     if (file != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.backupCreated)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.backupCreated)));
       await _load();
     }
   }
@@ -53,24 +53,19 @@ class _BackupPageState extends State<BackupPage> {
   Future<void> _restoreBackup(BackupInfo backup) async {
     final l10n = AppLocalizations.of(context)!;
 
-    final availableModules = await BackupService.getBackupModules(
-      backup.file,
-    );
+    final availableModules = await BackupService.getBackupModules(backup.file);
     if (!mounted) return;
     if (availableModules.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.backupRestoreFailed),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.backupRestoreFailed)));
       return;
     }
 
     final selected = await showDialog<Set<String>>(
       context: context,
-      builder: (ctx) => _RestoreModuleDialog(
-        availableModules: availableModules,
-      ),
+      builder: (ctx) =>
+          _RestoreModuleDialog(availableModules: availableModules),
     );
     if (selected == null || selected.isEmpty) return;
 
@@ -101,9 +96,7 @@ class _BackupPageState extends State<BackupPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          ok ? l10n.backupRestored : l10n.backupRestoreFailed,
-        ),
+        content: Text(ok ? l10n.backupRestored : l10n.backupRestoreFailed),
       ),
     );
   }
@@ -176,8 +169,7 @@ class _BackupPageState extends State<BackupPage> {
                         final label = d == 0
                             ? l10n.backupKeepForever
                             : l10n.backupKeepDays(d);
-                        return DropdownMenuItem(
-                            value: d, child: Text(label));
+                        return DropdownMenuItem(value: d, child: Text(label));
                       }).toList(),
                       onChanged: (v) {
                         if (v != null) _setRetention(v);
@@ -207,19 +199,15 @@ class _BackupPageState extends State<BackupPage> {
                             child: Text(
                               l10n.backupNoBackups,
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color:
-                                    theme.colorScheme.onSurfaceVariant,
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
                         ]
                       : _backups.map((b) {
-                          final dateStr =
-                              dateFormat.format(b.date);
+                          final dateStr = dateFormat.format(b.date);
                           return ListTile(
-                            leading: const Icon(
-                              Icons.inventory_2_outlined,
-                            ),
+                            leading: const Icon(Icons.inventory_2_outlined),
                             title: Text(dateStr),
                             subtitle: Text(b.displaySize),
                             trailing: Row(
@@ -228,15 +216,12 @@ class _BackupPageState extends State<BackupPage> {
                                 IconButton(
                                   icon: const Icon(Icons.restore),
                                   tooltip: l10n.backupRestore,
-                                  onPressed: () =>
-                                      _restoreBackup(b),
+                                  onPressed: () => _restoreBackup(b),
                                 ),
                                 IconButton(
-                                  icon: const Icon(
-                                      Icons.delete_outline),
+                                  icon: const Icon(Icons.delete_outline),
                                   tooltip: l10n.delete,
-                                  onPressed: () =>
-                                      _deleteBackup(b),
+                                  onPressed: () => _deleteBackup(b),
                                 ),
                               ],
                             ),
@@ -249,7 +234,10 @@ class _BackupPageState extends State<BackupPage> {
   }
 
   Widget _buildSection(
-      BuildContext context, String title, List<Widget> children) {
+    BuildContext context,
+    String title,
+    List<Widget> children,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -258,8 +246,8 @@ class _BackupPageState extends State<BackupPage> {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                ),
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
         ...children,
@@ -329,8 +317,8 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
                   } else {
                     _selected.remove(m);
                   }
-                  _selectAll = _selected.length ==
-                      widget.availableModules.length;
+                  _selectAll =
+                      _selected.length == widget.availableModules.length;
                 });
               },
             );

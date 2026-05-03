@@ -47,8 +47,9 @@ class PresetService {
 
   static Future<List<DeviceTemplate>> loadTemplates() async {
     if (_templates != null) return _templates!;
-    final raw =
-        await rootBundle.loadString('assets/presets/device_templates.json');
+    final raw = await rootBundle.loadString(
+      'assets/presets/device_templates.json',
+    );
     final json = jsonDecode(raw) as List<dynamic>;
     final list = json
         .map((e) => DeviceTemplate.fromJson(e as Map<String, dynamic>))
@@ -64,10 +65,8 @@ class BrandEntry {
 
   const BrandEntry({required this.name, this.logo});
 
-  factory BrandEntry.fromJson(Map<String, dynamic> json) => BrandEntry(
-        name: json['name'] as String,
-        logo: json['logo'] as String?,
-      );
+  factory BrandEntry.fromJson(Map<String, dynamic> json) =>
+      BrandEntry(name: json['name'] as String, logo: json['logo'] as String?);
 }
 
 class DeviceTemplate {
@@ -109,28 +108,28 @@ class DeviceTemplate {
     return null;
   }
 
-  factory DeviceTemplate.fromJson(Map<String, dynamic> json) =>
-      DeviceTemplate(
-        name: json['name'] as String,
-        category: DeviceCategory.fromJson(json['category'] as String),
-        brand: json['brand'] as String?,
-        model: json['model'] as String?,
-        cpu: _asString(json['cpu']),
-        gpu: _asString(json['gpu']),
-        ram: json['ram'] as String?,
-        storage: (json['storage'] as List<dynamic>?)
-                ?.map((e) => StorageInfo.fromJson(e))
-                .toList() ??
-            const [],
-        screenSize: json['screenSize'] as String?,
-        screenResolutionW: json['screenResolutionW'] as int?,
-        screenResolutionH: json['screenResolutionH'] as int?,
-        battery: json['battery'] as String?,
-        os: json['os'] as String?,
-        releaseDate: json['releaseDate'] != null
-            ? DateTime.parse(json['releaseDate'] as String)
-            : null,
-      );
+  factory DeviceTemplate.fromJson(Map<String, dynamic> json) => DeviceTemplate(
+    name: json['name'] as String,
+    category: DeviceCategory.fromJson(json['category'] as String),
+    brand: json['brand'] as String?,
+    model: json['model'] as String?,
+    cpu: _asString(json['cpu']),
+    gpu: _asString(json['gpu']),
+    ram: json['ram'] as String?,
+    storage:
+        (json['storage'] as List<dynamic>?)
+            ?.map((e) => StorageInfo.fromJson(e))
+            .toList() ??
+        const [],
+    screenSize: json['screenSize'] as String?,
+    screenResolutionW: json['screenResolutionW'] as int?,
+    screenResolutionH: json['screenResolutionH'] as int?,
+    battery: json['battery'] as String?,
+    os: json['os'] as String?,
+    releaseDate: json['releaseDate'] != null
+        ? DateTime.parse(json['releaseDate'] as String)
+        : null,
+  );
 
   /// Convert to a new Device, pre-filling all template fields.
   /// If [cpuPresets] / [gpuPresets] are provided, matching entries

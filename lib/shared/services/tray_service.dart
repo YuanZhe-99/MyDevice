@@ -51,11 +51,13 @@ class TrayService with TrayListener, WindowListener {
 
   Future<void> _rebuildMenu() async {
     final l10n = lookupAppLocalizations(_locale);
-    final menu = Menu(items: [
-      MenuItem(key: 'show', label: l10n.trayShow),
-      MenuItem.separator(),
-      MenuItem(key: 'quit', label: l10n.trayQuit),
-    ]);
+    final menu = Menu(
+      items: [
+        MenuItem(key: 'show', label: l10n.trayShow),
+        MenuItem.separator(),
+        MenuItem(key: 'quit', label: l10n.trayQuit),
+      ],
+    );
     await trayManager.setContextMenu(menu);
   }
 

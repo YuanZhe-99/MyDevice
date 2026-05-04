@@ -1871,6 +1871,60 @@ abstract class AppLocalizations {
   /// **'Daily Cost'**
   String get financialDailyCost;
 
+  /// No description provided for @financialAssetDistribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset Distribution'**
+  String get financialAssetDistribution;
+
+  /// No description provided for @financialDailyCostLogTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Cost Trend (Log)'**
+  String get financialDailyCostLogTrend;
+
+  /// No description provided for @financialDevicesWithFinance.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked'**
+  String get financialDevicesWithFinance;
+
+  /// No description provided for @financialHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get financialHistory;
+
+  /// No description provided for @financialFutureTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Future Trend'**
+  String get financialFutureTrend;
+
+  /// No description provided for @financialRange1Year.
+  ///
+  /// In en, this message translates to:
+  /// **'1Y'**
+  String get financialRange1Year;
+
+  /// No description provided for @financialRange3Years.
+  ///
+  /// In en, this message translates to:
+  /// **'3Y'**
+  String get financialRange3Years;
+
+  /// No description provided for @financialRangeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get financialRangeAll;
+
+  /// No description provided for @financialNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No financial data'**
+  String get financialNoData;
+
   /// No description provided for @settingsDefaultCurrency.
   ///
   /// In en, this message translates to:

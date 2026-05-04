@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -7,10 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../l10n/app_localizations.dart';
-import '../../../shared/services/image_service.dart';
 import '../models/device.dart';
 import '../services/exchange_rate_service.dart';
-import '../widgets/device_category_icon.dart';
+import '../widgets/device_avatar.dart';
 import 'device_edit_page.dart';
 
 class DeviceDetailPage extends StatelessWidget {
@@ -474,7 +471,7 @@ class DeviceDetailPage extends StatelessWidget {
           children: [
             Row(
               children: [
-                _buildHeaderAvatar(cs),
+                DeviceAvatar.fromDevice(device, size: 56),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -551,55 +548,6 @@ class DeviceDetailPage extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderAvatar(ColorScheme cs) {
-    if (device.emoji != null) {
-      return CircleAvatar(
-        radius: 28,
-        backgroundColor: cs.primaryContainer,
-        child: Text(device.emoji!, style: const TextStyle(fontSize: 28)),
-      );
-    }
-    if (device.imagePath != null) {
-      return FutureBuilder<File>(
-        future: ImageService.resolve(device.imagePath!),
-        builder: (context, snap) {
-          if (snap.hasData && snap.data!.existsSync()) {
-            return CircleAvatar(
-              radius: 28,
-              backgroundColor: cs.primaryContainer,
-              child: ClipOval(
-                child: Image.file(
-                  snap.data!,
-                  fit: BoxFit.contain,
-                  width: 56,
-                  height: 56,
-                ),
-              ),
-            );
-          }
-          return CircleAvatar(
-            radius: 28,
-            backgroundColor: cs.primaryContainer,
-            child: Icon(
-              deviceCategoryIcon(device.category),
-              size: 28,
-              color: cs.onPrimaryContainer,
-            ),
-          );
-        },
-      );
-    }
-    return CircleAvatar(
-      radius: 28,
-      backgroundColor: cs.primaryContainer,
-      child: Icon(
-        deviceCategoryIcon(device.category),
-        size: 28,
-        color: cs.onPrimaryContainer,
       ),
     );
   }

@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
@@ -14,6 +12,7 @@ import '../models/device.dart';
 import '../services/device_storage.dart';
 import '../services/exchange_rate_service.dart';
 import '../services/preset_service.dart';
+import '../widgets/device_avatar.dart';
 import '../widgets/device_category_icon.dart';
 import 'chip_search_dialog.dart';
 import 'device_search_dialog.dart';
@@ -881,35 +880,13 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
-  Widget _buildIconSection(AppLocalizations l10n, ThemeData theme) {
-    Widget preview;
-    if (_emoji != null) {
-      preview = Text(_emoji!, style: const TextStyle(fontSize: 32));
-    } else if (_imagePath != null) {
-      preview = FutureBuilder<File>(
-        future: ImageService.resolve(_imagePath!),
-        builder: (context, snap) {
-          if (snap.hasData && snap.data!.existsSync()) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.file(
-                snap.data!,
-                width: 40,
-                height: 40,
-                fit: BoxFit.cover,
-              ),
-            );
-          }
-          return const Icon(Icons.image, size: 32);
-        },
-      );
-    } else {
-      preview = Icon(
-        deviceCategoryIcon(_category),
-        size: 32,
-        color: theme.colorScheme.onSurfaceVariant,
-      );
-    }
+  Widget _buildIconSection(AppLocalizations l10n) {
+    final preview = DeviceAvatar(
+      category: _category,
+      emoji: _emoji,
+      imagePath: _imagePath,
+      size: 56,
+    );
 
     return Row(
       children: [
@@ -1400,7 +1377,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
             const SizedBox(height: 12),
 
             // ── Emoji / Image icon ──
-            _buildIconSection(l10n, theme),
+            _buildIconSection(l10n),
             const SizedBox(height: 12),
             ListTile(
               contentPadding: EdgeInsets.zero,

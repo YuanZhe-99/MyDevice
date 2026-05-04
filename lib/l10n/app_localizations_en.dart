@@ -926,6 +926,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get financialDailyCost => 'Daily Cost';
 
   @override
+  String get financialAssetDistribution => 'Asset Distribution';
+
+  @override
+  String get financialDailyCostLogTrend => 'Daily Cost Trend (Log)';
+
+  @override
+  String get financialDevicesWithFinance => 'Tracked';
+
+  @override
+  String get financialHistory => 'History';
+
+  @override
+  String get financialFutureTrend => 'Future Trend';
+
+  @override
+  String get financialRange1Year => '1Y';
+
+  @override
+  String get financialRange3Years => '3Y';
+
+  @override
+  String get financialRangeAll => 'All';
+
+  @override
+  String get financialNoData => 'No financial data';
+
+  @override
   String get settingsDefaultCurrency => 'Default Currency';
 
   @override

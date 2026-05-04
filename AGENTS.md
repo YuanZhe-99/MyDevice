@@ -8,7 +8,7 @@ This file is the operating guide for agents working on **MyDevice!!!!!**. Read i
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `0.4.0+11` in `pubspec.yaml`, `0.4.0.0` for MSIX, and `0.4.0` in `installer.iss`.
+- **Current version:** `0.4.1+12` in `pubspec.yaml`, `0.4.1.0` for MSIX, and `0.4.1` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** `C:\Users\yuanzhe\src\MyDevice`.
@@ -150,6 +150,10 @@ The main device model is in `lib/features/devices/models/device.dart`. It tracks
 Important nested models and enums include `CpuInfo`, `GpuInfo`, `StorageInfo`, `StorageType`, `StorageInterface`, `RamType`, and `DeviceCategory`. Device categories include desktop, laptop, phone, tablet, headphone, watch, router, game console, VPS, dev board, and other.
 
 Device lifecycle and finance were added in v0.4.0. Retired or sold devices must be removed from network assignments and dataset storage links, and excluded from network/storage pickers. Device detail and Markdown export should include lifecycle and finance information when relevant.
+
+The device list financial overview card opens a financial analysis page. It shows total-cost asset distribution by device category and a combined historical/future daily-cost trend chart rendered with `fl_chart`; the future segment is dashed, uses the selected range as the forward projection window, and the daily-cost chart always uses a log-style axis transform.
+
+Device icons should use the shared circular avatar renderer in `lib/features/devices/widgets/device_avatar.dart`. User images are center-cropped over a light circular background with a subtle border so transparent PNGs remain visible; failed or missing images fall back to consistent outline category icons.
 
 ### Networks
 
@@ -339,3 +343,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.3.2`: Referenced-only image sync and improved sync error/warning reporting.
 - `v0.3.3`: Periodic auto-sync, storage-layer save notifications, auto-sync UI refresh, unknown-field preservation.
 - `v0.4.0`: Device lifecycle and finance tracking, exchange-rate support, financial overview, retired/sold cleanup, Markdown/detail finance output.
+- `v0.4.1`: Financial overview analysis page with asset distribution and log daily-cost history/future trend chart; unified circular device avatar rendering for custom images and category fallbacks.

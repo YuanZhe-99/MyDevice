@@ -914,6 +914,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get financialDailyCost => '日均成本';
 
   @override
+  String get financialAssetDistribution => '资产分布';
+
+  @override
+  String get financialDailyCostLogTrend => '日均成本趋势（对数）';
+
+  @override
+  String get financialDevicesWithFinance => '已记录';
+
+  @override
+  String get financialHistory => '历史';
+
+  @override
+  String get financialFutureTrend => '未来趋势';
+
+  @override
+  String get financialRange1Year => '1年';
+
+  @override
+  String get financialRange3Years => '3年';
+
+  @override
+  String get financialRangeAll => '全部';
+
+  @override
+  String get financialNoData => '暂无财务数据';
+
+  @override
   String get settingsDefaultCurrency => '默认币种';
 
   @override
@@ -1837,6 +1864,33 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get financialDailyCost => '日均成本';
+
+  @override
+  String get financialAssetDistribution => '資產分布';
+
+  @override
+  String get financialDailyCostLogTrend => '日均成本趨勢（對數）';
+
+  @override
+  String get financialDevicesWithFinance => '已記錄';
+
+  @override
+  String get financialHistory => '歷史';
+
+  @override
+  String get financialFutureTrend => '未來趨勢';
+
+  @override
+  String get financialRange1Year => '1年';
+
+  @override
+  String get financialRange3Years => '3年';
+
+  @override
+  String get financialRangeAll => '全部';
+
+  @override
+  String get financialNoData => '暫無財務資料';
 
   @override
   String get settingsDefaultCurrency => '預設幣種';

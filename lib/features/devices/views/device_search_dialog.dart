@@ -542,17 +542,22 @@ class _SearchDialogState extends State<_SearchDialog> {
                         future: ImageService.resolve(widget.currentImagePath!),
                         builder: (context, snap) {
                           if (snap.hasData && snap.data!.existsSync()) {
-                            return ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Image.file(
+                            return _imagePreviewFrame(
+                              Image.file(
                                 snap.data!,
-                                width: 55,
-                                height: 77,
+                                width: 64,
+                                height: 64,
                                 fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                                errorBuilder: (_, _, _) => const Icon(
+                                  Icons.image_not_supported_outlined,
+                                ),
                               ),
                             );
                           }
-                          return const SizedBox(width: 55, height: 77);
+                          return _imagePreviewFrame(
+                            const Icon(Icons.image_not_supported_outlined),
+                          );
                         },
                       ),
                     ),
@@ -563,13 +568,15 @@ class _SearchDialogState extends State<_SearchDialog> {
                   ],
                   _imageColumn(
                     l10n.searchFetched,
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image(
+                    _imagePreviewFrame(
+                      Image(
                         image: _imagePreview!,
-                        width: 55,
-                        height: 77,
+                        width: 64,
+                        height: 64,
                         fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        errorBuilder: (_, _, _) =>
+                            const Icon(Icons.image_not_supported_outlined),
                       ),
                     ),
                   ),
@@ -588,6 +595,22 @@ class _SearchDialogState extends State<_SearchDialog> {
         const SizedBox(height: 4),
         image,
       ],
+    );
+  }
+
+  Widget _imagePreviewFrame(Widget child) {
+    final cs = Theme.of(context).colorScheme;
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          shape: BoxShape.circle,
+          border: Border.all(color: cs.outlineVariant.withAlpha(140)),
+        ),
+        child: ClipOval(child: child),
+      ),
     );
   }
 

@@ -1,11 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../app/flavor.dart';
 import '../../../shared/services/auto_sync_service.dart';
-import '../../../shared/services/image_service.dart';
 import '../../../shared/views/device_map_page.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
@@ -13,7 +10,9 @@ import '../services/exchange_rate_service.dart';
 import '../services/preset_service.dart';
 import 'device_detail_page.dart';
 import 'device_edit_page.dart';
+import 'device_finance_overview_page.dart';
 import 'device_search_dialog.dart';
+import '../widgets/device_avatar.dart';
 import '../widgets/device_category_icon.dart';
 
 enum SortMode { custom, alphabetical, purchaseDate, releaseDate }
@@ -184,6 +183,18 @@ class _DeviceListPageState extends State<DeviceListPage> {
       MaterialPageRoute(
         builder: (_) =>
             DeviceDetailPage(device: device, onDeviceChanged: () {}),
+      ),
+    );
+    await _loadDevices();
+  }
+
+  Future<void> _viewFinancialOverview() async {
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => DeviceFinanceOverviewPage(
+          devices: _devices,
+          defaultCurrency: _defaultCurrency,
+        ),
       ),
     );
     await _loadDevices();
@@ -537,82 +548,88 @@ class _DeviceListPageState extends State<DeviceListPage> {
         children: [
           Card(
             elevation: 0,
+            clipBehavior: Clip.antiAlias,
             color: cs.surfaceContainerHighest.withAlpha(128),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.financialOverview,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
+            child: InkWell(
+              onTap: _viewFinancialOverview,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            l10n.financialOverview,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                      ),
-                      Text(
-                        '${_devices.length}',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
+                        Text(
+                          '${_devices.length}',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildMetric(
-                          theme,
-                          l10n.financialTotalCost,
-                          _moneyText(_totalFinancialCost()),
+                        const SizedBox(width: 8),
+                        Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildMetric(
+                            theme,
+                            l10n.financialTotalCost,
+                            _moneyText(_totalFinancialCost()),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildMetric(
-                          theme,
-                          l10n.financialDailyCost,
-                          _moneyText(_totalDailyCost()),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildMetric(
+                            theme,
+                            l10n.financialDailyCost,
+                            _moneyText(_totalDailyCost()),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatusCount(
-                          theme,
-                          l10n.statusInService,
-                          inService,
-                          cs.primary,
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatusCount(
+                            theme,
+                            l10n.statusInService,
+                            inService,
+                            cs.primary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildStatusCount(
-                          theme,
-                          l10n.statusRetired,
-                          retired,
-                          cs.secondary,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildStatusCount(
+                            theme,
+                            l10n.statusRetired,
+                            retired,
+                            cs.secondary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildStatusCount(
-                          theme,
-                          l10n.statusSold,
-                          sold,
-                          cs.tertiary,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildStatusCount(
+                            theme,
+                            l10n.statusSold,
+                            sold,
+                            cs.tertiary,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -777,7 +794,6 @@ class _DeviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final subtitleParts = <String>[categoryLabel];
     if (device.brand != null) subtitleParts.add(device.brand!);
     if (device.cpu.model != null) subtitleParts.add(device.cpu.model!);
@@ -792,7 +808,7 @@ class _DeviceCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
-        leading: _buildLeading(theme),
+        leading: DeviceAvatar.fromDevice(device),
         title: Text(device.name),
         subtitle: Text(
           subtitleParts.join(' · '),
@@ -801,49 +817,6 @@ class _DeviceCard extends StatelessWidget {
         ),
         trailing: trailing ?? const Icon(Icons.chevron_right),
         onTap: onTap,
-      ),
-    );
-  }
-
-  Widget _buildLeading(ThemeData theme) {
-    if (device.emoji != null) {
-      return CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Text(device.emoji!, style: const TextStyle(fontSize: 20)),
-      );
-    }
-    if (device.imagePath != null) {
-      return FutureBuilder<File>(
-        future: ImageService.resolve(device.imagePath!),
-        builder: (context, snap) {
-          if (snap.hasData && snap.data!.existsSync()) {
-            return CircleAvatar(
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: ClipOval(
-                child: Image.file(
-                  snap.data!,
-                  fit: BoxFit.contain,
-                  width: 40,
-                  height: 40,
-                ),
-              ),
-            );
-          }
-          return CircleAvatar(
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(
-              deviceCategoryIcon(device.category),
-              color: theme.colorScheme.onPrimaryContainer,
-            ),
-          );
-        },
-      );
-    }
-    return CircleAvatar(
-      backgroundColor: theme.colorScheme.primaryContainer,
-      child: Icon(
-        deviceCategoryIcon(device.category),
-        color: theme.colorScheme.onPrimaryContainer,
       ),
     );
   }

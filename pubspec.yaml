@@ -2,7 +2,7 @@ name: my_device
 description: "MyDevice!!!!! — Your personal device inventory"
 publish_to: 'none'
 
-version: 0.4.0+11
+version: 0.4.1+12
 
 environment:
   sdk: ^3.11.3
@@ -28,6 +28,7 @@ dependencies:
 
   # i18n
   intl: ^0.20.2
+  fl_chart: ^0.70.2
 
   # Utilities
   uuid: ^4.5.1
@@ -78,7 +79,7 @@ msix_config:
   display_name: MyDevice!!!!!
   publisher_display_name: yuanzhe
   identity_name: com.yuanzhe.mydevice
-  msix_version: 0.4.0.0
+  msix_version: 0.4.1.0
   logo_path: assets/icon/app_icon.png
   capabilities: internetClient
   install_certificate: false

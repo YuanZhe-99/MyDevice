@@ -916,6 +916,33 @@ class AppLocalizationsJa extends AppLocalizations {
   String get financialDailyCost => '日次コスト';
 
   @override
+  String get financialAssetDistribution => '資産分布';
+
+  @override
+  String get financialDailyCostLogTrend => '日次コスト推移（対数）';
+
+  @override
+  String get financialDevicesWithFinance => '記録済み';
+
+  @override
+  String get financialHistory => '履歴';
+
+  @override
+  String get financialFutureTrend => '将来推移';
+
+  @override
+  String get financialRange1Year => '1年';
+
+  @override
+  String get financialRange3Years => '3年';
+
+  @override
+  String get financialRangeAll => 'すべて';
+
+  @override
+  String get financialNoData => '財務データがありません';
+
+  @override
   String get settingsDefaultCurrency => '既定通貨';
 
   @override

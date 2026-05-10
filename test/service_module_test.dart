@@ -279,4 +279,193 @@ void main() {
     expect(stats['total'], 1);
     expect(stats['services'], {'total': 1, 'routes': 1, 'devices': 1});
   });
+
+  test('service topology groups one service with multiple public domains', () {
+    final service = ServiceNode(
+      id: 'service-1',
+      deviceId: 'device-1',
+      name: 'Jellyfin',
+      endpoints: [ServiceEndpoint(id: 'endpoint-1', port: 8096)],
+    );
+    final graph = buildServiceTopology(
+      services: [service],
+      routes: [
+        ServiceRoute(
+          id: 'route-1',
+          name: 'Jellyfin Cloudflare',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'endpoint-1',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.tunnel,
+              method: ServiceRouteMethod.cloudflareTunnel,
+            ),
+          ],
+          finalUrl: 'https://jellyfin.example.com',
+          accessLevel: ServiceAccessLevel.public,
+        ),
+        ServiceRoute(
+          id: 'route-2',
+          name: 'Jellyfin Pangolin',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'endpoint-1',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.tunnel,
+              method: ServiceRouteMethod.pangolin,
+            ),
+          ],
+          finalUrl: 'https://media.example.com',
+          accessLevel: ServiceAccessLevel.public,
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'device-1',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+      ],
+    );
+
+    expect(
+      graph.nodes.where((node) => node.kind == ServiceTopologyNodeKind.service),
+      hasLength(1),
+    );
+    expect(
+      graph.nodes
+          .where((node) => node.kind == ServiceTopologyNodeKind.domain)
+          .map((node) => node.label),
+      containsAll(['jellyfin.example.com', 'media.example.com']),
+    );
+  });
+
+  test('service topology models FRP remote entry before domains', () {
+    final service = ServiceNode(
+      id: 'service-1',
+      deviceId: 'device-1',
+      name: 'Caddy',
+      endpoints: [
+        ServiceEndpoint(
+          id: 'endpoint-1',
+          protocol: ServiceProtocol.https,
+          port: 443,
+        ),
+      ],
+    );
+    final graph = buildServiceTopology(
+      services: [service],
+      routes: [
+        ServiceRoute(
+          id: 'route-1',
+          name: 'Caddy FRP Cloud',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'endpoint-1',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.portForward,
+              method: ServiceRouteMethod.frp,
+              host: '203.0.113.10',
+              port: 443,
+            ),
+          ],
+          finalUrl: 'https://cloud.example.com',
+          accessLevel: ServiceAccessLevel.public,
+        ),
+        ServiceRoute(
+          id: 'route-2',
+          name: 'Caddy FRP Root',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'endpoint-1',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.portForward,
+              method: ServiceRouteMethod.frp,
+              host: '203.0.113.10',
+              port: 443,
+            ),
+          ],
+          finalUrl: 'https://example.com',
+          accessLevel: ServiceAccessLevel.public,
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'device-1',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+      ],
+    );
+
+    final remoteEntry = graph.nodes.singleWhere(
+      (node) => node.kind == ServiceTopologyNodeKind.remoteEntry,
+    );
+    expect(remoteEntry.label, '203.0.113.10:443');
+    expect(
+      graph.edges.where((edge) => edge.from == remoteEntry.id),
+      hasLength(2),
+    );
+  });
+
+  test('service topology shares a VPS node across local devices', () {
+    final services = [
+      ServiceNode(
+        id: 'service-1',
+        deviceId: 'device-1',
+        name: 'Caddy A',
+        endpoints: [ServiceEndpoint(id: 'endpoint-1', port: 443)],
+      ),
+      ServiceNode(
+        id: 'service-2',
+        deviceId: 'device-2',
+        name: 'Caddy B',
+        endpoints: [ServiceEndpoint(id: 'endpoint-2', port: 443)],
+      ),
+    ];
+    final graph = buildServiceTopology(
+      services: services,
+      routes: [
+        for (final service in services)
+          ServiceRoute(
+            id: 'route-${service.id}',
+            name: '${service.name} FRP',
+            sourceServiceId: service.id,
+            sourceEndpointId: service.endpoints.single.id,
+            hops: [
+              ServiceRouteHop(
+                type: ServiceRouteHopType.portForward,
+                method: ServiceRouteMethod.frp,
+                deviceId: 'vps-1',
+                host: '198.51.100.10',
+                port: 443,
+              ),
+            ],
+            finalUrl: 'https://${service.id}.example.com',
+            accessLevel: ServiceAccessLevel.public,
+          ),
+      ],
+      devices: [
+        Device(
+          id: 'device-1',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+        Device(id: 'device-2', name: 'NUC', category: DeviceCategory.desktop),
+        Device(id: 'vps-1', name: 'VPS', category: DeviceCategory.vps),
+      ],
+    );
+
+    expect(
+      graph.nodes.where(
+        (node) =>
+            node.kind == ServiceTopologyNodeKind.device && node.label == 'VPS',
+      ),
+      hasLength(1),
+    );
+    expect(
+      graph.nodes.where((node) => node.kind == ServiceTopologyNodeKind.domain),
+      hasLength(2),
+    );
+  });
 }

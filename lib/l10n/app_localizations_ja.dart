@@ -1103,6 +1103,50 @@ class AppLocalizationsJa extends AppLocalizations {
   String get serviceFinalUrl => '最終URL / アドレス';
 
   @override
+  String get serviceAddAccess => 'アクセス方式を追加';
+
+  @override
+  String get serviceAdvancedRoute => '詳細ルート';
+
+  @override
+  String get serviceTopology => 'サービストポロジー';
+
+  @override
+  String get serviceTopologyHint =>
+      'ドラッグまたはズームして、デバイス、ローカルポート、中継、リモート入口、ドメインを確認します。';
+
+  @override
+  String get serviceAccessMethod => 'アクセス方式';
+
+  @override
+  String get serviceRelayService => '中継 / プロキシサービス';
+
+  @override
+  String get serviceRemoteDevice => 'リモートデバイス / VPS';
+
+  @override
+  String get serviceRemoteHost => 'リモートホスト / IP';
+
+  @override
+  String get serviceRemotePort => 'リモートポート';
+
+  @override
+  String get serviceRemotePortRequired => '有効なリモートポートを入力してください。';
+
+  @override
+  String get serviceDomains => 'ドメイン / 公開先';
+
+  @override
+  String get serviceDomainsHint => 'ポートマッピングでは任意です。1行に1つ、またはカンマ区切りで入力します。';
+
+  @override
+  String get serviceAccessTargetsHint =>
+      '1行に1つのURLまたはアドレスを入力します。複数入力すると複数のアクセスルートを作成します。';
+
+  @override
+  String get serviceAccessTargetRequired => '少なくとも1つのURLまたはアドレスを入力してください。';
+
+  @override
   String get routeHops => 'ルートホップ';
 
   @override

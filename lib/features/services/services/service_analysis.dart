@@ -2,6 +2,56 @@ import '../../devices/models/device.dart';
 import '../../network/models/network.dart';
 import '../models/service.dart';
 
+enum ServiceTopologyNodeKind {
+  device,
+  service,
+  endpoint,
+  relay,
+  remoteEntry,
+  domain,
+}
+
+class ServiceTopologyNode {
+  final String id;
+  final ServiceTopologyNodeKind kind;
+  final String label;
+  final String? detail;
+  final String? deviceId;
+  final String? serviceId;
+
+  const ServiceTopologyNode({
+    required this.id,
+    required this.kind,
+    required this.label,
+    this.detail,
+    this.deviceId,
+    this.serviceId,
+  });
+}
+
+class ServiceTopologyEdge {
+  final String from;
+  final String to;
+  final String? label;
+  final String? routeId;
+
+  const ServiceTopologyEdge({
+    required this.from,
+    required this.to,
+    this.label,
+    this.routeId,
+  });
+}
+
+class ServiceTopologyGraph {
+  final List<ServiceTopologyNode> nodes;
+  final List<ServiceTopologyEdge> edges;
+
+  const ServiceTopologyGraph({required this.nodes, required this.edges});
+
+  bool get isEmpty => nodes.isEmpty;
+}
+
 class ServicePortUse {
   final ServiceNode service;
   final ServiceEndpoint endpoint;
@@ -135,6 +185,211 @@ List<ServicePortConflict> findServicePortConflicts(List<ServiceNode> services) {
   return conflicts;
 }
 
+ServiceTopologyGraph buildServiceTopology({
+  required List<ServiceNode> services,
+  required List<ServiceRoute> routes,
+  required List<Device> devices,
+}) {
+  final deviceMap = {for (final device in devices) device.id: device};
+  final serviceMap = {for (final service in services) service.id: service};
+  final nodes = <String, ServiceTopologyNode>{};
+  final edges = <String, ServiceTopologyEdge>{};
+
+  void addNode(ServiceTopologyNode node) {
+    nodes.putIfAbsent(node.id, () => node);
+  }
+
+  void addEdge(String from, String to, {String? label, String? routeId}) {
+    if (from == to || !nodes.containsKey(from) || !nodes.containsKey(to)) {
+      return;
+    }
+    final key = '$from->$to:${label ?? ''}';
+    edges.putIfAbsent(
+      key,
+      () => ServiceTopologyEdge(
+        from: from,
+        to: to,
+        label: label,
+        routeId: routeId,
+      ),
+    );
+  }
+
+  String deviceNodeId(String deviceId) => 'device:$deviceId';
+  String serviceNodeId(String serviceId) => 'service:$serviceId';
+  String endpointNodeId(String serviceId, String endpointId) =>
+      'endpoint:$serviceId:$endpointId';
+
+  String addDeviceNode(String deviceId) {
+    final device = deviceMap[deviceId];
+    final id = deviceNodeId(deviceId);
+    addNode(
+      ServiceTopologyNode(
+        id: id,
+        kind: ServiceTopologyNodeKind.device,
+        label: device?.name ?? deviceId,
+        detail: device?.category.name,
+        deviceId: deviceId,
+      ),
+    );
+    return id;
+  }
+
+  String addServiceNode(ServiceNode service) {
+    final deviceId = addDeviceNode(service.deviceId);
+    final id = serviceNodeId(service.id);
+    addNode(
+      ServiceTopologyNode(
+        id: id,
+        kind: ServiceTopologyNodeKind.service,
+        label: service.name,
+        detail: service.endpoints.isEmpty
+            ? service.kind.name
+            : service.endpoints
+                  .map((endpoint) => endpoint.portText)
+                  .where((text) => text != '-')
+                  .take(3)
+                  .join(', '),
+        deviceId: service.deviceId,
+        serviceId: service.id,
+      ),
+    );
+    addEdge(deviceId, id);
+    return id;
+  }
+
+  String addEndpointNode(ServiceNode service, ServiceEndpoint endpoint) {
+    final id = endpointNodeId(service.id, endpoint.id);
+    addNode(
+      ServiceTopologyNode(
+        id: id,
+        kind: ServiceTopologyNodeKind.endpoint,
+        label: endpoint.label?.trim().isNotEmpty == true
+            ? endpoint.label!.trim()
+            : endpoint.protocol.name.toUpperCase(),
+        detail: [
+          if (endpoint.bindAddress?.trim().isNotEmpty == true)
+            endpoint.bindAddress!.trim(),
+          endpoint.portText,
+          if (endpoint.path?.trim().isNotEmpty == true) endpoint.path!.trim(),
+        ].where((part) => part.isNotEmpty && part != '-').join(':'),
+        deviceId: service.deviceId,
+        serviceId: service.id,
+      ),
+    );
+    addEdge(serviceNodeId(service.id), id);
+    return id;
+  }
+
+  for (final service in services) {
+    addServiceNode(service);
+  }
+
+  for (final route in routes) {
+    final source = serviceMap[route.sourceServiceId];
+    if (source == null) continue;
+    var currentId = addServiceNode(source);
+    final sourceEndpoint = _endpointForRoute(source, route.sourceEndpointId);
+    if (sourceEndpoint != null) {
+      final endpointId = addEndpointNode(source, sourceEndpoint);
+      addEdge(currentId, endpointId, routeId: route.id);
+      currentId = endpointId;
+    }
+
+    for (final hop in route.hops) {
+      if (_isPortMappingHop(hop)) {
+        final relayId = _relayNodeId(hop);
+        addNode(
+          ServiceTopologyNode(
+            id: relayId,
+            kind: ServiceTopologyNodeKind.relay,
+            label: _relayLabel(hop, serviceMap),
+            detail: hop.method?.name ?? hop.type.name,
+            serviceId: hop.serviceId,
+            deviceId: hop.deviceId,
+          ),
+        );
+        addEdge(currentId, relayId, routeId: route.id);
+        currentId = relayId;
+
+        if (hop.deviceId != null) {
+          final remoteDeviceId = addDeviceNode(hop.deviceId!);
+          addEdge(currentId, remoteDeviceId, routeId: route.id);
+          currentId = remoteDeviceId;
+        }
+
+        if (_hasRemoteEntry(hop)) {
+          final remoteId = _remoteEntryNodeId(hop);
+          addNode(
+            ServiceTopologyNode(
+              id: remoteId,
+              kind: ServiceTopologyNodeKind.remoteEntry,
+              label: _remoteEntryLabel(hop),
+              detail: hop.scheme,
+              deviceId: hop.deviceId,
+            ),
+          );
+          addEdge(currentId, remoteId, routeId: route.id);
+          currentId = remoteId;
+        }
+        continue;
+      }
+
+      if (hop.serviceId != null && serviceMap.containsKey(hop.serviceId)) {
+        final hopService = serviceMap[hop.serviceId]!;
+        final hopServiceId = addServiceNode(hopService);
+        addEdge(currentId, hopServiceId, routeId: route.id);
+        currentId = hopServiceId;
+        final hopEndpoint = _endpointForRoute(hopService, hop.endpointId);
+        if (hopEndpoint != null) {
+          final endpointId = addEndpointNode(hopService, hopEndpoint);
+          addEdge(currentId, endpointId, routeId: route.id);
+          currentId = endpointId;
+        }
+        continue;
+      }
+
+      final label = _relayLabel(hop, serviceMap);
+      if (label.trim().isEmpty) continue;
+      final relayId = _relayNodeId(hop);
+      addNode(
+        ServiceTopologyNode(
+          id: relayId,
+          kind: ServiceTopologyNodeKind.relay,
+          label: label,
+          detail: hop.method?.name ?? hop.type.name,
+          serviceId: hop.serviceId,
+          deviceId: hop.deviceId,
+        ),
+      );
+      addEdge(currentId, relayId, routeId: route.id);
+      currentId = relayId;
+    }
+
+    final target = route.finalUrl?.trim();
+    if (target != null && target.isNotEmpty) {
+      final targetId = 'domain:${_canonicalAccessTarget(target)}';
+      addNode(
+        ServiceTopologyNode(
+          id: targetId,
+          kind: ServiceTopologyNodeKind.domain,
+          label: compactAccessTargetLabel(target),
+          detail: target,
+        ),
+      );
+      addEdge(currentId, targetId, routeId: route.id);
+    }
+  }
+
+  final sortedNodes = nodes.values.toList()
+    ..sort((a, b) {
+      final kindCmp = a.kind.index.compareTo(b.kind.index);
+      if (kindCmp != 0) return kindCmp;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    });
+  return ServiceTopologyGraph(nodes: sortedNodes, edges: edges.values.toList());
+}
+
 List<ServiceWarning> findServiceReferenceWarnings({
   required List<ServiceNode> services,
   required List<ServiceRoute> routes,
@@ -253,3 +508,87 @@ String normalizedBindAddress(String? bindAddress) {
 }
 
 bool _bindsOverlap(String a, String b) => a == '*' || b == '*' || a == b;
+
+ServiceEndpoint? _endpointForRoute(ServiceNode service, String? endpointId) {
+  if (endpointId == null) return null;
+  return service.endpoints
+      .where((endpoint) => endpoint.id == endpointId)
+      .firstOrNull;
+}
+
+bool _isPortMappingHop(ServiceRouteHop hop) =>
+    hop.method == ServiceRouteMethod.frp ||
+    hop.method == ServiceRouteMethod.routerPortForward ||
+    hop.type == ServiceRouteHopType.portForward;
+
+bool _hasRemoteEntry(ServiceRouteHop hop) =>
+    hop.host?.trim().isNotEmpty == true || hop.port != null;
+
+String _relayNodeId(ServiceRouteHop hop) {
+  final method = hop.method?.name ?? hop.type.name;
+  final service = hop.serviceId ?? '';
+  final label = hop.label?.trim().toLowerCase() ?? '';
+  final host = hop.host?.trim().toLowerCase() ?? '';
+  return 'relay:$method:$service:$label:$host';
+}
+
+String _remoteEntryNodeId(ServiceRouteHop hop) {
+  final device = hop.deviceId ?? '';
+  final host = hop.host?.trim().toLowerCase() ?? '';
+  final port = hop.port?.toString() ?? '';
+  return 'remote:$device:$host:$port';
+}
+
+String _relayLabel(ServiceRouteHop hop, Map<String, ServiceNode> services) {
+  final service = hop.serviceId == null ? null : services[hop.serviceId];
+  if (service != null) return service.name;
+  if (hop.label?.trim().isNotEmpty == true) return hop.label!.trim();
+  if (hop.method != null) return serviceRouteMethodLabel(hop.method!);
+  return switch (hop.type) {
+    ServiceRouteHopType.reverseProxy => 'Reverse Proxy',
+    ServiceRouteHopType.tunnel => 'Tunnel',
+    ServiceRouteHopType.portForward => 'Port Forward',
+    ServiceRouteHopType.publicEndpoint => 'Public Endpoint',
+    ServiceRouteHopType.internalEndpoint => 'Internal Endpoint',
+    ServiceRouteHopType.dns => 'DNS',
+    ServiceRouteHopType.origin => 'Origin',
+    ServiceRouteHopType.manual =>
+      hop.host?.trim().isNotEmpty == true ? _remoteEntryLabel(hop) : 'Manual',
+  };
+}
+
+String _remoteEntryLabel(ServiceRouteHop hop) {
+  final host = hop.host?.trim();
+  final port = hop.port;
+  if (host != null && host.isNotEmpty && port != null) return '$host:$port';
+  if (host != null && host.isNotEmpty) return host;
+  if (port != null) return ':$port';
+  return 'Remote entry';
+}
+
+String serviceRouteMethodLabel(ServiceRouteMethod method) => switch (method) {
+  ServiceRouteMethod.caddy => 'Caddy',
+  ServiceRouteMethod.nginx => 'Nginx',
+  ServiceRouteMethod.traefik => 'Traefik',
+  ServiceRouteMethod.frp => 'FRP',
+  ServiceRouteMethod.cloudflareTunnel => 'Cloudflare Tunnel',
+  ServiceRouteMethod.pangolin => 'Pangolin',
+  ServiceRouteMethod.tailscaleFunnel => 'Tailscale Funnel',
+  ServiceRouteMethod.routerPortForward => 'Router Port Forward',
+  ServiceRouteMethod.direct => 'Direct',
+  ServiceRouteMethod.custom => 'Custom',
+};
+
+String compactAccessTargetLabel(String target) {
+  final trimmed = target.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+    final port = uri.hasPort ? ':${uri.port}' : '';
+    final path = uri.path.isNotEmpty && uri.path != '/' ? uri.path : '';
+    return '${uri.host}$port$path';
+  }
+  return trimmed;
+}
+
+String _canonicalAccessTarget(String target) =>
+    compactAccessTargetLabel(target).trim().toLowerCase();

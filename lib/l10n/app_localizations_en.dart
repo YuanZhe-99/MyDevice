@@ -1114,6 +1114,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceFinalUrl => 'Final URL / Address';
 
   @override
+  String get serviceAddAccess => 'Add Access';
+
+  @override
+  String get serviceAdvancedRoute => 'Advanced Route';
+
+  @override
+  String get serviceTopology => 'Service Topology';
+
+  @override
+  String get serviceTopologyHint =>
+      'Drag or zoom the map to inspect devices, local ports, relays, remote entries, and domains.';
+
+  @override
+  String get serviceAccessMethod => 'Access Method';
+
+  @override
+  String get serviceRelayService => 'Relay / Proxy Service';
+
+  @override
+  String get serviceRemoteDevice => 'Remote Device / VPS';
+
+  @override
+  String get serviceRemoteHost => 'Remote Host / IP';
+
+  @override
+  String get serviceRemotePort => 'Remote Port';
+
+  @override
+  String get serviceRemotePortRequired => 'Enter a valid remote port.';
+
+  @override
+  String get serviceDomains => 'Domains / Public Targets';
+
+  @override
+  String get serviceDomainsHint =>
+      'Optional for port mappings. Enter one domain per line or separate with commas.';
+
+  @override
+  String get serviceAccessTargetsHint =>
+      'Enter one URL or address per line. Multiple entries create multiple access routes.';
+
+  @override
+  String get serviceAccessTargetRequired =>
+      'Enter at least one URL or address.';
+
+  @override
   String get routeHops => 'Route Hops';
 
   @override

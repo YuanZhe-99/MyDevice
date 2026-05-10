@@ -1101,6 +1101,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceFinalUrl => '最终 URL / 地址';
 
   @override
+  String get serviceAddAccess => '添加访问方式';
+
+  @override
+  String get serviceAdvancedRoute => '高级链路';
+
+  @override
+  String get serviceTopology => '服务拓扑';
+
+  @override
+  String get serviceTopologyHint => '拖动或缩放查看设备、本地端口、中继、远端入口和域名。';
+
+  @override
+  String get serviceAccessMethod => '访问方式';
+
+  @override
+  String get serviceRelayService => '中继 / 代理服务';
+
+  @override
+  String get serviceRemoteDevice => '远端设备 / VPS';
+
+  @override
+  String get serviceRemoteHost => '远端主机 / IP';
+
+  @override
+  String get serviceRemotePort => '远端端口';
+
+  @override
+  String get serviceRemotePortRequired => '请输入有效的远端端口。';
+
+  @override
+  String get serviceDomains => '域名 / 公网目标';
+
+  @override
+  String get serviceDomainsHint => '端口映射可选。每行一个域名，或用逗号分隔。';
+
+  @override
+  String get serviceAccessTargetsHint => '每行输入一个 URL 或地址。多个条目会创建多条访问链路。';
+
+  @override
+  String get serviceAccessTargetRequired => '请输入至少一个 URL 或地址。';
+
+  @override
   String get routeHops => '链路节点';
 
   @override
@@ -2332,6 +2374,48 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceFinalUrl => '最終 URL / 地址';
+
+  @override
+  String get serviceAddAccess => '新增存取方式';
+
+  @override
+  String get serviceAdvancedRoute => '進階鏈路';
+
+  @override
+  String get serviceTopology => '服務拓撲';
+
+  @override
+  String get serviceTopologyHint => '拖曳或縮放查看裝置、本地連接埠、中繼、遠端入口和網域。';
+
+  @override
+  String get serviceAccessMethod => '存取方式';
+
+  @override
+  String get serviceRelayService => '中繼 / 代理服務';
+
+  @override
+  String get serviceRemoteDevice => '遠端裝置 / VPS';
+
+  @override
+  String get serviceRemoteHost => '遠端主機 / IP';
+
+  @override
+  String get serviceRemotePort => '遠端連接埠';
+
+  @override
+  String get serviceRemotePortRequired => '請輸入有效的遠端連接埠。';
+
+  @override
+  String get serviceDomains => '網域 / 公網目標';
+
+  @override
+  String get serviceDomainsHint => '連接埠映射可選。每行一個網域，或用逗號分隔。';
+
+  @override
+  String get serviceAccessTargetsHint => '每行輸入一個 URL 或地址。多個項目會建立多條存取鏈路。';
+
+  @override
+  String get serviceAccessTargetRequired => '請輸入至少一個 URL 或地址。';
 
   @override
   String get routeHops => '鏈路節點';

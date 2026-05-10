@@ -2237,6 +2237,90 @@ abstract class AppLocalizations {
   /// **'Final URL / Address'**
   String get serviceFinalUrl;
 
+  /// No description provided for @serviceAddAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Access'**
+  String get serviceAddAccess;
+
+  /// No description provided for @serviceAdvancedRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Route'**
+  String get serviceAdvancedRoute;
+
+  /// No description provided for @serviceTopology.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Topology'**
+  String get serviceTopology;
+
+  /// No description provided for @serviceTopologyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag or zoom the map to inspect devices, local ports, relays, remote entries, and domains.'**
+  String get serviceTopologyHint;
+
+  /// No description provided for @serviceAccessMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Method'**
+  String get serviceAccessMethod;
+
+  /// No description provided for @serviceRelayService.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay / Proxy Service'**
+  String get serviceRelayService;
+
+  /// No description provided for @serviceRemoteDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Device / VPS'**
+  String get serviceRemoteDevice;
+
+  /// No description provided for @serviceRemoteHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Host / IP'**
+  String get serviceRemoteHost;
+
+  /// No description provided for @serviceRemotePort.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote Port'**
+  String get serviceRemotePort;
+
+  /// No description provided for @serviceRemotePortRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid remote port.'**
+  String get serviceRemotePortRequired;
+
+  /// No description provided for @serviceDomains.
+  ///
+  /// In en, this message translates to:
+  /// **'Domains / Public Targets'**
+  String get serviceDomains;
+
+  /// No description provided for @serviceDomainsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional for port mappings. Enter one domain per line or separate with commas.'**
+  String get serviceDomainsHint;
+
+  /// No description provided for @serviceAccessTargetsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter one URL or address per line. Multiple entries create multiple access routes.'**
+  String get serviceAccessTargetsHint;
+
+  /// No description provided for @serviceAccessTargetRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter at least one URL or address.'**
+  String get serviceAccessTargetRequired;
+
   /// No description provided for @routeHops.
   ///
   /// In en, this message translates to:

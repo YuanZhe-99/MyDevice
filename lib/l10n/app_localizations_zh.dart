@@ -954,6 +954,287 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get exchangeRateUpdateFailed => '汇率更新失败';
+
+  @override
+  String get navServices => '服务';
+
+  @override
+  String get servicesOverview => '概览';
+
+  @override
+  String get servicesByDevice => '设备';
+
+  @override
+  String get serviceRoutes => '链路';
+
+  @override
+  String get servicePorts => '端口';
+
+  @override
+  String get noServices => '还没有服务。添加设备上的服务来记录端口和访问链路。';
+
+  @override
+  String get noServiceRoutes => '还没有服务链路。';
+
+  @override
+  String get addService => '添加服务';
+
+  @override
+  String get editService => '编辑服务';
+
+  @override
+  String get deleteService => '删除服务';
+
+  @override
+  String deleteServiceConfirm(String name) {
+    return '删除服务「$name」吗？从该服务出发的链路也会被移除。';
+  }
+
+  @override
+  String get serviceName => '服务名称';
+
+  @override
+  String get serviceNameRequired => '请输入服务名称。';
+
+  @override
+  String get serviceDevice => '设备';
+
+  @override
+  String get serviceTemplate => '模板';
+
+  @override
+  String get serviceCustom => '自定义服务';
+
+  @override
+  String get servicePickTemplate => '选择服务模板';
+
+  @override
+  String get serviceCustomTemplateDesc => '从空白服务记录开始';
+
+  @override
+  String get serviceFeaturedTemplate => '常用';
+
+  @override
+  String get serviceIcon => '图标名称';
+
+  @override
+  String get serviceKind => '类型';
+
+  @override
+  String get serviceRuntime => '运行方式';
+
+  @override
+  String get serviceState => '状态';
+
+  @override
+  String get serviceEndpoints => '端点';
+
+  @override
+  String get serviceEndpoint => '端点';
+
+  @override
+  String get addServiceEndpoint => '添加端点';
+
+  @override
+  String get editServiceEndpoint => '编辑端点';
+
+  @override
+  String get serviceEndpointLabel => '标签';
+
+  @override
+  String get serviceProtocol => '协议';
+
+  @override
+  String get serviceTransport => '传输层';
+
+  @override
+  String get servicePort => '端口';
+
+  @override
+  String get servicePortEnd => '结束端口';
+
+  @override
+  String get serviceBindAddress => '绑定地址';
+
+  @override
+  String get servicePath => '路径';
+
+  @override
+  String get serviceScope => '范围';
+
+  @override
+  String get servicePrimaryEndpoint => '主要端点';
+
+  @override
+  String get serviceDockerCompose => 'Docker Compose';
+
+  @override
+  String get copyServiceCompose => '复制 Compose';
+
+  @override
+  String get serviceComposeCopied => 'Docker Compose 已复制';
+
+  @override
+  String get addServiceRoute => '添加链路';
+
+  @override
+  String get editServiceRoute => '编辑链路';
+
+  @override
+  String get deleteServiceRoute => '删除链路';
+
+  @override
+  String deleteServiceRouteConfirm(String name) {
+    return '删除链路「$name」吗？';
+  }
+
+  @override
+  String get serviceRouteName => '链路名称';
+
+  @override
+  String get routeSourceService => '源服务';
+
+  @override
+  String get serviceAccessLevel => '访问级别';
+
+  @override
+  String get serviceFinalUrl => '最终 URL / 地址';
+
+  @override
+  String get routeHops => '链路节点';
+
+  @override
+  String get addRouteHop => '添加节点';
+
+  @override
+  String get editRouteHop => '编辑节点';
+
+  @override
+  String get routeHopType => '节点类型';
+
+  @override
+  String get routeMethod => '方式';
+
+  @override
+  String get routeHopService => '节点服务';
+
+  @override
+  String get routeManualHop => '手动节点';
+
+  @override
+  String get routeHopLabel => '节点标签';
+
+  @override
+  String get routeScheme => '协议头';
+
+  @override
+  String get routeHost => '主机名';
+
+  @override
+  String get activeServices => '活跃服务';
+
+  @override
+  String get serviceDevices => '设备';
+
+  @override
+  String get publicRoutes => '公网链路';
+
+  @override
+  String get serviceWarnings => '警告';
+
+  @override
+  String get servicePortConflicts => '端口冲突';
+
+  @override
+  String get servicePortUsage => '端口占用';
+
+  @override
+  String get servicePotentialConflict => '可能冲突';
+
+  @override
+  String get serviceAnyAddress => '任意地址';
+
+  @override
+  String servicePortConflict(String device, int port) {
+    return '$device: 端口 $port 可能被多个服务占用';
+  }
+
+  @override
+  String get serviceRoutePreview => '链路预览';
+
+  @override
+  String get serviceMoveUp => '上移';
+
+  @override
+  String get serviceMoveDown => '下移';
+
+  @override
+  String serviceWarningMissingDevice(String name) {
+    return '$name: 设备缺失';
+  }
+
+  @override
+  String serviceWarningInactiveDevice(String name) {
+    return '$name: 设备不在服役中';
+  }
+
+  @override
+  String serviceWarningMissingNetwork(String name) {
+    return '$name: 端点网络缺失';
+  }
+
+  @override
+  String serviceWarningMissingSource(String name) {
+    return '$name: 源服务缺失';
+  }
+
+  @override
+  String serviceWarningMissingSourceEndpoint(String name) {
+    return '$name: 源端点缺失';
+  }
+
+  @override
+  String serviceWarningMissingHopService(String name) {
+    return '$name: 链路节点服务缺失';
+  }
+
+  @override
+  String serviceWarningMissingHopEndpoint(String name) {
+    return '$name: 链路节点端点缺失';
+  }
+
+  @override
+  String serviceWarningMissingHopDevice(String name) {
+    return '$name: 链路节点设备缺失';
+  }
+
+  @override
+  String serviceWarningEmptyRoute(String name) {
+    return '$name: 链路没有节点';
+  }
+
+  @override
+  String serviceWarningPublicRouteMissingUrl(String name) {
+    return '$name: 公网链路没有最终 URL';
+  }
+
+  @override
+  String serviceWarningDuplicateFinalUrl(String name) {
+    return '$name: 最终 URL 重复';
+  }
+
+  @override
+  String serviceCount(int count) {
+    return '$count 个服务';
+  }
+
+  @override
+  String serviceRouteCount(int count) {
+    return '$count 条链路';
+  }
+
+  @override
+  String get backupModuleServices => '服务';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -1906,4 +2187,285 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get exchangeRateUpdateFailed => '匯率更新失敗';
+
+  @override
+  String get navServices => '服務';
+
+  @override
+  String get servicesOverview => '概覽';
+
+  @override
+  String get servicesByDevice => '裝置';
+
+  @override
+  String get serviceRoutes => '鏈路';
+
+  @override
+  String get servicePorts => '連接埠';
+
+  @override
+  String get noServices => '還沒有服務。新增裝置上的服務來記錄連接埠和存取鏈路。';
+
+  @override
+  String get noServiceRoutes => '還沒有服務鏈路。';
+
+  @override
+  String get addService => '新增服務';
+
+  @override
+  String get editService => '編輯服務';
+
+  @override
+  String get deleteService => '刪除服務';
+
+  @override
+  String deleteServiceConfirm(String name) {
+    return '刪除服務「$name」嗎？從該服務出發的鏈路也會被移除。';
+  }
+
+  @override
+  String get serviceName => '服務名稱';
+
+  @override
+  String get serviceNameRequired => '請輸入服務名稱。';
+
+  @override
+  String get serviceDevice => '裝置';
+
+  @override
+  String get serviceTemplate => '範本';
+
+  @override
+  String get serviceCustom => '自訂服務';
+
+  @override
+  String get servicePickTemplate => '選擇服務範本';
+
+  @override
+  String get serviceCustomTemplateDesc => '從空白服務記錄開始';
+
+  @override
+  String get serviceFeaturedTemplate => '常用';
+
+  @override
+  String get serviceIcon => '圖示名稱';
+
+  @override
+  String get serviceKind => '類型';
+
+  @override
+  String get serviceRuntime => '執行方式';
+
+  @override
+  String get serviceState => '狀態';
+
+  @override
+  String get serviceEndpoints => '端點';
+
+  @override
+  String get serviceEndpoint => '端點';
+
+  @override
+  String get addServiceEndpoint => '新增端點';
+
+  @override
+  String get editServiceEndpoint => '編輯端點';
+
+  @override
+  String get serviceEndpointLabel => '標籤';
+
+  @override
+  String get serviceProtocol => '協定';
+
+  @override
+  String get serviceTransport => '傳輸層';
+
+  @override
+  String get servicePort => '連接埠';
+
+  @override
+  String get servicePortEnd => '結束連接埠';
+
+  @override
+  String get serviceBindAddress => '綁定地址';
+
+  @override
+  String get servicePath => '路徑';
+
+  @override
+  String get serviceScope => '範圍';
+
+  @override
+  String get servicePrimaryEndpoint => '主要端點';
+
+  @override
+  String get serviceDockerCompose => 'Docker Compose';
+
+  @override
+  String get copyServiceCompose => '複製 Compose';
+
+  @override
+  String get serviceComposeCopied => 'Docker Compose 已複製';
+
+  @override
+  String get addServiceRoute => '新增鏈路';
+
+  @override
+  String get editServiceRoute => '編輯鏈路';
+
+  @override
+  String get deleteServiceRoute => '刪除鏈路';
+
+  @override
+  String deleteServiceRouteConfirm(String name) {
+    return '刪除鏈路「$name」嗎？';
+  }
+
+  @override
+  String get serviceRouteName => '鏈路名稱';
+
+  @override
+  String get routeSourceService => '來源服務';
+
+  @override
+  String get serviceAccessLevel => '存取級別';
+
+  @override
+  String get serviceFinalUrl => '最終 URL / 地址';
+
+  @override
+  String get routeHops => '鏈路節點';
+
+  @override
+  String get addRouteHop => '新增節點';
+
+  @override
+  String get editRouteHop => '編輯節點';
+
+  @override
+  String get routeHopType => '節點類型';
+
+  @override
+  String get routeMethod => '方式';
+
+  @override
+  String get routeHopService => '節點服務';
+
+  @override
+  String get routeManualHop => '手動節點';
+
+  @override
+  String get routeHopLabel => '節點標籤';
+
+  @override
+  String get routeScheme => '協定頭';
+
+  @override
+  String get routeHost => '主機名稱';
+
+  @override
+  String get activeServices => '活躍服務';
+
+  @override
+  String get serviceDevices => '裝置';
+
+  @override
+  String get publicRoutes => '公網鏈路';
+
+  @override
+  String get serviceWarnings => '警告';
+
+  @override
+  String get servicePortConflicts => '連接埠衝突';
+
+  @override
+  String get servicePortUsage => '連接埠占用';
+
+  @override
+  String get servicePotentialConflict => '可能衝突';
+
+  @override
+  String get serviceAnyAddress => '任意地址';
+
+  @override
+  String servicePortConflict(String device, int port) {
+    return '$device: 連接埠 $port 可能被多個服務佔用';
+  }
+
+  @override
+  String get serviceRoutePreview => '鏈路預覽';
+
+  @override
+  String get serviceMoveUp => '上移';
+
+  @override
+  String get serviceMoveDown => '下移';
+
+  @override
+  String serviceWarningMissingDevice(String name) {
+    return '$name: 裝置缺失';
+  }
+
+  @override
+  String serviceWarningInactiveDevice(String name) {
+    return '$name: 裝置不在服役中';
+  }
+
+  @override
+  String serviceWarningMissingNetwork(String name) {
+    return '$name: 端點網路缺失';
+  }
+
+  @override
+  String serviceWarningMissingSource(String name) {
+    return '$name: 來源服務缺失';
+  }
+
+  @override
+  String serviceWarningMissingSourceEndpoint(String name) {
+    return '$name: 來源端點缺失';
+  }
+
+  @override
+  String serviceWarningMissingHopService(String name) {
+    return '$name: 鏈路節點服務缺失';
+  }
+
+  @override
+  String serviceWarningMissingHopEndpoint(String name) {
+    return '$name: 鏈路節點端點缺失';
+  }
+
+  @override
+  String serviceWarningMissingHopDevice(String name) {
+    return '$name: 鏈路節點裝置缺失';
+  }
+
+  @override
+  String serviceWarningEmptyRoute(String name) {
+    return '$name: 鏈路沒有節點';
+  }
+
+  @override
+  String serviceWarningPublicRouteMissingUrl(String name) {
+    return '$name: 公網鏈路沒有最終 URL';
+  }
+
+  @override
+  String serviceWarningDuplicateFinalUrl(String name) {
+    return '$name: 最終 URL 重複';
+  }
+
+  @override
+  String serviceCount(int count) {
+    return '$count 個服務';
+  }
+
+  @override
+  String serviceRouteCount(int count) {
+    return '$count 條鏈路';
+  }
+
+  @override
+  String get backupModuleServices => '服務';
 }

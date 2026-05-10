@@ -7,6 +7,8 @@ import 'package:shelf_router/shelf_router.dart';
 
 import '../../features/devices/models/device.dart';
 import '../../features/devices/services/device_storage.dart';
+import '../../features/services/models/service.dart';
+import '../../features/services/services/service_storage.dart';
 
 class LocalApiServer {
   static HttpServer? _server;
@@ -231,8 +233,23 @@ class LocalApiServer {
 
   static Future<Response> _handleStats(Request request) async {
     final data = await DeviceStorage.load();
+    final serviceData = await ServiceStorage.load();
     final devices = data.devices;
 
+    return _json(
+      buildStatsJson(
+        devices: devices,
+        services: serviceData.services,
+        routes: serviceData.routes,
+      ),
+    );
+  }
+
+  static Map<String, dynamic> buildStatsJson({
+    required List<Device> devices,
+    required List<ServiceNode> services,
+    required List<ServiceRoute> routes,
+  }) {
     final byCategory = <String, int>{};
     for (final d in devices) {
       byCategory[d.category.name] = (byCategory[d.category.name] ?? 0) + 1;
@@ -245,11 +262,16 @@ class LocalApiServer {
         .map((d) => {'id': d.id, 'name': d.name, 'category': d.category.name})
         .toList();
 
-    return _json({
+    return {
       'total': devices.length,
       'byCategory': byCategory,
       'recentlyAdded': recent,
-    });
+      'services': {
+        'total': services.length,
+        'routes': routes.length,
+        'devices': services.map((s) => s.deviceId).toSet().length,
+      },
+    };
   }
 
   // ── Helpers ──

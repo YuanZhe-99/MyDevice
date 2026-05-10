@@ -10,6 +10,7 @@ import '../../features/datasets/models/dataset.dart';
 import '../../features/devices/models/device.dart';
 import '../../features/devices/services/device_storage.dart';
 import '../../features/network/models/network.dart';
+import '../../features/services/models/service.dart';
 import 'sync_merge.dart';
 
 /// Persisted WebDAV configuration.
@@ -90,13 +91,20 @@ class PendingSync {
   final DeviceMergeResult? deviceMerge;
   final NetworkMergeResult? networkMerge;
   final DataSetMergeResult? dataSetMerge;
+  final ServiceMergeResult? serviceMerge;
 
-  const PendingSync({this.deviceMerge, this.networkMerge, this.dataSetMerge});
+  const PendingSync({
+    this.deviceMerge,
+    this.networkMerge,
+    this.dataSetMerge,
+    this.serviceMerge,
+  });
 
   List<RecordConflict> get allConflicts => [
     ...?deviceMerge?.conflicts,
     ...?networkMerge?.conflicts,
     ...?dataSetMerge?.conflicts,
+    ...?serviceMerge?.allConflicts,
   ];
 }
 
@@ -107,6 +115,7 @@ class WebDAVService {
     'device_data.json',
     'network_data.json',
     'dataset_data.json',
+    'service_data.json',
   ];
 
   /// Global lock to prevent concurrent syncs.
@@ -467,6 +476,7 @@ class WebDAVService {
       DeviceMergeResult? pendingDevice;
       NetworkMergeResult? pendingNetwork;
       DataSetMergeResult? pendingDataSet;
+      ServiceMergeResult? pendingService;
       final perFileErrors = <String>[];
 
       // Track device JSON from both sides for image reference computation.
@@ -612,6 +622,40 @@ class WebDAVService {
                 if (uploaded) await _saveBase(name, mergedJson);
                 _localDataChanged = true;
               }
+            case 'service_data.json':
+              var result = mergeServiceData(
+                localRaw,
+                remoteRaw!,
+                baseJson,
+                autoResolve: autoResolve,
+              );
+              if (!result.hasConflicts) {
+                final freshLocalRaw = await localFile.readAsString();
+                if (freshLocalRaw != localRaw) {
+                  result = mergeServiceData(
+                    freshLocalRaw,
+                    remoteRaw,
+                    baseJson,
+                    autoResolve: autoResolve,
+                  );
+                }
+              }
+              if (result.hasConflicts) {
+                pendingService = result;
+              } else {
+                final mergedData = ServiceData(
+                  services: result.mergedServices,
+                  routes: result.mergedRoutes,
+                  extraJson: result.extraJson,
+                );
+                final mergedJson = const JsonEncoder.withIndent(
+                  '  ',
+                ).convert(mergedData.toJson());
+                await _atomicWrite(localFile, mergedJson);
+                final uploaded = await _upload(config, name, mergedJson);
+                if (uploaded) await _saveBase(name, mergedJson);
+                _localDataChanged = true;
+              }
           }
         } catch (e) {
           // Per-file merge error: skip this file, continue syncing others.
@@ -631,7 +675,8 @@ class WebDAVService {
       final hasConflicts =
           pendingDevice != null ||
           pendingNetwork != null ||
-          pendingDataSet != null;
+          pendingDataSet != null ||
+          pendingService != null;
 
       if (hasConflicts) {
         return SyncResult(
@@ -641,6 +686,7 @@ class WebDAVService {
             deviceMerge: pendingDevice,
             networkMerge: pendingNetwork,
             dataSetMerge: pendingDataSet,
+            serviceMerge: pendingService,
           ),
           warnings: imageErrors,
         );
@@ -722,6 +768,19 @@ class WebDAVService {
         );
         final uploaded = await _upload(config, 'dataset_data.json', mergedJson);
         if (uploaded) await _saveBase('dataset_data.json', mergedJson);
+      }
+
+      if (pending.serviceMerge != null) {
+        final mergedData = pending.serviceMerge!.buildResolved(resolutions);
+        final mergedJson = const JsonEncoder.withIndent(
+          '  ',
+        ).convert(mergedData.toJson());
+        await _atomicWrite(
+          File('${appDir.path}/service_data.json'),
+          mergedJson,
+        );
+        final uploaded = await _upload(config, 'service_data.json', mergedJson);
+        if (uploaded) await _saveBase('service_data.json', mergedJson);
       }
 
       return true;

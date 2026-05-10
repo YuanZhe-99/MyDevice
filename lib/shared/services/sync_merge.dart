@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../../features/datasets/models/dataset.dart';
 import '../../features/devices/models/device.dart';
 import '../../features/network/models/network.dart';
+import '../../features/services/models/service.dart';
 import '../utils/json_preservation.dart';
 
 // ─── Generic record merge ───────────────────────────────────────────
@@ -393,6 +394,106 @@ DataSetMergeResult mergeDataSetData(
   return DataSetMergeResult(
     merged: result.merged,
     conflicts: result.conflicts,
+    extraJson: extraJson,
+  );
+}
+
+// ─── Service data merge ─────────────────────────────────────────────
+
+class ServiceMergeResult {
+  final List<ServiceNode> mergedServices;
+  final List<ServiceRoute> mergedRoutes;
+  final List<RecordConflict<ServiceNode>> serviceConflicts;
+  final List<RecordConflict<ServiceRoute>> routeConflicts;
+  final Map<String, dynamic> extraJson;
+
+  const ServiceMergeResult({
+    required this.mergedServices,
+    required this.mergedRoutes,
+    this.serviceConflicts = const [],
+    this.routeConflicts = const [],
+    this.extraJson = const {},
+  });
+
+  bool get hasConflicts =>
+      serviceConflicts.isNotEmpty || routeConflicts.isNotEmpty;
+
+  List<RecordConflict> get allConflicts => [
+    ...serviceConflicts,
+    ...routeConflicts,
+  ];
+
+  ServiceData buildResolved(Map<String, dynamic> resolutions) {
+    final services = <ServiceNode>[...mergedServices];
+    for (final c in serviceConflicts) {
+      final chosen = resolutions[c.id];
+      services.add(chosen is ServiceNode ? chosen : c.localRecord);
+    }
+
+    final routes = <ServiceRoute>[...mergedRoutes];
+    for (final c in routeConflicts) {
+      final chosen = resolutions[c.id];
+      routes.add(chosen is ServiceRoute ? chosen : c.localRecord);
+    }
+
+    return ServiceData(
+      services: services,
+      routes: routes,
+      extraJson: extraJson,
+    );
+  }
+}
+
+ServiceMergeResult mergeServiceData(
+  String localJson,
+  String remoteJson,
+  String? baseJson, {
+  bool autoResolve = false,
+}) {
+  final local = ServiceData.fromJson(
+    jsonDecode(localJson) as Map<String, dynamic>,
+  );
+  final remote = ServiceData.fromJson(
+    jsonDecode(remoteJson) as Map<String, dynamic>,
+  );
+  final base = baseJson != null
+      ? ServiceData.fromJson(jsonDecode(baseJson) as Map<String, dynamic>)
+      : null;
+  final extraJson = mergeUnknownJsonFields(
+    primary: local.extraJson,
+    secondary: remote.extraJson,
+    base: base?.extraJson,
+  );
+
+  final serviceResult = mergeRecords<ServiceNode>(
+    local: local.services,
+    remote: remote.services,
+    base: base?.services,
+    getId: (s) => s.id,
+    getModifiedAt: (s) => s.modifiedAt,
+    getDisplayName: (s) => s.name,
+    mergeUnknownFields: (primary, secondary, base) =>
+        primary.mergeUnknownFieldsFrom(secondary, base: base),
+    autoResolve: autoResolve,
+  );
+
+  final routeResult = mergeRecords<ServiceRoute>(
+    local: local.routes,
+    remote: remote.routes,
+    base: base?.routes,
+    getId: (r) => r.id,
+    getModifiedAt: (r) => r.modifiedAt,
+    getDisplayName: (r) => r.name,
+    mergeUnknownFields: (primary, secondary, base) =>
+        primary.mergeUnknownFieldsFrom(secondary, base: base),
+    autoResolve: autoResolve,
+  );
+
+  return ServiceMergeResult(
+    mergedServices: serviceResult.merged,
+    mergedRoutes: routeResult.merged,
+    serviceConflicts: serviceResult.conflicts,
+    routeConflicts: routeResult.conflicts,
     extraJson: extraJson,
   );
 }

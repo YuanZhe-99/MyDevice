@@ -5,10 +5,10 @@ This file is the operating guide for agents working on **MyDevice!!!!!**. Read i
 ## Project Snapshot
 
 - **Name:** MyDevice!!!!!, with five exclamation marks in user-facing app names, installer metadata, macOS bundle names, and window titles.
-- **Description:** A privacy-first personal device inventory app for detailed hardware specs, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
+- **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `0.4.1+12` in `pubspec.yaml`, `0.4.1.0` for MSIX, and `0.4.1` in `installer.iss`.
+- **Current version:** `0.5.0+13` in `pubspec.yaml`, `0.5.0.0` for MSIX, and `0.5.0` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** `C:\Users\yuanzhe\src\MyDevice`.
@@ -103,6 +103,11 @@ lib/
       models/dataset.dart
       services/dataset_storage.dart
       views/
+    services/
+      models/service.dart
+      services/service_storage.dart
+      services/service_template_service.dart
+      views/
     settings/views/
   shared/
     providers/app_settings.dart
@@ -133,7 +138,7 @@ The `tool/` directory contains ad hoc validation and source-testing scripts, esp
 ## Core Architecture
 
 - State management uses `flutter_riverpod`; do not introduce Provider or Bloc for normal changes.
-- Navigation uses `go_router` with a `ShellRoute` for four bottom tabs: Devices, Network, Datasets, Settings.
+- Navigation uses `go_router` with a `ShellRoute` for five bottom tabs: Devices, Services, Network, Datasets, Settings.
 - The visual system uses Material 3 via `flex_color_scheme`.
 - L10n supports English, Japanese, Simplified Chinese, and Traditional Chinese. The ARB template is `lib/l10n/app_en.arb`; generated localization files live under `lib/l10n/`.
 - File I/O should go through `DeviceStorage.getAppDir()` so custom storage paths work.
@@ -175,6 +180,23 @@ Dataset data is in `lib/features/datasets/models/dataset.dart`.
 
 Datasets link to device storage slots by index, so be careful when changing storage list behavior.
 
+### Services
+
+Service management is a manual inventory/notes module, not an operations or monitoring system. It must not connect to servers, scan ports, inspect Docker, start/stop services, or store secrets. Users hand-enter service, port, route, and Docker Compose notes for personal reference.
+
+Service data is stored in `service_data.json` and syncs/backups/imports like the other primary modules. The model lives in `lib/features/services/models/service.dart`:
+
+- `ServiceNode`: a service instance on a device, with `deviceId`, name, template/icon/kind/runtime/state, endpoints, notes, optional `dockerCompose`, `modifiedAt`, and unknown JSON fields.
+- `ServiceEndpoint`: a manually recorded local/listening endpoint with protocol, transport, bind address, port or port range, optional path/network, scope, primary flag, notes, and unknown JSON fields.
+- `ServiceRoute`: a manually recorded access path from a source service endpoint through ordered hops to a final URL/address.
+- `ServiceRouteHop`: one route hop such as origin, reverse proxy, tunnel, port forward, public endpoint, internal endpoint, DNS, or manual note. Hops can reference existing services/endpoints or remain free-form.
+
+The Services tab has overview, by-device, route, and port views. It includes service templates for common self-hosted tools such as Caddy, Gitea, Jellyfin, Pangolin, FRP, Cloudflare Tunnel, File Browser, Vaultwarden, Nextcloud, WordPress, Code Server, OpenCode, AdGuard Home, LuCI, Minecraft Server, and related homelab services. Templates only prefill names/icons/types/default ports/Compose examples; they do not perform discovery.
+
+Docker Compose text is stored as plain service notes and can be copied from the service editor. Do not add credential/token management to this field.
+
+Port conflict detection is advisory only. It warns about multiple manually entered services using the same device/transport/port but must not block saves because bind addresses and user intent may vary.
+
 ### Online Search and Presets
 
 Full flavor can fetch device specs from GSMArena and Notebookcheck through `device_search_service.dart`, and chip specs from TechPowerUp, AMD, and Intel through `chip_search_service.dart`. Store flavor must not expose or execute online search.
@@ -195,14 +217,14 @@ These are lazy-loaded and cached.
 ### Backup, Export, Import, and Images
 
 - `backup_service.dart`: local auto-backup once per day, manual backups, retention, selective restore by module.
-- `import_export_service.dart`: ZIP export/import for the three data JSON files plus `images/`; Markdown export for LLM-friendly text summaries.
+- `import_export_service.dart`: ZIP export/import for data JSON files plus `images/`; Markdown export for LLM-friendly device/network/dataset summaries. Service data is included in ZIP import/export, but not Markdown export.
 - ZIP import must keep path traversal protection.
 - `image_service.dart`: file picking, URL download, UUID filenames in `images/`, relative path resolution, deletion.
 
 ### Desktop API, Tray, and Startup
 
 - `local_api_server.dart`: desktop-only Shelf server, default port `7789`.
-- Endpoints include `GET /ping`, `GET /device/list(?category=)`, `GET /device/search?q=`, `POST /device/add`, and `GET /device/stats`.
+- Endpoints include `GET /ping`, `GET /device/list(?category=)`, `GET /device/search?q=`, `POST /device/add`, and `GET /device/stats`. Device stats include service counts from `service_data.json`.
 - CORS is permissive. Basic auth is required when listening on non-localhost and optional on loopback. The server refuses unsafe non-localhost startup without credentials.
 - `tray_service.dart`: system tray, Show/Hide, Quit, minimize-to-tray, close-to-tray, and macOS dock icon visibility through `com.yuanzhe.my_device/dock`.
 - `launch_at_startup` handles desktop auto-start. macOS uses LaunchAtLogin-Modern via Swift Package Manager.
@@ -228,6 +250,7 @@ Important sync constraints:
 - `device_data.json`: merge `Device` records by `id` and `modifiedAt`.
 - `network_data.json`: merge `Network` records by `id` and `modifiedAt`; merge `NetworkDevice` assignments by composite key and content comparison.
 - `dataset_data.json`: merge `DataSet` records by `id` and `modifiedAt`.
+- `service_data.json`: merge `ServiceNode` and `ServiceRoute` records by `id` and `modifiedAt`; endpoints and route hops follow their parent records.
 - Images sync additively, referenced-only, based on the union of `imagePath` basenames from local and remote device records. Orphan images should not be repeatedly uploaded/downloaded.
 - `_syncing` prevents concurrent syncs.
 - `_atomicWrite()` uses tmp-then-rename to avoid corrupting local files.
@@ -247,6 +270,7 @@ Default app data directory is `Documents/MyDevice` on desktop or the platform ap
 | Networks | `network_data.json` | Yes | Per-record by `id` and `modifiedAt` |
 | Network assignments | `network_data.json` | Yes | Composite key plus content comparison |
 | Datasets | `dataset_data.json` | Yes | Per-record by `id` and `modifiedAt` |
+| Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
 | Images | `images/` | Yes | Referenced-only filename comparison |
 | Theme, locale, backup settings, sort preferences, default currency, exchange-rate settings | `storage_config.json` | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
@@ -256,7 +280,7 @@ Default app data directory is `Documents/MyDevice` on desktop or the platform ap
 
 Cross-reference rules:
 
-- Deleting a device must remove related network assignments and dataset storage links.
+- Deleting a device must remove related network assignments, dataset storage links, service records, and service route references.
 - Retiring or selling a device should also remove it from assignments/links and pickers.
 - Deleting a network filters assignments in `NetworkStorage.deleteNetwork()`.
 - Deleting a dataset deletes its contained storage links.
@@ -345,3 +369,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.3.3`: Periodic auto-sync, storage-layer save notifications, auto-sync UI refresh, unknown-field preservation.
 - `v0.4.0`: Device lifecycle and finance tracking, exchange-rate support, financial overview, retired/sold cleanup, Markdown/detail finance output.
 - `v0.4.1`: Financial overview analysis page with asset distribution and log daily-cost history/future trend chart; unified circular device avatar rendering for custom images and category fallbacks.
+- `v0.5.0`: Manual Services tab for service/endpoint/port/route notes, multi-hop access paths, Docker Compose notes/copy, advisory port conflicts, service templates, service sync/backup/ZIP import-export, and local API service stats.

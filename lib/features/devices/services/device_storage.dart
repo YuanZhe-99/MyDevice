@@ -8,6 +8,7 @@ import '../../datasets/models/dataset.dart';
 import '../../datasets/services/dataset_storage.dart';
 import '../../network/models/network.dart';
 import '../../network/services/network_storage.dart';
+import '../../services/services/service_storage.dart';
 import '../models/device.dart';
 import '../../../shared/services/auto_sync_service.dart';
 
@@ -93,6 +94,7 @@ class DeviceStorage {
         _dataFileName,
         'network_data.json',
         'dataset_data.json',
+        'service_data.json',
       ];
 
       for (final name in dataFileNames) {
@@ -239,6 +241,8 @@ class DeviceStorage {
     if (dsChanged) {
       await DataSetStorage.save(DataSetData(datasets: cleanedDatasets));
     }
+
+    await ServiceStorage.removeDeviceReferences(id);
   }
 
   // ── Config persistence (theme, locale) ──

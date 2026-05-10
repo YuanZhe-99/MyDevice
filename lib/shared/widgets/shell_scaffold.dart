@@ -8,7 +8,13 @@ class ShellScaffold extends StatelessWidget {
 
   const ShellScaffold({super.key, required this.child});
 
-  static const _routes = ['/devices', '/network', '/datasets', '/settings'];
+  static const _routes = [
+    '/devices',
+    '/services',
+    '/network',
+    '/datasets',
+    '/settings',
+  ];
 
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
@@ -34,6 +40,11 @@ class ShellScaffold extends StatelessWidget {
             icon: const Icon(Icons.devices_outlined),
             selectedIcon: const Icon(Icons.devices),
             label: l10n.navDevices,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.dns_outlined),
+            selectedIcon: const Icon(Icons.dns),
+            label: l10n.navServices,
           ),
           NavigationDestination(
             icon: const Icon(Icons.lan_outlined),

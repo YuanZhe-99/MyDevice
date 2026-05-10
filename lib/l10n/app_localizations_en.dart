@@ -966,4 +966,286 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get exchangeRateUpdateFailed => 'Failed to update exchange rates';
+
+  @override
+  String get navServices => 'Services';
+
+  @override
+  String get servicesOverview => 'Overview';
+
+  @override
+  String get servicesByDevice => 'Devices';
+
+  @override
+  String get serviceRoutes => 'Routes';
+
+  @override
+  String get servicePorts => 'Ports';
+
+  @override
+  String get noServices =>
+      'No services yet. Add a device service to track ports and routes.';
+
+  @override
+  String get noServiceRoutes => 'No service routes yet.';
+
+  @override
+  String get addService => 'Add Service';
+
+  @override
+  String get editService => 'Edit Service';
+
+  @override
+  String get deleteService => 'Delete Service';
+
+  @override
+  String deleteServiceConfirm(String name) {
+    return 'Delete service \"$name\"? Routes from this service will also be removed.';
+  }
+
+  @override
+  String get serviceName => 'Service Name';
+
+  @override
+  String get serviceNameRequired => 'Enter a service name.';
+
+  @override
+  String get serviceDevice => 'Device';
+
+  @override
+  String get serviceTemplate => 'Template';
+
+  @override
+  String get serviceCustom => 'Custom Service';
+
+  @override
+  String get servicePickTemplate => 'Pick Service Template';
+
+  @override
+  String get serviceCustomTemplateDesc => 'Start from a blank service record';
+
+  @override
+  String get serviceFeaturedTemplate => 'Featured';
+
+  @override
+  String get serviceIcon => 'Icon Name';
+
+  @override
+  String get serviceKind => 'Kind';
+
+  @override
+  String get serviceRuntime => 'Runtime';
+
+  @override
+  String get serviceState => 'State';
+
+  @override
+  String get serviceEndpoints => 'Endpoints';
+
+  @override
+  String get serviceEndpoint => 'Endpoint';
+
+  @override
+  String get addServiceEndpoint => 'Add Endpoint';
+
+  @override
+  String get editServiceEndpoint => 'Edit Endpoint';
+
+  @override
+  String get serviceEndpointLabel => 'Label';
+
+  @override
+  String get serviceProtocol => 'Protocol';
+
+  @override
+  String get serviceTransport => 'Transport';
+
+  @override
+  String get servicePort => 'Port';
+
+  @override
+  String get servicePortEnd => 'Port End';
+
+  @override
+  String get serviceBindAddress => 'Bind Address';
+
+  @override
+  String get servicePath => 'Path';
+
+  @override
+  String get serviceScope => 'Scope';
+
+  @override
+  String get servicePrimaryEndpoint => 'Primary endpoint';
+
+  @override
+  String get serviceDockerCompose => 'Docker Compose';
+
+  @override
+  String get copyServiceCompose => 'Copy Compose';
+
+  @override
+  String get serviceComposeCopied => 'Docker Compose copied';
+
+  @override
+  String get addServiceRoute => 'Add Route';
+
+  @override
+  String get editServiceRoute => 'Edit Route';
+
+  @override
+  String get deleteServiceRoute => 'Delete Route';
+
+  @override
+  String deleteServiceRouteConfirm(String name) {
+    return 'Delete route \"$name\"?';
+  }
+
+  @override
+  String get serviceRouteName => 'Route Name';
+
+  @override
+  String get routeSourceService => 'Source Service';
+
+  @override
+  String get serviceAccessLevel => 'Access Level';
+
+  @override
+  String get serviceFinalUrl => 'Final URL / Address';
+
+  @override
+  String get routeHops => 'Route Hops';
+
+  @override
+  String get addRouteHop => 'Add Hop';
+
+  @override
+  String get editRouteHop => 'Edit Hop';
+
+  @override
+  String get routeHopType => 'Hop Type';
+
+  @override
+  String get routeMethod => 'Method';
+
+  @override
+  String get routeHopService => 'Hop Service';
+
+  @override
+  String get routeManualHop => 'Manual Hop';
+
+  @override
+  String get routeHopLabel => 'Hop Label';
+
+  @override
+  String get routeScheme => 'Scheme';
+
+  @override
+  String get routeHost => 'Host';
+
+  @override
+  String get activeServices => 'Active Services';
+
+  @override
+  String get serviceDevices => 'Devices';
+
+  @override
+  String get publicRoutes => 'Public Routes';
+
+  @override
+  String get serviceWarnings => 'Warnings';
+
+  @override
+  String get servicePortConflicts => 'Port Conflicts';
+
+  @override
+  String get servicePortUsage => 'Port Usage';
+
+  @override
+  String get servicePotentialConflict => 'potential';
+
+  @override
+  String get serviceAnyAddress => 'Any Address';
+
+  @override
+  String servicePortConflict(String device, int port) {
+    return '$device: port $port may be used by multiple services';
+  }
+
+  @override
+  String get serviceRoutePreview => 'Route Preview';
+
+  @override
+  String get serviceMoveUp => 'Move Up';
+
+  @override
+  String get serviceMoveDown => 'Move Down';
+
+  @override
+  String serviceWarningMissingDevice(String name) {
+    return '$name: missing device';
+  }
+
+  @override
+  String serviceWarningInactiveDevice(String name) {
+    return '$name: device is not in service';
+  }
+
+  @override
+  String serviceWarningMissingNetwork(String name) {
+    return '$name: missing endpoint network';
+  }
+
+  @override
+  String serviceWarningMissingSource(String name) {
+    return '$name: missing source service';
+  }
+
+  @override
+  String serviceWarningMissingSourceEndpoint(String name) {
+    return '$name: missing source endpoint';
+  }
+
+  @override
+  String serviceWarningMissingHopService(String name) {
+    return '$name: missing hop service';
+  }
+
+  @override
+  String serviceWarningMissingHopEndpoint(String name) {
+    return '$name: missing hop endpoint';
+  }
+
+  @override
+  String serviceWarningMissingHopDevice(String name) {
+    return '$name: missing hop device';
+  }
+
+  @override
+  String serviceWarningEmptyRoute(String name) {
+    return '$name: route has no hops';
+  }
+
+  @override
+  String serviceWarningPublicRouteMissingUrl(String name) {
+    return '$name: public route has no final URL';
+  }
+
+  @override
+  String serviceWarningDuplicateFinalUrl(String name) {
+    return '$name: duplicate final URL';
+  }
+
+  @override
+  String serviceCount(int count) {
+    return '$count service(s)';
+  }
+
+  @override
+  String serviceRouteCount(int count) {
+    return '$count route(s)';
+  }
+
+  @override
+  String get backupModuleServices => 'Services';
 }

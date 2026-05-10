@@ -956,4 +956,285 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get exchangeRateUpdateFailed => '為替レートの更新に失敗しました';
+
+  @override
+  String get navServices => 'サービス';
+
+  @override
+  String get servicesOverview => '概要';
+
+  @override
+  String get servicesByDevice => 'デバイス';
+
+  @override
+  String get serviceRoutes => 'ルート';
+
+  @override
+  String get servicePorts => 'ポート';
+
+  @override
+  String get noServices => 'サービスがありません。デバイス上のサービスを追加して、ポートとルートを記録できます。';
+
+  @override
+  String get noServiceRoutes => 'サービスルートがありません。';
+
+  @override
+  String get addService => 'サービスを追加';
+
+  @override
+  String get editService => 'サービスを編集';
+
+  @override
+  String get deleteService => 'サービスを削除';
+
+  @override
+  String deleteServiceConfirm(String name) {
+    return 'サービス「$name」を削除しますか？このサービスからのルートも削除されます。';
+  }
+
+  @override
+  String get serviceName => 'サービス名';
+
+  @override
+  String get serviceNameRequired => 'サービス名を入力してください。';
+
+  @override
+  String get serviceDevice => 'デバイス';
+
+  @override
+  String get serviceTemplate => 'テンプレート';
+
+  @override
+  String get serviceCustom => 'カスタムサービス';
+
+  @override
+  String get servicePickTemplate => 'サービステンプレートを選択';
+
+  @override
+  String get serviceCustomTemplateDesc => '空のサービス記録から開始します';
+
+  @override
+  String get serviceFeaturedTemplate => 'おすすめ';
+
+  @override
+  String get serviceIcon => 'アイコン名';
+
+  @override
+  String get serviceKind => '種類';
+
+  @override
+  String get serviceRuntime => '実行方式';
+
+  @override
+  String get serviceState => '状態';
+
+  @override
+  String get serviceEndpoints => 'エンドポイント';
+
+  @override
+  String get serviceEndpoint => 'エンドポイント';
+
+  @override
+  String get addServiceEndpoint => 'エンドポイントを追加';
+
+  @override
+  String get editServiceEndpoint => 'エンドポイントを編集';
+
+  @override
+  String get serviceEndpointLabel => 'ラベル';
+
+  @override
+  String get serviceProtocol => 'プロトコル';
+
+  @override
+  String get serviceTransport => 'トランスポート';
+
+  @override
+  String get servicePort => 'ポート';
+
+  @override
+  String get servicePortEnd => '終了ポート';
+
+  @override
+  String get serviceBindAddress => 'バインドアドレス';
+
+  @override
+  String get servicePath => 'パス';
+
+  @override
+  String get serviceScope => 'スコープ';
+
+  @override
+  String get servicePrimaryEndpoint => '主要エンドポイント';
+
+  @override
+  String get serviceDockerCompose => 'Docker Compose';
+
+  @override
+  String get copyServiceCompose => 'Composeをコピー';
+
+  @override
+  String get serviceComposeCopied => 'Docker Composeをコピーしました';
+
+  @override
+  String get addServiceRoute => 'ルートを追加';
+
+  @override
+  String get editServiceRoute => 'ルートを編集';
+
+  @override
+  String get deleteServiceRoute => 'ルートを削除';
+
+  @override
+  String deleteServiceRouteConfirm(String name) {
+    return 'ルート「$name」を削除しますか？';
+  }
+
+  @override
+  String get serviceRouteName => 'ルート名';
+
+  @override
+  String get routeSourceService => '元サービス';
+
+  @override
+  String get serviceAccessLevel => 'アクセスレベル';
+
+  @override
+  String get serviceFinalUrl => '最終URL / アドレス';
+
+  @override
+  String get routeHops => 'ルートホップ';
+
+  @override
+  String get addRouteHop => 'ホップを追加';
+
+  @override
+  String get editRouteHop => 'ホップを編集';
+
+  @override
+  String get routeHopType => 'ホップ種別';
+
+  @override
+  String get routeMethod => '方式';
+
+  @override
+  String get routeHopService => 'ホップサービス';
+
+  @override
+  String get routeManualHop => '手動ホップ';
+
+  @override
+  String get routeHopLabel => 'ホップラベル';
+
+  @override
+  String get routeScheme => 'スキーム';
+
+  @override
+  String get routeHost => 'ホスト';
+
+  @override
+  String get activeServices => '稼働サービス';
+
+  @override
+  String get serviceDevices => 'デバイス';
+
+  @override
+  String get publicRoutes => '公開ルート';
+
+  @override
+  String get serviceWarnings => '警告';
+
+  @override
+  String get servicePortConflicts => 'ポート競合';
+
+  @override
+  String get servicePortUsage => 'ポート使用状況';
+
+  @override
+  String get servicePotentialConflict => '可能性';
+
+  @override
+  String get serviceAnyAddress => '任意アドレス';
+
+  @override
+  String servicePortConflict(String device, int port) {
+    return '$device: ポート $port は複数のサービスで使われている可能性があります';
+  }
+
+  @override
+  String get serviceRoutePreview => 'ルートプレビュー';
+
+  @override
+  String get serviceMoveUp => '上へ';
+
+  @override
+  String get serviceMoveDown => '下へ';
+
+  @override
+  String serviceWarningMissingDevice(String name) {
+    return '$name: デバイスが見つかりません';
+  }
+
+  @override
+  String serviceWarningInactiveDevice(String name) {
+    return '$name: デバイスは稼働中ではありません';
+  }
+
+  @override
+  String serviceWarningMissingNetwork(String name) {
+    return '$name: エンドポイントのネットワークが見つかりません';
+  }
+
+  @override
+  String serviceWarningMissingSource(String name) {
+    return '$name: 元サービスが見つかりません';
+  }
+
+  @override
+  String serviceWarningMissingSourceEndpoint(String name) {
+    return '$name: 元エンドポイントが見つかりません';
+  }
+
+  @override
+  String serviceWarningMissingHopService(String name) {
+    return '$name: ホップサービスが見つかりません';
+  }
+
+  @override
+  String serviceWarningMissingHopEndpoint(String name) {
+    return '$name: ホップエンドポイントが見つかりません';
+  }
+
+  @override
+  String serviceWarningMissingHopDevice(String name) {
+    return '$name: ホップデバイスが見つかりません';
+  }
+
+  @override
+  String serviceWarningEmptyRoute(String name) {
+    return '$name: ルートにホップがありません';
+  }
+
+  @override
+  String serviceWarningPublicRouteMissingUrl(String name) {
+    return '$name: 公開ルートに最終URLがありません';
+  }
+
+  @override
+  String serviceWarningDuplicateFinalUrl(String name) {
+    return '$name: 最終URLが重複しています';
+  }
+
+  @override
+  String serviceCount(int count) {
+    return '$count 件のサービス';
+  }
+
+  @override
+  String serviceRouteCount(int count) {
+    return '$count 件のルート';
+  }
+
+  @override
+  String get backupModuleServices => 'サービス';
 }

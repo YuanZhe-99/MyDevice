@@ -282,6 +282,7 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
       'devices': (l10n.backupModuleDevices, Icons.devices),
       'networks': (l10n.backupModuleNetworks, Icons.lan),
       'datasets': (l10n.backupModuleDatasets, Icons.folder_outlined),
+      'services': (l10n.backupModuleServices, Icons.dns_outlined),
       'images': (l10n.backupModuleImages, Icons.image_outlined),
     };
     return AlertDialog(

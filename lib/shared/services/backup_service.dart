@@ -19,6 +19,7 @@ class BackupService {
     'device_data.json': 'devices',
     'network_data.json': 'networks',
     'dataset_data.json': 'datasets',
+    'service_data.json': 'services',
   };
 
   static Future<Directory> _getBackupDir() async {

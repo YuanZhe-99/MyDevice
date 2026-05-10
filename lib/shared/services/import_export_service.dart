@@ -16,6 +16,7 @@ class ImportExportService {
     'device_data.json',
     'network_data.json',
     'dataset_data.json',
+    'service_data.json',
   ];
 
   /// Export all data and images as a ZIP file.
@@ -70,7 +71,20 @@ class ImportExportService {
 
       for (final entry in archive) {
         if (entry.isFile) {
-          final outFile = File(p.join(appDir.path, entry.name));
+          final normalizedName = p.normalize(entry.name).replaceAll('\\', '/');
+          final allowed =
+              _dataFileNames.contains(normalizedName) ||
+              (normalizedName.startsWith('images/') &&
+                  p.basename(normalizedName) == normalizedName.split('/').last);
+          if (!allowed || normalizedName.contains('..')) continue;
+
+          final outFile = File(p.join(appDir.path, normalizedName));
+          final normalizedOut = p.normalize(outFile.absolute.path);
+          final normalizedAppDir = p.normalize(appDir.absolute.path);
+          if (!p.isWithin(normalizedAppDir, normalizedOut) &&
+              normalizedOut != normalizedAppDir) {
+            continue;
+          }
           final parentDir = outFile.parent;
           if (!await parentDir.exists()) {
             await parentDir.create(recursive: true);

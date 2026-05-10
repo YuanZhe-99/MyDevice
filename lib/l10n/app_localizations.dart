@@ -1954,6 +1954,504 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to update exchange rates'**
   String get exchangeRateUpdateFailed;
+
+  /// No description provided for @navServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get navServices;
+
+  /// No description provided for @servicesOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get servicesOverview;
+
+  /// No description provided for @servicesByDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get servicesByDevice;
+
+  /// No description provided for @serviceRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes'**
+  String get serviceRoutes;
+
+  /// No description provided for @servicePorts.
+  ///
+  /// In en, this message translates to:
+  /// **'Ports'**
+  String get servicePorts;
+
+  /// No description provided for @noServices.
+  ///
+  /// In en, this message translates to:
+  /// **'No services yet. Add a device service to track ports and routes.'**
+  String get noServices;
+
+  /// No description provided for @noServiceRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'No service routes yet.'**
+  String get noServiceRoutes;
+
+  /// No description provided for @addService.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Service'**
+  String get addService;
+
+  /// No description provided for @editService.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Service'**
+  String get editService;
+
+  /// No description provided for @deleteService.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Service'**
+  String get deleteService;
+
+  /// No description provided for @deleteServiceConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete service \"{name}\"? Routes from this service will also be removed.'**
+  String deleteServiceConfirm(String name);
+
+  /// No description provided for @serviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Name'**
+  String get serviceName;
+
+  /// No description provided for @serviceNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a service name.'**
+  String get serviceNameRequired;
+
+  /// No description provided for @serviceDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get serviceDevice;
+
+  /// No description provided for @serviceTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Template'**
+  String get serviceTemplate;
+
+  /// No description provided for @serviceCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Service'**
+  String get serviceCustom;
+
+  /// No description provided for @servicePickTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick Service Template'**
+  String get servicePickTemplate;
+
+  /// No description provided for @serviceCustomTemplateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from a blank service record'**
+  String get serviceCustomTemplateDesc;
+
+  /// No description provided for @serviceFeaturedTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Featured'**
+  String get serviceFeaturedTemplate;
+
+  /// No description provided for @serviceIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon Name'**
+  String get serviceIcon;
+
+  /// No description provided for @serviceKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Kind'**
+  String get serviceKind;
+
+  /// No description provided for @serviceRuntime.
+  ///
+  /// In en, this message translates to:
+  /// **'Runtime'**
+  String get serviceRuntime;
+
+  /// No description provided for @serviceState.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get serviceState;
+
+  /// No description provided for @serviceEndpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoints'**
+  String get serviceEndpoints;
+
+  /// No description provided for @serviceEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint'**
+  String get serviceEndpoint;
+
+  /// No description provided for @addServiceEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Endpoint'**
+  String get addServiceEndpoint;
+
+  /// No description provided for @editServiceEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Endpoint'**
+  String get editServiceEndpoint;
+
+  /// No description provided for @serviceEndpointLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get serviceEndpointLabel;
+
+  /// No description provided for @serviceProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol'**
+  String get serviceProtocol;
+
+  /// No description provided for @serviceTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get serviceTransport;
+
+  /// No description provided for @servicePort.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get servicePort;
+
+  /// No description provided for @servicePortEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Port End'**
+  String get servicePortEnd;
+
+  /// No description provided for @serviceBindAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Bind Address'**
+  String get serviceBindAddress;
+
+  /// No description provided for @servicePath.
+  ///
+  /// In en, this message translates to:
+  /// **'Path'**
+  String get servicePath;
+
+  /// No description provided for @serviceScope.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get serviceScope;
+
+  /// No description provided for @servicePrimaryEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary endpoint'**
+  String get servicePrimaryEndpoint;
+
+  /// No description provided for @serviceDockerCompose.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker Compose'**
+  String get serviceDockerCompose;
+
+  /// No description provided for @copyServiceCompose.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Compose'**
+  String get copyServiceCompose;
+
+  /// No description provided for @serviceComposeCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Docker Compose copied'**
+  String get serviceComposeCopied;
+
+  /// No description provided for @addServiceRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Route'**
+  String get addServiceRoute;
+
+  /// No description provided for @editServiceRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Route'**
+  String get editServiceRoute;
+
+  /// No description provided for @deleteServiceRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Route'**
+  String get deleteServiceRoute;
+
+  /// No description provided for @deleteServiceRouteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete route \"{name}\"?'**
+  String deleteServiceRouteConfirm(String name);
+
+  /// No description provided for @serviceRouteName.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Name'**
+  String get serviceRouteName;
+
+  /// No description provided for @routeSourceService.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Service'**
+  String get routeSourceService;
+
+  /// No description provided for @serviceAccessLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Level'**
+  String get serviceAccessLevel;
+
+  /// No description provided for @serviceFinalUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Final URL / Address'**
+  String get serviceFinalUrl;
+
+  /// No description provided for @routeHops.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Hops'**
+  String get routeHops;
+
+  /// No description provided for @addRouteHop.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Hop'**
+  String get addRouteHop;
+
+  /// No description provided for @editRouteHop.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Hop'**
+  String get editRouteHop;
+
+  /// No description provided for @routeHopType.
+  ///
+  /// In en, this message translates to:
+  /// **'Hop Type'**
+  String get routeHopType;
+
+  /// No description provided for @routeMethod.
+  ///
+  /// In en, this message translates to:
+  /// **'Method'**
+  String get routeMethod;
+
+  /// No description provided for @routeHopService.
+  ///
+  /// In en, this message translates to:
+  /// **'Hop Service'**
+  String get routeHopService;
+
+  /// No description provided for @routeManualHop.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Hop'**
+  String get routeManualHop;
+
+  /// No description provided for @routeHopLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hop Label'**
+  String get routeHopLabel;
+
+  /// No description provided for @routeScheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme'**
+  String get routeScheme;
+
+  /// No description provided for @routeHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get routeHost;
+
+  /// No description provided for @activeServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Services'**
+  String get activeServices;
+
+  /// No description provided for @serviceDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get serviceDevices;
+
+  /// No description provided for @publicRoutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Routes'**
+  String get publicRoutes;
+
+  /// No description provided for @serviceWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'Warnings'**
+  String get serviceWarnings;
+
+  /// No description provided for @servicePortConflicts.
+  ///
+  /// In en, this message translates to:
+  /// **'Port Conflicts'**
+  String get servicePortConflicts;
+
+  /// No description provided for @servicePortUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Port Usage'**
+  String get servicePortUsage;
+
+  /// No description provided for @servicePotentialConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'potential'**
+  String get servicePotentialConflict;
+
+  /// No description provided for @serviceAnyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Any Address'**
+  String get serviceAnyAddress;
+
+  /// No description provided for @servicePortConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'{device}: port {port} may be used by multiple services'**
+  String servicePortConflict(String device, int port);
+
+  /// No description provided for @serviceRoutePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Route Preview'**
+  String get serviceRoutePreview;
+
+  /// No description provided for @serviceMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Up'**
+  String get serviceMoveUp;
+
+  /// No description provided for @serviceMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move Down'**
+  String get serviceMoveDown;
+
+  /// No description provided for @serviceWarningMissingDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing device'**
+  String serviceWarningMissingDevice(String name);
+
+  /// No description provided for @serviceWarningInactiveDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: device is not in service'**
+  String serviceWarningInactiveDevice(String name);
+
+  /// No description provided for @serviceWarningMissingNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing endpoint network'**
+  String serviceWarningMissingNetwork(String name);
+
+  /// No description provided for @serviceWarningMissingSource.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing source service'**
+  String serviceWarningMissingSource(String name);
+
+  /// No description provided for @serviceWarningMissingSourceEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing source endpoint'**
+  String serviceWarningMissingSourceEndpoint(String name);
+
+  /// No description provided for @serviceWarningMissingHopService.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing hop service'**
+  String serviceWarningMissingHopService(String name);
+
+  /// No description provided for @serviceWarningMissingHopEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing hop endpoint'**
+  String serviceWarningMissingHopEndpoint(String name);
+
+  /// No description provided for @serviceWarningMissingHopDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: missing hop device'**
+  String serviceWarningMissingHopDevice(String name);
+
+  /// No description provided for @serviceWarningEmptyRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: route has no hops'**
+  String serviceWarningEmptyRoute(String name);
+
+  /// No description provided for @serviceWarningPublicRouteMissingUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: public route has no final URL'**
+  String serviceWarningPublicRouteMissingUrl(String name);
+
+  /// No description provided for @serviceWarningDuplicateFinalUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: duplicate final URL'**
+  String serviceWarningDuplicateFinalUrl(String name);
+
+  /// No description provided for @serviceCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} service(s)'**
+  String serviceCount(int count);
+
+  /// No description provided for @serviceRouteCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} route(s)'**
+  String serviceRouteCount(int count);
+
+  /// No description provided for @backupModuleServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Services'**
+  String get backupModuleServices;
 }
 
 class _AppLocalizationsDelegate

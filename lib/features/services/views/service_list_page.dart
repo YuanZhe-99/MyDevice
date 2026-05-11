@@ -1556,40 +1556,258 @@ class _TopologyNodeCard extends StatelessWidget {
 class _TopologyLayout {
   final Size size;
   final Map<String, Rect> nodeRects;
+  final Map<String, int> nodeColumns;
 
-  const _TopologyLayout({required this.size, required this.nodeRects});
+  const _TopologyLayout({
+    required this.size,
+    required this.nodeRects,
+    required this.nodeColumns,
+  });
 
   static const nodeWidth = 204.0;
   static const nodeHeight = 76.0;
-  static const horizontalGap = 42.0;
-  static const verticalGap = 24.0;
+  static const horizontalGap = 56.0;
+  static const verticalGap = 26.0;
   static const padding = 24.0;
 
   static _TopologyLayout build(
     ServiceTopologyGraph graph,
     double viewportWidth,
   ) {
+    final nodeMap = {for (final node in graph.nodes) node.id: node};
+    final nodeColumns = {
+      for (final node in graph.nodes) node.id: _columnForNode(node),
+    };
     final columns = <int, List<ServiceTopologyNode>>{};
+    final incoming = <String, Set<String>>{};
+    final outgoing = <String, Set<String>>{};
     for (final node in graph.nodes) {
-      final column = _columnForNode(node);
+      final column = nodeColumns[node.id]!;
       columns.putIfAbsent(column, () => []).add(node);
-    }
-    for (final nodes in columns.values) {
-      nodes.sort((a, b) {
-        final laneCmp = (a.lane?.index ?? -1).compareTo(b.lane?.index ?? -1);
-        if (laneCmp != 0) return laneCmp;
-        return a.label.toLowerCase().compareTo(b.label.toLowerCase());
-      });
+      incoming[node.id] = <String>{};
+      outgoing[node.id] = <String>{};
     }
 
+    for (final edge in graph.edges) {
+      if (!nodeMap.containsKey(edge.from) || !nodeMap.containsKey(edge.to)) {
+        continue;
+      }
+      outgoing.putIfAbsent(edge.from, () => <String>{}).add(edge.to);
+      incoming.putIfAbsent(edge.to, () => <String>{}).add(edge.from);
+    }
+
+    final orderedColumns = columns.keys.toList()..sort();
+    final anchorNodes =
+        graph.nodes
+            .where((node) => node.role == ServiceTopologyNodeRole.localService)
+            .toList()
+          ..sort(
+            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+          );
+    if (anchorNodes.isEmpty) {
+      final localDevices =
+          graph.nodes
+              .where((node) => node.role == ServiceTopologyNodeRole.localDevice)
+              .toList()
+            ..sort(
+              (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+            );
+      anchorNodes.addAll(localDevices);
+    }
+
+    final anchorScores = <String, double>{
+      for (var i = 0; i < anchorNodes.length; i++)
+        anchorNodes[i].id: i.toDouble(),
+    };
+    final laneScoreCache = <String, double>{};
+
+    double laneScore(String nodeId, [Set<String>? visiting]) {
+      final cached = laneScoreCache[nodeId];
+      if (cached != null) return cached;
+
+      final anchor = anchorScores[nodeId];
+      if (anchor != null) {
+        laneScoreCache[nodeId] = anchor;
+        return anchor;
+      }
+
+      if (visiting?.contains(nodeId) == true) {
+        return 0;
+      }
+
+      final column = nodeColumns[nodeId];
+      if (column == null) return 0;
+
+      final nextVisiting = {...?visiting, nodeId};
+      final scores = <double>[];
+
+      void addNeighborScores(
+        Iterable<String>? neighbors,
+        bool Function(int neighborColumn) accept,
+      ) {
+        for (final neighborId in neighbors ?? const <String>{}) {
+          final neighborColumn = nodeColumns[neighborId];
+          if (neighborColumn == null || !accept(neighborColumn)) continue;
+          scores.add(laneScore(neighborId, nextVisiting));
+        }
+      }
+
+      addNeighborScores(
+        incoming[nodeId],
+        (neighborColumn) => neighborColumn < column,
+      );
+      if (scores.isEmpty) {
+        addNeighborScores(
+          outgoing[nodeId],
+          (neighborColumn) => neighborColumn > column,
+        );
+      }
+      if (scores.isEmpty) {
+        addNeighborScores(incoming[nodeId], (_) => true);
+      }
+      if (scores.isEmpty) {
+        addNeighborScores(outgoing[nodeId], (_) => true);
+      }
+
+      if (scores.isEmpty) {
+        laneScoreCache[nodeId] = 0;
+        return 0;
+      }
+
+      final value = scores.reduce((a, b) => a + b) / scores.length;
+      laneScoreCache[nodeId] = value;
+      return value;
+    }
+
+    final degrees = <String, int>{
+      for (final node in graph.nodes)
+        node.id:
+            (incoming[node.id]?.length ?? 0) + (outgoing[node.id]?.length ?? 0),
+    };
+    final hubIds = graph.nodes
+        .where((node) => _isHub(node, degrees[node.id] ?? 0))
+        .map((node) => node.id)
+        .toSet();
+
+    int compareBase(ServiceTopologyNode a, ServiceTopologyNode b) {
+      final laneCmp = laneScore(a.id).compareTo(laneScore(b.id));
+      if (laneCmp != 0) return laneCmp;
+
+      final roleCmp = _roleOrder(a).compareTo(_roleOrder(b));
+      if (roleCmp != 0) return roleCmp;
+
+      final laneBucketCmp = _laneBucket(a).compareTo(_laneBucket(b));
+      if (laneBucketCmp != 0) return laneBucketCmp;
+
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+    }
+
+    for (final nodes in columns.values) {
+      nodes.sort(compareBase);
+    }
+
+    final orderByNodeId = <String, double>{};
+
+    void refreshOrderMap() {
+      for (final column in orderedColumns) {
+        final nodes = columns[column] ?? const <ServiceTopologyNode>[];
+        for (var i = 0; i < nodes.length; i++) {
+          orderByNodeId[nodes[i].id] = i.toDouble();
+        }
+      }
+    }
+
+    double? barycenterFor(String nodeId, bool useLeftNeighbors) {
+      final column = nodeColumns[nodeId];
+      if (column == null) return null;
+
+      final positions = <double>[];
+      final neighbors = {...?incoming[nodeId], ...?outgoing[nodeId]};
+      for (final neighborId in neighbors) {
+        final neighborColumn = nodeColumns[neighborId];
+        final position = orderByNodeId[neighborId];
+        if (neighborColumn == null || position == null) continue;
+        if (useLeftNeighbors && neighborColumn < column) {
+          positions.add(position);
+        }
+        if (!useLeftNeighbors && neighborColumn > column) {
+          positions.add(position);
+        }
+      }
+
+      if (positions.isEmpty) return null;
+      positions.sort();
+      final middle = positions.length ~/ 2;
+      if (positions.length.isOdd) return positions[middle];
+      return (positions[middle - 1] + positions[middle]) / 2;
+    }
+
+    List<ServiceTopologyNode> reorderColumn(int column, bool useLeftNeighbors) {
+      final reordered = [...?columns[column]];
+      reordered.sort((a, b) {
+        final aBarycenter =
+            barycenterFor(a.id, useLeftNeighbors) ?? (orderByNodeId[a.id] ?? 0);
+        final bBarycenter =
+            barycenterFor(b.id, useLeftNeighbors) ?? (orderByNodeId[b.id] ?? 0);
+        final barycenterCmp = aBarycenter.compareTo(bBarycenter);
+        if (barycenterCmp != 0) return barycenterCmp;
+
+        final existingCmp = (orderByNodeId[a.id] ?? 0).compareTo(
+          orderByNodeId[b.id] ?? 0,
+        );
+        if (existingCmp != 0) return existingCmp;
+
+        return compareBase(a, b);
+      });
+      return reordered;
+    }
+
+    refreshOrderMap();
+    for (var iteration = 0; iteration < 6; iteration++) {
+      for (final column in orderedColumns.skip(1)) {
+        columns[column] = reorderColumn(column, true);
+        refreshOrderMap();
+      }
+      for (final column in orderedColumns.reversed.skip(1)) {
+        columns[column] = reorderColumn(column, false);
+        refreshOrderMap();
+      }
+    }
+
+    for (final column in orderedColumns) {
+      columns[column] = _centerHubNodes(columns[column]!, hubIds);
+    }
+
+    double columnContentHeight(List<ServiceTopologyNode> nodes) {
+      if (nodes.isEmpty) return 0;
+      var height = nodes.length * nodeHeight;
+      for (var i = 0; i < nodes.length - 1; i++) {
+        height += _gapBetween(nodes[i], nodes[i + 1], hubIds, laneScore);
+      }
+      return height;
+    }
+
+    final columnHeights = <int, double>{
+      for (final column in orderedColumns)
+        column: columnContentHeight(columns[column]!),
+    };
+    final maxContentHeight = columnHeights.values.fold<double>(0, math.max);
+
     final rects = <String, Rect>{};
-    var maxHeight = 0.0;
-    for (final entry in columns.entries) {
-      final x = padding + entry.key * (nodeWidth + horizontalGap);
-      for (var i = 0; i < entry.value.length; i++) {
-        final y = padding + i * (nodeHeight + verticalGap);
-        rects[entry.value[i].id] = Rect.fromLTWH(x, y, nodeWidth, nodeHeight);
+    var maxHeight = padding * 2 + maxContentHeight;
+    for (final column in orderedColumns) {
+      final nodes = columns[column] ?? const <ServiceTopologyNode>[];
+      final x = padding + column * (nodeWidth + horizontalGap);
+      var y = padding + (maxContentHeight - (columnHeights[column] ?? 0)) / 2;
+      for (var i = 0; i < nodes.length; i++) {
+        final node = nodes[i];
+        rects[node.id] = Rect.fromLTWH(x, y, nodeWidth, nodeHeight);
         maxHeight = math.max(maxHeight, y + nodeHeight + padding);
+        if (i < nodes.length - 1) {
+          y +=
+              nodeHeight +
+              _gapBetween(nodes[i], nodes[i + 1], hubIds, laneScore);
+        }
       }
     }
     final maxColumn = columns.keys.fold<int>(0, math.max);
@@ -1598,25 +1816,118 @@ class _TopologyLayout {
       padding * 2 + (maxColumn + 1) * nodeWidth + maxColumn * horizontalGap,
     );
     final height = math.max(360.0, maxHeight);
-    return _TopologyLayout(size: Size(width, height), nodeRects: rects);
+    return _TopologyLayout(
+      size: Size(width, height),
+      nodeRects: rects,
+      nodeColumns: nodeColumns,
+    );
   }
 
   static int _columnForNode(ServiceTopologyNode node) {
     if (node.kind == ServiceTopologyNodeKind.domain) {
-      return node.lane == ServiceAccessLane.public ? 7 : 5;
+      return node.lane == ServiceAccessLane.public ? 8 : 4;
+    }
+    if (node.kind == ServiceTopologyNodeKind.endpoint &&
+        node.role == ServiceTopologyNodeRole.remoteService) {
+      return 7;
     }
     return switch (node.role) {
       ServiceTopologyNodeRole.localDevice => 0,
       ServiceTopologyNodeRole.localService => 1,
       ServiceTopologyNodeRole.localEndpoint => 2,
       ServiceTopologyNodeRole.lanAccess ||
+      ServiceTopologyNodeRole.vpnAccess => 3,
+      ServiceTopologyNodeRole.publicRelay => 4,
+      ServiceTopologyNodeRole.remoteDevice => 5,
+      ServiceTopologyNodeRole.remoteService => 6,
+      ServiceTopologyNodeRole.remotePublicEntry => 7,
+      ServiceTopologyNodeRole.domain => 8,
+    };
+  }
+
+  static bool _isHub(ServiceTopologyNode node, int degree) {
+    final isShared = degree >= 3 || node.routeIds.length >= 2;
+    if (!isShared) return false;
+    return switch (node.role) {
+      ServiceTopologyNodeRole.localDevice ||
+      ServiceTopologyNodeRole.localService ||
+      ServiceTopologyNodeRole.localEndpoint => false,
+      ServiceTopologyNodeRole.lanAccess ||
       ServiceTopologyNodeRole.vpnAccess ||
       ServiceTopologyNodeRole.publicRelay ||
-      ServiceTopologyNodeRole.remoteDevice => 3,
-      ServiceTopologyNodeRole.remoteService => 4,
-      ServiceTopologyNodeRole.remotePublicEntry => 5,
-      ServiceTopologyNodeRole.domain => 6,
+      ServiceTopologyNodeRole.remoteDevice ||
+      ServiceTopologyNodeRole.remoteService ||
+      ServiceTopologyNodeRole.remotePublicEntry ||
+      ServiceTopologyNodeRole.domain => true,
     };
+  }
+
+  static int _roleOrder(ServiceTopologyNode node) {
+    if (node.kind == ServiceTopologyNodeKind.endpoint &&
+        node.role == ServiceTopologyNodeRole.remoteService) {
+      return 8;
+    }
+    return switch (node.role) {
+      ServiceTopologyNodeRole.localDevice => 0,
+      ServiceTopologyNodeRole.localService => 1,
+      ServiceTopologyNodeRole.localEndpoint => 2,
+      ServiceTopologyNodeRole.lanAccess => 3,
+      ServiceTopologyNodeRole.vpnAccess => 4,
+      ServiceTopologyNodeRole.publicRelay => 5,
+      ServiceTopologyNodeRole.remoteDevice => 6,
+      ServiceTopologyNodeRole.remoteService => 7,
+      ServiceTopologyNodeRole.remotePublicEntry => 9,
+      ServiceTopologyNodeRole.domain => 10,
+    };
+  }
+
+  static int _laneBucket(ServiceTopologyNode node) => switch (node.lane) {
+    ServiceAccessLane.local => 0,
+    ServiceAccessLane.vpn => 1,
+    ServiceAccessLane.public => 2,
+    null => -1,
+  };
+
+  static List<ServiceTopologyNode> _centerHubNodes(
+    List<ServiceTopologyNode> nodes,
+    Set<String> hubIds,
+  ) {
+    if (nodes.length < 4) return nodes;
+
+    final hubs = nodes.where((node) => hubIds.contains(node.id)).toList();
+    if (hubs.isEmpty || hubs.length == nodes.length) return nodes;
+
+    final others = nodes.where((node) => !hubIds.contains(node.id)).toList();
+    final result = List<ServiceTopologyNode?>.filled(nodes.length, null);
+    final start = ((nodes.length - hubs.length) / 2).floor();
+    for (var i = 0; i < hubs.length; i++) {
+      result[start + i] = hubs[i];
+    }
+
+    var otherIndex = 0;
+    for (var i = 0; i < result.length; i++) {
+      result[i] ??= others[otherIndex++];
+    }
+    return result.whereType<ServiceTopologyNode>().toList();
+  }
+
+  static double _gapBetween(
+    ServiceTopologyNode upper,
+    ServiceTopologyNode lower,
+    Set<String> hubIds,
+    double Function(String nodeId) laneScore,
+  ) {
+    var gap = verticalGap;
+    if (hubIds.contains(upper.id) || hubIds.contains(lower.id)) {
+      gap += 12;
+    }
+    if (_laneBucket(upper) != _laneBucket(lower)) {
+      gap += 4;
+    }
+    if ((laneScore(upper.id) - laneScore(lower.id)).abs() >= 0.75) {
+      gap += 6;
+    }
+    return gap;
   }
 }
 
@@ -1633,6 +1944,8 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    final outgoingOffsets = _buildPortOffsets(outgoing: true);
+    final incomingOffsets = _buildPortOffsets(outgoing: false);
     for (final edge in graph.edges) {
       final from = layout.nodeRects[edge.from];
       final to = layout.nodeRects[edge.to];
@@ -1640,20 +1953,90 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
       final paint = Paint()
         ..color = _edgeColor(edge).withValues(alpha: 0.62)
         ..strokeWidth = 2.2
-        ..style = PaintingStyle.stroke;
-      _drawEdge(canvas, paint, from, to);
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      final start = Offset(
+        from.right,
+        from.center.dy + (outgoingOffsets[edge] ?? 0),
+      );
+      final end = Offset(to.left, to.center.dy + (incomingOffsets[edge] ?? 0));
+      _drawEdge(canvas, paint, start, end);
     }
   }
 
-  void _drawEdge(Canvas canvas, Paint paint, Rect from, Rect to) {
-    final start = Offset(from.right, from.center.dy);
-    final end = Offset(to.left, to.center.dy);
-    final dx = math.max(28.0, (end.dx - start.dx).abs() * 0.42);
-    final path = Path()
-      ..moveTo(start.dx, start.dy)
-      ..cubicTo(start.dx + dx, start.dy, end.dx - dx, end.dy, end.dx, end.dy);
+  Map<ServiceTopologyEdge, double> _buildPortOffsets({required bool outgoing}) {
+    final grouped = <String, List<ServiceTopologyEdge>>{};
+    for (final edge in graph.edges) {
+      final from = layout.nodeRects[edge.from];
+      final to = layout.nodeRects[edge.to];
+      if (from == null || to == null) continue;
+      final nodeId = outgoing ? edge.from : edge.to;
+      grouped.putIfAbsent(nodeId, () => []).add(edge);
+    }
+
+    final offsets = <ServiceTopologyEdge, double>{};
+    for (final edges in grouped.values) {
+      edges.sort((a, b) {
+        final aPeer = outgoing
+            ? layout.nodeRects[a.to]
+            : layout.nodeRects[a.from];
+        final bPeer = outgoing
+            ? layout.nodeRects[b.to]
+            : layout.nodeRects[b.from];
+        final yCmp = (aPeer?.center.dy ?? 0).compareTo(bPeer?.center.dy ?? 0);
+        if (yCmp != 0) return yCmp;
+
+        final aColumn =
+            (outgoing
+                ? layout.nodeColumns[a.to]
+                : layout.nodeColumns[a.from]) ??
+            0;
+        final bColumn =
+            (outgoing
+                ? layout.nodeColumns[b.to]
+                : layout.nodeColumns[b.from]) ??
+            0;
+        final columnCmp = aColumn.compareTo(bColumn);
+        if (columnCmp != 0) return columnCmp;
+
+        final aKey = '${a.from}->${a.to}:${a.routeId ?? ''}:${a.label ?? ''}';
+        final bKey = '${b.from}->${b.to}:${b.routeId ?? ''}:${b.label ?? ''}';
+        return aKey.compareTo(bKey);
+      });
+
+      final midpoint = (edges.length - 1) / 2;
+      for (var i = 0; i < edges.length; i++) {
+        offsets[edges[i]] = (i - midpoint) * 10.0;
+      }
+    }
+    return offsets;
+  }
+
+  void _drawEdge(Canvas canvas, Paint paint, Offset start, Offset end) {
+    final travel = end.dx - start.dx;
+    final lead = math.max(18.0, math.min(32.0, travel.abs() * 0.22));
+    final exitX = start.dx + lead;
+    final entryX = end.dx - lead;
+    final middleX = entryX <= exitX
+        ? (start.dx + end.dx) / 2
+        : (exitX + entryX) / 2;
+
+    final path = Path()..moveTo(start.dx, start.dy);
+    if ((end.dy - start.dy).abs() < 1) {
+      path.lineTo(end.dx, end.dy);
+    } else {
+      path
+        ..lineTo(exitX, start.dy)
+        ..lineTo(middleX, start.dy)
+        ..lineTo(middleX, end.dy)
+        ..lineTo(entryX, end.dy)
+        ..lineTo(end.dx, end.dy);
+    }
     canvas.drawPath(path, paint);
-    final angle = math.atan2(end.dy - start.dy, end.dx - start.dx);
+
+    final arrowOrigin = Offset(math.min(entryX, end.dx - 10), end.dy);
+    final angle = math.atan2(end.dy - arrowOrigin.dy, end.dx - arrowOrigin.dx);
     final arrow = Path()
       ..moveTo(end.dx, end.dy)
       ..lineTo(

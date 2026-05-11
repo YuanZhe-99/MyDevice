@@ -1,10 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_device/features/datasets/models/dataset.dart';
 import 'package:my_device/features/devices/models/device.dart';
+import 'package:my_device/features/network/models/network.dart';
 import 'package:my_device/features/services/models/service.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
 import 'package:my_device/features/services/services/service_template_service.dart';
+import 'package:my_device/shared/services/import_export_service.dart';
 import 'package:my_device/shared/services/local_api_server.dart';
 import 'package:my_device/shared/services/sync_merge.dart';
 
@@ -278,6 +281,70 @@ void main() {
 
     expect(stats['total'], 1);
     expect(stats['services'], {'total': 1, 'routes': 1, 'devices': 1});
+  });
+
+  test('markdown export includes services routes and public targets', () {
+    final device = Device(
+      id: 'mac-mini',
+      name: 'Mac mini',
+      category: DeviceCategory.desktop,
+    );
+    final service = ServiceNode(
+      id: 'service-1',
+      deviceId: device.id,
+      name: 'Jellyfin',
+      kind: ServiceKind.media,
+      runtime: ServiceRuntime.compose,
+      endpoints: [
+        ServiceEndpoint(
+          id: 'endpoint-1',
+          label: 'Web UI',
+          protocol: ServiceProtocol.http,
+          port: 8096,
+          scope: ServiceScope.lan,
+        ),
+      ],
+      dockerCompose: 'services:\n  jellyfin:\n    image: jellyfin/jellyfin',
+    );
+    final route = ServiceRoute(
+      id: 'route-1',
+      name: 'Jellyfin public',
+      sourceServiceId: service.id,
+      sourceEndpointId: 'endpoint-1',
+      accessLevel: ServiceAccessLevel.public,
+      hops: [
+        ServiceRouteHop(
+          type: ServiceRouteHopType.tunnel,
+          method: ServiceRouteMethod.cloudflareTunnel,
+        ),
+      ],
+      finalUrl: 'https://jellyfin.example.com',
+      extraJson: const {
+        serviceRoutePublicTargetsKey: [
+          'https://jellyfin.example.com',
+          'https://media.example.com',
+        ],
+      },
+    );
+
+    final markdown = ImportExportService.buildMarkdown(
+      deviceData: DeviceData(devices: [device]),
+      networkData: const NetworkData(),
+      datasetData: const DataSetData(),
+      serviceData: ServiceData(services: [service], routes: [route]),
+      exportedAt: DateTime(2026, 5, 11, 10, 7),
+    );
+
+    expect(markdown, contains('1 services, 1 service routes'));
+    expect(markdown, contains('# Services'));
+    expect(markdown, contains('## Jellyfin'));
+    expect(markdown, contains('- **Device:** Mac mini'));
+    expect(markdown, contains('- Web UI, http/tcp, 8096, lan'));
+    expect(markdown, contains('image: jellyfin/jellyfin'));
+    expect(markdown, contains('# Service Routes'));
+    expect(markdown, contains('jellyfin.example.com'));
+    expect(markdown, contains('media.example.com'));
+    expect(markdown, contains('Cloudflare Tunnel'));
   });
 
   test('service topology groups one service with multiple public domains', () {
@@ -866,6 +933,70 @@ void main() {
     expect(
       graph.edges.any((edge) => edge.from == endpointId && edge.to == vps.id),
       isTrue,
+    );
+  });
+
+  test('service topology keeps same-device public proxy service local', () {
+    final app = ServiceNode(
+      id: 'vaultwarden',
+      deviceId: 'mac-mini',
+      name: 'Vaultwarden',
+      endpoints: [ServiceEndpoint(id: 'app-http', port: 59880)],
+    );
+    final caddy = ServiceNode(
+      id: 'caddy',
+      deviceId: 'mac-mini',
+      name: 'Caddy',
+      kind: ServiceKind.reverseProxy,
+      endpoints: [ServiceEndpoint(id: 'caddy-https', port: 443)],
+    );
+    final graph = buildServiceTopology(
+      services: [app, caddy],
+      routes: [
+        ServiceRoute(
+          id: 'route-public-proxy',
+          name: 'Vaultwarden via Caddy',
+          sourceServiceId: app.id,
+          sourceEndpointId: 'app-http',
+          accessLevel: ServiceAccessLevel.public,
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.reverseProxy,
+              method: ServiceRouteMethod.caddy,
+              serviceId: caddy.id,
+              endpointId: 'caddy-https',
+            ),
+          ],
+          finalUrl: 'https://vault.example.com',
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'mac-mini',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+      ],
+    );
+
+    final caddyNode = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.service &&
+          node.serviceId == caddy.id,
+    );
+    final caddyEndpoint = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.endpoint &&
+          node.serviceId == caddy.id,
+    );
+
+    expect(caddyNode.role, ServiceTopologyNodeRole.localService);
+    expect(caddyEndpoint.role, ServiceTopologyNodeRole.localEndpoint);
+    expect(
+      graph.nodes.where(
+        (node) => node.role == ServiceTopologyNodeRole.remoteService,
+      ),
+      isEmpty,
     );
   });
 }

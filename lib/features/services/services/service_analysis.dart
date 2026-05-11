@@ -495,9 +495,14 @@ ServiceTopologyGraph buildServiceTopology({
 
       if (hop.serviceId != null && serviceMap.containsKey(hop.serviceId)) {
         final hopService = serviceMap[hop.serviceId]!;
+        final hopIsRemote = _isRemoteHopService(
+          source: source,
+          hopService: hopService,
+          deviceMap: deviceMap,
+        );
         final hopServiceId = addServiceNode(
           hopService,
-          remote: _isPublicRoute(route),
+          remote: hopIsRemote,
           routeId: route.id,
         );
         addEdge(currentId, hopServiceId, routeId: route.id);
@@ -507,7 +512,7 @@ ServiceTopologyGraph buildServiceTopology({
           final endpointId = addEndpointNode(
             hopService,
             hopEndpoint,
-            remote: _isPublicRoute(route),
+            remote: hopIsRemote,
             routeId: route.id,
           );
           addEdge(currentId, endpointId, routeId: route.id);
@@ -697,8 +702,14 @@ bool _isRemoteRole(ServiceTopologyNodeRole role) =>
     role == ServiceTopologyNodeRole.remotePublicEntry ||
     role == ServiceTopologyNodeRole.domain;
 
-bool _isPublicRoute(ServiceRoute route) =>
-    serviceAccessLaneForRoute(route) == ServiceAccessLane.public;
+bool _isRemoteHopService({
+  required ServiceNode source,
+  required ServiceNode hopService,
+  required Map<String, Device> deviceMap,
+}) {
+  if (hopService.deviceId == source.deviceId) return false;
+  return deviceMap[hopService.deviceId]?.category == DeviceCategory.vps;
+}
 
 ServiceAccessLane serviceAccessLaneForRoute(ServiceRoute route) {
   final methods = route.hops

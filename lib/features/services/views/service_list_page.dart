@@ -1161,7 +1161,7 @@ class _ServiceTopologyView extends StatelessWidget {
         final viewportWidth = turns.isOdd && constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : constraints.maxWidth;
-        final layout = _TopologyLayout.build(graph, viewportWidth);
+        final layout = _TopologyLayout.build(graph, routes, viewportWidth);
         return ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: ColoredBox(
@@ -1572,18 +1572,16 @@ class _TopologyLayout {
 
   static _TopologyLayout build(
     ServiceTopologyGraph graph,
+    List<ServiceRoute> routes,
     double viewportWidth,
   ) {
     final nodeMap = {for (final node in graph.nodes) node.id: node};
     final nodeColumns = {
       for (final node in graph.nodes) node.id: _columnForNode(node),
     };
-    final columns = <int, List<ServiceTopologyNode>>{};
     final incoming = <String, Set<String>>{};
     final outgoing = <String, Set<String>>{};
     for (final node in graph.nodes) {
-      final column = nodeColumns[node.id]!;
-      columns.putIfAbsent(column, () => []).add(node);
       incoming[node.id] = <String>{};
       outgoing[node.id] = <String>{};
     }
@@ -1596,218 +1594,51 @@ class _TopologyLayout {
       incoming.putIfAbsent(edge.to, () => <String>{}).add(edge.from);
     }
 
+    final routeRows = _routeRows(graph, routes, nodeMap);
+    final desiredRows = _desiredRows(
+      graph,
+      routes,
+      routeRows,
+      incoming,
+      outgoing,
+    );
+
+    final columns = <int, List<ServiceTopologyNode>>{};
+    for (final node in graph.nodes) {
+      columns.putIfAbsent(nodeColumns[node.id]!, () => []).add(node);
+    }
     final orderedColumns = columns.keys.toList()..sort();
-    final anchorNodes =
-        graph.nodes
-            .where((node) => node.role == ServiceTopologyNodeRole.localService)
-            .toList()
-          ..sort(
-            (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-          );
-    if (anchorNodes.isEmpty) {
-      final localDevices =
-          graph.nodes
-              .where((node) => node.role == ServiceTopologyNodeRole.localDevice)
-              .toList()
-            ..sort(
-              (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-            );
-      anchorNodes.addAll(localDevices);
-    }
-
-    final anchorScores = <String, double>{
-      for (var i = 0; i < anchorNodes.length; i++)
-        anchorNodes[i].id: i.toDouble(),
-    };
-    final laneScoreCache = <String, double>{};
-
-    double laneScore(String nodeId, [Set<String>? visiting]) {
-      final cached = laneScoreCache[nodeId];
-      if (cached != null) return cached;
-
-      final anchor = anchorScores[nodeId];
-      if (anchor != null) {
-        laneScoreCache[nodeId] = anchor;
-        return anchor;
-      }
-
-      if (visiting?.contains(nodeId) == true) {
-        return 0;
-      }
-
-      final column = nodeColumns[nodeId];
-      if (column == null) return 0;
-
-      final nextVisiting = {...?visiting, nodeId};
-      final scores = <double>[];
-
-      void addNeighborScores(
-        Iterable<String>? neighbors,
-        bool Function(int neighborColumn) accept,
-      ) {
-        for (final neighborId in neighbors ?? const <String>{}) {
-          final neighborColumn = nodeColumns[neighborId];
-          if (neighborColumn == null || !accept(neighborColumn)) continue;
-          scores.add(laneScore(neighborId, nextVisiting));
-        }
-      }
-
-      addNeighborScores(
-        incoming[nodeId],
-        (neighborColumn) => neighborColumn < column,
-      );
-      if (scores.isEmpty) {
-        addNeighborScores(
-          outgoing[nodeId],
-          (neighborColumn) => neighborColumn > column,
-        );
-      }
-      if (scores.isEmpty) {
-        addNeighborScores(incoming[nodeId], (_) => true);
-      }
-      if (scores.isEmpty) {
-        addNeighborScores(outgoing[nodeId], (_) => true);
-      }
-
-      if (scores.isEmpty) {
-        laneScoreCache[nodeId] = 0;
-        return 0;
-      }
-
-      final value = scores.reduce((a, b) => a + b) / scores.length;
-      laneScoreCache[nodeId] = value;
-      return value;
-    }
-
-    final degrees = <String, int>{
-      for (final node in graph.nodes)
-        node.id:
-            (incoming[node.id]?.length ?? 0) + (outgoing[node.id]?.length ?? 0),
-    };
-    final hubIds = graph.nodes
-        .where((node) => _isHub(node, degrees[node.id] ?? 0))
-        .map((node) => node.id)
-        .toSet();
-
-    int compareBase(ServiceTopologyNode a, ServiceTopologyNode b) {
-      final laneCmp = laneScore(a.id).compareTo(laneScore(b.id));
-      if (laneCmp != 0) return laneCmp;
-
-      final roleCmp = _roleOrder(a).compareTo(_roleOrder(b));
-      if (roleCmp != 0) return roleCmp;
-
-      final laneBucketCmp = _laneBucket(a).compareTo(_laneBucket(b));
-      if (laneBucketCmp != 0) return laneBucketCmp;
-
-      return a.label.toLowerCase().compareTo(b.label.toLowerCase());
-    }
-
     for (final nodes in columns.values) {
-      nodes.sort(compareBase);
-    }
-
-    final orderByNodeId = <String, double>{};
-
-    void refreshOrderMap() {
-      for (final column in orderedColumns) {
-        final nodes = columns[column] ?? const <ServiceTopologyNode>[];
-        for (var i = 0; i < nodes.length; i++) {
-          orderByNodeId[nodes[i].id] = i.toDouble();
-        }
-      }
-    }
-
-    double? barycenterFor(String nodeId, bool useLeftNeighbors) {
-      final column = nodeColumns[nodeId];
-      if (column == null) return null;
-
-      final positions = <double>[];
-      final neighbors = {...?incoming[nodeId], ...?outgoing[nodeId]};
-      for (final neighborId in neighbors) {
-        final neighborColumn = nodeColumns[neighborId];
-        final position = orderByNodeId[neighborId];
-        if (neighborColumn == null || position == null) continue;
-        if (useLeftNeighbors && neighborColumn < column) {
-          positions.add(position);
-        }
-        if (!useLeftNeighbors && neighborColumn > column) {
-          positions.add(position);
-        }
-      }
-
-      if (positions.isEmpty) return null;
-      positions.sort();
-      final middle = positions.length ~/ 2;
-      if (positions.length.isOdd) return positions[middle];
-      return (positions[middle - 1] + positions[middle]) / 2;
-    }
-
-    List<ServiceTopologyNode> reorderColumn(int column, bool useLeftNeighbors) {
-      final reordered = [...?columns[column]];
-      reordered.sort((a, b) {
-        final aBarycenter =
-            barycenterFor(a.id, useLeftNeighbors) ?? (orderByNodeId[a.id] ?? 0);
-        final bBarycenter =
-            barycenterFor(b.id, useLeftNeighbors) ?? (orderByNodeId[b.id] ?? 0);
-        final barycenterCmp = aBarycenter.compareTo(bBarycenter);
-        if (barycenterCmp != 0) return barycenterCmp;
-
-        final existingCmp = (orderByNodeId[a.id] ?? 0).compareTo(
-          orderByNodeId[b.id] ?? 0,
+      nodes.sort((a, b) {
+        final rowCmp = (desiredRows[a.id] ?? 0).compareTo(
+          desiredRows[b.id] ?? 0,
         );
-        if (existingCmp != 0) return existingCmp;
+        if (rowCmp != 0) return rowCmp;
 
-        return compareBase(a, b);
+        final roleCmp = _roleOrder(a).compareTo(_roleOrder(b));
+        if (roleCmp != 0) return roleCmp;
+
+        final laneCmp = _laneBucket(a).compareTo(_laneBucket(b));
+        if (laneCmp != 0) return laneCmp;
+
+        return a.label.toLowerCase().compareTo(b.label.toLowerCase());
       });
-      return reordered;
     }
-
-    refreshOrderMap();
-    for (var iteration = 0; iteration < 6; iteration++) {
-      for (final column in orderedColumns.skip(1)) {
-        columns[column] = reorderColumn(column, true);
-        refreshOrderMap();
-      }
-      for (final column in orderedColumns.reversed.skip(1)) {
-        columns[column] = reorderColumn(column, false);
-        refreshOrderMap();
-      }
-    }
-
-    for (final column in orderedColumns) {
-      columns[column] = _centerHubNodes(columns[column]!, hubIds);
-    }
-
-    double columnContentHeight(List<ServiceTopologyNode> nodes) {
-      if (nodes.isEmpty) return 0;
-      var height = nodes.length * nodeHeight;
-      for (var i = 0; i < nodes.length - 1; i++) {
-        height += _gapBetween(nodes[i], nodes[i + 1], hubIds, laneScore);
-      }
-      return height;
-    }
-
-    final columnHeights = <int, double>{
-      for (final column in orderedColumns)
-        column: columnContentHeight(columns[column]!),
-    };
-    final maxContentHeight = columnHeights.values.fold<double>(0, math.max);
 
     final rects = <String, Rect>{};
-    var maxHeight = padding * 2 + maxContentHeight;
+    var maxHeight = 360.0;
+    const rowStride = nodeHeight + 62;
     for (final column in orderedColumns) {
       final nodes = columns[column] ?? const <ServiceTopologyNode>[];
       final x = padding + column * (nodeWidth + horizontalGap);
-      var y = padding + (maxContentHeight - (columnHeights[column] ?? 0)) / 2;
+      var previousBottom = padding - verticalGap;
       for (var i = 0; i < nodes.length; i++) {
         final node = nodes[i];
+        final targetY = padding + (desiredRows[node.id] ?? 0) * rowStride;
+        final y = math.max(targetY, previousBottom + verticalGap);
         rects[node.id] = Rect.fromLTWH(x, y, nodeWidth, nodeHeight);
         maxHeight = math.max(maxHeight, y + nodeHeight + padding);
-        if (i < nodes.length - 1) {
-          y +=
-              nodeHeight +
-              _gapBetween(nodes[i], nodes[i + 1], hubIds, laneScore);
-        }
+        previousBottom = y + nodeHeight;
       }
     }
     final maxColumn = columns.keys.fold<int>(0, math.max);
@@ -1821,6 +1652,154 @@ class _TopologyLayout {
       nodeRects: rects,
       nodeColumns: nodeColumns,
     );
+  }
+
+  static Map<String, double> _routeRows(
+    ServiceTopologyGraph graph,
+    List<ServiceRoute> routes,
+    Map<String, ServiceTopologyNode> nodeMap,
+  ) {
+    final routesBySource = <String, List<ServiceRoute>>{};
+    for (final route in routes) {
+      routesBySource
+          .putIfAbsent(_serviceNodeId(route.sourceServiceId), () => [])
+          .add(route);
+    }
+
+    final sourceIds = <String>{
+      ...routesBySource.keys,
+      for (final node in graph.nodes)
+        if (node.kind == ServiceTopologyNodeKind.service &&
+            node.role == ServiceTopologyNodeRole.localService)
+          node.id,
+    }.toList();
+    sourceIds.sort((a, b) {
+      final aNode = nodeMap[a];
+      final bNode = nodeMap[b];
+      final aLabel = aNode?.label.toLowerCase() ?? a;
+      final bLabel = bNode?.label.toLowerCase() ?? b;
+      return aLabel.compareTo(bLabel);
+    });
+
+    final rows = <String, double>{};
+    var row = 0.0;
+    for (final sourceId in sourceIds) {
+      final sourceRoutes = routesBySource[sourceId] ?? const <ServiceRoute>[];
+      if (sourceRoutes.isEmpty) {
+        row += 1.45;
+        continue;
+      }
+      final orderedRoutes = [...sourceRoutes]..sort(_compareRoutesForLayout);
+      for (final route in orderedRoutes) {
+        rows[route.id] = row;
+        row += 1;
+      }
+      row += 0.45;
+    }
+    return rows;
+  }
+
+  static Map<String, double> _desiredRows(
+    ServiceTopologyGraph graph,
+    List<ServiceRoute> routes,
+    Map<String, double> routeRows,
+    Map<String, Set<String>> incoming,
+    Map<String, Set<String>> outgoing,
+  ) {
+    final sourceRouteRows = <String, List<double>>{};
+    for (final route in routes) {
+      final row = routeRows[route.id];
+      if (row == null) continue;
+      sourceRouteRows
+          .putIfAbsent(_serviceNodeId(route.sourceServiceId), () => [])
+          .add(row);
+    }
+
+    final desired = <String, double>{};
+    for (final node in graph.nodes) {
+      final scores = <double>[];
+      for (final routeId in node.routeIds) {
+        final row = routeRows[routeId];
+        if (row != null) scores.add(row);
+      }
+      if (node.kind == ServiceTopologyNodeKind.service) {
+        scores.addAll(sourceRouteRows[node.id] ?? const <double>[]);
+      }
+      if (scores.isNotEmpty) {
+        desired[node.id] = _median(scores);
+      }
+    }
+
+    for (var iteration = 0; iteration < 8; iteration++) {
+      var changed = false;
+      for (final node in graph.nodes) {
+        if (desired.containsKey(node.id)) continue;
+        final scores = <double>[];
+        for (final neighborId in {
+          ...?incoming[node.id],
+          ...?outgoing[node.id],
+        }) {
+          final score = desired[neighborId];
+          if (score != null) scores.add(score);
+        }
+        if (scores.isEmpty) continue;
+        desired[node.id] = _median(scores);
+        changed = true;
+      }
+      if (!changed) break;
+    }
+
+    var fallbackRow = desired.values.isEmpty
+        ? 0.0
+        : desired.values.reduce(math.max) + 1;
+    final fallbackNodes =
+        graph.nodes.where((node) => !desired.containsKey(node.id)).toList()
+          ..sort((a, b) {
+            final roleCmp = _roleOrder(a).compareTo(_roleOrder(b));
+            if (roleCmp != 0) return roleCmp;
+            return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+          });
+    for (final node in fallbackNodes) {
+      desired[node.id] = fallbackRow;
+      fallbackRow += 1;
+    }
+    return desired;
+  }
+
+  static String _serviceNodeId(String serviceId) => 'service:$serviceId';
+
+  static int _compareRoutesForLayout(ServiceRoute a, ServiceRoute b) {
+    final laneCmp = _laneOrder(
+      serviceAccessLaneForRoute(a),
+    ).compareTo(_laneOrder(serviceAccessLaneForRoute(b)));
+    if (laneCmp != 0) return laneCmp;
+
+    final methodCmp = (_routeMethodName(a)).compareTo(_routeMethodName(b));
+    if (methodCmp != 0) return methodCmp;
+
+    return serviceRouteDisplayTarget(
+      a,
+    ).toLowerCase().compareTo(serviceRouteDisplayTarget(b).toLowerCase());
+  }
+
+  static int _laneOrder(ServiceAccessLane lane) => switch (lane) {
+    ServiceAccessLane.local => 0,
+    ServiceAccessLane.vpn => 1,
+    ServiceAccessLane.public => 2,
+  };
+
+  static String _routeMethodName(ServiceRoute route) =>
+      route.hops
+          .map((hop) => hop.method?.name)
+          .whereType<String>()
+          .firstOrNull ??
+      '';
+
+  static double _median(List<double> values) {
+    final ordered = [...values]..sort();
+    final middle = ordered.length ~/ 2;
+    if (ordered.length.isOdd) return ordered[middle];
+    return (ordered[middle - 1] + ordered[middle]) / 2;
   }
 
   static int _columnForNode(ServiceTopologyNode node) {
@@ -1842,23 +1821,6 @@ class _TopologyLayout {
       ServiceTopologyNodeRole.remoteService => 6,
       ServiceTopologyNodeRole.remotePublicEntry => 7,
       ServiceTopologyNodeRole.domain => 8,
-    };
-  }
-
-  static bool _isHub(ServiceTopologyNode node, int degree) {
-    final isShared = degree >= 3 || node.routeIds.length >= 2;
-    if (!isShared) return false;
-    return switch (node.role) {
-      ServiceTopologyNodeRole.localDevice ||
-      ServiceTopologyNodeRole.localService ||
-      ServiceTopologyNodeRole.localEndpoint => false,
-      ServiceTopologyNodeRole.lanAccess ||
-      ServiceTopologyNodeRole.vpnAccess ||
-      ServiceTopologyNodeRole.publicRelay ||
-      ServiceTopologyNodeRole.remoteDevice ||
-      ServiceTopologyNodeRole.remoteService ||
-      ServiceTopologyNodeRole.remotePublicEntry ||
-      ServiceTopologyNodeRole.domain => true,
     };
   }
 
@@ -1887,48 +1849,6 @@ class _TopologyLayout {
     ServiceAccessLane.public => 2,
     null => -1,
   };
-
-  static List<ServiceTopologyNode> _centerHubNodes(
-    List<ServiceTopologyNode> nodes,
-    Set<String> hubIds,
-  ) {
-    if (nodes.length < 4) return nodes;
-
-    final hubs = nodes.where((node) => hubIds.contains(node.id)).toList();
-    if (hubs.isEmpty || hubs.length == nodes.length) return nodes;
-
-    final others = nodes.where((node) => !hubIds.contains(node.id)).toList();
-    final result = List<ServiceTopologyNode?>.filled(nodes.length, null);
-    final start = ((nodes.length - hubs.length) / 2).floor();
-    for (var i = 0; i < hubs.length; i++) {
-      result[start + i] = hubs[i];
-    }
-
-    var otherIndex = 0;
-    for (var i = 0; i < result.length; i++) {
-      result[i] ??= others[otherIndex++];
-    }
-    return result.whereType<ServiceTopologyNode>().toList();
-  }
-
-  static double _gapBetween(
-    ServiceTopologyNode upper,
-    ServiceTopologyNode lower,
-    Set<String> hubIds,
-    double Function(String nodeId) laneScore,
-  ) {
-    var gap = verticalGap;
-    if (hubIds.contains(upper.id) || hubIds.contains(lower.id)) {
-      gap += 12;
-    }
-    if (_laneBucket(upper) != _laneBucket(lower)) {
-      gap += 4;
-    }
-    if ((laneScore(upper.id) - laneScore(lower.id)).abs() >= 0.75) {
-      gap += 6;
-    }
-    return gap;
-  }
 }
 
 class _ServiceTopologyEdgePainter extends CustomPainter {

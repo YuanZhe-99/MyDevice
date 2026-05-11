@@ -1110,7 +1110,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceTopology => '服务拓扑';
 
   @override
-  String get serviceTopologyHint => '预览设备、本地端口、中继、远端入口和域名。打开拓扑图可查看节点详情或缩放。';
+  String get serviceTopologyHint => '打开拓扑图可查看节点详情、缩放、旋转或导出 PNG。';
 
   @override
   String get serviceOpenTopology => '打开拓扑图';
@@ -1120,6 +1120,27 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get serviceTopologyMoveMode => '移动 / 缩放';
+
+  @override
+  String get serviceRotateTopology => '旋转拓扑图';
+
+  @override
+  String get serviceExportTopologyImage => '导出 PNG';
+
+  @override
+  String get shareCopy => '复制';
+
+  @override
+  String get shareCopied => '图片已复制到剪贴板';
+
+  @override
+  String get shareSaveAs => '另存为';
+
+  @override
+  String get shareSaved => '图片已保存';
+
+  @override
+  String get shareFailed => '分享失败';
 
   @override
   String get serviceAccessMethod => '访问方式';
@@ -2394,7 +2415,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get serviceTopology => '服務拓撲';
 
   @override
-  String get serviceTopologyHint => '預覽裝置、本地連接埠、中繼、遠端入口和網域。開啟拓撲圖可查看節點詳情或縮放。';
+  String get serviceTopologyHint => '開啟拓撲圖可查看節點詳情、縮放、旋轉或匯出 PNG。';
 
   @override
   String get serviceOpenTopology => '開啟拓撲圖';
@@ -2404,6 +2425,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceTopologyMoveMode => '移動 / 縮放';
+
+  @override
+  String get serviceRotateTopology => '旋轉拓撲圖';
+
+  @override
+  String get serviceExportTopologyImage => '匯出 PNG';
+
+  @override
+  String get shareCopy => '複製';
+
+  @override
+  String get shareCopied => '圖片已複製到剪貼簿';
+
+  @override
+  String get shareSaveAs => '另存為';
+
+  @override
+  String get shareSaved => '圖片已儲存';
+
+  @override
+  String get shareFailed => '分享失敗';
 
   @override
   String get serviceAccessMethod => '存取方式';

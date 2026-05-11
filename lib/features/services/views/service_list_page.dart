@@ -1,9 +1,12 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/services/image_share_service.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../../devices/widgets/device_category_icon.dart';
@@ -489,22 +492,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
               ),
             ),
             const SizedBox(height: 12),
-            if (graph.isEmpty)
-              _emptyInline(l10n.noServiceRoutes)
-            else
-              SizedBox(
-                height: 460,
-                child: _ServiceTopologyView(
-                  graph: graph,
-                  services: _services,
-                  devices: _devices,
-                  routes: _routes,
-                  onEditService: _editService,
-                  onEditRoute: _editRoute,
-                  onAddAccess: _addAccessRoute,
-                  interactive: false,
-                ),
-              ),
+            if (graph.isEmpty) _emptyInline(l10n.noServiceRoutes),
           ],
         ),
       ),
@@ -1148,8 +1136,9 @@ class _ServiceTopologyView extends StatelessWidget {
   final ValueChanged<ServiceNode> onEditService;
   final ValueChanged<ServiceRoute> onEditRoute;
   final Future<void> Function({ServiceNode? source}) onAddAccess;
-  final bool interactive;
   final _TopologyInteractionMode mode;
+  final int quarterTurns;
+  final GlobalKey? repaintBoundaryKey;
 
   const _ServiceTopologyView({
     required this.graph,
@@ -1159,30 +1148,35 @@ class _ServiceTopologyView extends StatelessWidget {
     required this.onEditService,
     required this.onEditRoute,
     required this.onAddAccess,
-    this.interactive = true,
     this.mode = _TopologyInteractionMode.select,
+    this.quarterTurns = 0,
+    this.repaintBoundaryKey,
   });
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final layout = _TopologyLayout.build(graph, constraints.maxWidth);
+        final turns = quarterTurns % 4;
+        final viewportWidth = turns.isOdd && constraints.maxHeight.isFinite
+            ? constraints.maxHeight
+            : constraints.maxWidth;
+        final layout = _TopologyLayout.build(graph, viewportWidth);
         return ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: ColoredBox(
             color: Theme.of(
               context,
             ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-            child: _buildViewer(context, layout),
+            child: _buildViewer(context, layout, turns),
           ),
         );
       },
     );
   }
 
-  Widget _buildViewer(BuildContext context, _TopologyLayout layout) {
-    final canvas = SizedBox.fromSize(
+  Widget _buildViewer(BuildContext context, _TopologyLayout layout, int turns) {
+    Widget canvas = SizedBox.fromSize(
       size: layout.size,
       child: Stack(
         children: [
@@ -1202,7 +1196,7 @@ class _ServiceTopologyView extends StatelessWidget {
                 child: _TopologyNodeCard(
                   node: node,
                   icon: _iconForTopologyNode(node, services, devices),
-                  onTap: interactive && mode == _TopologyInteractionMode.select
+                  onTap: mode == _TopologyInteractionMode.select
                       ? () => _showNodeDetails(context, node)
                       : null,
                 ),
@@ -1210,14 +1204,11 @@ class _ServiceTopologyView extends StatelessWidget {
         ],
       ),
     );
-    if (!interactive) {
-      return IgnorePointer(
-        child: FittedBox(
-          alignment: Alignment.topLeft,
-          fit: BoxFit.scaleDown,
-          child: canvas,
-        ),
-      );
+    if (turns != 0) {
+      canvas = RotatedBox(quarterTurns: turns, child: canvas);
+    }
+    if (repaintBoundaryKey != null) {
+      canvas = RepaintBoundary(key: repaintBoundaryKey, child: canvas);
     }
     if (mode == _TopologyInteractionMode.select) {
       return SingleChildScrollView(
@@ -1374,12 +1365,70 @@ class _ServiceTopologyPage extends StatefulWidget {
 
 class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
   _TopologyInteractionMode _mode = _TopologyInteractionMode.select;
+  final _captureKey = GlobalKey();
+  int _quarterTurns = 0;
+  bool _exporting = false;
+
+  Future<void> _exportTopologyImage() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() => _exporting = true);
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      final boundary =
+          _captureKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
+      if (boundary == null) {
+        throw StateError('Topology image boundary is not available.');
+      }
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final bytes = byteData?.buffer.asUint8List();
+      if (bytes == null) {
+        throw StateError('Topology image encoding failed.');
+      }
+      if (!mounted) return;
+      await ImageShareService.sharePngBytes(
+        context,
+        bytes,
+        fileName: 'mydevice_topology.png',
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+      }
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.serviceTopology)),
+      appBar: AppBar(
+        title: Text(l10n.serviceTopology),
+        actions: [
+          IconButton(
+            tooltip: l10n.serviceRotateTopology,
+            onPressed: () {
+              setState(() => _quarterTurns = (_quarterTurns + 1) % 4);
+            },
+            icon: const Icon(Icons.screen_rotation_alt),
+          ),
+          IconButton(
+            tooltip: l10n.serviceExportTopologyImage,
+            onPressed: _exporting ? null : _exportTopologyImage,
+            icon: _exporting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.image_outlined),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           SingleChildScrollView(
@@ -1417,6 +1466,8 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
                 onEditRoute: widget.onEditRoute,
                 onAddAccess: widget.onAddAccess,
                 mode: _mode,
+                quarterTurns: _quarterTurns,
+                repaintBoundaryKey: _captureKey,
               ),
             ),
           ),
@@ -1560,11 +1611,11 @@ class _TopologyLayout {
       ServiceTopologyNodeRole.localEndpoint => 2,
       ServiceTopologyNodeRole.lanAccess ||
       ServiceTopologyNodeRole.vpnAccess ||
-      ServiceTopologyNodeRole.publicRelay => 3,
-      ServiceTopologyNodeRole.remoteDevice => 4,
-      ServiceTopologyNodeRole.remoteService => 5,
-      ServiceTopologyNodeRole.remotePublicEntry => 6,
-      ServiceTopologyNodeRole.domain => 7,
+      ServiceTopologyNodeRole.publicRelay ||
+      ServiceTopologyNodeRole.remoteDevice => 3,
+      ServiceTopologyNodeRole.remoteService => 4,
+      ServiceTopologyNodeRole.remotePublicEntry => 5,
+      ServiceTopologyNodeRole.domain => 6,
     };
   }
 }

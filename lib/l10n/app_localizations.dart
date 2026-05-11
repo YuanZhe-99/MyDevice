@@ -2258,7 +2258,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceTopologyHint.
   ///
   /// In en, this message translates to:
-  /// **'Preview devices, local ports, relays, remote entries, and domains. Open the topology for node details or zooming.'**
+  /// **'Open the topology for node details, zooming, rotation, or PNG export.'**
   String get serviceTopologyHint;
 
   /// No description provided for @serviceOpenTopology.
@@ -2278,6 +2278,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Move / Zoom'**
   String get serviceTopologyMoveMode;
+
+  /// No description provided for @serviceRotateTopology.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate topology'**
+  String get serviceRotateTopology;
+
+  /// No description provided for @serviceExportTopologyImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Export PNG'**
+  String get serviceExportTopologyImage;
+
+  /// No description provided for @shareCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get shareCopy;
+
+  /// No description provided for @shareCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Image copied to clipboard'**
+  String get shareCopied;
+
+  /// No description provided for @shareSaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save As'**
+  String get shareSaveAs;
+
+  /// No description provided for @shareSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Image saved'**
+  String get shareSaved;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Share failed'**
+  String get shareFailed;
 
   /// No description provided for @serviceAccessMethod.
   ///

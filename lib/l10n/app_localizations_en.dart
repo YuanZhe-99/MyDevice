@@ -1124,7 +1124,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceTopologyHint =>
-      'Preview devices, local ports, relays, remote entries, and domains. Open the topology for node details or zooming.';
+      'Open the topology for node details, zooming, rotation, or PNG export.';
 
   @override
   String get serviceOpenTopology => 'Open Topology';
@@ -1134,6 +1134,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceTopologyMoveMode => 'Move / Zoom';
+
+  @override
+  String get serviceRotateTopology => 'Rotate topology';
+
+  @override
+  String get serviceExportTopologyImage => 'Export PNG';
+
+  @override
+  String get shareCopy => 'Copy';
+
+  @override
+  String get shareCopied => 'Image copied to clipboard';
+
+  @override
+  String get shareSaveAs => 'Save As';
+
+  @override
+  String get shareSaved => 'Image saved';
+
+  @override
+  String get shareFailed => 'Share failed';
 
   @override
   String get serviceAccessMethod => 'Access Method';

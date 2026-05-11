@@ -1112,8 +1112,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get serviceTopology => 'サービストポロジー';
 
   @override
-  String get serviceTopologyHint =>
-      'デバイス、ローカルポート、中継、リモート入口、ドメインをプレビューします。ノード詳細やズームはトポロジーを開いて確認します。';
+  String get serviceTopologyHint => 'トポロジーを開くとノード詳細、ズーム、回転、PNGエクスポートを使えます。';
 
   @override
   String get serviceOpenTopology => 'トポロジーを開く';
@@ -1123,6 +1122,27 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceTopologyMoveMode => '移動 / ズーム';
+
+  @override
+  String get serviceRotateTopology => 'トポロジーを回転';
+
+  @override
+  String get serviceExportTopologyImage => 'PNGを書き出し';
+
+  @override
+  String get shareCopy => 'コピー';
+
+  @override
+  String get shareCopied => '画像をクリップボードにコピーしました';
+
+  @override
+  String get shareSaveAs => '名前を付けて保存';
+
+  @override
+  String get shareSaved => '画像を保存しました';
+
+  @override
+  String get shareFailed => '共有に失敗しました';
 
   @override
   String get serviceAccessMethod => 'アクセス方式';

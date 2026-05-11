@@ -541,8 +541,12 @@ void main() {
       graph.edges.any(
         (edge) =>
             edge.from == 'endpoint:${caddy.id}:caddy-https' &&
-            edge.to == frpNode.id,
+            edge.to == vps.id,
       ),
+      isTrue,
+    );
+    expect(
+      graph.edges.any((edge) => edge.from == vps.id && edge.to == frpNode.id),
       isTrue,
     );
     expect(
@@ -776,6 +780,92 @@ void main() {
         (node) => node.role == ServiceTopologyNodeRole.lanAccess,
       ),
       isNotEmpty,
+    );
+  });
+
+  test('service topology places direct and VPS branches after endpoint', () {
+    final caddy = ServiceNode(
+      id: 'caddy-local',
+      deviceId: 'mac-mini',
+      name: 'Caddy',
+      endpoints: [ServiceEndpoint(id: 'caddy-https', port: 443)],
+    );
+    final frp = ServiceNode(
+      id: 'frp-vps',
+      deviceId: 'vps-1',
+      name: 'FRP',
+      kind: ServiceKind.tunnel,
+      endpoints: [ServiceEndpoint(id: 'frp-control', port: 57000)],
+    );
+    final graph = buildServiceTopology(
+      services: [caddy, frp],
+      routes: [
+        ServiceRoute(
+          id: 'direct-route',
+          name: 'Caddy Direct',
+          sourceServiceId: caddy.id,
+          sourceEndpointId: 'caddy-https',
+          accessLevel: ServiceAccessLevel.lan,
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.manual,
+              method: ServiceRouteMethod.direct,
+              label: 'Direct',
+            ),
+          ],
+          finalUrl: 'https://mac-mini.local',
+        ),
+        ServiceRoute(
+          id: 'frp-route',
+          name: 'Caddy FRP',
+          sourceServiceId: caddy.id,
+          sourceEndpointId: 'caddy-https',
+          accessLevel: ServiceAccessLevel.public,
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.portForward,
+              method: ServiceRouteMethod.frp,
+              serviceId: frp.id,
+              host: '203.0.113.20',
+              port: 443,
+            ),
+          ],
+          finalUrl: 'https://cloud.example.com',
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'mac-mini',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+        Device(
+          id: 'vps-1',
+          name: 'Cloudcone VPS',
+          category: DeviceCategory.vps,
+        ),
+      ],
+    );
+
+    final endpointId = 'endpoint:${caddy.id}:caddy-https';
+    final direct = graph.nodes.singleWhere(
+      (node) => node.role == ServiceTopologyNodeRole.lanAccess,
+    );
+    final vps = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.device &&
+          node.deviceId == 'vps-1',
+    );
+
+    expect(
+      graph.edges.any(
+        (edge) => edge.from == endpointId && edge.to == direct.id,
+      ),
+      isTrue,
+    );
+    expect(
+      graph.edges.any((edge) => edge.from == endpointId && edge.to == vps.id),
+      isTrue,
     );
   });
 }

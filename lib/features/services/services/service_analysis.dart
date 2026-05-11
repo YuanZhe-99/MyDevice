@@ -429,6 +429,10 @@ ServiceTopologyGraph buildServiceTopology({
             ? null
             : serviceMap[hop.serviceId];
         if (hopService != null) {
+          final hopDeviceId = addRemoteDeviceNode(
+            hopService.deviceId,
+            routeId: route.id,
+          );
           final hopServiceId = addServiceNode(
             hopService,
             remote: true,
@@ -437,7 +441,7 @@ ServiceTopologyGraph buildServiceTopology({
                 ? hop.type.name
                 : '${serviceRouteMethodLabel(hop.method!)} service',
           );
-          addEdge(currentId, hopServiceId, routeId: route.id);
+          addEdge(currentId, hopDeviceId, routeId: route.id);
           currentId = hopServiceId;
         } else {
           final relayId = _relayNodeId(hop);

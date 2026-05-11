@@ -551,6 +551,143 @@ void main() {
       ),
       isTrue,
     );
+    expect(
+      graph.nodes.where(
+        (node) =>
+            node.kind == ServiceTopologyNodeKind.endpoint &&
+            node.serviceId == frp.id,
+      ),
+      isEmpty,
+    );
+  });
+
+  test(
+    'service topology groups multi-target FRP route through one VPS entry',
+    () {
+      final caddy = ServiceNode(
+        id: 'caddy-local',
+        deviceId: 'mac-mini',
+        name: 'Caddy',
+        endpoints: [ServiceEndpoint(id: 'caddy-https', port: 443)],
+      );
+      final frp = ServiceNode(
+        id: 'frp-vps',
+        deviceId: 'vps-1',
+        name: 'FRP',
+        kind: ServiceKind.tunnel,
+        endpoints: [ServiceEndpoint(id: 'frp-control', port: 57000)],
+      );
+      final route = ServiceRoute(
+        id: 'route-frp',
+        name: 'Caddy via FRP',
+        sourceServiceId: caddy.id,
+        sourceEndpointId: 'caddy-https',
+        hops: [
+          ServiceRouteHop(
+            type: ServiceRouteHopType.portForward,
+            method: ServiceRouteMethod.frp,
+            serviceId: frp.id,
+            host: '203.0.113.20',
+            port: 443,
+          ),
+        ],
+        finalUrl: 'https://domain1.example.com',
+        accessLevel: ServiceAccessLevel.public,
+        extraJson: const {
+          serviceRoutePublicTargetsKey: [
+            'https://domain1.example.com',
+            'https://domain2.example.com',
+          ],
+        },
+      );
+
+      final graph = buildServiceTopology(
+        services: [caddy, frp],
+        routes: [route],
+        devices: [
+          Device(
+            id: 'mac-mini',
+            name: 'Mac mini',
+            category: DeviceCategory.desktop,
+          ),
+          Device(
+            id: 'vps-1',
+            name: 'Cloudcone VPS',
+            category: DeviceCategory.vps,
+          ),
+        ],
+      );
+
+      final remoteEntry = graph.nodes.singleWhere(
+        (node) => node.kind == ServiceTopologyNodeKind.remoteEntry,
+      );
+      expect(remoteEntry.label, '203.0.113.20:443');
+      expect(
+        graph.nodes
+            .where((node) => node.kind == ServiceTopologyNodeKind.domain)
+            .map((node) => node.label),
+        containsAll(['domain1.example.com', 'domain2.example.com']),
+      );
+      expect(
+        graph.edges.where((edge) => edge.from == remoteEntry.id),
+        hasLength(2),
+      );
+      expect(
+        graph.nodes.where(
+          (node) =>
+              node.kind == ServiceTopologyNodeKind.endpoint &&
+              node.serviceId == frp.id,
+        ),
+        isEmpty,
+      );
+    },
+  );
+
+  test('reference warnings check duplicate publicTargets', () {
+    final service = ServiceNode(
+      id: 'service-1',
+      deviceId: 'device-1',
+      name: 'Caddy',
+      endpoints: [ServiceEndpoint(id: 'endpoint-1', port: 443)],
+    );
+    final routes = [
+      ServiceRoute(
+        id: 'route-1',
+        name: 'Caddy Public A',
+        sourceServiceId: service.id,
+        sourceEndpointId: 'endpoint-1',
+        accessLevel: ServiceAccessLevel.public,
+        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+        finalUrl: 'https://domain1.example.com',
+        extraJson: const {
+          serviceRoutePublicTargetsKey: [
+            'https://domain1.example.com',
+            'https://domain2.example.com',
+          ],
+        },
+      ),
+      ServiceRoute(
+        id: 'route-2',
+        name: 'Caddy Public B',
+        sourceServiceId: service.id,
+        sourceEndpointId: 'endpoint-1',
+        accessLevel: ServiceAccessLevel.public,
+        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+        finalUrl: 'https://domain2.example.com',
+      ),
+    ];
+
+    final warnings = findServiceReferenceWarnings(
+      services: [service],
+      routes: routes,
+      devices: const [],
+      networks: const [],
+    );
+
+    expect(
+      warnings.map((warning) => warning.kind),
+      contains(ServiceWarningKind.duplicateFinalUrl),
+    );
   });
 
   test('service topology classifies LAN VPN and public access lanes', () {

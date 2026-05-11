@@ -1113,7 +1113,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceTopologyHint =>
-      'ドラッグまたはズームして、デバイス、ローカルポート、中継、リモート入口、ドメインを確認します。';
+      'デバイス、ローカルポート、中継、リモート入口、ドメインをプレビューします。ノード詳細やズームはトポロジーを開いて確認します。';
+
+  @override
+  String get serviceOpenTopology => 'トポロジーを開く';
+
+  @override
+  String get serviceTopologySelectMode => '選択';
+
+  @override
+  String get serviceTopologyMoveMode => '移動 / ズーム';
 
   @override
   String get serviceAccessMethod => 'アクセス方式';
@@ -1141,7 +1150,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceAccessTargetsHint =>
-      '1行に1つのURLまたはアドレスを入力します。複数入力すると複数のアクセスルートを作成します。';
+      '1行に1つのURLまたはアドレスを入力します。複数入力しても同じアクセスルートにまとめます。';
 
   @override
   String get serviceAccessTargetRequired => '少なくとも1つのURLまたはアドレスを入力してください。';

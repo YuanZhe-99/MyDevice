@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../models/service.dart';
+import '../services/service_analysis.dart';
 import '../services/service_storage.dart';
 
 class ServiceRouteEditPage extends StatefulWidget {
@@ -16,7 +17,6 @@ class ServiceRouteEditPage extends StatefulWidget {
 
 class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _nameCtrl;
   late final TextEditingController _finalUrlCtrl;
   late final TextEditingController _notesCtrl;
   List<ServiceNode> _services = [];
@@ -32,8 +32,9 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
   void initState() {
     super.initState();
     final route = widget.route;
-    _nameCtrl = TextEditingController(text: route?.name ?? '');
-    _finalUrlCtrl = TextEditingController(text: route?.finalUrl ?? '');
+    _finalUrlCtrl = TextEditingController(
+      text: route == null ? '' : serviceRouteAccessTargets(route).join('\n'),
+    );
     _notesCtrl = TextEditingController(text: route?.notes ?? '');
     _sourceServiceId = route?.sourceServiceId ?? widget.sourceService?.id;
     _sourceEndpointId =
@@ -46,7 +47,6 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
     _finalUrlCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
@@ -81,16 +81,25 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     if (!_formKey.currentState!.validate()) return;
     if (_sourceServiceId == null) return;
     final existing = widget.route;
+    final source = _selectedSource;
+    final targets = _splitTargets(_finalUrlCtrl.text);
     final route = ServiceRoute(
       id: existing?.id,
-      name: _nameCtrl.text.trim(),
+      name: serviceRouteGeneratedName(
+        sourceName: source?.name ?? existing?.name ?? '',
+        hops: _hops,
+        targets: targets,
+      ),
       sourceServiceId: _sourceServiceId!,
       sourceEndpointId: _sourceEndpointId,
       hops: _hops,
-      finalUrl: _emptyToNull(_finalUrlCtrl.text),
+      finalUrl: targets.firstOrNull,
       accessLevel: _accessLevel,
       notes: _emptyToNull(_notesCtrl.text),
-      extraJson: existing?.extraJson ?? const {},
+      extraJson: serviceRouteExtraJsonWithTargets(
+        existing?.extraJson ?? const {},
+        targets,
+      ),
     );
     await ServiceStorage.addOrUpdateRoute(route);
     if (mounted) Navigator.of(context).pop(true);
@@ -359,16 +368,6 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  TextFormField(
-                    controller: _nameCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceRouteName,
-                    ),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? l10n.serviceNameRequired
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: _sourceServiceId,
                     decoration: InputDecoration(
@@ -435,8 +434,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
                     controller: _finalUrlCtrl,
                     decoration: InputDecoration(
                       labelText: l10n.serviceFinalUrl,
-                      hintText: 'https://example.com',
+                      hintText: 'https://example.com\nhttps://app.example.com',
+                      helperText: l10n.serviceAccessTargetsHint,
                     ),
+                    minLines: 2,
+                    maxLines: 4,
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 12),
@@ -569,11 +571,17 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
             ? '${source.name} ${endpoint!.portText}'
             : source.name,
       ..._hops.map(_hopTitle),
-      if (_finalUrlCtrl.text.trim().isNotEmpty) _finalUrlCtrl.text.trim(),
+      ..._splitTargets(_finalUrlCtrl.text).map(compactAccessTargetLabel),
     ];
     return parts.isEmpty ? '-' : parts.join(' -> ');
   }
 }
+
+List<String> _splitTargets(String value) => value
+    .split(RegExp(r'[\n,]+'))
+    .map((item) => item.trim())
+    .where((item) => item.isNotEmpty)
+    .toList();
 
 String? _emptyToNull(String value) {
   final trimmed = value.trim();

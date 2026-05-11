@@ -2258,8 +2258,26 @@ abstract class AppLocalizations {
   /// No description provided for @serviceTopologyHint.
   ///
   /// In en, this message translates to:
-  /// **'Drag or zoom the map to inspect devices, local ports, relays, remote entries, and domains.'**
+  /// **'Preview devices, local ports, relays, remote entries, and domains. Open the topology for node details or zooming.'**
   String get serviceTopologyHint;
+
+  /// No description provided for @serviceOpenTopology.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Topology'**
+  String get serviceOpenTopology;
+
+  /// No description provided for @serviceTopologySelectMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Select'**
+  String get serviceTopologySelectMode;
+
+  /// No description provided for @serviceTopologyMoveMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Move / Zoom'**
+  String get serviceTopologyMoveMode;
 
   /// No description provided for @serviceAccessMethod.
   ///
@@ -2312,7 +2330,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceAccessTargetsHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter one URL or address per line. Multiple entries create multiple access routes.'**
+  /// **'Enter one URL or address per line. Multiple entries stay together on the same access route.'**
   String get serviceAccessTargetsHint;
 
   /// No description provided for @serviceAccessTargetRequired.

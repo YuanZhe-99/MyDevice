@@ -2,6 +2,8 @@ import '../../devices/models/device.dart';
 import '../../network/models/network.dart';
 import '../models/service.dart';
 
+const serviceRoutePublicTargetsKey = 'publicTargets';
+
 enum ServiceTopologyNodeKind {
   device,
   service,
@@ -61,12 +63,21 @@ class ServiceTopologyNode {
   ServiceTopologyNode merge(ServiceTopologyNode other, {String? routeId}) {
     final routes = <String>{...routeIds, ...other.routeIds};
     if (routeId != null) routes.add(routeId);
+    final preferredRole = _preferTopologyRole(role, other.role);
+    final otherDetail = other.detail?.trim();
+    final shouldPreferOtherDetail =
+        otherDetail != null &&
+        otherDetail.isNotEmpty &&
+        preferredRole == other.role &&
+        preferredRole != role;
     return ServiceTopologyNode(
       id: id,
       kind: kind,
-      role: _preferTopologyRole(role, other.role),
+      role: preferredRole,
       label: label,
-      detail: detail?.isNotEmpty == true ? detail : other.detail,
+      detail: shouldPreferOtherDetail
+          ? other.detail
+          : (detail?.isNotEmpty == true ? detail : other.detail),
       deviceId: deviceId,
       serviceId: serviceId,
       endpointId: endpointId,
@@ -324,6 +335,7 @@ ServiceTopologyGraph buildServiceTopology({
     ServiceNode service, {
     bool remote = false,
     String? routeId,
+    String? detailOverride,
   }) {
     final deviceId = remote
         ? addRemoteDeviceNode(service.deviceId, routeId: routeId)
@@ -337,13 +349,15 @@ ServiceTopologyGraph buildServiceTopology({
             ? ServiceTopologyNodeRole.remoteService
             : ServiceTopologyNodeRole.localService,
         label: service.name,
-        detail: service.endpoints.isEmpty
-            ? service.kind.name
-            : service.endpoints
-                  .map((endpoint) => endpoint.portText)
-                  .where((text) => text != '-')
-                  .take(3)
-                  .join(', '),
+        detail:
+            detailOverride ??
+            (service.endpoints.isEmpty
+                ? service.kind.name
+                : service.endpoints
+                      .map((endpoint) => endpoint.portText)
+                      .where((text) => text != '-')
+                      .take(3)
+                      .join(', ')),
         deviceId: service.deviceId,
         serviceId: service.id,
       ),
@@ -419,20 +433,12 @@ ServiceTopologyGraph buildServiceTopology({
             hopService,
             remote: true,
             routeId: route.id,
+            detailOverride: hop.method == null
+                ? hop.type.name
+                : '${serviceRouteMethodLabel(hop.method!)} service',
           );
           addEdge(currentId, hopServiceId, routeId: route.id);
           currentId = hopServiceId;
-          final hopEndpoint = _endpointForRoute(hopService, hop.endpointId);
-          if (hopEndpoint != null) {
-            final endpointId = addEndpointNode(
-              hopService,
-              hopEndpoint,
-              remote: true,
-              routeId: route.id,
-            );
-            addEdge(currentId, endpointId, routeId: route.id);
-            currentId = endpointId;
-          }
         } else {
           final relayId = _relayNodeId(hop);
           addNode(
@@ -527,8 +533,7 @@ ServiceTopologyGraph buildServiceTopology({
       currentId = relayId;
     }
 
-    final target = route.finalUrl?.trim();
-    if (target != null && target.isNotEmpty) {
+    for (final target in serviceRouteAccessTargets(route)) {
       final targetId = 'domain:${_canonicalAccessTarget(target)}';
       addNode(
         ServiceTopologyNode(
@@ -610,16 +615,16 @@ List<ServiceWarning> findServiceReferenceWarnings({
       warnings.add(ServiceWarning(ServiceWarningKind.emptyRoute, route.name));
     }
 
-    if (route.accessLevel == ServiceAccessLevel.public &&
-        (route.finalUrl == null || route.finalUrl!.trim().isEmpty)) {
+    final targets = serviceRouteAccessTargets(route);
+    if (route.accessLevel == ServiceAccessLevel.public && targets.isEmpty) {
       warnings.add(
         ServiceWarning(ServiceWarningKind.publicRouteMissingUrl, route.name),
       );
     }
 
-    final finalUrl = route.finalUrl?.trim().toLowerCase();
-    if (finalUrl != null && finalUrl.isNotEmpty) {
-      finalUrls.putIfAbsent(finalUrl, () => []).add(route);
+    for (final target in targets) {
+      final key = _canonicalAccessTarget(target);
+      finalUrls.putIfAbsent(key, () => []).add(route);
     }
 
     for (final hop in route.hops) {
@@ -794,6 +799,88 @@ String serviceRouteMethodLabel(ServiceRouteMethod method) => switch (method) {
   ServiceRouteMethod.direct => 'Direct',
   ServiceRouteMethod.custom => 'Custom',
 };
+
+List<String> serviceRouteAccessTargets(ServiceRoute route) {
+  final targets = <String>[];
+  void addTarget(Object? value) {
+    if (value is! String) return;
+    final target = value.trim();
+    if (target.isEmpty) return;
+    final key = _canonicalAccessTarget(target);
+    if (targets.any((existing) => _canonicalAccessTarget(existing) == key)) {
+      return;
+    }
+    targets.add(target);
+  }
+
+  addTarget(route.finalUrl);
+  final extraTargets = route.extraJson[serviceRoutePublicTargetsKey];
+  if (extraTargets is Iterable) {
+    for (final target in extraTargets) {
+      addTarget(target);
+    }
+  } else {
+    addTarget(extraTargets);
+  }
+  return targets;
+}
+
+Map<String, dynamic> serviceRouteExtraJsonWithTargets(
+  Map<String, dynamic> extraJson,
+  List<String> targets,
+) {
+  final next = Map<String, dynamic>.of(extraJson)
+    ..remove(serviceRoutePublicTargetsKey);
+  if (targets.length > 1) {
+    next[serviceRoutePublicTargetsKey] = targets;
+  }
+  return next;
+}
+
+String serviceRouteDisplayTarget(ServiceRoute route) {
+  final targets = serviceRouteAccessTargets(route);
+  if (targets.isEmpty) return route.name;
+  if (targets.length == 1) return targets.single;
+  return '${targets.first} +${targets.length - 1}';
+}
+
+String serviceRouteGeneratedName({
+  required String sourceName,
+  required List<ServiceRouteHop> hops,
+  required List<String> targets,
+}) {
+  final method = hops
+      .map((hop) => hop.method)
+      .whereType<ServiceRouteMethod>()
+      .firstOrNull;
+  final hop = hops.firstOrNull;
+  final via = method == null
+      ? (hop?.label?.trim().isNotEmpty == true
+            ? hop!.label!.trim()
+            : hop?.type.name ?? 'Access')
+      : serviceRouteMethodLabel(method);
+  final target = targets.isNotEmpty
+      ? _targetsSummary(targets, maxItems: 1)
+      : (hop != null && _hasRemoteEntry(hop) ? _remoteEntryLabel(hop) : null);
+  return [
+    sourceName.trim().isEmpty ? 'Service' : sourceName.trim(),
+    'via $via',
+    if (target != null && target.trim().isNotEmpty) '- $target',
+  ].join(' ');
+}
+
+String serviceRouteTargetsSummary(ServiceRoute route, {int maxItems = 3}) {
+  final targets = serviceRouteAccessTargets(route);
+  return _targetsSummary(targets, maxItems: maxItems);
+}
+
+String _targetsSummary(List<String> targets, {int maxItems = 3}) {
+  final labels = targets.map(compactAccessTargetLabel).toList();
+  if (labels.isEmpty) return '';
+  final visible = labels.take(maxItems).join(', ');
+  final remaining = labels.length - maxItems;
+  return remaining > 0 ? '$visible +$remaining' : visible;
+}
 
 String compactAccessTargetLabel(String target) {
   final trimmed = target.trim();

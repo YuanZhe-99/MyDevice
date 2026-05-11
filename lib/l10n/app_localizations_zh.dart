@@ -1110,7 +1110,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceTopology => '服务拓扑';
 
   @override
-  String get serviceTopologyHint => '拖动或缩放查看设备、本地端口、中继、远端入口和域名。';
+  String get serviceTopologyHint => '预览设备、本地端口、中继、远端入口和域名。打开拓扑图可查看节点详情或缩放。';
+
+  @override
+  String get serviceOpenTopology => '打开拓扑图';
+
+  @override
+  String get serviceTopologySelectMode => '选择';
+
+  @override
+  String get serviceTopologyMoveMode => '移动 / 缩放';
 
   @override
   String get serviceAccessMethod => '访问方式';
@@ -1137,7 +1146,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceDomainsHint => '端口映射可选。每行一个域名，或用逗号分隔。';
 
   @override
-  String get serviceAccessTargetsHint => '每行输入一个 URL 或地址。多个条目会创建多条访问链路。';
+  String get serviceAccessTargetsHint => '每行输入一个 URL 或地址。多个条目会保留在同一条访问链路中。';
 
   @override
   String get serviceAccessTargetRequired => '请输入至少一个 URL 或地址。';
@@ -2385,7 +2394,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get serviceTopology => '服務拓撲';
 
   @override
-  String get serviceTopologyHint => '拖曳或縮放查看裝置、本地連接埠、中繼、遠端入口和網域。';
+  String get serviceTopologyHint => '預覽裝置、本地連接埠、中繼、遠端入口和網域。開啟拓撲圖可查看節點詳情或縮放。';
+
+  @override
+  String get serviceOpenTopology => '開啟拓撲圖';
+
+  @override
+  String get serviceTopologySelectMode => '選取';
+
+  @override
+  String get serviceTopologyMoveMode => '移動 / 縮放';
 
   @override
   String get serviceAccessMethod => '存取方式';
@@ -2412,7 +2430,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get serviceDomainsHint => '連接埠映射可選。每行一個網域，或用逗號分隔。';
 
   @override
-  String get serviceAccessTargetsHint => '每行輸入一個 URL 或地址。多個項目會建立多條存取鏈路。';
+  String get serviceAccessTargetsHint => '每行輸入一個 URL 或地址。多個項目會保留在同一條存取鏈路中。';
 
   @override
   String get serviceAccessTargetRequired => '請輸入至少一個 URL 或地址。';

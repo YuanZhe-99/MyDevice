@@ -1124,7 +1124,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceTopologyHint =>
-      'Drag or zoom the map to inspect devices, local ports, relays, remote entries, and domains.';
+      'Preview devices, local ports, relays, remote entries, and domains. Open the topology for node details or zooming.';
+
+  @override
+  String get serviceOpenTopology => 'Open Topology';
+
+  @override
+  String get serviceTopologySelectMode => 'Select';
+
+  @override
+  String get serviceTopologyMoveMode => 'Move / Zoom';
 
   @override
   String get serviceAccessMethod => 'Access Method';
@@ -1153,7 +1162,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceAccessTargetsHint =>
-      'Enter one URL or address per line. Multiple entries create multiple access routes.';
+      'Enter one URL or address per line. Multiple entries stay together on the same access route.';
 
   @override
   String get serviceAccessTargetRequired =>

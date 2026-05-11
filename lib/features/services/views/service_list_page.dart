@@ -17,6 +17,8 @@ import 'service_route_edit_page.dart';
 
 enum _ServiceView { overview, devices, routes, ports }
 
+enum _TopologyInteractionMode { select, move }
+
 enum _QuickAccessMethod {
   direct(ServiceRouteMethod.direct),
   caddy(ServiceRouteMethod.caddy),
@@ -469,6 +471,14 @@ class _ServiceListPageState extends State<ServiceListPage> {
                   icon: const Icon(Icons.add_link),
                   label: Text(l10n.serviceAddAccess),
                 ),
+                if (!graph.isEmpty) ...[
+                  const SizedBox(width: 8),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _openTopology(graph),
+                    icon: const Icon(Icons.open_in_full),
+                    label: Text(l10n.serviceOpenTopology),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: 4),
@@ -492,9 +502,26 @@ class _ServiceListPageState extends State<ServiceListPage> {
                   onEditService: _editService,
                   onEditRoute: _editRoute,
                   onAddAccess: _addAccessRoute,
+                  interactive: false,
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openTopology(ServiceTopologyGraph graph) {
+    return Navigator.of(context, rootNavigator: true).push<void>(
+      MaterialPageRoute(
+        builder: (_) => _ServiceTopologyPage(
+          graph: graph,
+          services: _services,
+          devices: _devices,
+          routes: _routes,
+          onEditService: _editService,
+          onEditRoute: _editRoute,
+          onAddAccess: _addAccessRoute,
         ),
       ),
     );
@@ -521,9 +548,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
   ) {
     final service = _serviceById(serviceId);
     final domains = routes
-        .map((route) => route.finalUrl)
-        .whereType<String>()
-        .where((url) => url.trim().isNotEmpty)
+        .expand(serviceRouteAccessTargets)
         .map(compactAccessTargetLabel)
         .toList();
     return Card(
@@ -635,9 +660,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return Card(
       child: ListTile(
         leading: const CircleAvatar(child: Icon(Icons.alt_route)),
-        title: Text(
-          route.finalUrl?.isNotEmpty == true ? route.finalUrl! : route.name,
-        ),
+        title: Text(serviceRouteDisplayTarget(route)),
         subtitle: Text(
           _routeSummary(route, source: source, sourceEndpoint: sourceEndpoint),
           maxLines: 3,
@@ -652,12 +675,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
   String _hopLabel(ServiceRouteHop hop) {
     final service = hop.serviceId != null ? _serviceById(hop.serviceId!) : null;
     if (service != null) {
-      final endpoint = hop.endpointId == null
-          ? null
-          : _endpointById(service, hop.endpointId);
-      return endpoint?.port != null
-          ? '${service.name} ${endpoint!.portText}'
-          : service.name;
+      return service.name;
     }
     if (hop.label != null && hop.label!.isNotEmpty) return hop.label!;
     if (hop.host != null && hop.host!.isNotEmpty) {
@@ -677,6 +695,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
             ? '${source.name} ${sourceEndpoint!.portText}'
             : source.name,
       ...route.hops.map(_hopLabel),
+      ...serviceRouteAccessTargets(route).map(compactAccessTargetLabel),
     ];
     final path = parts.isEmpty ? route.name : parts.join(' -> ');
     return [path, route.accessLevel.name].join('\n');
@@ -693,10 +712,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
                     hop.serviceId == serviceId && hop.endpointId == endpointId,
               ),
         )
-        .map(
-          (route) =>
-              route.finalUrl?.isNotEmpty == true ? route.finalUrl! : route.name,
-        )
+        .map((route) => serviceRouteDisplayTarget(route))
         .toList();
     if (routeNames.isEmpty) return null;
     return routeNames.join(', ');
@@ -819,29 +835,24 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     if (source == null) return const [];
     final method = _method.routeMethod;
     final targets = _splitTargets(_targetsCtrl.text);
-    final generatedTargets = targets.isEmpty && _method.isPortMapping
-        ? <String?>[null]
-        : targets;
-    final routes = <ServiceRoute>[];
-    for (final target in generatedTargets) {
-      final hop = _buildHop(method);
-      final label = target == null || target.trim().isEmpty
-          ? serviceRouteMethodLabel(method)
-          : compactAccessTargetLabel(target);
-      routes.add(
-        ServiceRoute(
-          name:
-              '${source.name} via ${serviceRouteMethodLabel(method)}${label == serviceRouteMethodLabel(method) ? '' : ' - $label'}',
-          sourceServiceId: source.id,
-          sourceEndpointId: _sourceEndpointId,
+    final hop = _buildHop(method);
+    final routeTargets = targets;
+    return [
+      ServiceRoute(
+        name: serviceRouteGeneratedName(
+          sourceName: source.name,
           hops: [hop],
-          finalUrl: target,
-          accessLevel: _accessLevel,
-          notes: _emptyToNull(_notesCtrl.text),
+          targets: routeTargets,
         ),
-      );
-    }
-    return routes;
+        sourceServiceId: source.id,
+        sourceEndpointId: _sourceEndpointId,
+        hops: [hop],
+        finalUrl: routeTargets.firstOrNull,
+        accessLevel: _accessLevel,
+        notes: _emptyToNull(_notesCtrl.text),
+        extraJson: serviceRouteExtraJsonWithTargets(const {}, routeTargets),
+      ),
+    ];
   }
 
   ServiceRouteHop _buildHop(ServiceRouteMethod method) {
@@ -1137,6 +1148,8 @@ class _ServiceTopologyView extends StatelessWidget {
   final ValueChanged<ServiceNode> onEditService;
   final ValueChanged<ServiceRoute> onEditRoute;
   final Future<void> Function({ServiceNode? source}) onAddAccess;
+  final bool interactive;
+  final _TopologyInteractionMode mode;
 
   const _ServiceTopologyView({
     required this.graph,
@@ -1146,6 +1159,8 @@ class _ServiceTopologyView extends StatelessWidget {
     required this.onEditService,
     required this.onEditRoute,
     required this.onAddAccess,
+    this.interactive = true,
+    this.mode = _TopologyInteractionMode.select,
   });
 
   @override
@@ -1159,41 +1174,63 @@ class _ServiceTopologyView extends StatelessWidget {
             color: Theme.of(
               context,
             ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-            child: InteractiveViewer(
-              constrained: false,
-              boundaryMargin: const EdgeInsets.all(180),
-              minScale: 0.35,
-              maxScale: 2.4,
-              child: SizedBox.fromSize(
-                size: layout.size,
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: CustomPaint(
-                        painter: _ServiceTopologyEdgePainter(
-                          graph: graph,
-                          layout: layout,
-                          colorScheme: Theme.of(context).colorScheme,
-                        ),
-                      ),
-                    ),
-                    for (final node in graph.nodes)
-                      if (layout.nodeRects[node.id] != null)
-                        Positioned.fromRect(
-                          rect: layout.nodeRects[node.id]!,
-                          child: _TopologyNodeCard(
-                            node: node,
-                            icon: _iconForTopologyNode(node, services, devices),
-                            onTap: () => _showNodeDetails(context, node),
-                          ),
-                        ),
-                  ],
-                ),
-              ),
-            ),
+            child: _buildViewer(context, layout),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildViewer(BuildContext context, _TopologyLayout layout) {
+    final canvas = SizedBox.fromSize(
+      size: layout.size,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _ServiceTopologyEdgePainter(
+                graph: graph,
+                layout: layout,
+                colorScheme: Theme.of(context).colorScheme,
+              ),
+            ),
+          ),
+          for (final node in graph.nodes)
+            if (layout.nodeRects[node.id] != null)
+              Positioned.fromRect(
+                rect: layout.nodeRects[node.id]!,
+                child: _TopologyNodeCard(
+                  node: node,
+                  icon: _iconForTopologyNode(node, services, devices),
+                  onTap: interactive && mode == _TopologyInteractionMode.select
+                      ? () => _showNodeDetails(context, node)
+                      : null,
+                ),
+              ),
+        ],
+      ),
+    );
+    if (!interactive) {
+      return IgnorePointer(
+        child: FittedBox(
+          alignment: Alignment.topLeft,
+          fit: BoxFit.scaleDown,
+          child: canvas,
+        ),
+      );
+    }
+    if (mode == _TopologyInteractionMode.select) {
+      return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: SingleChildScrollView(child: canvas),
+      );
+    }
+    return InteractiveViewer(
+      constrained: false,
+      boundaryMargin: const EdgeInsets.all(180),
+      minScale: 0.35,
+      maxScale: 2.4,
+      child: canvas,
     );
   }
 
@@ -1289,17 +1326,13 @@ class _ServiceTopologyView extends StatelessWidget {
                 for (final route in relatedRoutes)
                   ListTile(
                     leading: Icon(_iconForMethod(_primaryMethod(route))),
-                    title: Text(
-                      route.finalUrl?.trim().isNotEmpty == true
-                          ? route.finalUrl!
-                          : route.name,
-                    ),
+                    title: Text(serviceRouteDisplayTarget(route)),
                     subtitle: Text(
                       [
-                        route.name,
+                        serviceRouteTargetsSummary(route),
                         route.accessLevel.name,
                         _laneLabel(serviceAccessLaneForRoute(route)),
-                      ].join(' · '),
+                      ].where((part) => part.isNotEmpty).join(' · '),
                     ),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
@@ -1316,10 +1349,87 @@ class _ServiceTopologyView extends StatelessWidget {
   }
 }
 
+class _ServiceTopologyPage extends StatefulWidget {
+  final ServiceTopologyGraph graph;
+  final List<ServiceNode> services;
+  final List<Device> devices;
+  final List<ServiceRoute> routes;
+  final ValueChanged<ServiceNode> onEditService;
+  final ValueChanged<ServiceRoute> onEditRoute;
+  final Future<void> Function({ServiceNode? source}) onAddAccess;
+
+  const _ServiceTopologyPage({
+    required this.graph,
+    required this.services,
+    required this.devices,
+    required this.routes,
+    required this.onEditService,
+    required this.onEditRoute,
+    required this.onAddAccess,
+  });
+
+  @override
+  State<_ServiceTopologyPage> createState() => _ServiceTopologyPageState();
+}
+
+class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
+  _TopologyInteractionMode _mode = _TopologyInteractionMode.select;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.serviceTopology)),
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+            child: SegmentedButton<_TopologyInteractionMode>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                  value: _TopologyInteractionMode.select,
+                  icon: const Icon(Icons.touch_app),
+                  label: Text(l10n.serviceTopologySelectMode),
+                ),
+                ButtonSegment(
+                  value: _TopologyInteractionMode.move,
+                  icon: const Icon(Icons.open_with),
+                  label: Text(l10n.serviceTopologyMoveMode),
+                ),
+              ],
+              selected: {_mode},
+              onSelectionChanged: (selected) {
+                setState(() => _mode = selected.single);
+              },
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: _ServiceTopologyView(
+                graph: widget.graph,
+                services: widget.services,
+                devices: widget.devices,
+                routes: widget.routes,
+                onEditService: widget.onEditService,
+                onEditRoute: widget.onEditRoute,
+                onAddAccess: widget.onAddAccess,
+                mode: _mode,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TopologyNodeCard extends StatelessWidget {
   final ServiceTopologyNode node;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _TopologyNodeCard({
     required this.node,

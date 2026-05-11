@@ -11,7 +11,7 @@ This file is the operating guide for agents working on **MyDevice!!!!!**. Read i
 - **Current version:** `0.5.3+16` in `pubspec.yaml`, `0.5.3.0` for MSIX, and `0.5.3` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
-- **Repository:** `C:\Users\yuanzhe\src\MyDevice`.
+- **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
 - **Remotes:**
   - `origin` -> `<local_gitea_address>`
   - `github` -> `git@github.com:YuanZhe-99/MyDevice.git`

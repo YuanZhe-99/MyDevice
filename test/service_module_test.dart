@@ -468,4 +468,177 @@ void main() {
       hasLength(2),
     );
   });
+
+  test('service topology shows FRP service on remote VPS', () {
+    final caddy = ServiceNode(
+      id: 'caddy-local',
+      deviceId: 'mac-mini',
+      name: 'Caddy',
+      endpoints: [ServiceEndpoint(id: 'caddy-https', port: 443)],
+    );
+    final frp = ServiceNode(
+      id: 'frp-vps',
+      deviceId: 'vps-1',
+      name: 'FRP',
+      kind: ServiceKind.tunnel,
+      endpoints: [ServiceEndpoint(id: 'frp-control', port: 57000)],
+    );
+
+    final graph = buildServiceTopology(
+      services: [caddy, frp],
+      routes: [
+        ServiceRoute(
+          id: 'route-frp',
+          name: 'Caddy via VPS FRP',
+          sourceServiceId: caddy.id,
+          sourceEndpointId: 'caddy-https',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.portForward,
+              method: ServiceRouteMethod.frp,
+              serviceId: frp.id,
+              host: '203.0.113.20',
+              port: 443,
+            ),
+          ],
+          finalUrl: 'https://cloud.example.com',
+          accessLevel: ServiceAccessLevel.public,
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'mac-mini',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+        Device(
+          id: 'vps-1',
+          name: 'Cloudcone VPS',
+          category: DeviceCategory.vps,
+        ),
+      ],
+    );
+
+    final vps = graph.nodes.singleWhere(
+      (node) =>
+          node.deviceId == 'vps-1' &&
+          node.kind == ServiceTopologyNodeKind.device,
+    );
+    final frpNode = graph.nodes.singleWhere(
+      (node) =>
+          node.serviceId == frp.id &&
+          node.kind == ServiceTopologyNodeKind.service,
+    );
+    final remoteEntry = graph.nodes.singleWhere(
+      (node) => node.kind == ServiceTopologyNodeKind.remoteEntry,
+    );
+
+    expect(vps.role, ServiceTopologyNodeRole.remoteDevice);
+    expect(frpNode.role, ServiceTopologyNodeRole.remoteService);
+    expect(remoteEntry.label, '203.0.113.20:443');
+    expect(remoteEntry.deviceId, frp.deviceId);
+    expect(
+      graph.edges.any(
+        (edge) =>
+            edge.from == 'endpoint:${caddy.id}:caddy-https' &&
+            edge.to == frpNode.id,
+      ),
+      isTrue,
+    );
+    expect(
+      graph.edges.any(
+        (edge) => edge.from == frpNode.id && edge.to == remoteEntry.id,
+      ),
+      isTrue,
+    );
+  });
+
+  test('service topology classifies LAN VPN and public access lanes', () {
+    final service = ServiceNode(
+      id: 'jellyfin',
+      deviceId: 'mac-mini',
+      name: 'Jellyfin',
+      endpoints: [ServiceEndpoint(id: 'web', port: 8096)],
+    );
+    final graph = buildServiceTopology(
+      services: [service],
+      routes: [
+        ServiceRoute(
+          id: 'lan-route',
+          name: 'LAN Jellyfin',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'web',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.manual,
+              method: ServiceRouteMethod.direct,
+              label: 'LAN / WiFi',
+            ),
+          ],
+          finalUrl: 'http://192.168.1.10:8096',
+          accessLevel: ServiceAccessLevel.lan,
+        ),
+        ServiceRoute(
+          id: 'vpn-route',
+          name: 'Tailscale Jellyfin',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'web',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.tunnel,
+              method: ServiceRouteMethod.tailscaleFunnel,
+              label: 'Tailscale',
+            ),
+          ],
+          finalUrl: 'http://100.64.0.10:8096',
+          accessLevel: ServiceAccessLevel.vpn,
+        ),
+        ServiceRoute(
+          id: 'public-route',
+          name: 'Public Jellyfin',
+          sourceServiceId: service.id,
+          sourceEndpointId: 'web',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.tunnel,
+              method: ServiceRouteMethod.pangolin,
+            ),
+          ],
+          finalUrl: 'https://jellyfin.example.com',
+          accessLevel: ServiceAccessLevel.public,
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'mac-mini',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+      ],
+    );
+
+    expect(
+      graph.edges
+          .map((edge) => edge.lane)
+          .whereType<ServiceAccessLane>()
+          .toSet(),
+      containsAll([
+        ServiceAccessLane.local,
+        ServiceAccessLane.vpn,
+        ServiceAccessLane.public,
+      ]),
+    );
+    expect(
+      graph.nodes.where(
+        (node) => node.role == ServiceTopologyNodeRole.vpnAccess,
+      ),
+      isNotEmpty,
+    );
+    expect(
+      graph.nodes.where(
+        (node) => node.role == ServiceTopologyNodeRole.lanAccess,
+      ),
+      isNotEmpty,
+    );
+  });
 }

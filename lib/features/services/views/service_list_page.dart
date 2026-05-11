@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
+import '../../devices/widgets/device_category_icon.dart';
 import '../../network/models/network.dart';
 import '../../network/services/network_storage.dart';
 import '../models/service.dart';
@@ -481,7 +482,18 @@ class _ServiceListPageState extends State<ServiceListPage> {
             if (graph.isEmpty)
               _emptyInline(l10n.noServiceRoutes)
             else
-              SizedBox(height: 420, child: _ServiceTopologyView(graph: graph)),
+              SizedBox(
+                height: 460,
+                child: _ServiceTopologyView(
+                  graph: graph,
+                  services: _services,
+                  devices: _devices,
+                  routes: _routes,
+                  onEditService: _editService,
+                  onEditRoute: _editRoute,
+                  onAddAccess: _addAccessRoute,
+                ),
+              ),
           ],
         ),
       ),
@@ -973,15 +985,25 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
                       value: null,
                       child: Text(l10n.optionalNone),
                     ),
-                    for (final service in widget.services.where(
-                      (service) => service.id != _sourceServiceId,
-                    ))
+                    for (final service in _relayServiceOptions())
                       DropdownMenuItem(
                         value: service.id,
-                        child: Text(service.name),
+                        child: Text(
+                          _method.isPortMapping
+                              ? '${service.name} · ${_deviceName(service.deviceId)}'
+                              : service.name,
+                        ),
                       ),
                   ],
-                  onChanged: (value) => setState(() => _relayServiceId = value),
+                  onChanged: (value) => setState(() {
+                    _relayServiceId = value;
+                    if (_method.isPortMapping && value != null) {
+                      final service = widget.services
+                          .where((service) => service.id == value)
+                          .firstOrNull;
+                      _remoteDeviceId = service?.deviceId ?? _remoteDeviceId;
+                    }
+                  }),
                 ),
                 if (_method.isPortMapping) ...[
                   const SizedBox(height: 12),
@@ -1077,12 +1099,54 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
       ],
     );
   }
+
+  List<ServiceNode> _relayServiceOptions() {
+    final candidates = widget.services
+        .where((service) => service.id != _sourceServiceId)
+        .toList();
+    candidates.sort((a, b) {
+      if (_method.isPortMapping) {
+        final aPreferred = _isFrpLikeService(a) ? 0 : 1;
+        final bPreferred = _isFrpLikeService(b) ? 0 : 1;
+        if (aPreferred != bPreferred) return aPreferred.compareTo(bPreferred);
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return candidates;
+  }
+
+  bool _isFrpLikeService(ServiceNode service) {
+    final text = [
+      service.name,
+      service.templateId,
+      service.icon,
+      service.kind.name,
+    ].whereType<String>().join(' ').toLowerCase();
+    return text.contains('frp') || service.kind == ServiceKind.tunnel;
+  }
+
+  String _deviceName(String id) =>
+      widget.devices.where((device) => device.id == id).firstOrNull?.name ?? id;
 }
 
 class _ServiceTopologyView extends StatelessWidget {
   final ServiceTopologyGraph graph;
+  final List<ServiceNode> services;
+  final List<Device> devices;
+  final List<ServiceRoute> routes;
+  final ValueChanged<ServiceNode> onEditService;
+  final ValueChanged<ServiceRoute> onEditRoute;
+  final Future<void> Function({ServiceNode? source}) onAddAccess;
 
-  const _ServiceTopologyView({required this.graph});
+  const _ServiceTopologyView({
+    required this.graph,
+    required this.services,
+    required this.devices,
+    required this.routes,
+    required this.onEditService,
+    required this.onEditRoute,
+    required this.onAddAccess,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1097,22 +1161,233 @@ class _ServiceTopologyView extends StatelessWidget {
             ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
             child: InteractiveViewer(
               constrained: false,
-              boundaryMargin: const EdgeInsets.all(160),
+              boundaryMargin: const EdgeInsets.all(180),
               minScale: 0.35,
-              maxScale: 2.2,
-              child: CustomPaint(
+              maxScale: 2.4,
+              child: SizedBox.fromSize(
                 size: layout.size,
-                painter: _ServiceTopologyPainter(
-                  graph: graph,
-                  layout: layout,
-                  colorScheme: Theme.of(context).colorScheme,
-                  textTheme: Theme.of(context).textTheme,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: CustomPaint(
+                        painter: _ServiceTopologyEdgePainter(
+                          graph: graph,
+                          layout: layout,
+                          colorScheme: Theme.of(context).colorScheme,
+                        ),
+                      ),
+                    ),
+                    for (final node in graph.nodes)
+                      if (layout.nodeRects[node.id] != null)
+                        Positioned.fromRect(
+                          rect: layout.nodeRects[node.id]!,
+                          child: _TopologyNodeCard(
+                            node: node,
+                            icon: _iconForTopologyNode(node, services, devices),
+                            onTap: () => _showNodeDetails(context, node),
+                          ),
+                        ),
+                  ],
                 ),
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  void _showNodeDetails(BuildContext context, ServiceTopologyNode node) {
+    final device = node.deviceId == null
+        ? null
+        : devices.where((device) => device.id == node.deviceId).firstOrNull;
+    final service = node.serviceId == null
+        ? null
+        : services.where((service) => service.id == node.serviceId).firstOrNull;
+    final relatedRoutes = routes
+        .where(
+          (route) =>
+              node.routeIds.contains(route.id) ||
+              route.sourceServiceId == node.serviceId ||
+              route.hops.any((hop) => hop.serviceId == node.serviceId),
+        )
+        .toList();
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  child: Icon(_iconForTopologyNode(node, services, devices)),
+                ),
+                title: Text(node.label),
+                subtitle: Text(
+                  [
+                    _roleLabel(node.role),
+                    if (node.detail?.trim().isNotEmpty == true) node.detail,
+                    if (node.lane != null) _laneLabel(node.lane!),
+                  ].whereType<String>().join(' · '),
+                ),
+              ),
+              if (device != null)
+                ListTile(
+                  leading: Icon(deviceCategoryIcon(device.category)),
+                  title: Text(device.name),
+                  subtitle: Text(device.category.name),
+                ),
+              if (service != null) ...[
+                ListTile(
+                  leading: Icon(_iconForService(service)),
+                  title: Text(service.name),
+                  subtitle: Text(
+                    service.endpoints
+                        .map(
+                          (endpoint) =>
+                              '${endpoint.protocol.name}/${endpoint.portText}',
+                        )
+                        .join(', '),
+                  ),
+                ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        onEditService(service);
+                      },
+                      icon: const Icon(Icons.edit_outlined),
+                      label: Text(AppLocalizations.of(context)!.editService),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(sheetContext);
+                        onAddAccess(source: service);
+                      },
+                      icon: const Icon(Icons.add_link),
+                      label: Text(
+                        AppLocalizations.of(context)!.serviceAddAccess,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (relatedRoutes.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.serviceRoutes,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                for (final route in relatedRoutes)
+                  ListTile(
+                    leading: Icon(_iconForMethod(_primaryMethod(route))),
+                    title: Text(
+                      route.finalUrl?.trim().isNotEmpty == true
+                          ? route.finalUrl!
+                          : route.name,
+                    ),
+                    subtitle: Text(
+                      [
+                        route.name,
+                        route.accessLevel.name,
+                        _laneLabel(serviceAccessLaneForRoute(route)),
+                      ].join(' · '),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      onEditRoute(route);
+                    },
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopologyNodeCard extends StatelessWidget {
+  final ServiceTopologyNode node;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _TopologyNodeCard({
+    required this.node,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final border = _nodeBorder(context, node);
+    return Tooltip(
+      message: [node.label, node.detail].whereType<String>().join('\n'),
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: _nodeFill(context, node),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: border, width: 1.4),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: border.withValues(alpha: 0.18),
+                  foregroundColor: border,
+                  child: Icon(icon, size: 19),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        node.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          if (node.detail?.trim().isNotEmpty == true)
+                            node.detail,
+                          if (node.lane != null) _laneLabel(node.lane!),
+                        ].whereType<String>().join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1123,45 +1398,27 @@ class _TopologyLayout {
 
   const _TopologyLayout({required this.size, required this.nodeRects});
 
-  static const nodeWidth = 178.0;
-  static const nodeHeight = 68.0;
-  static const horizontalGap = 48.0;
-  static const verticalGap = 26.0;
+  static const nodeWidth = 204.0;
+  static const nodeHeight = 76.0;
+  static const horizontalGap = 42.0;
+  static const verticalGap = 24.0;
   static const padding = 24.0;
 
   static _TopologyLayout build(
     ServiceTopologyGraph graph,
     double viewportWidth,
   ) {
-    final nodeById = {for (final node in graph.nodes) node.id: node};
-    final remoteDeviceIds = graph.edges
-        .where(
-          (edge) => nodeById[edge.to]?.kind == ServiceTopologyNodeKind.device,
-        )
-        .where((edge) {
-          final fromKind = nodeById[edge.from]?.kind;
-          return fromKind == ServiceTopologyNodeKind.relay ||
-              fromKind == ServiceTopologyNodeKind.remoteEntry;
-        })
-        .map((edge) => edge.to)
-        .toSet();
     final columns = <int, List<ServiceTopologyNode>>{};
     for (final node in graph.nodes) {
-      final column = switch (node.kind) {
-        ServiceTopologyNodeKind.device =>
-          remoteDeviceIds.contains(node.id) ? 4 : 0,
-        ServiceTopologyNodeKind.service => 1,
-        ServiceTopologyNodeKind.endpoint => 2,
-        ServiceTopologyNodeKind.relay => 3,
-        ServiceTopologyNodeKind.remoteEntry => 5,
-        ServiceTopologyNodeKind.domain => 6,
-      };
+      final column = _columnForNode(node);
       columns.putIfAbsent(column, () => []).add(node);
     }
     for (final nodes in columns.values) {
-      nodes.sort(
-        (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()),
-      );
+      nodes.sort((a, b) {
+        final laneCmp = (a.lane?.index ?? -1).compareTo(b.lane?.index ?? -1);
+        if (laneCmp != 0) return laneCmp;
+        return a.label.toLowerCase().compareTo(b.label.toLowerCase());
+      });
     }
 
     final rects = <String, Rect>{};
@@ -1179,47 +1436,58 @@ class _TopologyLayout {
       viewportWidth,
       padding * 2 + (maxColumn + 1) * nodeWidth + maxColumn * horizontalGap,
     );
-    final height = math.max(320.0, maxHeight);
+    final height = math.max(360.0, maxHeight);
     return _TopologyLayout(size: Size(width, height), nodeRects: rects);
+  }
+
+  static int _columnForNode(ServiceTopologyNode node) {
+    if (node.kind == ServiceTopologyNodeKind.domain) {
+      return node.lane == ServiceAccessLane.public ? 7 : 5;
+    }
+    return switch (node.role) {
+      ServiceTopologyNodeRole.localDevice => 0,
+      ServiceTopologyNodeRole.localService => 1,
+      ServiceTopologyNodeRole.localEndpoint => 2,
+      ServiceTopologyNodeRole.lanAccess ||
+      ServiceTopologyNodeRole.vpnAccess ||
+      ServiceTopologyNodeRole.publicRelay => 3,
+      ServiceTopologyNodeRole.remoteDevice => 4,
+      ServiceTopologyNodeRole.remoteService => 5,
+      ServiceTopologyNodeRole.remotePublicEntry => 6,
+      ServiceTopologyNodeRole.domain => 7,
+    };
   }
 }
 
-class _ServiceTopologyPainter extends CustomPainter {
+class _ServiceTopologyEdgePainter extends CustomPainter {
   final ServiceTopologyGraph graph;
   final _TopologyLayout layout;
   final ColorScheme colorScheme;
-  final TextTheme textTheme;
 
-  _ServiceTopologyPainter({
+  const _ServiceTopologyEdgePainter({
     required this.graph,
     required this.layout,
     required this.colorScheme,
-    required this.textTheme,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final edgePaint = Paint()
-      ..color = colorScheme.outline.withValues(alpha: 0.55)
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
     for (final edge in graph.edges) {
       final from = layout.nodeRects[edge.from];
       final to = layout.nodeRects[edge.to];
       if (from == null || to == null) continue;
-      _drawEdge(canvas, edgePaint, from, to);
-    }
-    for (final node in graph.nodes) {
-      final rect = layout.nodeRects[node.id];
-      if (rect == null) continue;
-      _drawNode(canvas, node, rect);
+      final paint = Paint()
+        ..color = _edgeColor(edge).withValues(alpha: 0.62)
+        ..strokeWidth = 2.2
+        ..style = PaintingStyle.stroke;
+      _drawEdge(canvas, paint, from, to);
     }
   }
 
   void _drawEdge(Canvas canvas, Paint paint, Rect from, Rect to) {
     final start = Offset(from.right, from.center.dy);
     final end = Offset(to.left, to.center.dy);
-    final dx = math.max(32.0, (end.dx - start.dx).abs() * 0.45);
+    final dx = math.max(28.0, (end.dx - start.dx).abs() * 0.42);
     final path = Path()
       ..moveTo(start.dx, start.dy)
       ..cubicTo(start.dx + dx, start.dy, end.dx - dx, end.dy, end.dx, end.dy);
@@ -1239,117 +1507,18 @@ class _ServiceTopologyPainter extends CustomPainter {
     canvas.drawPath(arrow, paint);
   }
 
-  void _drawNode(Canvas canvas, ServiceTopologyNode node, Rect rect) {
-    final fill = _nodeFill(node.kind);
-    final border = _nodeBorder(node.kind);
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(18));
-    canvas.drawRRect(rrect, Paint()..color = fill);
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..color = border
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4,
-    );
-    _drawIcon(canvas, node.kind, Offset(rect.left + 18, rect.center.dy));
-    _paintText(
-      canvas,
-      node.label,
-      Offset(rect.left + 42, rect.top + 13),
-      rect.width - 54,
-      textTheme.titleSmall?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-          ) ??
-          TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.w700),
-    );
-    final detail = node.detail;
-    if (detail != null && detail.trim().isNotEmpty) {
-      _paintText(
-        canvas,
-        detail,
-        Offset(rect.left + 42, rect.top + 38),
-        rect.width - 54,
-        textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant) ??
-            TextStyle(color: colorScheme.onSurfaceVariant),
-      );
-    }
-  }
-
-  void _drawIcon(Canvas canvas, ServiceTopologyNodeKind kind, Offset center) {
-    final paint = Paint()..color = _nodeBorder(kind).withValues(alpha: 0.22);
-    canvas.drawCircle(center, 14, paint);
-    final text = switch (kind) {
-      ServiceTopologyNodeKind.device => 'D',
-      ServiceTopologyNodeKind.service => 'S',
-      ServiceTopologyNodeKind.endpoint => ':',
-      ServiceTopologyNodeKind.relay => 'R',
-      ServiceTopologyNodeKind.remoteEntry => 'IP',
-      ServiceTopologyNodeKind.domain => 'DNS',
-    };
-    _paintText(
-      canvas,
-      text,
-      Offset(center.dx - 11, center.dy - 7),
-      22,
-      TextStyle(
-        color: _nodeBorder(kind),
-        fontSize: text.length > 2 ? 8 : 11,
-        fontWeight: FontWeight.w800,
-      ),
-      align: TextAlign.center,
-    );
-  }
-
-  void _paintText(
-    Canvas canvas,
-    String text,
-    Offset offset,
-    double width,
-    TextStyle style, {
-    TextAlign align = TextAlign.start,
-  }) {
-    final painter = TextPainter(
-      text: TextSpan(text: text, style: style),
-      maxLines: 1,
-      ellipsis: '...',
-      textDirection: TextDirection.ltr,
-      textAlign: align,
-    )..layout(maxWidth: width);
-    painter.paint(canvas, offset);
-  }
-
-  Color _nodeFill(ServiceTopologyNodeKind kind) => switch (kind) {
-    ServiceTopologyNodeKind.device => colorScheme.primaryContainer.withValues(
-      alpha: 0.72,
-    ),
-    ServiceTopologyNodeKind.service =>
-      colorScheme.secondaryContainer.withValues(alpha: 0.72),
-    ServiceTopologyNodeKind.endpoint =>
-      colorScheme.tertiaryContainer.withValues(alpha: 0.72),
-    ServiceTopologyNodeKind.relay => colorScheme.surfaceContainerHighest,
-    ServiceTopologyNodeKind.remoteEntry =>
-      colorScheme.errorContainer.withValues(alpha: 0.54),
-    ServiceTopologyNodeKind.domain => colorScheme.primary.withValues(
-      alpha: 0.14,
-    ),
-  };
-
-  Color _nodeBorder(ServiceTopologyNodeKind kind) => switch (kind) {
-    ServiceTopologyNodeKind.device => colorScheme.primary,
-    ServiceTopologyNodeKind.service => colorScheme.secondary,
-    ServiceTopologyNodeKind.endpoint => colorScheme.tertiary,
-    ServiceTopologyNodeKind.relay => colorScheme.outline,
-    ServiceTopologyNodeKind.remoteEntry => colorScheme.error,
-    ServiceTopologyNodeKind.domain => colorScheme.primary,
+  Color _edgeColor(ServiceTopologyEdge edge) => switch (edge.lane) {
+    ServiceAccessLane.local => colorScheme.tertiary,
+    ServiceAccessLane.vpn => colorScheme.secondary,
+    ServiceAccessLane.public => colorScheme.primary,
+    null => colorScheme.outline,
   };
 
   @override
-  bool shouldRepaint(covariant _ServiceTopologyPainter oldDelegate) =>
+  bool shouldRepaint(covariant _ServiceTopologyEdgePainter oldDelegate) =>
       oldDelegate.graph != graph ||
       oldDelegate.layout != layout ||
-      oldDelegate.colorScheme != colorScheme ||
-      oldDelegate.textTheme != textTheme;
+      oldDelegate.colorScheme != colorScheme;
 }
 
 List<String> _splitTargets(String value) => value
@@ -1361,6 +1530,117 @@ List<String> _splitTargets(String value) => value
 String? _emptyToNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+IconData _iconForTopologyNode(
+  ServiceTopologyNode node,
+  List<ServiceNode> services,
+  List<Device> devices,
+) {
+  if (node.kind == ServiceTopologyNodeKind.device && node.deviceId != null) {
+    final device = devices
+        .where((device) => device.id == node.deviceId)
+        .firstOrNull;
+    return device == null
+        ? Icons.devices_other_outlined
+        : deviceCategoryIcon(device.category);
+  }
+  if (node.kind == ServiceTopologyNodeKind.service) {
+    final service = services
+        .where((service) => service.id == node.serviceId)
+        .firstOrNull;
+    return service == null ? Icons.dns_outlined : _iconForService(service);
+  }
+  if (node.kind == ServiceTopologyNodeKind.endpoint) {
+    return Icons.settings_ethernet;
+  }
+  if (node.kind == ServiceTopologyNodeKind.remoteEntry) return Icons.public;
+  if (node.kind == ServiceTopologyNodeKind.domain) return Icons.language;
+  return _iconForMethod(node.method);
+}
+
+IconData _iconForMethod(ServiceRouteMethod? method) => switch (method) {
+  ServiceRouteMethod.caddy => Icons.alt_route,
+  ServiceRouteMethod.nginx => Icons.account_tree_outlined,
+  ServiceRouteMethod.traefik => Icons.hub_outlined,
+  ServiceRouteMethod.frp => Icons.swap_horiz,
+  ServiceRouteMethod.cloudflareTunnel => Icons.cloud_sync,
+  ServiceRouteMethod.pangolin => Icons.hub,
+  ServiceRouteMethod.tailscaleFunnel => Icons.vpn_lock,
+  ServiceRouteMethod.routerPortForward => Icons.router,
+  ServiceRouteMethod.direct => Icons.near_me_outlined,
+  ServiceRouteMethod.custom => Icons.route,
+  null => Icons.route,
+};
+
+ServiceRouteMethod? _primaryMethod(ServiceRoute route) => route.hops
+    .map((hop) => hop.method)
+    .whereType<ServiceRouteMethod>()
+    .firstOrNull;
+
+String _laneLabel(ServiceAccessLane lane) => switch (lane) {
+  ServiceAccessLane.local => 'LAN / WiFi',
+  ServiceAccessLane.vpn => 'VPN / Tailscale',
+  ServiceAccessLane.public => 'Public / VPS',
+};
+
+String _roleLabel(ServiceTopologyNodeRole role) => switch (role) {
+  ServiceTopologyNodeRole.localDevice => 'Local device',
+  ServiceTopologyNodeRole.remoteDevice => 'Remote / VPS device',
+  ServiceTopologyNodeRole.localService => 'Local service',
+  ServiceTopologyNodeRole.remoteService => 'Remote service',
+  ServiceTopologyNodeRole.localEndpoint => 'Local endpoint',
+  ServiceTopologyNodeRole.lanAccess => 'LAN / WiFi access',
+  ServiceTopologyNodeRole.vpnAccess => 'VPN / Tailscale access',
+  ServiceTopologyNodeRole.publicRelay => 'Public relay',
+  ServiceTopologyNodeRole.remotePublicEntry => 'Remote public entry',
+  ServiceTopologyNodeRole.domain => 'Domain / URL',
+};
+
+Color _nodeFill(BuildContext context, ServiceTopologyNode node) {
+  final cs = Theme.of(context).colorScheme;
+  return switch (node.role) {
+    ServiceTopologyNodeRole.localDevice => cs.primaryContainer.withValues(
+      alpha: 0.74,
+    ),
+    ServiceTopologyNodeRole.remoteDevice => cs.errorContainer.withValues(
+      alpha: 0.55,
+    ),
+    ServiceTopologyNodeRole.localService => cs.secondaryContainer.withValues(
+      alpha: 0.74,
+    ),
+    ServiceTopologyNodeRole.remoteService => cs.errorContainer.withValues(
+      alpha: 0.42,
+    ),
+    ServiceTopologyNodeRole.localEndpoint => cs.tertiaryContainer.withValues(
+      alpha: 0.72,
+    ),
+    ServiceTopologyNodeRole.lanAccess => cs.tertiary.withValues(alpha: 0.14),
+    ServiceTopologyNodeRole.vpnAccess => cs.secondary.withValues(alpha: 0.14),
+    ServiceTopologyNodeRole.publicRelay => cs.primary.withValues(alpha: 0.13),
+    ServiceTopologyNodeRole.remotePublicEntry => cs.errorContainer.withValues(
+      alpha: 0.62,
+    ),
+    ServiceTopologyNodeRole.domain => cs.primaryContainer.withValues(
+      alpha: 0.42,
+    ),
+  };
+}
+
+Color _nodeBorder(BuildContext context, ServiceTopologyNode node) {
+  final cs = Theme.of(context).colorScheme;
+  return switch (node.role) {
+    ServiceTopologyNodeRole.localDevice => cs.primary,
+    ServiceTopologyNodeRole.remoteDevice => cs.error,
+    ServiceTopologyNodeRole.localService => cs.secondary,
+    ServiceTopologyNodeRole.remoteService => cs.error,
+    ServiceTopologyNodeRole.localEndpoint => cs.tertiary,
+    ServiceTopologyNodeRole.lanAccess => cs.tertiary,
+    ServiceTopologyNodeRole.vpnAccess => cs.secondary,
+    ServiceTopologyNodeRole.publicRelay => cs.primary,
+    ServiceTopologyNodeRole.remotePublicEntry => cs.error,
+    ServiceTopologyNodeRole.domain => cs.primary,
+  };
 }
 
 IconData iconForServiceIcon(String? icon) => switch (icon) {

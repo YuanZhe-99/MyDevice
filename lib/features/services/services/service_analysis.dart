@@ -11,22 +11,70 @@ enum ServiceTopologyNodeKind {
   domain,
 }
 
+enum ServiceTopologyNodeRole {
+  localDevice,
+  remoteDevice,
+  localService,
+  remoteService,
+  localEndpoint,
+  lanAccess,
+  vpnAccess,
+  publicRelay,
+  remotePublicEntry,
+  domain,
+}
+
+enum ServiceAccessLane { local, vpn, public }
+
 class ServiceTopologyNode {
   final String id;
   final ServiceTopologyNodeKind kind;
+  final ServiceTopologyNodeRole role;
   final String label;
   final String? detail;
   final String? deviceId;
   final String? serviceId;
+  final String? endpointId;
+  final ServiceAccessLane? lane;
+  final ServiceRouteMethod? method;
+  final List<String> routeIds;
 
   const ServiceTopologyNode({
     required this.id,
     required this.kind,
+    required this.role,
     required this.label,
     this.detail,
     this.deviceId,
     this.serviceId,
+    this.endpointId,
+    this.lane,
+    this.method,
+    this.routeIds = const [],
   });
+
+  ServiceTopologyNode mergeRoute(String routeId) {
+    if (routeIds.contains(routeId)) return this;
+    return merge(this, routeId: routeId);
+  }
+
+  ServiceTopologyNode merge(ServiceTopologyNode other, {String? routeId}) {
+    final routes = <String>{...routeIds, ...other.routeIds};
+    if (routeId != null) routes.add(routeId);
+    return ServiceTopologyNode(
+      id: id,
+      kind: kind,
+      role: _preferTopologyRole(role, other.role),
+      label: label,
+      detail: detail?.isNotEmpty == true ? detail : other.detail,
+      deviceId: deviceId,
+      serviceId: serviceId,
+      endpointId: endpointId,
+      lane: lane ?? other.lane,
+      method: method ?? other.method,
+      routeIds: routes.toList(),
+    );
+  }
 }
 
 class ServiceTopologyEdge {
@@ -34,12 +82,16 @@ class ServiceTopologyEdge {
   final String to;
   final String? label;
   final String? routeId;
+  final ServiceAccessLane? lane;
+  final ServiceRouteMethod? method;
 
   const ServiceTopologyEdge({
     required this.from,
     required this.to,
     this.label,
     this.routeId,
+    this.lane,
+    this.method,
   });
 }
 
@@ -195,15 +247,28 @@ ServiceTopologyGraph buildServiceTopology({
   final nodes = <String, ServiceTopologyNode>{};
   final edges = <String, ServiceTopologyEdge>{};
 
-  void addNode(ServiceTopologyNode node) {
-    nodes.putIfAbsent(node.id, () => node);
+  void addNode(ServiceTopologyNode node, {String? routeId}) {
+    nodes.update(
+      node.id,
+      (existing) => existing.merge(node, routeId: routeId),
+      ifAbsent: () => routeId == null ? node : node.mergeRoute(routeId),
+    );
   }
 
   void addEdge(String from, String to, {String? label, String? routeId}) {
     if (from == to || !nodes.containsKey(from) || !nodes.containsKey(to)) {
       return;
     }
-    final key = '$from->$to:${label ?? ''}';
+    final route = routeId == null
+        ? null
+        : routes.where((r) => r.id == routeId).firstOrNull;
+    final lane = route == null ? null : serviceAccessLaneForRoute(route);
+    final method = route?.hops
+        .map((hop) => hop.method)
+        .whereType<ServiceRouteMethod>()
+        .firstOrNull;
+    final key =
+        '$from->$to:${label ?? ''}:${lane?.name ?? ''}:${method?.name ?? ''}';
     edges.putIfAbsent(
       key,
       () => ServiceTopologyEdge(
@@ -211,6 +276,8 @@ ServiceTopologyGraph buildServiceTopology({
         to: to,
         label: label,
         routeId: routeId,
+        lane: lane,
+        method: method,
       ),
     );
   }
@@ -227,6 +294,7 @@ ServiceTopologyGraph buildServiceTopology({
       ServiceTopologyNode(
         id: id,
         kind: ServiceTopologyNodeKind.device,
+        role: ServiceTopologyNodeRole.localDevice,
         label: device?.name ?? deviceId,
         detail: device?.category.name,
         deviceId: deviceId,
@@ -235,13 +303,39 @@ ServiceTopologyGraph buildServiceTopology({
     return id;
   }
 
-  String addServiceNode(ServiceNode service) {
-    final deviceId = addDeviceNode(service.deviceId);
+  String addRemoteDeviceNode(String deviceId, {String? routeId}) {
+    final device = deviceMap[deviceId];
+    final id = deviceNodeId(deviceId);
+    addNode(
+      ServiceTopologyNode(
+        id: id,
+        kind: ServiceTopologyNodeKind.device,
+        role: ServiceTopologyNodeRole.remoteDevice,
+        label: device?.name ?? deviceId,
+        detail: device?.category.name,
+        deviceId: deviceId,
+      ),
+      routeId: routeId,
+    );
+    return id;
+  }
+
+  String addServiceNode(
+    ServiceNode service, {
+    bool remote = false,
+    String? routeId,
+  }) {
+    final deviceId = remote
+        ? addRemoteDeviceNode(service.deviceId, routeId: routeId)
+        : addDeviceNode(service.deviceId);
     final id = serviceNodeId(service.id);
     addNode(
       ServiceTopologyNode(
         id: id,
         kind: ServiceTopologyNodeKind.service,
+        role: remote
+            ? ServiceTopologyNodeRole.remoteService
+            : ServiceTopologyNodeRole.localService,
         label: service.name,
         detail: service.endpoints.isEmpty
             ? service.kind.name
@@ -253,17 +347,30 @@ ServiceTopologyGraph buildServiceTopology({
         deviceId: service.deviceId,
         serviceId: service.id,
       ),
+      routeId: routeId,
     );
-    addEdge(deviceId, id);
+    if (remote) {
+      addEdge(deviceId, id, routeId: routeId);
+    } else {
+      addEdge(deviceId, id);
+    }
     return id;
   }
 
-  String addEndpointNode(ServiceNode service, ServiceEndpoint endpoint) {
+  String addEndpointNode(
+    ServiceNode service,
+    ServiceEndpoint endpoint, {
+    bool remote = false,
+    String? routeId,
+  }) {
     final id = endpointNodeId(service.id, endpoint.id);
     addNode(
       ServiceTopologyNode(
         id: id,
         kind: ServiceTopologyNodeKind.endpoint,
+        role: remote
+            ? ServiceTopologyNodeRole.remoteService
+            : ServiceTopologyNodeRole.localEndpoint,
         label: endpoint.label?.trim().isNotEmpty == true
             ? endpoint.label!.trim()
             : endpoint.protocol.name.toUpperCase(),
@@ -275,9 +382,11 @@ ServiceTopologyGraph buildServiceTopology({
         ].where((part) => part.isNotEmpty && part != '-').join(':'),
         deviceId: service.deviceId,
         serviceId: service.id,
+        endpointId: endpoint.id,
       ),
+      routeId: routeId,
     );
-    addEdge(serviceNodeId(service.id), id);
+    addEdge(serviceNodeId(service.id), id, routeId: routeId);
     return id;
   }
 
@@ -291,31 +400,66 @@ ServiceTopologyGraph buildServiceTopology({
     var currentId = addServiceNode(source);
     final sourceEndpoint = _endpointForRoute(source, route.sourceEndpointId);
     if (sourceEndpoint != null) {
-      final endpointId = addEndpointNode(source, sourceEndpoint);
+      final endpointId = addEndpointNode(
+        source,
+        sourceEndpoint,
+        routeId: route.id,
+      );
       addEdge(currentId, endpointId, routeId: route.id);
       currentId = endpointId;
     }
 
     for (final hop in route.hops) {
       if (_isPortMappingHop(hop)) {
-        final relayId = _relayNodeId(hop);
-        addNode(
-          ServiceTopologyNode(
-            id: relayId,
-            kind: ServiceTopologyNodeKind.relay,
-            label: _relayLabel(hop, serviceMap),
-            detail: hop.method?.name ?? hop.type.name,
-            serviceId: hop.serviceId,
-            deviceId: hop.deviceId,
-          ),
-        );
-        addEdge(currentId, relayId, routeId: route.id);
-        currentId = relayId;
+        final hopService = hop.serviceId == null
+            ? null
+            : serviceMap[hop.serviceId];
+        if (hopService != null) {
+          final hopServiceId = addServiceNode(
+            hopService,
+            remote: true,
+            routeId: route.id,
+          );
+          addEdge(currentId, hopServiceId, routeId: route.id);
+          currentId = hopServiceId;
+          final hopEndpoint = _endpointForRoute(hopService, hop.endpointId);
+          if (hopEndpoint != null) {
+            final endpointId = addEndpointNode(
+              hopService,
+              hopEndpoint,
+              remote: true,
+              routeId: route.id,
+            );
+            addEdge(currentId, endpointId, routeId: route.id);
+            currentId = endpointId;
+          }
+        } else {
+          final relayId = _relayNodeId(hop);
+          addNode(
+            ServiceTopologyNode(
+              id: relayId,
+              kind: ServiceTopologyNodeKind.relay,
+              role: _roleForRelay(route, hop),
+              label: _relayLabel(hop, serviceMap),
+              detail: hop.method?.name ?? hop.type.name,
+              serviceId: hop.serviceId,
+              deviceId: hop.deviceId,
+              lane: serviceAccessLaneForRoute(route),
+              method: hop.method,
+            ),
+            routeId: route.id,
+          );
+          addEdge(currentId, relayId, routeId: route.id);
+          currentId = relayId;
 
-        if (hop.deviceId != null) {
-          final remoteDeviceId = addDeviceNode(hop.deviceId!);
-          addEdge(currentId, remoteDeviceId, routeId: route.id);
-          currentId = remoteDeviceId;
+          if (hop.deviceId != null) {
+            final remoteDeviceId = addRemoteDeviceNode(
+              hop.deviceId!,
+              routeId: route.id,
+            );
+            addEdge(currentId, remoteDeviceId, routeId: route.id);
+            currentId = remoteDeviceId;
+          }
         }
 
         if (_hasRemoteEntry(hop)) {
@@ -324,10 +468,14 @@ ServiceTopologyGraph buildServiceTopology({
             ServiceTopologyNode(
               id: remoteId,
               kind: ServiceTopologyNodeKind.remoteEntry,
+              role: ServiceTopologyNodeRole.remotePublicEntry,
               label: _remoteEntryLabel(hop),
               detail: hop.scheme,
-              deviceId: hop.deviceId,
+              deviceId: hop.deviceId ?? hopService?.deviceId,
+              lane: serviceAccessLaneForRoute(route),
+              method: hop.method,
             ),
+            routeId: route.id,
           );
           addEdge(currentId, remoteId, routeId: route.id);
           currentId = remoteId;
@@ -337,12 +485,21 @@ ServiceTopologyGraph buildServiceTopology({
 
       if (hop.serviceId != null && serviceMap.containsKey(hop.serviceId)) {
         final hopService = serviceMap[hop.serviceId]!;
-        final hopServiceId = addServiceNode(hopService);
+        final hopServiceId = addServiceNode(
+          hopService,
+          remote: _isPublicRoute(route),
+          routeId: route.id,
+        );
         addEdge(currentId, hopServiceId, routeId: route.id);
         currentId = hopServiceId;
         final hopEndpoint = _endpointForRoute(hopService, hop.endpointId);
         if (hopEndpoint != null) {
-          final endpointId = addEndpointNode(hopService, hopEndpoint);
+          final endpointId = addEndpointNode(
+            hopService,
+            hopEndpoint,
+            remote: _isPublicRoute(route),
+            routeId: route.id,
+          );
           addEdge(currentId, endpointId, routeId: route.id);
           currentId = endpointId;
         }
@@ -356,11 +513,15 @@ ServiceTopologyGraph buildServiceTopology({
         ServiceTopologyNode(
           id: relayId,
           kind: ServiceTopologyNodeKind.relay,
+          role: _roleForRelay(route, hop),
           label: label,
           detail: hop.method?.name ?? hop.type.name,
           serviceId: hop.serviceId,
           deviceId: hop.deviceId,
+          lane: serviceAccessLaneForRoute(route),
+          method: hop.method,
         ),
+        routeId: route.id,
       );
       addEdge(currentId, relayId, routeId: route.id);
       currentId = relayId;
@@ -373,9 +534,12 @@ ServiceTopologyGraph buildServiceTopology({
         ServiceTopologyNode(
           id: targetId,
           kind: ServiceTopologyNodeKind.domain,
+          role: ServiceTopologyNodeRole.domain,
           label: compactAccessTargetLabel(target),
           detail: target,
+          lane: serviceAccessLaneForRoute(route),
         ),
+        routeId: route.id,
       );
       addEdge(currentId, targetId, routeId: route.id);
     }
@@ -509,6 +673,58 @@ String normalizedBindAddress(String? bindAddress) {
 
 bool _bindsOverlap(String a, String b) => a == '*' || b == '*' || a == b;
 
+ServiceTopologyNodeRole _preferTopologyRole(
+  ServiceTopologyNodeRole current,
+  ServiceTopologyNodeRole incoming,
+) {
+  if (current == incoming) return current;
+  if (_isRemoteRole(incoming)) return incoming;
+  return current;
+}
+
+bool _isRemoteRole(ServiceTopologyNodeRole role) =>
+    role == ServiceTopologyNodeRole.remoteDevice ||
+    role == ServiceTopologyNodeRole.remoteService ||
+    role == ServiceTopologyNodeRole.remotePublicEntry ||
+    role == ServiceTopologyNodeRole.domain;
+
+bool _isPublicRoute(ServiceRoute route) =>
+    serviceAccessLaneForRoute(route) == ServiceAccessLane.public;
+
+ServiceAccessLane serviceAccessLaneForRoute(ServiceRoute route) {
+  final methods = route.hops
+      .map((hop) => hop.method)
+      .whereType<ServiceRouteMethod>();
+  if (methods.any(
+    (method) =>
+        method == ServiceRouteMethod.frp ||
+        method == ServiceRouteMethod.routerPortForward ||
+        method == ServiceRouteMethod.caddy ||
+        method == ServiceRouteMethod.nginx ||
+        method == ServiceRouteMethod.traefik ||
+        method == ServiceRouteMethod.cloudflareTunnel ||
+        method == ServiceRouteMethod.pangolin,
+  )) {
+    return ServiceAccessLane.public;
+  }
+  if (methods.any((method) => method == ServiceRouteMethod.tailscaleFunnel) ||
+      route.accessLevel == ServiceAccessLevel.vpn) {
+    return ServiceAccessLane.vpn;
+  }
+  if (route.accessLevel == ServiceAccessLevel.public ||
+      route.accessLevel == ServiceAccessLevel.authenticated) {
+    return ServiceAccessLane.public;
+  }
+  return ServiceAccessLane.local;
+}
+
+ServiceTopologyNodeRole _roleForRelay(ServiceRoute route, ServiceRouteHop hop) {
+  final lane = serviceAccessLaneForRoute(route);
+  if (lane == ServiceAccessLane.local) return ServiceTopologyNodeRole.lanAccess;
+  if (lane == ServiceAccessLane.vpn) return ServiceTopologyNodeRole.vpnAccess;
+  return ServiceTopologyNodeRole.publicRelay;
+}
+
 ServiceEndpoint? _endpointForRoute(ServiceNode service, String? endpointId) {
   if (endpointId == null) return null;
   return service.endpoints
@@ -533,7 +749,7 @@ String _relayNodeId(ServiceRouteHop hop) {
 }
 
 String _remoteEntryNodeId(ServiceRouteHop hop) {
-  final device = hop.deviceId ?? '';
+  final device = hop.deviceId ?? hop.serviceId ?? '';
   final host = hop.host?.trim().toLowerCase() ?? '';
   final port = hop.port?.toString() ?? '';
   return 'remote:$device:$host:$port';

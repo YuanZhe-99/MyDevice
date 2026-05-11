@@ -991,12 +991,73 @@ void main() {
     );
 
     expect(caddyNode.role, ServiceTopologyNodeRole.localService);
+    expect(caddyNode.layoutColumn, 4);
     expect(caddyEndpoint.role, ServiceTopologyNodeRole.localEndpoint);
+    expect(caddyEndpoint.layoutColumn, 5);
+    expect(caddyEndpoint.compact, isTrue);
     expect(
       graph.nodes.where(
         (node) => node.role == ServiceTopologyNodeRole.remoteService,
       ),
       isEmpty,
     );
+  });
+
+  test('service topology marks ports and remote entries as compact nodes', () {
+    final caddy = ServiceNode(
+      id: 'caddy',
+      deviceId: 'mac-mini',
+      name: 'Caddy',
+      kind: ServiceKind.reverseProxy,
+      endpoints: [ServiceEndpoint(id: 'https', port: 443)],
+    );
+    final graph = buildServiceTopology(
+      services: [caddy],
+      routes: [
+        ServiceRoute(
+          id: 'route-public',
+          name: 'Caddy FRP',
+          sourceServiceId: caddy.id,
+          sourceEndpointId: 'https',
+          accessLevel: ServiceAccessLevel.public,
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.portForward,
+              method: ServiceRouteMethod.frp,
+              host: '203.0.113.10',
+              port: 443,
+            ),
+          ],
+          finalUrl: 'https://cloud.example.com',
+        ),
+      ],
+      devices: [
+        Device(
+          id: 'mac-mini',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+      ],
+    );
+
+    final caddyNode = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.service &&
+          node.serviceId == caddy.id,
+    );
+    final sourceEndpoint = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.endpoint &&
+          node.endpointId == 'https',
+    );
+    final remoteEntry = graph.nodes.singleWhere(
+      (node) => node.kind == ServiceTopologyNodeKind.remoteEntry,
+    );
+
+    expect(caddyNode.compact, isFalse);
+    expect(caddyNode.layoutColumn, 4);
+    expect(sourceEndpoint.compact, isTrue);
+    expect(sourceEndpoint.layoutColumn, 5);
+    expect(remoteEntry.compact, isTrue);
   });
 }

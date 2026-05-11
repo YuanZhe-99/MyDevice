@@ -39,6 +39,8 @@ class ServiceTopologyNode {
   final String? endpointId;
   final ServiceAccessLane? lane;
   final ServiceRouteMethod? method;
+  final int? layoutColumn;
+  final bool compact;
   final List<String> routeIds;
 
   const ServiceTopologyNode({
@@ -52,6 +54,8 @@ class ServiceTopologyNode {
     this.endpointId,
     this.lane,
     this.method,
+    this.layoutColumn,
+    this.compact = false,
     this.routeIds = const [],
   });
 
@@ -83,6 +87,8 @@ class ServiceTopologyNode {
       endpointId: endpointId,
       lane: lane ?? other.lane,
       method: method ?? other.method,
+      layoutColumn: layoutColumn ?? other.layoutColumn,
+      compact: compact || other.compact,
       routeIds: routes.toList(),
     );
   }
@@ -336,6 +342,7 @@ ServiceTopologyGraph buildServiceTopology({
     bool remote = false,
     String? routeId,
     String? detailOverride,
+    int? layoutColumn,
   }) {
     final deviceId = remote
         ? addRemoteDeviceNode(service.deviceId, routeId: routeId)
@@ -360,6 +367,7 @@ ServiceTopologyGraph buildServiceTopology({
                       .join(', ')),
         deviceId: service.deviceId,
         serviceId: service.id,
+        layoutColumn: layoutColumn,
       ),
       routeId: routeId,
     );
@@ -376,6 +384,7 @@ ServiceTopologyGraph buildServiceTopology({
     ServiceEndpoint endpoint, {
     bool remote = false,
     String? routeId,
+    int? layoutColumn,
   }) {
     final id = endpointNodeId(service.id, endpoint.id);
     addNode(
@@ -397,6 +406,8 @@ ServiceTopologyGraph buildServiceTopology({
         deviceId: service.deviceId,
         serviceId: service.id,
         endpointId: endpoint.id,
+        layoutColumn: layoutColumn,
+        compact: true,
       ),
       routeId: routeId,
     );
@@ -411,13 +422,20 @@ ServiceTopologyGraph buildServiceTopology({
   for (final route in routes) {
     final source = serviceMap[route.sourceServiceId];
     if (source == null) continue;
-    var currentId = addServiceNode(source);
+    final routeLane = serviceAccessLaneForRoute(route);
+    final sourceProxyColumn =
+        source.kind == ServiceKind.reverseProxy &&
+            routeLane == ServiceAccessLane.public
+        ? 4
+        : null;
+    var currentId = addServiceNode(source, layoutColumn: sourceProxyColumn);
     final sourceEndpoint = _endpointForRoute(source, route.sourceEndpointId);
     if (sourceEndpoint != null) {
       final endpointId = addEndpointNode(
         source,
         sourceEndpoint,
         routeId: route.id,
+        layoutColumn: sourceProxyColumn == null ? null : sourceProxyColumn + 1,
       );
       addEdge(currentId, endpointId, routeId: route.id);
       currentId = endpointId;
@@ -484,6 +502,7 @@ ServiceTopologyGraph buildServiceTopology({
               deviceId: hop.deviceId ?? hopService?.deviceId,
               lane: serviceAccessLaneForRoute(route),
               method: hop.method,
+              compact: true,
             ),
             routeId: route.id,
           );
@@ -504,6 +523,12 @@ ServiceTopologyGraph buildServiceTopology({
           hopService,
           remote: hopIsRemote,
           routeId: route.id,
+          layoutColumn:
+              !hopIsRemote &&
+                  routeLane == ServiceAccessLane.public &&
+                  hopService.kind == ServiceKind.reverseProxy
+              ? 4
+              : null,
         );
         addEdge(currentId, hopServiceId, routeId: route.id);
         currentId = hopServiceId;
@@ -514,6 +539,12 @@ ServiceTopologyGraph buildServiceTopology({
             hopEndpoint,
             remote: hopIsRemote,
             routeId: route.id,
+            layoutColumn:
+                !hopIsRemote &&
+                    routeLane == ServiceAccessLane.public &&
+                    hopService.kind == ServiceKind.reverseProxy
+                ? 5
+                : null,
           );
           addEdge(currentId, endpointId, routeId: route.id);
           currentId = endpointId;

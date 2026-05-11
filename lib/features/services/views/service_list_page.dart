@@ -22,6 +22,8 @@ enum _ServiceView { overview, devices, routes, ports }
 
 enum _TopologyInteractionMode { select, move }
 
+enum _TopologySide { left, right }
+
 enum _QuickAccessMethod {
   direct(ServiceRouteMethod.direct),
   caddy(ServiceRouteMethod.caddy),
@@ -1492,29 +1494,33 @@ class _TopologyNodeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final border = _nodeBorder(context, node);
+    final compact = node.compact;
     return Tooltip(
       message: [node.label, node.detail].whereType<String>().join('\n'),
       child: Card(
         margin: EdgeInsets.zero,
         color: _nodeFill(context, node),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: border, width: 1.4),
+          borderRadius: BorderRadius.circular(compact ? 14 : 18),
+          side: BorderSide(color: border, width: compact ? 1.1 : 1.4),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(compact ? 14 : 18),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 9 : 12,
+              vertical: compact ? 7 : 12,
+            ),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 17,
+                  radius: compact ? 12 : 17,
                   backgroundColor: border.withValues(alpha: 0.18),
                   foregroundColor: border,
-                  child: Icon(icon, size: 19),
+                  child: Icon(icon, size: compact ? 14 : 19),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: compact ? 7 : 10),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1525,22 +1531,28 @@ class _TopologyNodeCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontSize: compact ? 12 : null,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        [
-                          if (node.detail?.trim().isNotEmpty == true)
-                            node.detail,
-                          if (node.lane != null) _laneLabel(node.lane!),
-                        ].whereType<String>().join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
+                      if (node.detail?.trim().isNotEmpty == true ||
+                          node.lane != null) ...[
+                        SizedBox(height: compact ? 1 : 2),
+                        Text(
+                          [
+                            if (node.detail?.trim().isNotEmpty == true)
+                              node.detail,
+                            if (node.lane != null) _laneLabel(node.lane!),
+                          ].whereType<String>().join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                fontSize: compact ? 10.5 : null,
+                                color: cs.onSurfaceVariant,
+                              ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -1566,6 +1578,8 @@ class _TopologyLayout {
 
   static const nodeWidth = 204.0;
   static const nodeHeight = 76.0;
+  static const compactNodeWidth = 146.0;
+  static const compactNodeHeight = 52.0;
   static const horizontalGap = 56.0;
   static const verticalGap = 26.0;
   static const padding = 24.0;
@@ -1634,11 +1648,14 @@ class _TopologyLayout {
       var previousBottom = padding - verticalGap;
       for (var i = 0; i < nodes.length; i++) {
         final node = nodes[i];
+        final width = _nodeWidth(node);
+        final height = _nodeHeight(node);
         final targetY = padding + (desiredRows[node.id] ?? 0) * rowStride;
         final y = math.max(targetY, previousBottom + verticalGap);
-        rects[node.id] = Rect.fromLTWH(x, y, nodeWidth, nodeHeight);
-        maxHeight = math.max(maxHeight, y + nodeHeight + padding);
-        previousBottom = y + nodeHeight;
+        final centeredX = x + (nodeWidth - width) / 2;
+        rects[node.id] = Rect.fromLTWH(centeredX, y, width, height);
+        maxHeight = math.max(maxHeight, y + height + padding);
+        previousBottom = y + height;
       }
     }
     final maxColumn = columns.keys.fold<int>(0, math.max);
@@ -1653,6 +1670,12 @@ class _TopologyLayout {
       nodeColumns: nodeColumns,
     );
   }
+
+  static double _nodeWidth(ServiceTopologyNode node) =>
+      node.compact ? compactNodeWidth : nodeWidth;
+
+  static double _nodeHeight(ServiceTopologyNode node) =>
+      node.compact ? compactNodeHeight : nodeHeight;
 
   static Map<String, double> _routeRows(
     ServiceTopologyGraph graph,
@@ -1803,6 +1826,8 @@ class _TopologyLayout {
   }
 
   static int _columnForNode(ServiceTopologyNode node) {
+    final layoutColumn = node.layoutColumn;
+    if (layoutColumn != null) return layoutColumn;
     if (node.kind == ServiceTopologyNodeKind.domain) {
       return node.lane == ServiceAccessLane.public ? 8 : 4;
     }
@@ -1876,12 +1901,37 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
-      final start = Offset(
-        from.right,
-        from.center.dy + (outgoingOffsets[edge] ?? 0),
+      final fromColumn = layout.nodeColumns[edge.from] ?? 0;
+      final toColumn = layout.nodeColumns[edge.to] ?? fromColumn;
+      final forward = toColumn >= fromColumn;
+      final sameColumn = toColumn == fromColumn;
+      final startSide = sameColumn
+          ? _TopologySide.right
+          : (forward ? _TopologySide.right : _TopologySide.left);
+      final endSide = sameColumn
+          ? _TopologySide.right
+          : (forward ? _TopologySide.left : _TopologySide.right);
+      final start = _anchor(
+        from,
+        startSide,
+        outgoingOffsets[edge] ?? 0,
       );
-      final end = Offset(to.left, to.center.dy + (incomingOffsets[edge] ?? 0));
-      _drawEdge(canvas, paint, start, end);
+      final end = _anchor(
+        to,
+        endSide,
+        incomingOffsets[edge] ?? 0,
+      );
+      _drawEdge(
+        canvas,
+        paint,
+        start,
+        end,
+        sameColumn: sameColumn,
+        startSide: startSide,
+        endSide: endSide,
+        from: from,
+        to: to,
+      );
     }
   }
 
@@ -1933,29 +1983,49 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
     return offsets;
   }
 
-  void _drawEdge(Canvas canvas, Paint paint, Offset start, Offset end) {
-    final travel = end.dx - start.dx;
-    final lead = math.max(18.0, math.min(32.0, travel.abs() * 0.22));
-    final exitX = start.dx + lead;
-    final entryX = end.dx - lead;
-    final middleX = entryX <= exitX
-        ? (start.dx + end.dx) / 2
-        : (exitX + entryX) / 2;
+  Offset _anchor(Rect rect, _TopologySide side, double yOffset) => switch (side) {
+    _TopologySide.left => Offset(rect.left, rect.center.dy + yOffset),
+    _TopologySide.right => Offset(rect.right, rect.center.dy + yOffset),
+  };
+
+  void _drawEdge(
+    Canvas canvas,
+    Paint paint,
+    Offset start,
+    Offset end, {
+    required bool sameColumn,
+    required _TopologySide startSide,
+    required _TopologySide endSide,
+    required Rect from,
+    required Rect to,
+  }) {
+    final startDirection = _sideDirection(startSide);
+    final endDirection = _sideDirection(endSide);
+    final lead = sameColumn
+        ? 24.0
+        : math.max(20.0, math.min(40.0, (end.dx - start.dx).abs() * 0.22));
+    final exit = Offset(start.dx + startDirection * lead, start.dy);
+    final entry = Offset(end.dx + endDirection * lead, end.dy);
+    final middleX = sameColumn
+        ? (startSide == _TopologySide.right
+              ? math.max(from.right, to.right) + lead
+              : math.min(from.left, to.left) - lead)
+        : (exit.dx + entry.dx) / 2;
 
     final path = Path()..moveTo(start.dx, start.dy);
-    if ((end.dy - start.dy).abs() < 1) {
+    if (!sameColumn && (end.dy - start.dy).abs() < 1) {
       path.lineTo(end.dx, end.dy);
     } else {
       path
-        ..lineTo(exitX, start.dy)
+        ..lineTo(exit.dx, exit.dy)
         ..lineTo(middleX, start.dy)
         ..lineTo(middleX, end.dy)
-        ..lineTo(entryX, end.dy)
+        ..lineTo(entry.dx, entry.dy)
         ..lineTo(end.dx, end.dy);
     }
     canvas.drawPath(path, paint);
 
-    final arrowOrigin = Offset(math.min(entryX, end.dx - 10), end.dy);
+    final arrowOrigin = Offset(entry.dx, entry.dy);
     final angle = math.atan2(end.dy - arrowOrigin.dy, end.dx - arrowOrigin.dx);
     final arrow = Path()
       ..moveTo(end.dx, end.dy)
@@ -1970,6 +2040,9 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
       );
     canvas.drawPath(arrow, paint);
   }
+
+  double _sideDirection(_TopologySide side) =>
+      side == _TopologySide.right ? 1.0 : -1.0;
 
   Color _edgeColor(ServiceTopologyEdge edge) => switch (edge.lane) {
     ServiceAccessLane.local => colorScheme.tertiary,

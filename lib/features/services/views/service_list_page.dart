@@ -245,15 +245,54 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _metricCard(l10n.activeServices, activeCount, Icons.dns_outlined),
-            _metricCard(l10n.serviceDevices, deviceCount, Icons.devices_other),
-            _metricCard(l10n.serviceRoutes, _routes.length, Icons.alt_route),
-            _metricCard(l10n.publicRoutes, publicRoutes, Icons.public),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const spacing = 12.0;
+            const minMetricWidth = 150.0;
+            final availableWidth = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width - 32;
+            final columnCount = math.min(
+              4,
+              math.max(
+                1,
+                ((availableWidth + spacing) / (minMetricWidth + spacing))
+                    .floor(),
+              ),
+            );
+            final cardWidth =
+                (availableWidth - spacing * (columnCount - 1)) / columnCount;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                _metricCard(
+                  l10n.activeServices,
+                  activeCount,
+                  Icons.dns_outlined,
+                  width: cardWidth,
+                ),
+                _metricCard(
+                  l10n.serviceDevices,
+                  deviceCount,
+                  Icons.devices_other,
+                  width: cardWidth,
+                ),
+                _metricCard(
+                  l10n.serviceRoutes,
+                  _routes.length,
+                  Icons.alt_route,
+                  width: cardWidth,
+                ),
+                _metricCard(
+                  l10n.publicRoutes,
+                  publicRoutes,
+                  Icons.public,
+                  width: cardWidth,
+                ),
+              ],
+            );
+          },
         ),
         const SizedBox(height: 16),
         _topologyCard(l10n),
@@ -455,10 +494,10 @@ class _ServiceListPageState extends State<ServiceListPage> {
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 680;
+            final title = Row(
               children: [
                 Icon(
                   Icons.account_tree_outlined,
@@ -469,33 +508,77 @@ class _ServiceListPageState extends State<ServiceListPage> {
                   child: Text(
                     l10n.serviceTopology,
                     style: Theme.of(context).textTheme.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: () => _addAccessRoute(),
-                  icon: const Icon(Icons.add_link),
-                  label: Text(l10n.serviceAddAccess),
-                ),
-                if (!graph.isEmpty) ...[
-                  const SizedBox(width: 8),
-                  FilledButton.tonalIcon(
-                    onPressed: () => _openTopology(graph),
-                    icon: const Icon(Icons.open_in_full),
-                    label: Text(l10n.serviceOpenTopology),
-                  ),
-                ],
               ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.serviceTopologyHint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (graph.isEmpty) _emptyInline(l10n.noServiceRoutes),
-          ],
+            );
+            final actions = Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+              children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: math.max(0.0, constraints.maxWidth),
+                  ),
+                  child: TextButton.icon(
+                    onPressed: () => _addAccessRoute(),
+                    icon: const Icon(Icons.add_link),
+                    label: Text(
+                      l10n.serviceAddAccess,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                if (!graph.isEmpty)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: math.max(0.0, constraints.maxWidth),
+                    ),
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => _openTopology(graph),
+                      icon: const Icon(Icons.open_in_full),
+                      label: Text(
+                        l10n.serviceOpenTopology,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (compact) ...[
+                  title,
+                  const SizedBox(height: 12),
+                  actions,
+                ] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: title),
+                      const SizedBox(width: 16),
+                      actions,
+                    ],
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.serviceTopologyHint,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (graph.isEmpty) _emptyInline(l10n.noServiceRoutes),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -577,10 +660,15 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
-  Widget _metricCard(String label, int value, IconData icon) {
+  Widget _metricCard(
+    String label,
+    int value,
+    IconData icon, {
+    double width = 160,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return SizedBox(
-      width: 160,
+      width: width,
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -1891,6 +1979,7 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final outgoingOffsets = _buildPortOffsets(outgoing: true);
     final incomingOffsets = _buildPortOffsets(outgoing: false);
+    final corridorOffsets = _buildCorridorOffsets();
     for (final edge in graph.edges) {
       final from = layout.nodeRects[edge.from];
       final to = layout.nodeRects[edge.to];
@@ -1905,22 +1994,15 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
       final toColumn = layout.nodeColumns[edge.to] ?? fromColumn;
       final forward = toColumn >= fromColumn;
       final sameColumn = toColumn == fromColumn;
+      final sameColumnSide = _sameColumnSide(fromColumn);
       final startSide = sameColumn
-          ? _TopologySide.right
+          ? sameColumnSide
           : (forward ? _TopologySide.right : _TopologySide.left);
       final endSide = sameColumn
-          ? _TopologySide.right
+          ? sameColumnSide
           : (forward ? _TopologySide.left : _TopologySide.right);
-      final start = _anchor(
-        from,
-        startSide,
-        outgoingOffsets[edge] ?? 0,
-      );
-      final end = _anchor(
-        to,
-        endSide,
-        incomingOffsets[edge] ?? 0,
-      );
+      final start = _anchor(from, startSide, outgoingOffsets[edge] ?? 0);
+      final end = _anchor(to, endSide, incomingOffsets[edge] ?? 0);
       _drawEdge(
         canvas,
         paint,
@@ -1931,6 +2013,7 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
         endSide: endSide,
         from: from,
         to: to,
+        corridorOffset: corridorOffsets[edge] ?? 0,
       );
     }
   }
@@ -1983,10 +2066,74 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
     return offsets;
   }
 
-  Offset _anchor(Rect rect, _TopologySide side, double yOffset) => switch (side) {
-    _TopologySide.left => Offset(rect.left, rect.center.dy + yOffset),
-    _TopologySide.right => Offset(rect.right, rect.center.dy + yOffset),
+  Map<ServiceTopologyEdge, double> _buildCorridorOffsets() {
+    final grouped = <String, List<ServiceTopologyEdge>>{};
+    for (final edge in graph.edges) {
+      final from = layout.nodeRects[edge.from];
+      final to = layout.nodeRects[edge.to];
+      if (from == null || to == null) continue;
+
+      final fromColumn = layout.nodeColumns[edge.from] ?? 0;
+      final toColumn = layout.nodeColumns[edge.to] ?? fromColumn;
+      final sameColumn = fromColumn == toColumn;
+      final forward = toColumn >= fromColumn;
+      final lowerColumn = math.min(fromColumn, toColumn);
+      final upperColumn = math.max(fromColumn, toColumn);
+      final side = sameColumn ? _sameColumnSide(fromColumn).name : '';
+      final direction = forward ? 'forward' : 'backward';
+      final key = sameColumn
+          ? 'same:$fromColumn:$side'
+          : 'columns:$lowerColumn:$upperColumn:$direction';
+      grouped.putIfAbsent(key, () => []).add(edge);
+    }
+
+    final offsets = <ServiceTopologyEdge, double>{};
+    for (final entry in grouped.entries) {
+      final edges = entry.value
+        ..sort((a, b) {
+          final yCmp = _edgeCenterY(a).compareTo(_edgeCenterY(b));
+          if (yCmp != 0) return yCmp;
+
+          final laneCmp = _edgeLaneRank(a).compareTo(_edgeLaneRank(b));
+          if (laneCmp != 0) return laneCmp;
+
+          final aKey = '${a.from}->${a.to}:${a.routeId ?? ''}:${a.label ?? ''}';
+          final bKey = '${b.from}->${b.to}:${b.routeId ?? ''}:${b.label ?? ''}';
+          return aKey.compareTo(bKey);
+        });
+
+      final sameColumn = entry.key.startsWith('same:');
+      final midpoint = (edges.length - 1) / 2;
+      for (var i = 0; i < edges.length; i++) {
+        offsets[edges[i]] = sameColumn ? i * 9.0 : (i - midpoint) * 8.0;
+      }
+    }
+    return offsets;
+  }
+
+  double _edgeCenterY(ServiceTopologyEdge edge) {
+    final from = layout.nodeRects[edge.from];
+    final to = layout.nodeRects[edge.to];
+    return ((from?.center.dy ?? 0) + (to?.center.dy ?? 0)) / 2;
+  }
+
+  int _edgeLaneRank(ServiceTopologyEdge edge) => switch (edge.lane) {
+    ServiceAccessLane.local => 0,
+    ServiceAccessLane.vpn => 1,
+    ServiceAccessLane.public => 2,
+    null => 3,
   };
+
+  _TopologySide _sameColumnSide(int column) {
+    final maxColumn = layout.nodeColumns.values.fold<int>(0, math.max);
+    return column >= maxColumn - 1 ? _TopologySide.left : _TopologySide.right;
+  }
+
+  Offset _anchor(Rect rect, _TopologySide side, double yOffset) =>
+      switch (side) {
+        _TopologySide.left => Offset(rect.left, rect.center.dy + yOffset),
+        _TopologySide.right => Offset(rect.right, rect.center.dy + yOffset),
+      };
 
   void _drawEdge(
     Canvas canvas,
@@ -1998,22 +2145,25 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
     required _TopologySide endSide,
     required Rect from,
     required Rect to,
+    required double corridorOffset,
   }) {
     final startDirection = _sideDirection(startSide);
     final endDirection = _sideDirection(endSide);
     final lead = sameColumn
         ? 24.0
-        : math.max(20.0, math.min(40.0, (end.dx - start.dx).abs() * 0.22));
+        : math.max(14.0, math.min(36.0, (end.dx - start.dx).abs() * 0.18));
     final exit = Offset(start.dx + startDirection * lead, start.dy);
     final entry = Offset(end.dx + endDirection * lead, end.dy);
     final middleX = sameColumn
         ? (startSide == _TopologySide.right
-              ? math.max(from.right, to.right) + lead
-              : math.min(from.left, to.left) - lead)
-        : (exit.dx + entry.dx) / 2;
+              ? math.max(from.right, to.right) + lead + corridorOffset
+              : math.min(from.left, to.left) - lead - corridorOffset)
+        : (exit.dx + entry.dx) / 2 + corridorOffset;
 
     final path = Path()..moveTo(start.dx, start.dy);
-    if (!sameColumn && (end.dy - start.dy).abs() < 1) {
+    if (!sameColumn &&
+        (end.dy - start.dy).abs() < 1 &&
+        corridorOffset.abs() < 1) {
       path.lineTo(end.dx, end.dy);
     } else {
       path

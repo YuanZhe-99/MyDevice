@@ -599,16 +599,22 @@ void main() {
     final remoteEntry = graph.nodes.singleWhere(
       (node) => node.kind == ServiceTopologyNodeKind.remoteEntry,
     );
+    final frpIngress = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.endpoint &&
+          node.serviceId == frp.id,
+    );
 
     expect(vps.role, ServiceTopologyNodeRole.remoteDevice);
     expect(frpNode.role, ServiceTopologyNodeRole.remoteService);
+    expect(frpIngress.detail, contains('57000'));
     expect(remoteEntry.label, '203.0.113.20:443');
     expect(remoteEntry.deviceId, frp.deviceId);
     expect(
       graph.edges.any(
         (edge) =>
             edge.from == 'endpoint:${caddy.id}:caddy-https' &&
-            edge.to == vps.id,
+            edge.to == frpIngress.id,
       ),
       isTrue,
     );
@@ -618,17 +624,15 @@ void main() {
     );
     expect(
       graph.edges.any(
-        (edge) => edge.from == frpNode.id && edge.to == remoteEntry.id,
+        (edge) => edge.from == frpNode.id && edge.to == frpIngress.id,
       ),
       isTrue,
     );
     expect(
-      graph.nodes.where(
-        (node) =>
-            node.kind == ServiceTopologyNodeKind.endpoint &&
-            node.serviceId == frp.id,
+      graph.edges.any(
+        (edge) => edge.from == frpNode.id && edge.to == remoteEntry.id,
       ),
-      isEmpty,
+      isTrue,
     );
   });
 
@@ -692,7 +696,13 @@ void main() {
       final remoteEntry = graph.nodes.singleWhere(
         (node) => node.kind == ServiceTopologyNodeKind.remoteEntry,
       );
+      final frpIngress = graph.nodes.singleWhere(
+        (node) =>
+            node.kind == ServiceTopologyNodeKind.endpoint &&
+            node.serviceId == frp.id,
+      );
       expect(remoteEntry.label, '203.0.113.20:443');
+      expect(frpIngress.detail, contains('57000'));
       expect(
         graph.nodes
             .where((node) => node.kind == ServiceTopologyNodeKind.domain)
@@ -704,12 +714,12 @@ void main() {
         hasLength(2),
       );
       expect(
-        graph.nodes.where(
-          (node) =>
-              node.kind == ServiceTopologyNodeKind.endpoint &&
-              node.serviceId == frp.id,
+        graph.edges.any(
+          (edge) =>
+              edge.from == 'endpoint:${caddy.id}:caddy-https' &&
+              edge.to == frpIngress.id,
         ),
-        isEmpty,
+        isTrue,
       );
     },
   );
@@ -850,7 +860,7 @@ void main() {
     );
   });
 
-  test('service topology places direct and VPS branches after endpoint', () {
+  test('service topology places direct and FRP ingress after endpoint', () {
     final caddy = ServiceNode(
       id: 'caddy-local',
       deviceId: 'mac-mini',
@@ -923,6 +933,11 @@ void main() {
           node.kind == ServiceTopologyNodeKind.device &&
           node.deviceId == 'vps-1',
     );
+    final frpIngress = graph.nodes.singleWhere(
+      (node) =>
+          node.kind == ServiceTopologyNodeKind.endpoint &&
+          node.serviceId == frp.id,
+    );
 
     expect(
       graph.edges.any(
@@ -931,7 +946,15 @@ void main() {
       isTrue,
     );
     expect(
-      graph.edges.any((edge) => edge.from == endpointId && edge.to == vps.id),
+      graph.edges.any(
+        (edge) => edge.from == endpointId && edge.to == frpIngress.id,
+      ),
+      isTrue,
+    );
+    expect(
+      graph.edges.any(
+        (edge) => edge.from == vps.id && edge.to == 'service:${frp.id}',
+      ),
       isTrue,
     );
   });

@@ -447,10 +447,6 @@ ServiceTopologyGraph buildServiceTopology({
             ? null
             : serviceMap[hop.serviceId];
         if (hopService != null) {
-          final hopDeviceId = addRemoteDeviceNode(
-            hopService.deviceId,
-            routeId: route.id,
-          );
           final hopServiceId = addServiceNode(
             hopService,
             remote: true,
@@ -459,7 +455,18 @@ ServiceTopologyGraph buildServiceTopology({
                 ? hop.type.name
                 : '${serviceRouteMethodLabel(hop.method!)} service',
           );
-          addEdge(currentId, hopDeviceId, routeId: route.id);
+          final ingressEndpoint = _portMappingIngressEndpoint(hopService, hop);
+          if (ingressEndpoint != null) {
+            final ingressEndpointId = addEndpointNode(
+              hopService,
+              ingressEndpoint,
+              remote: true,
+              routeId: route.id,
+            );
+            addEdge(currentId, ingressEndpointId, routeId: route.id);
+          } else {
+            addEdge(currentId, hopServiceId, routeId: route.id);
+          }
           currentId = hopServiceId;
         } else {
           final relayId = _relayNodeId(hop);
@@ -781,6 +788,18 @@ ServiceEndpoint? _endpointForRoute(ServiceNode service, String? endpointId) {
   return service.endpoints
       .where((endpoint) => endpoint.id == endpointId)
       .firstOrNull;
+}
+
+ServiceEndpoint? _portMappingIngressEndpoint(
+  ServiceNode service,
+  ServiceRouteHop hop,
+) {
+  final explicit = _endpointForRoute(service, hop.endpointId);
+  if (explicit != null) return explicit;
+  return service.endpoints
+          .where((endpoint) => endpoint.isPrimary)
+          .firstOrNull ??
+      service.endpoints.firstOrNull;
 }
 
 bool _isPortMappingHop(ServiceRouteHop hop) =>

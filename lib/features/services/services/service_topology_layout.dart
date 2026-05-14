@@ -25,6 +25,8 @@ class ServiceTopologyLayout {
   static const padding = 24.0;
   static const _routingMargin = 72.0;
   static const _routingClearance = 14.0;
+  static const _routingEscape = 18.0;
+  static const _routingTrackGap = 22.0;
 
   static ServiceTopologyLayout build(
     ServiceTopologyGraph graph,
@@ -145,6 +147,7 @@ class ServiceTopologyLayout {
     ServiceTopologyGraph graph,
     List<ServiceTopologyEdge> validEdges,
   ) {
+    final nodeMap = {for (final node in graph.nodes) node.id: node};
     final ranks = <String, int>{
       for (final node in graph.nodes)
         node.id: node.kind == ServiceTopologyNodeKind.device ? 0 : 1,
@@ -160,6 +163,9 @@ class ServiceTopologyLayout {
           changed = true;
         }
       }
+      if (_alignSiblingPortRanks(validEdges, nodeMap, ranks)) {
+        changed = true;
+      }
       if (!changed) break;
     }
 
@@ -171,6 +177,43 @@ class ServiceTopologyLayout {
       for (final entry in ranks.entries)
         entry.key: compressed[entry.value] ?? 0,
     };
+  }
+
+  static bool _alignSiblingPortRanks(
+    List<ServiceTopologyEdge> edges,
+    Map<String, ServiceTopologyNode> nodeMap,
+    Map<String, int> ranks,
+  ) {
+    final servicePorts = <String, Set<String>>{};
+    for (final edge in edges) {
+      final from = nodeMap[edge.from];
+      final to = nodeMap[edge.to];
+      if (from?.kind != ServiceTopologyNodeKind.service || to == null) {
+        continue;
+      }
+      final portLike =
+          to.compact &&
+          (to.kind == ServiceTopologyNodeKind.endpoint ||
+              to.kind == ServiceTopologyNodeKind.remoteEntry);
+      if (!portLike) continue;
+      servicePorts.putIfAbsent(edge.from, () => <String>{}).add(edge.to);
+    }
+
+    var changed = false;
+    for (final portIds in servicePorts.values) {
+      if (portIds.length < 2) continue;
+      final targetRank = portIds.fold<int>(
+        0,
+        (rank, id) => math.max(rank, ranks[id] ?? 0),
+      );
+      for (final id in portIds) {
+        if ((ranks[id] ?? 0) < targetRank) {
+          ranks[id] = targetRank;
+          changed = true;
+        }
+      }
+    }
+    return changed;
   }
 
   static double _nodeWidth(ServiceTopologyNode node) =>
@@ -309,6 +352,9 @@ class ServiceTopologyLayout {
     );
     final routedSegments = <_Segment>[];
     final paths = <ServiceTopologyEdge, List<Offset>>{};
+    final obstacles = [
+      for (final rect in rects.values) rect.inflate(_routingClearance),
+    ];
     final orderedEdges = [...validEdges]
       ..sort((a, b) {
         final spanCmp = _edgeSpan(b, rects).compareTo(_edgeSpan(a, rects));
@@ -327,11 +373,7 @@ class ServiceTopologyLayout {
         to: to,
         fromOffset: outgoingOffsets[edge] ?? 0,
         toOffset: incomingOffsets[edge] ?? 0,
-        obstacles: [
-          for (final entry in rects.entries)
-            if (entry.key != edge.from && entry.key != edge.to)
-              entry.value.inflate(_routingClearance),
-        ],
+        obstacles: obstacles,
         routedSegments: routedSegments,
         size: size,
       );
@@ -400,18 +442,55 @@ class ServiceTopologyLayout {
     final endSide = sameRank
         ? side
         : (forward ? _TopologySide.left : _TopologySide.right);
-    final start = _snapOffset(_anchor(from, startSide, fromOffset));
-    final end = _snapOffset(_anchor(to, endSide, toOffset));
-    return _routeBetween(
-      start: start,
-      goal: end,
-      obstacles: obstacles,
-      routedSegments: routedSegments,
-      size: size,
-    );
+    final candidates = <({_TopologySide start, _TopologySide end})>[];
+    void addCandidate(_TopologySide start, _TopologySide end) {
+      final candidate = (start: start, end: end);
+      if (!candidates.any(
+        (existing) => existing.start == start && existing.end == end,
+      )) {
+        candidates.add(candidate);
+      }
+    }
+
+    addCandidate(startSide, endSide);
+    addCandidate(_TopologySide.right, _TopologySide.left);
+    addCandidate(_TopologySide.left, _TopologySide.right);
+    addCandidate(_TopologySide.right, _TopologySide.right);
+    addCandidate(_TopologySide.left, _TopologySide.left);
+
+    final fromObstacle = from.inflate(_routingClearance);
+    final toObstacle = to.inflate(_routingClearance);
+    for (final candidate in candidates) {
+      final start = _snapOffset(_anchor(from, candidate.start, fromOffset));
+      final end = _snapOffset(_anchor(to, candidate.end, toOffset));
+      final startExit = _snapOffset(
+        _clampOffset(
+          start + _sideVector(candidate.start) * _routingEscape,
+          size,
+        ),
+      );
+      final endEntry = _snapOffset(
+        _clampOffset(end + _sideVector(candidate.end) * _routingEscape, size),
+      );
+      if (_stubBlocked(start, startExit, obstacles, allowed: fromObstacle) ||
+          _stubBlocked(endEntry, end, obstacles, allowed: toObstacle)) {
+        continue;
+      }
+      final middle = _routeBetween(
+        start: startExit,
+        goal: endEntry,
+        obstacles: obstacles,
+        routedSegments: routedSegments,
+        size: size,
+      );
+      if (middle == null) continue;
+      return _simplifyPolyline([start, startExit, ...middle.skip(1), end]);
+    }
+
+    return const [];
   }
 
-  static List<Offset> _routeBetween({
+  static List<Offset>? _routeBetween({
     required Offset start,
     required Offset goal,
     required List<Rect> obstacles,
@@ -432,11 +511,11 @@ class ServiceTopologyLayout {
       addY(point.dy);
     }
     for (final obstacle in obstacles) {
-      addX(obstacle.left);
-      addX(obstacle.right);
+      addX(obstacle.left - _routingTrackGap);
+      addX(obstacle.right + _routingTrackGap);
       addX(obstacle.center.dx);
-      addY(obstacle.top);
-      addY(obstacle.bottom);
+      addY(obstacle.top - _routingTrackGap);
+      addY(obstacle.bottom + _routingTrackGap);
       addY(obstacle.center.dy);
     }
 
@@ -447,7 +526,7 @@ class ServiceTopologyLayout {
     final goalX = xValues.indexOf(_snap(goal.dx));
     final goalY = yValues.indexOf(_snap(goal.dy));
     if (startX < 0 || startY < 0 || goalX < 0 || goalY < 0) {
-      return _fallbackRoute(start, goal);
+      return null;
     }
 
     final pointCount = xValues.length * yValues.length;
@@ -507,7 +586,7 @@ class ServiceTopologyLayout {
       }
     }
 
-    if (bestGoalState == null) return _fallbackRoute(start, goal);
+    if (bestGoalState == null) return null;
     final reversed = <Offset>[];
     int? state = bestGoalState;
     while (state != null) {
@@ -515,6 +594,19 @@ class ServiceTopologyLayout {
       state = previous[state];
     }
     return _simplifyPolyline(reversed.reversed.toList());
+  }
+
+  static bool _stubBlocked(
+    Offset a,
+    Offset b,
+    List<Rect> obstacles, {
+    required Rect allowed,
+  }) {
+    for (final obstacle in obstacles) {
+      if (_sameRect(obstacle, allowed)) continue;
+      if (_segmentBlocked(a, b, [obstacle])) return true;
+    }
+    return false;
   }
 
   static bool _segmentBlocked(Offset a, Offset b, List<Rect> obstacles) {
@@ -545,16 +637,6 @@ class ServiceTopologyLayout {
       }
     }
     return cost;
-  }
-
-  static List<Offset> _fallbackRoute(Offset start, Offset goal) {
-    final midX = (start.dx + goal.dx) / 2;
-    return _simplifyPolyline([
-      start,
-      Offset(midX, start.dy),
-      Offset(midX, goal.dy),
-      goal,
-    ]);
   }
 
   static List<_Segment> _segmentsForPath(List<Offset> path) {
@@ -597,6 +679,11 @@ class ServiceTopologyLayout {
         _TopologySide.left => Offset(rect.left, rect.center.dy + yOffset),
         _TopologySide.right => Offset(rect.right, rect.center.dy + yOffset),
       };
+
+  static Offset _sideVector(_TopologySide side) => switch (side) {
+    _TopologySide.left => const Offset(-1, 0),
+    _TopologySide.right => const Offset(1, 0),
+  };
 
   static double _edgeSpan(ServiceTopologyEdge edge, Map<String, Rect> rects) {
     final from = rects[edge.from];
@@ -680,7 +767,18 @@ class ServiceTopologyLayout {
   static Offset _snapOffset(Offset offset) =>
       Offset(_snap(offset.dx), _snap(offset.dy));
 
+  static Offset _clampOffset(Offset offset, Size size) => Offset(
+    offset.dx.clamp(0.0, size.width).toDouble(),
+    offset.dy.clamp(0.0, size.height).toDouble(),
+  );
+
   static double _snap(num value) => (value.toDouble() * 2).roundToDouble() / 2;
+
+  static bool _sameRect(Rect a, Rect b) =>
+      (a.left - b.left).abs() < _epsilon &&
+      (a.top - b.top).abs() < _epsilon &&
+      (a.right - b.right).abs() < _epsilon &&
+      (a.bottom - b.bottom).abs() < _epsilon;
 }
 
 enum _TopologySide { left, right }

@@ -14,6 +14,7 @@ import '../../network/models/network.dart';
 import '../../network/services/network_storage.dart';
 import '../models/service.dart';
 import '../services/service_analysis.dart';
+import '../services/service_topology_layout.dart';
 import '../services/service_storage.dart';
 import 'service_edit_page.dart';
 import 'service_route_edit_page.dart';
@@ -21,8 +22,6 @@ import 'service_route_edit_page.dart';
 enum _ServiceView { overview, devices, routes, ports }
 
 enum _TopologyInteractionMode { select, move }
-
-enum _TopologySide { left, right }
 
 enum _QuickAccessMethod {
   direct(ServiceRouteMethod.direct),
@@ -1251,7 +1250,11 @@ class _ServiceTopologyView extends StatelessWidget {
         final viewportWidth = turns.isOdd && constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : constraints.maxWidth;
-        final layout = _TopologyLayout.build(graph, routes, viewportWidth);
+        final layout = ServiceTopologyLayout.build(
+          graph,
+          routes,
+          viewportWidth,
+        );
         return ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: ColoredBox(
@@ -1265,7 +1268,11 @@ class _ServiceTopologyView extends StatelessWidget {
     );
   }
 
-  Widget _buildViewer(BuildContext context, _TopologyLayout layout, int turns) {
+  Widget _buildViewer(
+    BuildContext context,
+    ServiceTopologyLayout layout,
+    int turns,
+  ) {
     Widget canvas = SizedBox.fromSize(
       size: layout.size,
       child: Stack(
@@ -1583,32 +1590,74 @@ class _TopologyNodeCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final border = _nodeBorder(context, node);
     final compact = node.compact;
+    if (compact) {
+      return Tooltip(
+        message: [
+          node.label,
+          node.detail,
+          node.lane == null ? null : _laneLabel(node.lane!),
+        ].whereType<String>().join('\n'),
+        child: SizedBox.square(
+          dimension: ServiceTopologyLayout.portChipSize,
+          child: Card(
+            margin: EdgeInsets.zero,
+            color: _nodeFill(context, node),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: border, width: 1.2),
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 16, color: border),
+                    const SizedBox(height: 2),
+                    Text(
+                      _compactTopologyLabel(node),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: cs.onSurface,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Tooltip(
       message: [node.label, node.detail].whereType<String>().join('\n'),
       child: Card(
         margin: EdgeInsets.zero,
         color: _nodeFill(context, node),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(compact ? 14 : 18),
-          side: BorderSide(color: border, width: compact ? 1.1 : 1.4),
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: border, width: 1.4),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(compact ? 14 : 18),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: compact ? 9 : 12,
-              vertical: compact ? 7 : 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: compact ? 12 : 17,
+                  radius: 17,
                   backgroundColor: border.withValues(alpha: 0.18),
                   foregroundColor: border,
-                  child: Icon(icon, size: compact ? 14 : 19),
+                  child: Icon(icon, size: 19),
                 ),
-                SizedBox(width: compact ? 7 : 10),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1619,13 +1668,12 @@ class _TopologyNodeCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontSize: compact ? 12 : null,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       if (node.detail?.trim().isNotEmpty == true ||
                           node.lane != null) ...[
-                        SizedBox(height: compact ? 1 : 2),
+                        const SizedBox(height: 2),
                         Text(
                           [
                             if (node.detail?.trim().isNotEmpty == true)
@@ -1635,10 +1683,7 @@ class _TopologyNodeCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                fontSize: compact ? 10.5 : null,
-                                color: cs.onSurfaceVariant,
-                              ),
+                              ?.copyWith(color: cs.onSurfaceVariant),
                         ),
                       ],
                     ],
@@ -1653,320 +1698,9 @@ class _TopologyNodeCard extends StatelessWidget {
   }
 }
 
-class _TopologyLayout {
-  final Size size;
-  final Map<String, Rect> nodeRects;
-  final Map<String, int> nodeColumns;
-
-  const _TopologyLayout({
-    required this.size,
-    required this.nodeRects,
-    required this.nodeColumns,
-  });
-
-  static const nodeWidth = 204.0;
-  static const nodeHeight = 76.0;
-  static const compactNodeWidth = 146.0;
-  static const compactNodeHeight = 52.0;
-  static const horizontalGap = 56.0;
-  static const verticalGap = 26.0;
-  static const padding = 24.0;
-
-  static _TopologyLayout build(
-    ServiceTopologyGraph graph,
-    List<ServiceRoute> routes,
-    double viewportWidth,
-  ) {
-    final nodeMap = {for (final node in graph.nodes) node.id: node};
-    final nodeColumns = {
-      for (final node in graph.nodes) node.id: _columnForNode(node),
-    };
-    final incoming = <String, Set<String>>{};
-    final outgoing = <String, Set<String>>{};
-    for (final node in graph.nodes) {
-      incoming[node.id] = <String>{};
-      outgoing[node.id] = <String>{};
-    }
-
-    for (final edge in graph.edges) {
-      if (!nodeMap.containsKey(edge.from) || !nodeMap.containsKey(edge.to)) {
-        continue;
-      }
-      outgoing.putIfAbsent(edge.from, () => <String>{}).add(edge.to);
-      incoming.putIfAbsent(edge.to, () => <String>{}).add(edge.from);
-    }
-
-    final routeRows = _routeRows(graph, routes, nodeMap);
-    final desiredRows = _desiredRows(
-      graph,
-      routes,
-      routeRows,
-      incoming,
-      outgoing,
-    );
-
-    final columns = <int, List<ServiceTopologyNode>>{};
-    for (final node in graph.nodes) {
-      columns.putIfAbsent(nodeColumns[node.id]!, () => []).add(node);
-    }
-    final orderedColumns = columns.keys.toList()..sort();
-    for (final nodes in columns.values) {
-      nodes.sort((a, b) {
-        final rowCmp = (desiredRows[a.id] ?? 0).compareTo(
-          desiredRows[b.id] ?? 0,
-        );
-        if (rowCmp != 0) return rowCmp;
-
-        final roleCmp = _roleOrder(a).compareTo(_roleOrder(b));
-        if (roleCmp != 0) return roleCmp;
-
-        final laneCmp = _laneBucket(a).compareTo(_laneBucket(b));
-        if (laneCmp != 0) return laneCmp;
-
-        return a.label.toLowerCase().compareTo(b.label.toLowerCase());
-      });
-    }
-
-    final rects = <String, Rect>{};
-    var maxHeight = 360.0;
-    const rowStride = nodeHeight + 62;
-    for (final column in orderedColumns) {
-      final nodes = columns[column] ?? const <ServiceTopologyNode>[];
-      final x = padding + column * (nodeWidth + horizontalGap);
-      var previousBottom = padding - verticalGap;
-      for (var i = 0; i < nodes.length; i++) {
-        final node = nodes[i];
-        final width = _nodeWidth(node);
-        final height = _nodeHeight(node);
-        final targetY = padding + (desiredRows[node.id] ?? 0) * rowStride;
-        final y = math.max(targetY, previousBottom + verticalGap);
-        final centeredX = x + (nodeWidth - width) / 2;
-        rects[node.id] = Rect.fromLTWH(centeredX, y, width, height);
-        maxHeight = math.max(maxHeight, y + height + padding);
-        previousBottom = y + height;
-      }
-    }
-    final maxColumn = columns.keys.fold<int>(0, math.max);
-    final width = math.max(
-      viewportWidth,
-      padding * 2 + (maxColumn + 1) * nodeWidth + maxColumn * horizontalGap,
-    );
-    final height = math.max(360.0, maxHeight);
-    return _TopologyLayout(
-      size: Size(width, height),
-      nodeRects: rects,
-      nodeColumns: nodeColumns,
-    );
-  }
-
-  static double _nodeWidth(ServiceTopologyNode node) =>
-      node.compact ? compactNodeWidth : nodeWidth;
-
-  static double _nodeHeight(ServiceTopologyNode node) =>
-      node.compact ? compactNodeHeight : nodeHeight;
-
-  static Map<String, double> _routeRows(
-    ServiceTopologyGraph graph,
-    List<ServiceRoute> routes,
-    Map<String, ServiceTopologyNode> nodeMap,
-  ) {
-    final routesBySource = <String, List<ServiceRoute>>{};
-    for (final route in routes) {
-      routesBySource
-          .putIfAbsent(_serviceNodeId(route.sourceServiceId), () => [])
-          .add(route);
-    }
-
-    final sourceIds = <String>{
-      ...routesBySource.keys,
-      for (final node in graph.nodes)
-        if (node.kind == ServiceTopologyNodeKind.service &&
-            node.role == ServiceTopologyNodeRole.localService)
-          node.id,
-    }.toList();
-    sourceIds.sort((a, b) {
-      final aNode = nodeMap[a];
-      final bNode = nodeMap[b];
-      final aLabel = aNode?.label.toLowerCase() ?? a;
-      final bLabel = bNode?.label.toLowerCase() ?? b;
-      return aLabel.compareTo(bLabel);
-    });
-
-    final rows = <String, double>{};
-    var row = 0.0;
-    for (final sourceId in sourceIds) {
-      final sourceRoutes = routesBySource[sourceId] ?? const <ServiceRoute>[];
-      if (sourceRoutes.isEmpty) {
-        row += 1.45;
-        continue;
-      }
-      final orderedRoutes = [...sourceRoutes]..sort(_compareRoutesForLayout);
-      for (final route in orderedRoutes) {
-        rows[route.id] = row;
-        row += 1;
-      }
-      row += 0.45;
-    }
-    return rows;
-  }
-
-  static Map<String, double> _desiredRows(
-    ServiceTopologyGraph graph,
-    List<ServiceRoute> routes,
-    Map<String, double> routeRows,
-    Map<String, Set<String>> incoming,
-    Map<String, Set<String>> outgoing,
-  ) {
-    final sourceRouteRows = <String, List<double>>{};
-    for (final route in routes) {
-      final row = routeRows[route.id];
-      if (row == null) continue;
-      sourceRouteRows
-          .putIfAbsent(_serviceNodeId(route.sourceServiceId), () => [])
-          .add(row);
-    }
-
-    final desired = <String, double>{};
-    for (final node in graph.nodes) {
-      final scores = <double>[];
-      for (final routeId in node.routeIds) {
-        final row = routeRows[routeId];
-        if (row != null) scores.add(row);
-      }
-      if (node.kind == ServiceTopologyNodeKind.service) {
-        scores.addAll(sourceRouteRows[node.id] ?? const <double>[]);
-      }
-      if (scores.isNotEmpty) {
-        desired[node.id] = _median(scores);
-      }
-    }
-
-    for (var iteration = 0; iteration < 8; iteration++) {
-      var changed = false;
-      for (final node in graph.nodes) {
-        if (desired.containsKey(node.id)) continue;
-        final scores = <double>[];
-        for (final neighborId in {
-          ...?incoming[node.id],
-          ...?outgoing[node.id],
-        }) {
-          final score = desired[neighborId];
-          if (score != null) scores.add(score);
-        }
-        if (scores.isEmpty) continue;
-        desired[node.id] = _median(scores);
-        changed = true;
-      }
-      if (!changed) break;
-    }
-
-    var fallbackRow = desired.values.isEmpty
-        ? 0.0
-        : desired.values.reduce(math.max) + 1;
-    final fallbackNodes =
-        graph.nodes.where((node) => !desired.containsKey(node.id)).toList()
-          ..sort((a, b) {
-            final roleCmp = _roleOrder(a).compareTo(_roleOrder(b));
-            if (roleCmp != 0) return roleCmp;
-            return a.label.toLowerCase().compareTo(b.label.toLowerCase());
-          });
-    for (final node in fallbackNodes) {
-      desired[node.id] = fallbackRow;
-      fallbackRow += 1;
-    }
-    return desired;
-  }
-
-  static String _serviceNodeId(String serviceId) => 'service:$serviceId';
-
-  static int _compareRoutesForLayout(ServiceRoute a, ServiceRoute b) {
-    final laneCmp = _laneOrder(
-      serviceAccessLaneForRoute(a),
-    ).compareTo(_laneOrder(serviceAccessLaneForRoute(b)));
-    if (laneCmp != 0) return laneCmp;
-
-    final methodCmp = (_routeMethodName(a)).compareTo(_routeMethodName(b));
-    if (methodCmp != 0) return methodCmp;
-
-    return serviceRouteDisplayTarget(
-      a,
-    ).toLowerCase().compareTo(serviceRouteDisplayTarget(b).toLowerCase());
-  }
-
-  static int _laneOrder(ServiceAccessLane lane) => switch (lane) {
-    ServiceAccessLane.local => 0,
-    ServiceAccessLane.vpn => 1,
-    ServiceAccessLane.public => 2,
-  };
-
-  static String _routeMethodName(ServiceRoute route) =>
-      route.hops
-          .map((hop) => hop.method?.name)
-          .whereType<String>()
-          .firstOrNull ??
-      '';
-
-  static double _median(List<double> values) {
-    final ordered = [...values]..sort();
-    final middle = ordered.length ~/ 2;
-    if (ordered.length.isOdd) return ordered[middle];
-    return (ordered[middle - 1] + ordered[middle]) / 2;
-  }
-
-  static int _columnForNode(ServiceTopologyNode node) {
-    final layoutColumn = node.layoutColumn;
-    if (layoutColumn != null) return layoutColumn;
-    if (node.kind == ServiceTopologyNodeKind.domain) {
-      return node.lane == ServiceAccessLane.public ? 8 : 4;
-    }
-    if (node.kind == ServiceTopologyNodeKind.endpoint &&
-        node.role == ServiceTopologyNodeRole.remoteService) {
-      return 7;
-    }
-    return switch (node.role) {
-      ServiceTopologyNodeRole.localDevice => 0,
-      ServiceTopologyNodeRole.localService => 1,
-      ServiceTopologyNodeRole.localEndpoint => 2,
-      ServiceTopologyNodeRole.lanAccess ||
-      ServiceTopologyNodeRole.vpnAccess => 3,
-      ServiceTopologyNodeRole.publicRelay => 4,
-      ServiceTopologyNodeRole.remoteDevice => 5,
-      ServiceTopologyNodeRole.remoteService => 6,
-      ServiceTopologyNodeRole.remotePublicEntry => 7,
-      ServiceTopologyNodeRole.domain => 8,
-    };
-  }
-
-  static int _roleOrder(ServiceTopologyNode node) {
-    if (node.kind == ServiceTopologyNodeKind.endpoint &&
-        node.role == ServiceTopologyNodeRole.remoteService) {
-      return 8;
-    }
-    return switch (node.role) {
-      ServiceTopologyNodeRole.localDevice => 0,
-      ServiceTopologyNodeRole.localService => 1,
-      ServiceTopologyNodeRole.localEndpoint => 2,
-      ServiceTopologyNodeRole.lanAccess => 3,
-      ServiceTopologyNodeRole.vpnAccess => 4,
-      ServiceTopologyNodeRole.publicRelay => 5,
-      ServiceTopologyNodeRole.remoteDevice => 6,
-      ServiceTopologyNodeRole.remoteService => 7,
-      ServiceTopologyNodeRole.remotePublicEntry => 9,
-      ServiceTopologyNodeRole.domain => 10,
-    };
-  }
-
-  static int _laneBucket(ServiceTopologyNode node) => switch (node.lane) {
-    ServiceAccessLane.local => 0,
-    ServiceAccessLane.vpn => 1,
-    ServiceAccessLane.public => 2,
-    null => -1,
-  };
-}
-
 class _ServiceTopologyEdgePainter extends CustomPainter {
   final ServiceTopologyGraph graph;
-  final _TopologyLayout layout;
+  final ServiceTopologyLayout layout;
   final ColorScheme colorScheme;
 
   const _ServiceTopologyEdgePainter({
@@ -1977,206 +1711,35 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final outgoingOffsets = _buildPortOffsets(outgoing: true);
-    final incomingOffsets = _buildPortOffsets(outgoing: false);
-    final corridorOffsets = _buildCorridorOffsets();
     for (final edge in graph.edges) {
-      final from = layout.nodeRects[edge.from];
-      final to = layout.nodeRects[edge.to];
-      if (from == null || to == null) continue;
+      final points = layout.edgePaths[edge];
+      if (points == null || points.length < 2) continue;
       final paint = Paint()
         ..color = _edgeColor(edge).withValues(alpha: 0.62)
         ..strokeWidth = 2.2
         ..style = PaintingStyle.stroke
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round;
-      final fromColumn = layout.nodeColumns[edge.from] ?? 0;
-      final toColumn = layout.nodeColumns[edge.to] ?? fromColumn;
-      final forward = toColumn >= fromColumn;
-      final sameColumn = toColumn == fromColumn;
-      final sameColumnSide = _sameColumnSide(fromColumn);
-      final startSide = sameColumn
-          ? sameColumnSide
-          : (forward ? _TopologySide.right : _TopologySide.left);
-      final endSide = sameColumn
-          ? sameColumnSide
-          : (forward ? _TopologySide.left : _TopologySide.right);
-      final start = _anchor(from, startSide, outgoingOffsets[edge] ?? 0);
-      final end = _anchor(to, endSide, incomingOffsets[edge] ?? 0);
-      _drawEdge(
-        canvas,
-        paint,
-        start,
-        end,
-        sameColumn: sameColumn,
-        startSide: startSide,
-        endSide: endSide,
-        from: from,
-        to: to,
-        corridorOffset: corridorOffsets[edge] ?? 0,
-      );
+      _drawPolyline(canvas, paint, points);
     }
   }
 
-  Map<ServiceTopologyEdge, double> _buildPortOffsets({required bool outgoing}) {
-    final grouped = <String, List<ServiceTopologyEdge>>{};
-    for (final edge in graph.edges) {
-      final from = layout.nodeRects[edge.from];
-      final to = layout.nodeRects[edge.to];
-      if (from == null || to == null) continue;
-      final nodeId = outgoing ? edge.from : edge.to;
-      grouped.putIfAbsent(nodeId, () => []).add(edge);
-    }
-
-    final offsets = <ServiceTopologyEdge, double>{};
-    for (final edges in grouped.values) {
-      edges.sort((a, b) {
-        final aPeer = outgoing
-            ? layout.nodeRects[a.to]
-            : layout.nodeRects[a.from];
-        final bPeer = outgoing
-            ? layout.nodeRects[b.to]
-            : layout.nodeRects[b.from];
-        final yCmp = (aPeer?.center.dy ?? 0).compareTo(bPeer?.center.dy ?? 0);
-        if (yCmp != 0) return yCmp;
-
-        final aColumn =
-            (outgoing
-                ? layout.nodeColumns[a.to]
-                : layout.nodeColumns[a.from]) ??
-            0;
-        final bColumn =
-            (outgoing
-                ? layout.nodeColumns[b.to]
-                : layout.nodeColumns[b.from]) ??
-            0;
-        final columnCmp = aColumn.compareTo(bColumn);
-        if (columnCmp != 0) return columnCmp;
-
-        final aKey = '${a.from}->${a.to}:${a.routeId ?? ''}:${a.label ?? ''}';
-        final bKey = '${b.from}->${b.to}:${b.routeId ?? ''}:${b.label ?? ''}';
-        return aKey.compareTo(bKey);
-      });
-
-      final midpoint = (edges.length - 1) / 2;
-      for (var i = 0; i < edges.length; i++) {
-        offsets[edges[i]] = (i - midpoint) * 10.0;
-      }
-    }
-    return offsets;
-  }
-
-  Map<ServiceTopologyEdge, double> _buildCorridorOffsets() {
-    final grouped = <String, List<ServiceTopologyEdge>>{};
-    for (final edge in graph.edges) {
-      final from = layout.nodeRects[edge.from];
-      final to = layout.nodeRects[edge.to];
-      if (from == null || to == null) continue;
-
-      final fromColumn = layout.nodeColumns[edge.from] ?? 0;
-      final toColumn = layout.nodeColumns[edge.to] ?? fromColumn;
-      final sameColumn = fromColumn == toColumn;
-      final forward = toColumn >= fromColumn;
-      final lowerColumn = math.min(fromColumn, toColumn);
-      final upperColumn = math.max(fromColumn, toColumn);
-      final side = sameColumn ? _sameColumnSide(fromColumn).name : '';
-      final direction = forward ? 'forward' : 'backward';
-      final key = sameColumn
-          ? 'same:$fromColumn:$side'
-          : 'columns:$lowerColumn:$upperColumn:$direction';
-      grouped.putIfAbsent(key, () => []).add(edge);
-    }
-
-    final offsets = <ServiceTopologyEdge, double>{};
-    for (final entry in grouped.entries) {
-      final edges = entry.value
-        ..sort((a, b) {
-          final yCmp = _edgeCenterY(a).compareTo(_edgeCenterY(b));
-          if (yCmp != 0) return yCmp;
-
-          final laneCmp = _edgeLaneRank(a).compareTo(_edgeLaneRank(b));
-          if (laneCmp != 0) return laneCmp;
-
-          final aKey = '${a.from}->${a.to}:${a.routeId ?? ''}:${a.label ?? ''}';
-          final bKey = '${b.from}->${b.to}:${b.routeId ?? ''}:${b.label ?? ''}';
-          return aKey.compareTo(bKey);
-        });
-
-      final sameColumn = entry.key.startsWith('same:');
-      final midpoint = (edges.length - 1) / 2;
-      for (var i = 0; i < edges.length; i++) {
-        offsets[edges[i]] = sameColumn ? i * 9.0 : (i - midpoint) * 8.0;
-      }
-    }
-    return offsets;
-  }
-
-  double _edgeCenterY(ServiceTopologyEdge edge) {
-    final from = layout.nodeRects[edge.from];
-    final to = layout.nodeRects[edge.to];
-    return ((from?.center.dy ?? 0) + (to?.center.dy ?? 0)) / 2;
-  }
-
-  int _edgeLaneRank(ServiceTopologyEdge edge) => switch (edge.lane) {
-    ServiceAccessLane.local => 0,
-    ServiceAccessLane.vpn => 1,
-    ServiceAccessLane.public => 2,
-    null => 3,
-  };
-
-  _TopologySide _sameColumnSide(int column) {
-    final maxColumn = layout.nodeColumns.values.fold<int>(0, math.max);
-    return column >= maxColumn - 1 ? _TopologySide.left : _TopologySide.right;
-  }
-
-  Offset _anchor(Rect rect, _TopologySide side, double yOffset) =>
-      switch (side) {
-        _TopologySide.left => Offset(rect.left, rect.center.dy + yOffset),
-        _TopologySide.right => Offset(rect.right, rect.center.dy + yOffset),
-      };
-
-  void _drawEdge(
-    Canvas canvas,
-    Paint paint,
-    Offset start,
-    Offset end, {
-    required bool sameColumn,
-    required _TopologySide startSide,
-    required _TopologySide endSide,
-    required Rect from,
-    required Rect to,
-    required double corridorOffset,
-  }) {
-    final startDirection = _sideDirection(startSide);
-    final endDirection = _sideDirection(endSide);
-    final lead = sameColumn
-        ? 24.0
-        : math.max(14.0, math.min(36.0, (end.dx - start.dx).abs() * 0.18));
-    final exit = Offset(start.dx + startDirection * lead, start.dy);
-    final entry = Offset(end.dx + endDirection * lead, end.dy);
-    final middleX = sameColumn
-        ? (startSide == _TopologySide.right
-              ? math.max(from.right, to.right) + lead + corridorOffset
-              : math.min(from.left, to.left) - lead - corridorOffset)
-        : (exit.dx + entry.dx) / 2 + corridorOffset;
-
-    final path = Path()..moveTo(start.dx, start.dy);
-    if (!sameColumn &&
-        (end.dy - start.dy).abs() < 1 &&
-        corridorOffset.abs() < 1) {
-      path.lineTo(end.dx, end.dy);
-    } else {
-      path
-        ..lineTo(exit.dx, exit.dy)
-        ..lineTo(middleX, start.dy)
-        ..lineTo(middleX, end.dy)
-        ..lineTo(entry.dx, entry.dy)
-        ..lineTo(end.dx, end.dy);
+  void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points) {
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (final point in points.skip(1)) {
+      path.lineTo(point.dx, point.dy);
     }
     canvas.drawPath(path, paint);
 
-    final arrowOrigin = Offset(entry.dx, entry.dy);
-    final angle = math.atan2(end.dy - arrowOrigin.dy, end.dx - arrowOrigin.dx);
+    final end = points.last;
+    var previous = points[points.length - 2];
+    for (var i = points.length - 2; i >= 0; i--) {
+      if ((end - points[i]).distance > 0.5) {
+        previous = points[i];
+        break;
+      }
+    }
+    final angle = math.atan2(end.dy - previous.dy, end.dx - previous.dx);
     final arrow = Path()
       ..moveTo(end.dx, end.dy)
       ..lineTo(
@@ -2190,9 +1753,6 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
       );
     canvas.drawPath(arrow, paint);
   }
-
-  double _sideDirection(_TopologySide side) =>
-      side == _TopologySide.right ? 1.0 : -1.0;
 
   Color _edgeColor(ServiceTopologyEdge edge) => switch (edge.lane) {
     ServiceAccessLane.local => colorScheme.tertiary,
@@ -2217,6 +1777,22 @@ List<String> _splitTargets(String value) => value
 String? _emptyToNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
+}
+
+String _compactTopologyLabel(ServiceTopologyNode node) {
+  if (node.kind == ServiceTopologyNodeKind.remoteEntry) {
+    final label = node.label.trim();
+    final portMatch = RegExp(r':(\d{1,5}(?:-\d{1,5})?)$').firstMatch(label);
+    if (portMatch != null) return portMatch.group(1)!;
+    if (label.length <= 5) return label;
+    return label.substring(0, 5);
+  }
+  final source = [node.label, node.detail].whereType<String>().join(' ');
+  final matches = RegExp(r'\d{1,5}(?:-\d{1,5})?').allMatches(source).toList();
+  if (matches.isNotEmpty) return matches.last.group(0)!;
+  final label = node.label.trim();
+  if (label.length <= 5) return label;
+  return label.substring(0, 5);
 }
 
 IconData _iconForTopologyNode(

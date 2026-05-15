@@ -86,6 +86,11 @@ class DeviceSearchService {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+  /// Purpose: Search for the requested result using the current query or filters.
+  /// Inputs: `query`.
+  /// Returns: `Future<List<DeviceSearchResult>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Search for devices by name. Returns quick results (name + thumbnail).
   static Future<List<DeviceSearchResult>> search(String query) async {
     if (AppFlavor.isStore) return [];
@@ -96,6 +101,11 @@ class DeviceSearchService {
     return results.expand((r) => r).toList();
   }
 
+  /// Purpose: Fetch detail from the relevant source.
+  /// Inputs: `result`.
+  /// Returns: `Future<DeviceSearchResult>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Fetch full detail for a search result (scrapes the detail page).
   static Future<DeviceSearchResult> fetchDetail(
     DeviceSearchResult result,
@@ -114,6 +124,11 @@ class DeviceSearchService {
 
   // ──── GSMArena ────
 
+  /// Purpose: Search for gsmarena using the current query or filters.
+  /// Inputs: `query`.
+  /// Returns: `Future<List<DeviceSearchResult>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<List<DeviceSearchResult>> _searchGSMArena(String query) async {
     final url = Uri.parse(
       'https://www.gsmarena.com/results.php3'
@@ -183,6 +198,11 @@ class DeviceSearchService {
     return results;
   }
 
+  /// Purpose: Fetch gsmarena detail from the relevant source.
+  /// Inputs: `result`.
+  /// Returns: `Future<DeviceSearchResult>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<DeviceSearchResult> _fetchGSMArenaDetail(
     DeviceSearchResult result,
   ) async {
@@ -242,6 +262,11 @@ class DeviceSearchService {
     );
   }
 
+  /// Purpose: Provide the internal spec helper for this file.
+  /// Inputs: `html`.
+  /// Returns: `String?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   /// Extract a data-spec value from GSMArena HTML.
   static String? _spec(String html, String key) {
     final match = RegExp(
@@ -260,12 +285,22 @@ class DeviceSearchService {
 
   // ──── Parsers ────
 
+  /// Purpose: Implement the static behavior for this file.
+  /// Inputs: `name`.
+  /// Returns: `dynamic`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static (String?, String?) _splitBrandModel(String name) {
     final idx = name.indexOf(' ');
     if (idx == -1) return (name, null);
     return (name.substring(0, idx), name.substring(idx + 1));
   }
 
+  /// Purpose: Implement the static behavior for this file.
+  /// Inputs: `ram`, `raw`.
+  /// Returns: `dynamic`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static (String? ram, String? storage) _parseMemory(String? raw) {
     if (raw == null) return (null, null);
     final segment = raw.split(',').first.trim();
@@ -300,12 +335,22 @@ class DeviceSearchService {
     return (null, null);
   }
 
+  /// Purpose: Provide the internal parse screen size helper for this file.
+  /// Inputs: `raw`.
+  /// Returns: `String?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String? _parseScreenSize(String? raw) {
     if (raw == null) return null;
     final match = RegExp(r'([\d.]+)\s*inches').firstMatch(raw);
     return match != null ? '${match.group(1)}"' : null;
   }
 
+  /// Purpose: Implement the static behavior for this file.
+  /// Inputs: `raw`.
+  /// Returns: `dynamic`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static (int?, int?) _parseResolution(String? raw) {
     if (raw == null) return (null, null);
     final match = RegExp(r'(\d+)\s*x\s*(\d+)').firstMatch(raw);
@@ -313,12 +358,22 @@ class DeviceSearchService {
     return (int.parse(match.group(1)!), int.parse(match.group(2)!));
   }
 
+  /// Purpose: Provide the internal parse battery helper for this file.
+  /// Inputs: `raw`.
+  /// Returns: `String?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String? _parseBattery(String? raw) {
     if (raw == null) return null;
     final match = RegExp(r'(\d+)\s*mAh').firstMatch(raw);
     return match != null ? '${match.group(1)} mAh' : null;
   }
 
+  /// Purpose: Provide the internal parse release date helper for this file.
+  /// Inputs: `raw`.
+  /// Returns: `DateTime?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static DateTime? _parseReleaseDate(String? raw) {
     if (raw == null) return null;
     // "Released 2024, September 20" or "2024, September"
@@ -338,6 +393,11 @@ class DeviceSearchService {
     return null;
   }
 
+  /// Purpose: Provide the internal parse month helper for this file.
+  /// Inputs: `m`.
+  /// Returns: `int?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static int? _parseMonth(String m) {
     const months = {
       'january': 1,
@@ -356,6 +416,11 @@ class DeviceSearchService {
     return months[m.toLowerCase()];
   }
 
+  /// Purpose: Provide the internal is device image helper for this file.
+  /// Inputs: `url`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   /// Check if an image URL is a genuine device photo (not an ad/affiliate).
   static bool _isDeviceImage(String url) {
     final lower = url.toLowerCase();
@@ -386,6 +451,11 @@ class DeviceSearchService {
     return false;
   }
 
+  /// Purpose: Provide the internal strip html helper for this file.
+  /// Inputs: `html`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _stripHtml(String html) {
     return html
         .replaceAll(RegExp(r'<[^>]+>'), ' ')
@@ -399,6 +469,11 @@ class DeviceSearchService {
   // Covers laptops, tablets, phones, smartwatches via their Laptop Search tool.
   // Search results include inline specs (GPU, CPU, screen, resolution, weight).
 
+  /// Purpose: Search for notebookcheck using the current query or filters.
+  /// Inputs: `query`.
+  /// Returns: `Future<List<DeviceSearchResult>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<List<DeviceSearchResult>> _searchNotebookcheck(
     String query,
   ) async {
@@ -504,6 +579,11 @@ class DeviceSearchService {
     return results;
   }
 
+  /// Purpose: Fetch notebookcheck detail from the relevant source.
+  /// Inputs: `result`.
+  /// Returns: `Future<DeviceSearchResult>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<DeviceSearchResult> _fetchNotebookcheckDetail(
     DeviceSearchResult result,
   ) async {

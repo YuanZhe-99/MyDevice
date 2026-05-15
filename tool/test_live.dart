@@ -2,6 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:my_device/features/devices/services/device_search_service.dart';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: None.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 void main() async {
   print('=== Search: iPhone 15 Pro ===');
   try {

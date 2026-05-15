@@ -11,11 +11,26 @@ class DeviceMapPage extends StatelessWidget {
   final String title;
   final List<Device> devices;
 
+  /// Purpose: Create a device map page instance.
+  /// Inputs: None.
+  /// Returns: A new `DeviceMapPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DeviceMapPage({super.key, required this.title, required this.devices});
 
+  /// Purpose: Provide the internal located devices helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<Device>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<Device> get _locatedDevices =>
       devices.where((d) => d.latitude != null && d.longitude != null).toList();
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -98,8 +113,18 @@ class _DeviceMarker extends StatelessWidget {
   final Device device;
   final ColorScheme colorScheme;
 
+  /// Purpose: Create a device marker instance.
+  /// Inputs: None.
+  /// Returns: A new `_DeviceMarker` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _DeviceMarker({required this.device, required this.colorScheme});
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     return Column(

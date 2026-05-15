@@ -30,8 +30,18 @@ const _emojiOptions = [
 class DataSetEditPage extends StatefulWidget {
   final DataSet? dataSet;
 
+  /// Purpose: Create a data set edit page instance.
+  /// Inputs: None.
+  /// Returns: A new `DataSetEditPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DataSetEditPage({super.key, this.dataSet});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<DataSetEditPage> createState() => _DataSetEditPageState();
 }
@@ -46,8 +56,18 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
   List<Device> _devices = [];
   bool _loading = true;
 
+  /// Purpose: Provide the internal is editing helper for this file.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   bool get _isEditing => widget.dataSet != null;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -61,6 +81,11 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     _loadDevices();
   }
 
+  /// Purpose: Load devices into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadDevices() async {
     final data = await DeviceStorage.load();
     if (!mounted) return;
@@ -72,6 +97,11 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     });
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _save() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
@@ -103,6 +133,11 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     if (mounted) Navigator.pop(context, true);
   }
 
+  /// Purpose: Pick emoji from user-provided input.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _pickEmoji() async {
     final picked = await showDialog<String>(
       context: context,
@@ -132,12 +167,22 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     if (picked != null) setState(() => _emoji = picked);
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

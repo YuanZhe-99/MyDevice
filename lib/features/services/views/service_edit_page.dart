@@ -13,8 +13,18 @@ class ServiceEditPage extends StatefulWidget {
   final ServiceNode? service;
   final String? deviceId;
 
+  /// Purpose: Create a service edit page instance.
+  /// Inputs: None.
+  /// Returns: A new `ServiceEditPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const ServiceEditPage({super.key, this.service, this.deviceId});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<ServiceEditPage> createState() => _ServiceEditPageState();
 }
@@ -35,8 +45,18 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   ServiceState _state = ServiceState.active;
   bool _loading = true;
 
+  /// Purpose: Edit ing and refresh local state when needed.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   bool get _editing => widget.service != null;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -55,6 +75,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     _loadDevices();
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -64,6 +89,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     super.dispose();
   }
 
+  /// Purpose: Load devices into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadDevices() async {
     final data = await DeviceStorage.load();
     if (!mounted) return;
@@ -75,6 +105,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     });
   }
 
+  /// Purpose: Provide the internal apply template helper for this file.
+  /// Inputs: `template`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _applyTemplate(ServiceTemplate template) {
     setState(() {
       _templateId = template.id;
@@ -105,6 +140,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     });
   }
 
+  /// Purpose: Provide the internal template name helper for this file.
+  /// Inputs: `id`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _templateName(String id) =>
       ServiceTemplateService.loadTemplates()
           .where((template) => template.id == id)
@@ -112,6 +152,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
           ?.name ??
       id;
 
+  /// Purpose: Pick template from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickTemplate() async {
     final template = await showModalBottomSheet<ServiceTemplate>(
       context: context,
@@ -121,6 +166,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     if (template != null) _applyTemplate(template);
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_deviceId == null) return;
@@ -144,6 +194,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     if (mounted) Navigator.of(context).pop(true);
   }
 
+  /// Purpose: Delete the relevant data from the relevant storage or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows. Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   Future<void> _delete() async {
     final service = widget.service;
     if (service == null) return;
@@ -171,6 +226,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     }
   }
 
+  /// Purpose: Provide the internal copy compose helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _copyCompose() async {
     await Clipboard.setData(ClipboardData(text: _composeCtrl.text));
     if (!mounted) return;
@@ -181,16 +241,31 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     );
   }
 
+  /// Purpose: Add endpoint through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addEndpoint() async {
     final endpoint = await _showEndpointDialog();
     if (endpoint != null) setState(() => _endpoints.add(endpoint));
   }
 
+  /// Purpose: Edit endpoint and refresh local state when needed.
+  /// Inputs: `index`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editEndpoint(int index) async {
     final endpoint = await _showEndpointDialog(initial: _endpoints[index]);
     if (endpoint != null) setState(() => _endpoints[index] = endpoint);
   }
 
+  /// Purpose: Show endpoint dialog in the current UI flow.
+  /// Inputs: None.
+  /// Returns: `Future<ServiceEndpoint?>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<ServiceEndpoint?> _showEndpointDialog({
     ServiceEndpoint? initial,
   }) async {
@@ -365,6 +440,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     return result;
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -572,14 +652,29 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   }
 }
 
+/// Purpose: Provide the internal empty to null helper for this file.
+/// Inputs: `value`.
+/// Returns: `String?`.
+/// Side effects: May update UI state or trigger user-facing flows.
+/// Notes: Internal helper used within this file only.
 String? _emptyToNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;
 }
 
 class _ServiceTemplatePicker extends StatefulWidget {
+  /// Purpose: Create a service template picker instance.
+  /// Inputs: None.
+  /// Returns: A new `_ServiceTemplatePicker` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   const _ServiceTemplatePicker();
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_ServiceTemplatePicker> createState() => _ServiceTemplatePickerState();
 }
@@ -588,12 +683,22 @@ class _ServiceTemplatePickerState extends State<_ServiceTemplatePicker> {
   final _searchCtrl = TextEditingController();
   ServiceKind? _kind;
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  /// Purpose: Provide the internal filtered templates helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<ServiceTemplate>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<ServiceTemplate> get _filteredTemplates {
     final query = _searchCtrl.text.trim().toLowerCase();
     final templates = ServiceTemplateService.loadTemplates().where((template) {
@@ -614,6 +719,11 @@ class _ServiceTemplatePickerState extends State<_ServiceTemplatePicker> {
     return templates;
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

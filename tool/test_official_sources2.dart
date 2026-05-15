@@ -6,6 +6,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> main() async {
   // ========== AMD PRODUCT PAGE (works!) ==========
   print('========== AMD Ryzen 9 7950X ==========');
@@ -43,6 +48,11 @@ Future<void> main() async {
   }
 }
 
+/// Purpose: Find and return amd url that matches the current criteria.
+/// Inputs: `query`.
+/// Returns: `Future<String?>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<String?> findAmdUrl(String query) async {
   print('  Searching Startpage for AMD URL...');
   final resp = await http.post(

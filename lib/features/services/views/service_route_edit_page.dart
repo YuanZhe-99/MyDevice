@@ -9,8 +9,18 @@ class ServiceRouteEditPage extends StatefulWidget {
   final ServiceRoute? route;
   final ServiceNode? sourceService;
 
+  /// Purpose: Create a service route edit page instance.
+  /// Inputs: None.
+  /// Returns: A new `ServiceRouteEditPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const ServiceRouteEditPage({super.key, this.route, this.sourceService});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<ServiceRouteEditPage> createState() => _ServiceRouteEditPageState();
 }
@@ -26,8 +36,18 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
   ServiceAccessLevel _accessLevel = ServiceAccessLevel.lan;
   bool _loading = true;
 
+  /// Purpose: Edit ing and refresh local state when needed.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   bool get _editing => widget.route != null;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -45,6 +65,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     _load();
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _finalUrlCtrl.dispose();
@@ -52,6 +77,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     super.dispose();
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _load() async {
     final data = await ServiceStorage.load();
     if (!mounted) return;
@@ -63,12 +93,22 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     });
   }
 
+  /// Purpose: Provide the internal selected source helper for this file.
+  /// Inputs: None.
+  /// Returns: `ServiceNode?`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   ServiceNode? get _selectedSource => _sourceServiceId == null
       ? null
       : _services
             .where((service) => service.id == _sourceServiceId)
             .firstOrNull;
 
+  /// Purpose: Provide the internal selected endpoint helper for this file.
+  /// Inputs: None.
+  /// Returns: `ServiceEndpoint?`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   ServiceEndpoint? get _selectedEndpoint {
     final source = _selectedSource;
     if (source == null || _sourceEndpointId == null) return null;
@@ -77,6 +117,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
         .firstOrNull;
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_sourceServiceId == null) return;
@@ -105,6 +150,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     if (mounted) Navigator.of(context).pop(true);
   }
 
+  /// Purpose: Delete the relevant data from the relevant storage or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows. Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   Future<void> _delete() async {
     final route = widget.route;
     if (route == null) return;
@@ -132,16 +182,31 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     }
   }
 
+  /// Purpose: Add hop through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addHop() async {
     final hop = await _showHopDialog();
     if (hop != null) setState(() => _hops.add(hop));
   }
 
+  /// Purpose: Edit hop and refresh local state when needed.
+  /// Inputs: `index`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editHop(int index) async {
     final hop = await _showHopDialog(initial: _hops[index]);
     if (hop != null) setState(() => _hops[index] = hop);
   }
 
+  /// Purpose: Show hop dialog in the current UI flow.
+  /// Inputs: None.
+  /// Returns: `Future<ServiceRouteHop?>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<ServiceRouteHop?> _showHopDialog({ServiceRouteHop? initial}) async {
     final l10n = AppLocalizations.of(context)!;
     final labelCtrl = TextEditingController(text: initial?.label ?? '');
@@ -344,6 +409,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     return result;
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -525,6 +595,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     );
   }
 
+  /// Purpose: Provide the internal hop title helper for this file.
+  /// Inputs: `hop`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _hopTitle(ServiceRouteHop hop) {
     if (hop.serviceId != null) {
       final service = _services.where((s) => s.id == hop.serviceId).firstOrNull;
@@ -535,6 +610,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     return hop.type.name;
   }
 
+  /// Purpose: Provide the internal hop subtitle helper for this file.
+  /// Inputs: `hop`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _hopSubtitle(ServiceRouteHop hop) {
     final endpoint = _hopEndpoint(hop);
     return [
@@ -547,6 +627,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
   }
 
+  /// Purpose: Provide the internal hop endpoint helper for this file.
+  /// Inputs: `hop`.
+  /// Returns: `ServiceEndpoint?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   ServiceEndpoint? _hopEndpoint(ServiceRouteHop hop) {
     if (hop.serviceId == null || hop.endpointId == null) return null;
     final service = _services.where((s) => s.id == hop.serviceId).firstOrNull;
@@ -555,6 +640,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
         .firstOrNull;
   }
 
+  /// Purpose: Provide the internal move hop helper for this file.
+  /// Inputs: `from`, `to`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _moveHop(int from, int to) {
     setState(() {
       final hop = _hops.removeAt(from);
@@ -562,6 +652,11 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     });
   }
 
+  /// Purpose: Provide the internal route preview helper for this file.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _routePreview() {
     final source = _selectedSource;
     final endpoint = _selectedEndpoint;
@@ -577,12 +672,22 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
   }
 }
 
+/// Purpose: Provide the internal split targets helper for this file.
+/// Inputs: `value`.
+/// Returns: `List<String>`.
+/// Side effects: May update UI state or trigger user-facing flows.
+/// Notes: Internal helper used within this file only.
 List<String> _splitTargets(String value) => value
     .split(RegExp(r'[\n,]+'))
     .map((item) => item.trim())
     .where((item) => item.isNotEmpty)
     .toList();
 
+/// Purpose: Provide the internal empty to null helper for this file.
+/// Inputs: `value`.
+/// Returns: `String?`.
+/// Side effects: May update UI state or trigger user-facing flows.
+/// Notes: Internal helper used within this file only.
 String? _emptyToNull(String value) {
   final trimmed = value.trim();
   return trimmed.isEmpty ? null : trimmed;

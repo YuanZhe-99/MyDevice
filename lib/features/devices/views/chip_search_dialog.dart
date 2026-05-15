@@ -4,6 +4,11 @@ import '../../../l10n/app_localizations.dart';
 import '../models/device.dart';
 import '../services/chip_search_service.dart';
 
+/// Purpose: Show cpu search dialog in the current UI flow.
+/// Inputs: `context`.
+/// Returns: `Future<CpuInfo?>`.
+/// Side effects: May update UI state or trigger user-facing flows.
+/// Notes: None.
 /// Shows a dialog to search for a CPU online.
 /// Returns CpuInfo if user selects a result, null if cancelled.
 Future<CpuInfo?> showCpuSearchDialog(
@@ -22,6 +27,11 @@ Future<CpuInfo?> showCpuSearchDialog(
   );
 }
 
+/// Purpose: Show gpu search dialog in the current UI flow.
+/// Inputs: `context`.
+/// Returns: `Future<GpuInfo?>`.
+/// Side effects: May update UI state or trigger user-facing flows.
+/// Notes: None.
 /// Shows a dialog to search for a GPU online.
 /// Returns GpuInfo if user selects a result, null if cancelled.
 Future<GpuInfo?> showGpuSearchDialog(
@@ -48,6 +58,11 @@ class _ChipSearchDialog extends StatefulWidget {
   final List<CpuInfo> cpuPresets;
   final List<GpuInfo> gpuPresets;
 
+  /// Purpose: Create a chip search dialog instance.
+  /// Inputs: None.
+  /// Returns: A new `_ChipSearchDialog` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _ChipSearchDialog({
     required this.mode,
     this.initialQuery,
@@ -55,6 +70,11 @@ class _ChipSearchDialog extends StatefulWidget {
     required this.gpuPresets,
   });
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_ChipSearchDialog> createState() => _ChipSearchDialogState();
 }
@@ -65,18 +85,33 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
   bool _searching = false;
   String? _error;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
     _queryCtrl = TextEditingController(text: widget.initialQuery ?? '');
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _queryCtrl.dispose();
     super.dispose();
   }
 
+  /// Purpose: Search for the requested result using the current query or filters.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _search() async {
     final query = _queryCtrl.text.trim();
     if (query.isEmpty) return;
@@ -108,6 +143,11 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
     }
   }
 
+  /// Purpose: Provide the internal select helper for this file.
+  /// Inputs: `result`.
+  /// Returns: `void`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   void _select(ChipSearchResult result) {
     if (widget.mode == _ChipMode.cpu) {
       Navigator.of(context).pop(result.toCpuInfo());
@@ -116,6 +156,11 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
     }
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -187,6 +232,11 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
     );
   }
 
+  /// Purpose: Build and return results for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildResults(AppLocalizations l10n) {
     if (_searching) {
       return const Center(child: CircularProgressIndicator());
@@ -259,6 +309,11 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
     );
   }
 
+  /// Purpose: Return the display label for cores label.
+  /// Inputs: `r`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _coresLabel(ChipSearchResult r) {
     final p = r.performanceCores;
     final e = r.efficiencyCores;

@@ -15,6 +15,11 @@ class RecordConflict<T> {
   final T remoteRecord;
   final String displayName;
 
+  /// Purpose: Create a record conflict instance.
+  /// Inputs: None.
+  /// Returns: A new `RecordConflict` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const RecordConflict({
     required this.id,
     required this.localRecord,
@@ -28,9 +33,19 @@ class RecordMergeResult<T> {
   final List<T> merged;
   final List<RecordConflict<T>> conflicts;
 
+  /// Purpose: Create a record merge result instance.
+  /// Inputs: `conflicts`.
+  /// Returns: A new `RecordMergeResult` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const RecordMergeResult({required this.merged, this.conflicts = const []});
 }
 
+/// Purpose: Implement the merge records behavior for this file.
+/// Inputs: `autoResolve`.
+/// Returns: `RecordMergeResult<T>`.
+/// Side effects: May read or mutate application state, storage, or service resources.
+/// Notes: None.
 /// Three-way merge for a list of records by ID.
 ///
 /// Uses [base] (last synced version) to detect which side changed:
@@ -130,6 +145,11 @@ RecordMergeResult<T> mergeRecords<T>({
 
 // ─── Assignment merge (no modifiedAt) ───────────────────────────────
 
+/// Purpose: Implement the merge assignments behavior for this file.
+/// Inputs: `local`, `remote`, `base`.
+/// Returns: `List<NetworkDevice>`.
+/// Side effects: May read or mutate application state, storage, or service resources.
+/// Notes: None.
 /// Three-way merge for network-device assignments.
 ///
 /// Assignments have no modifiedAt, so we detect changes by comparing
@@ -200,14 +220,29 @@ class DeviceMergeResult {
   final List<RecordConflict<Device>> conflicts;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a device merge result instance.
+  /// Inputs: `conflicts`.
+  /// Returns: A new `DeviceMergeResult` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const DeviceMergeResult({
     required this.merged,
     this.conflicts = const [],
     this.extraJson = const {},
   });
 
+  /// Purpose: Return the current has conflicts value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get hasConflicts => conflicts.isNotEmpty;
 
+  /// Purpose: Build and return resolved for the current context.
+  /// Inputs: `resolutions`.
+  /// Returns: `DeviceData`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   DeviceData buildResolved(Map<String, Device> resolutions) {
     final all = <Device>[...merged];
     for (final c in conflicts) {
@@ -217,6 +252,11 @@ class DeviceMergeResult {
   }
 }
 
+/// Purpose: Implement the merge device data behavior for this file.
+/// Inputs: `localJson`, `remoteJson`, `baseJson`.
+/// Returns: `DeviceMergeResult`.
+/// Side effects: May read or mutate application state, storage, or service resources.
+/// Notes: None.
 DeviceMergeResult mergeDeviceData(
   String localJson,
   String remoteJson,
@@ -265,6 +305,11 @@ class NetworkMergeResult {
   final List<RecordConflict<Network>> conflicts;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a network merge result instance.
+  /// Inputs: `conflicts`.
+  /// Returns: A new `NetworkMergeResult` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const NetworkMergeResult({
     required this.mergedNetworks,
     required this.mergedAssignments,
@@ -272,8 +317,18 @@ class NetworkMergeResult {
     this.extraJson = const {},
   });
 
+  /// Purpose: Return the current has conflicts value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get hasConflicts => conflicts.isNotEmpty;
 
+  /// Purpose: Build and return resolved for the current context.
+  /// Inputs: `resolutions`.
+  /// Returns: `NetworkData`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   NetworkData buildResolved(Map<String, Network> resolutions) {
     final all = <Network>[...mergedNetworks];
     for (final c in conflicts) {
@@ -287,6 +342,11 @@ class NetworkMergeResult {
   }
 }
 
+/// Purpose: Implement the merge network data behavior for this file.
+/// Inputs: `localJson`, `remoteJson`, `baseJson`.
+/// Returns: `NetworkMergeResult`.
+/// Side effects: May read or mutate application state, storage, or service resources.
+/// Notes: None.
 NetworkMergeResult mergeNetworkData(
   String localJson,
   String remoteJson,
@@ -341,14 +401,29 @@ class DataSetMergeResult {
   final List<RecordConflict<DataSet>> conflicts;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a data set merge result instance.
+  /// Inputs: `conflicts`.
+  /// Returns: A new `DataSetMergeResult` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const DataSetMergeResult({
     required this.merged,
     this.conflicts = const [],
     this.extraJson = const {},
   });
 
+  /// Purpose: Return the current has conflicts value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get hasConflicts => conflicts.isNotEmpty;
 
+  /// Purpose: Build and return resolved for the current context.
+  /// Inputs: `resolutions`.
+  /// Returns: `DataSetData`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   DataSetData buildResolved(Map<String, DataSet> resolutions) {
     final all = <DataSet>[...merged];
     for (final c in conflicts) {
@@ -358,6 +433,11 @@ class DataSetMergeResult {
   }
 }
 
+/// Purpose: Implement the merge data set data behavior for this file.
+/// Inputs: `localJson`, `remoteJson`, `baseJson`.
+/// Returns: `DataSetMergeResult`.
+/// Side effects: May read or mutate application state, storage, or service resources.
+/// Notes: None.
 DataSetMergeResult mergeDataSetData(
   String localJson,
   String remoteJson,
@@ -407,6 +487,11 @@ class ServiceMergeResult {
   final List<RecordConflict<ServiceRoute>> routeConflicts;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a service merge result instance.
+  /// Inputs: `serviceConflicts`.
+  /// Returns: A new `ServiceMergeResult` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceMergeResult({
     required this.mergedServices,
     required this.mergedRoutes,
@@ -415,14 +500,29 @@ class ServiceMergeResult {
     this.extraJson = const {},
   });
 
+  /// Purpose: Return the current has conflicts value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get hasConflicts =>
       serviceConflicts.isNotEmpty || routeConflicts.isNotEmpty;
 
+  /// Purpose: Return the current all conflicts value.
+  /// Inputs: None.
+  /// Returns: `List<RecordConflict>`.
+  /// Side effects: None.
+  /// Notes: None.
   List<RecordConflict> get allConflicts => [
     ...serviceConflicts,
     ...routeConflicts,
   ];
 
+  /// Purpose: Build and return resolved for the current context.
+  /// Inputs: `resolutions`.
+  /// Returns: `ServiceData`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   ServiceData buildResolved(Map<String, dynamic> resolutions) {
     final services = <ServiceNode>[...mergedServices];
     for (final c in serviceConflicts) {
@@ -444,6 +544,11 @@ class ServiceMergeResult {
   }
 }
 
+/// Purpose: Implement the merge service data behavior for this file.
+/// Inputs: `localJson`, `remoteJson`, `baseJson`.
+/// Returns: `ServiceMergeResult`.
+/// Side effects: May read or mutate application state, storage, or service resources.
+/// Notes: None.
 ServiceMergeResult mergeServiceData(
   String localJson,
   String remoteJson,

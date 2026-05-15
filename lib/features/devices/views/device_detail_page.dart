@@ -14,6 +14,11 @@ class DeviceDetailPage extends StatelessWidget {
   final Device device;
   final VoidCallback? onDeviceChanged;
 
+  /// Purpose: Create a device detail page instance.
+  /// Inputs: None.
+  /// Returns: A new `DeviceDetailPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DeviceDetailPage({
     super.key,
     required this.device,
@@ -101,6 +106,11 @@ class DeviceDetailPage extends StatelessWidget {
     'freebsd': 'assets/logos/freebsd.svg',
   };
 
+  /// Purpose: Provide the internal detect brand logo helper for this file.
+  /// Inputs: None.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String? _detectBrandLogo() {
     if (device.brand == null) return null;
     final lower = device.brand!.toLowerCase();
@@ -110,6 +120,11 @@ class DeviceDetailPage extends StatelessWidget {
     return null;
   }
 
+  /// Purpose: Provide the internal detect model logo helper for this file.
+  /// Inputs: `model`.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   static String? _detectModelLogo(String? model) {
     if (model == null) return null;
     final lower = model.toLowerCase();
@@ -122,6 +137,11 @@ class DeviceDetailPage extends StatelessWidget {
     return null;
   }
 
+  /// Purpose: Provide the internal detect storage brand logo helper for this file.
+  /// Inputs: `brand`.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   /// Detect storage brand logo.
   static String? _detectStorageBrandLogo(String? brand) {
     if (brand == null) return null;
@@ -132,6 +152,11 @@ class DeviceDetailPage extends StatelessWidget {
     return null;
   }
 
+  /// Purpose: Provide the internal detect os logo helper for this file.
+  /// Inputs: `os`.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   /// Detect OS logo with flexible matching.
   /// "Windows 11 LTSC" → windows, "Ubuntu Server" → ubuntu, etc.
   static String? _detectOsLogo(String? os) {
@@ -143,6 +168,11 @@ class DeviceDetailPage extends StatelessWidget {
     return null;
   }
 
+  /// Purpose: Return the display label for status label.
+  /// Inputs: `l10n`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _statusLabel(AppLocalizations l10n) =>
       switch (device.lifecycleStatus) {
         DeviceLifecycleStatus.inService => l10n.statusInService,
@@ -150,6 +180,11 @@ class DeviceDetailPage extends StatelessWidget {
         DeviceLifecycleStatus.sold => l10n.statusSold,
       };
 
+  /// Purpose: Return the display label for acquisition type label.
+  /// Inputs: `l10n`, `type`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _acquisitionTypeLabel(
     AppLocalizations l10n,
     DeviceAcquisitionType type,
@@ -163,6 +198,11 @@ class DeviceDetailPage extends StatelessWidget {
     };
   }
 
+  /// Purpose: Return the display label for recurring cost kind label.
+  /// Inputs: `l10n`, `kind`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _recurringCostKindLabel(
     AppLocalizations l10n,
     RecurringCostKind kind,
@@ -175,6 +215,11 @@ class DeviceDetailPage extends StatelessWidget {
     };
   }
 
+  /// Purpose: Return the display label for billing cycle label.
+  /// Inputs: `l10n`, `cycle`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _billingCycleLabel(AppLocalizations l10n, BillingCycle cycle) {
     return switch (cycle) {
       BillingCycle.monthly => l10n.billingMonthly,
@@ -182,6 +227,11 @@ class DeviceDetailPage extends StatelessWidget {
     };
   }
 
+  /// Purpose: Provide the internal money text helper for this file.
+  /// Inputs: `money`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _moneyText(MoneyValue money) {
     final symbol = DeviceExchangeRateService.currencySymbol(money.currency);
     final baseSymbol = DeviceExchangeRateService.currencySymbol(
@@ -192,6 +242,11 @@ class DeviceDetailPage extends StatelessWidget {
     return '$original ($baseSymbol${money.convertedAmount.toStringAsFixed(2)} ${money.defaultCurrency})';
   }
 
+  /// Purpose: Provide the internal default money text helper for this file.
+  /// Inputs: `amount`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _defaultMoneyText(double amount) {
     final currency =
         device.purchasePrice?.defaultCurrency ??
@@ -201,6 +256,11 @@ class DeviceDetailPage extends StatelessWidget {
     return '${DeviceExchangeRateService.currencySymbol(currency)}${amount.toStringAsFixed(2)}';
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -453,6 +513,11 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
+  /// Purpose: Build and return header for the current context.
+  /// Inputs: `theme`, `cs`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildHeader(ThemeData theme, ColorScheme cs, AppLocalizations l10n) {
     final logoPath = _detectBrandLogo();
     final dateFmt = DateFormat.yMd(l10n.localeName);
@@ -552,6 +617,11 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
+  /// Purpose: Provide the internal section title helper for this file.
+  /// Inputs: `theme`, `cs`, `title`, `icon`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _sectionTitle(
     ThemeData theme,
     ColorScheme cs,
@@ -586,6 +656,11 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
+  /// Purpose: Provide the internal spec card helper for this file.
+  /// Inputs: `theme`, `rows`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _specCard(ThemeData theme, List<Widget?> rows) {
     final validRows = rows.whereType<Widget>().toList();
     if (validRows.isEmpty) return const SizedBox.shrink();
@@ -597,6 +672,11 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
+  /// Purpose: Provide the internal spec row helper for this file.
+  /// Inputs: `label`, `value`.
+  /// Returns: `Widget?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget? _specRow(String label, String? value) {
     if (value == null || value.isEmpty) return null;
     return Padding(
@@ -617,6 +697,11 @@ class DeviceDetailPage extends StatelessWidget {
     );
   }
 
+  /// Purpose: Provide the internal spec row with logo helper for this file.
+  /// Inputs: `label`, `value`, `logoPath`, `cs`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _specRowWithLogo(
     String label,
     String value,

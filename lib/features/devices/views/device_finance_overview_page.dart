@@ -14,12 +14,22 @@ class DeviceFinanceOverviewPage extends StatefulWidget {
   final List<Device> devices;
   final String defaultCurrency;
 
+  /// Purpose: Create a device finance overview page instance.
+  /// Inputs: None.
+  /// Returns: A new `DeviceFinanceOverviewPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DeviceFinanceOverviewPage({
     super.key,
     required this.devices,
     required this.defaultCurrency,
   });
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<DeviceFinanceOverviewPage> createState() =>
       _DeviceFinanceOverviewPageState();
@@ -28,6 +38,11 @@ class DeviceFinanceOverviewPage extends StatefulWidget {
 class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
   _FinanceRange _range = _FinanceRange.year;
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -48,6 +63,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Build and return summary card for the current context.
+  /// Inputs: `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildSummaryCard(AppLocalizations l10n, ThemeData theme) {
     final cs = theme.colorScheme;
     final devicesWithFinance = widget.devices
@@ -99,6 +119,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Build and return asset distribution for the current context.
+  /// Inputs: `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildAssetDistribution(AppLocalizations l10n, ThemeData theme) {
     final buckets = _assetBuckets(l10n);
     final total = buckets.fold(0.0, (sum, bucket) => sum + bucket.amount);
@@ -165,6 +190,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Build and return trend card for the current context.
+  /// Inputs: `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildTrendCard(AppLocalizations l10n, ThemeData theme) {
     final today = _dateOnly(DateTime.now());
     final historyStart = _historyStart(today);
@@ -252,6 +282,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Build and return line chart panel for the current context.
+  /// Inputs: None.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildLineChartPanel({
     required BuildContext context,
     required AppLocalizations l10n,
@@ -383,6 +418,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Provide the internal metric helper for this file.
+  /// Inputs: `theme`, `label`, `value`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _metric(
     ThemeData theme,
     String label,
@@ -405,6 +445,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Provide the internal distribution row helper for this file.
+  /// Inputs: `theme`, `bucket`, `total`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _distributionRow(ThemeData theme, _AssetBucket bucket, double total) {
     final share = total <= 0 ? 0.0 : bucket.amount / total;
     return Row(
@@ -457,6 +502,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Provide the internal legend dot helper for this file.
+  /// Inputs: `series`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _legendDot(_ChartSeries series) {
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -486,6 +536,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Build and return trend data for the current context.
+  /// Inputs: `scale`, `today`.
+  /// Returns: `_TrendData`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   _TrendData _buildTrendData(_TrendScale scale, DateTime today) {
     final historySpots = <FlSpot>[];
     final futureSpots = <FlSpot>[];
@@ -511,6 +566,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Provide the internal asset buckets helper for this file.
+  /// Inputs: `l10n`.
+  /// Returns: `List<_AssetBucket>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   List<_AssetBucket> _assetBuckets(AppLocalizations l10n) {
     final totals = <DeviceCategory, double>{};
     final counts = <DeviceCategory, int>{};
@@ -541,6 +601,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return buckets;
   }
 
+  /// Purpose: Provide the internal history start helper for this file.
+  /// Inputs: `today`.
+  /// Returns: `DateTime`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   DateTime _historyStart(DateTime today) {
     return switch (_range) {
       _FinanceRange.year => DateTime(today.year - 1, today.month, today.day),
@@ -555,11 +620,21 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     };
   }
 
+  /// Purpose: Provide the internal history duration helper for this file.
+  /// Inputs: `today`, `historyStart`.
+  /// Returns: `Duration`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Duration _historyDuration(DateTime today, DateTime historyStart) {
     final days = today.difference(historyStart).inDays.abs();
     return Duration(days: math.max(days, 30));
   }
 
+  /// Purpose: Provide the internal earliest purchase date helper for this file.
+  /// Inputs: None.
+  /// Returns: `DateTime?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   DateTime? _earliestPurchaseDate() {
     DateTime? earliest;
     for (final device in widget.devices) {
@@ -573,6 +648,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return earliest;
   }
 
+  /// Purpose: Provide the internal total daily cost at helper for this file.
+  /// Inputs: `date`.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _totalDailyCostAt(DateTime date) {
     return widget.devices.fold(
       0.0,
@@ -580,6 +660,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     );
   }
 
+  /// Purpose: Provide the internal average daily cost at helper for this file.
+  /// Inputs: `device`, `date`.
+  /// Returns: `double?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double? _averageDailyCostAt(Device device, DateTime date) {
     if (!device.hasFinancialData || device.purchaseDate == null) return null;
 
@@ -609,9 +694,19 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return (purchase + recurring - sold) / days;
   }
 
+  /// Purpose: Provide the internal total financial cost helper for this file.
+  /// Inputs: None.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _totalFinancialCost() =>
       widget.devices.fold(0, (sum, device) => sum + device.totalCost());
 
+  /// Purpose: Provide the internal total daily cost helper for this file.
+  /// Inputs: None.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _totalDailyCost() => widget.devices.fold(
     0,
     (sum, device) => sum + (device.averageDailyCost() ?? 0),
@@ -628,21 +723,41 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return (minY: math.min(0, minY - padding), maxY: maxY + padding);
   }
 
+  /// Purpose: Provide the internal log transform helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _logTransform(double value) {
     if (value == 0) return 0;
     final sign = value < 0 ? -1 : 1;
     return sign * math.log(value.abs() + 1) / math.ln10;
   }
 
+  /// Purpose: Provide the internal log inverse helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _logInverse(double value) {
     if (value == 0) return 0;
     final sign = value < 0 ? -1 : 1;
     return (sign * (math.pow(10, value.abs()) - 1)).toDouble();
   }
 
+  /// Purpose: Provide the internal date only helper for this file.
+  /// Inputs: `date`.
+  /// Returns: `DateTime`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   DateTime _dateOnly(DateTime date) =>
       DateTime(date.year, date.month, date.day);
 
+  /// Purpose: Provide the internal money text helper for this file.
+  /// Inputs: `amount`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _moneyText(double amount) {
     final symbol = DeviceExchangeRateService.currencySymbol(
       widget.defaultCurrency,
@@ -650,6 +765,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return '$symbol${amount.toStringAsFixed(2)}';
   }
 
+  /// Purpose: Provide the internal format axis value helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _formatAxisValue(double value) {
     final abs = value.abs();
     final sign = value < 0 ? '-' : '';
@@ -662,6 +782,11 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return value.toStringAsFixed(0);
   }
 
+  /// Purpose: Return the display label for category label.
+  /// Inputs: `l10n`, `category`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _categoryLabel(AppLocalizations l10n, DeviceCategory category) {
     return switch (category) {
       DeviceCategory.desktop => l10n.deviceCategoryDesktop,
@@ -700,6 +825,11 @@ class _TrendScale {
   final DateFormat _dateLabel;
   final DateFormat _tooltipLabel;
 
+  /// Purpose: Create a trend scale instance.
+  /// Inputs: None.
+  /// Returns: A new `_TrendScale` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   _TrendScale({
     required this.dates,
     required this.labelInterval,
@@ -708,6 +838,11 @@ class _TrendScale {
   }) : _dateLabel = dateLabel,
        _tooltipLabel = tooltipLabel;
 
+  /// Purpose: Create a from range instance.
+  /// Inputs: `historyStart`, `today`, `futureEnd`.
+  /// Returns: A new `_TrendScale.fromRange` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   factory _TrendScale.fromRange(
     DateTime historyStart,
     DateTime today,
@@ -745,10 +880,25 @@ class _TrendScale {
     );
   }
 
+  /// Purpose: Return the current point count value.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: None.
+  /// Notes: None.
   int get pointCount => dates.length;
 
+  /// Purpose: Return the display label for x label.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   String xLabel(int index) => _dateLabel.format(dates[index]);
 
+  /// Purpose: Return the display label for tooltip label.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   String tooltipLabel(int index) => _tooltipLabel.format(dates[index]);
 }
 
@@ -758,6 +908,11 @@ class _TrendData {
   final double minY;
   final double maxY;
 
+  /// Purpose: Create a trend data instance.
+  /// Inputs: None.
+  /// Returns: A new `_TrendData` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _TrendData({
     required this.historySpots,
     required this.futureSpots,
@@ -772,6 +927,11 @@ class _ChartSeries {
   final List<FlSpot> spots;
   final bool dashed;
 
+  /// Purpose: Create a chart series instance.
+  /// Inputs: `dashed`.
+  /// Returns: A new `_ChartSeries` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _ChartSeries({
     required this.label,
     required this.color,
@@ -786,6 +946,11 @@ class _AssetBucket {
   final int count;
   final Color color;
 
+  /// Purpose: Create an asset bucket instance.
+  /// Inputs: None.
+  /// Returns: A new `_AssetBucket` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _AssetBucket({
     required this.label,
     required this.amount,

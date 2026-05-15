@@ -1,5 +1,10 @@
 import 'dart:convert';
 
+/// Purpose: Implement the unknown json fields behavior for this file.
+/// Inputs: `json`, `knownKeys`.
+/// Returns: `Map<String, dynamic>`.
+/// Side effects: None.
+/// Notes: None.
 Map<String, dynamic> unknownJsonFields(
   Map<String, dynamic> json,
   Set<String> knownKeys,
@@ -8,6 +13,11 @@ Map<String, dynamic> unknownJsonFields(
     if (!knownKeys.contains(entry.key)) entry.key: entry.value,
 };
 
+/// Purpose: Implement the merge unknown json fields behavior for this file.
+/// Inputs: None.
+/// Returns: `Map<String, dynamic>`.
+/// Side effects: None.
+/// Notes: None.
 Map<String, dynamic> mergeUnknownJsonFields({
   required Map<String, dynamic> primary,
   required Map<String, dynamic> secondary,
@@ -46,9 +56,19 @@ Map<String, dynamic> mergeUnknownJsonFields({
   return result;
 }
 
+/// Purpose: Return the serialized enum value used in JSON data.
+/// Inputs: `a`, `b`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: None.
 bool jsonValueEquals(Object? a, Object? b) =>
     jsonEncode(_canonicalJson(a)) == jsonEncode(_canonicalJson(b));
 
+/// Purpose: Provide the internal canonical json helper for this file.
+/// Inputs: `value`.
+/// Returns: `Object?`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 Object? _canonicalJson(Object? value) {
   if (value is Map) {
     final keys = value.keys.map((k) => k.toString()).toList()..sort();

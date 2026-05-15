@@ -65,6 +65,11 @@ class _SearchDialog extends StatefulWidget {
   final DateTime? currentReleaseDate;
   final String? currentImagePath;
 
+  /// Purpose: Create a search dialog instance.
+  /// Inputs: None.
+  /// Returns: A new `_SearchDialog` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _SearchDialog({
     this.initialQuery,
     this.currentBrand,
@@ -82,6 +87,11 @@ class _SearchDialog extends StatefulWidget {
     this.currentImagePath,
   });
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_SearchDialog> createState() => _SearchDialogState();
 }
@@ -104,18 +114,33 @@ class _SearchDialogState extends State<_SearchDialog> {
   String? _fetchedImagePath;
   ImageProvider? _imagePreview;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
     _queryController = TextEditingController(text: widget.initialQuery ?? '');
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _queryController.dispose();
     super.dispose();
   }
 
+  /// Purpose: Search for the requested result using the current query or filters.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _search() async {
     final query = _queryController.text.trim();
     if (query.isEmpty) return;
@@ -145,6 +170,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     }
   }
 
+  /// Purpose: Provide the internal select result helper for this file.
+  /// Inputs: `result`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _selectResult(DeviceSearchResult result) async {
     setState(() {
       _selected = result;
@@ -172,6 +202,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     }
   }
 
+  /// Purpose: Provide the internal init toggles helper for this file.
+  /// Inputs: `r`.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _initToggles(DeviceSearchResult r) {
     if (r.brand?.isNotEmpty == true) _toggles['brand'] = true;
     if (r.model?.isNotEmpty == true) _toggles['model'] = true;
@@ -187,6 +222,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     if (r.imageUrl != null) _toggles['image'] = false; // off by default
   }
 
+  /// Purpose: Fetch image from the relevant source.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _fetchImage() async {
     if (_selected?.imageUrl == null) return;
     setState(() => _fetchingImage = true);
@@ -213,6 +253,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     }
   }
 
+  /// Purpose: Provide the internal apply helper for this file.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _apply() {
     if (_selected == null) return;
     final r = _selected!;
@@ -261,6 +306,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     Navigator.of(context).pop(result);
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -278,6 +328,11 @@ class _SearchDialogState extends State<_SearchDialog> {
 
   // ──── Search view ────
 
+  /// Purpose: Build and return search view for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildSearchView(AppLocalizations l10n) {
     return Column(
       children: [
@@ -315,6 +370,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     );
   }
 
+  /// Purpose: Build and return search results for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildSearchResults(AppLocalizations l10n) {
     if (_searching) {
       return const Center(child: CircularProgressIndicator());
@@ -372,6 +432,11 @@ class _SearchDialogState extends State<_SearchDialog> {
 
   // ──── Preview view ────
 
+  /// Purpose: Build and return preview view for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildPreviewView(AppLocalizations l10n) {
     final r = _selected;
     if (r == null) return const SizedBox.shrink();
@@ -434,6 +499,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     );
   }
 
+  /// Purpose: Build and return field list for the current context.
+  /// Inputs: `l10n`, `r`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildFieldList(AppLocalizations l10n, DeviceSearchResult r) {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -588,6 +658,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     );
   }
 
+  /// Purpose: Provide the internal image column helper for this file.
+  /// Inputs: `label`, `image`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _imageColumn(String label, Widget image) {
     return Column(
       children: [
@@ -598,6 +673,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     );
   }
 
+  /// Purpose: Provide the internal image preview frame helper for this file.
+  /// Inputs: `child`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _imagePreviewFrame(Widget child) {
     final cs = Theme.of(context).colorScheme;
     return SizedBox(
@@ -614,6 +694,11 @@ class _SearchDialogState extends State<_SearchDialog> {
     );
   }
 
+  /// Purpose: Provide the internal field tile helper for this file.
+  /// Inputs: `label`, `current`, `fetched`.
+  /// Returns: `Widget`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Widget _fieldTile(String key, String label, String? current, String fetched) {
     final l10n = AppLocalizations.of(context)!;
     return CheckboxListTile(
@@ -654,6 +739,11 @@ class _SearchDialogState extends State<_SearchDialog> {
 
   // ──── Header ────
 
+  /// Purpose: Build and return header for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: Updates widget state and triggers a rebuild. Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildHeader(AppLocalizations l10n, {required bool showBack}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),

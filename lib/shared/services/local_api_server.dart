@@ -19,12 +19,42 @@ class LocalApiServer {
   static String? _password;
   static String? _lastError;
 
+  /// Purpose: Return the current port value.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: None.
+  /// Notes: None.
   static int get port => _port;
+  /// Purpose: Collect and return en address.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   static String get listenAddress => _listenAddress;
+  /// Purpose: Return the current enabled value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   static bool get enabled => _enabled;
+  /// Purpose: Return whether running is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   static bool get isRunning => _server != null;
+  /// Purpose: Return the current last error value.
+  /// Inputs: None.
+  /// Returns: `String?`.
+  /// Side effects: None.
+  /// Notes: None.
   static String? get lastError => _lastError;
 
+  /// Purpose: Load config into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> loadConfig() async {
     final config = await DeviceStorage.readConfig();
     _port = config['apiPort'] as int? ?? 7789;
@@ -34,6 +64,11 @@ class LocalApiServer {
     _password = config['apiPassword'] as String?;
   }
 
+  /// Purpose: Start the current workflow for the current workflow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> start() async {
     await loadConfig();
     await stop();
@@ -89,11 +124,21 @@ class LocalApiServer {
     }
   }
 
+  /// Purpose: Stop the current workflow and clean up any related activity.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> stop() async {
     await _server?.close(force: true);
     _server = null;
   }
 
+  /// Purpose: Implement the restart behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> restart() async {
     await loadConfig();
     await start();
@@ -101,10 +146,20 @@ class LocalApiServer {
 
   // ── Route handlers ──
 
+  /// Purpose: Handle ping and trigger the appropriate follow-up work.
+  /// Inputs: `request`.
+  /// Returns: `Future<Response>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<Response> _handlePing(Request request) async {
     return _json({'status': 'ok'});
   }
 
+  /// Purpose: Handle list and trigger the appropriate follow-up work.
+  /// Inputs: `request`.
+  /// Returns: `Future<Response>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<Response> _handleList(Request request) async {
     final data = await DeviceStorage.load();
     final category = request.url.queryParameters['category'];
@@ -123,6 +178,11 @@ class LocalApiServer {
     return _json(devices.map(_deviceToJson).toList());
   }
 
+  /// Purpose: Handle search and trigger the appropriate follow-up work.
+  /// Inputs: `request`.
+  /// Returns: `Future<Response>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<Response> _handleSearch(Request request) async {
     final q = request.url.queryParameters['q']?.trim();
     if (q == null || q.isEmpty) {
@@ -139,6 +199,11 @@ class LocalApiServer {
     return _json(matches.map(_deviceToJson).toList());
   }
 
+  /// Purpose: Handle add and trigger the appropriate follow-up work.
+  /// Inputs: `request`.
+  /// Returns: `Future<Response>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<Response> _handleAdd(Request request) async {
     final body = await _parseBody(request);
     if (body == null) return _error(400, 'invalid JSON body');
@@ -231,6 +296,11 @@ class LocalApiServer {
     return _json({'success': true, 'id': device.id, 'name': device.name});
   }
 
+  /// Purpose: Handle stats and trigger the appropriate follow-up work.
+  /// Inputs: `request`.
+  /// Returns: `Future<Response>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<Response> _handleStats(Request request) async {
     final data = await DeviceStorage.load();
     final serviceData = await ServiceStorage.load();
@@ -245,6 +315,11 @@ class LocalApiServer {
     );
   }
 
+  /// Purpose: Build and return stats json for the current context.
+  /// Inputs: None.
+  /// Returns: `Map<String, dynamic>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Map<String, dynamic> buildStatsJson({
     required List<Device> devices,
     required List<ServiceNode> services,
@@ -276,6 +351,11 @@ class LocalApiServer {
 
   // ── Helpers ──
 
+  /// Purpose: Provide the internal device to json helper for this file.
+  /// Inputs: `d`.
+  /// Returns: `Map<String, dynamic>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<String, dynamic> _deviceToJson(Device d) => {
     'id': d.id,
     'name': d.name,
@@ -313,17 +393,32 @@ class LocalApiServer {
     'modifiedAt': d.modifiedAt.toIso8601String(),
   };
 
+  /// Purpose: Provide the internal json helper for this file.
+  /// Inputs: None.
+  /// Returns: `Response`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Response _json(Object data) => Response.ok(
     jsonEncode(data),
     headers: {'Content-Type': 'application/json'},
   );
 
+  /// Purpose: Provide the internal error helper for this file.
+  /// Inputs: `status`.
+  /// Returns: `Response`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Response _error(int status, String message) => Response(
     status,
     body: jsonEncode({'error': message}),
     headers: {'Content-Type': 'application/json'},
   );
 
+  /// Purpose: Provide the internal parse body helper for this file.
+  /// Inputs: `request`.
+  /// Returns: `Future<Map<String, dynamic>?>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   static Future<Map<String, dynamic>?> _parseBody(Request request) async {
     try {
       final raw = await request.readAsString();
@@ -336,6 +431,11 @@ class LocalApiServer {
 
   // ── Middleware ──
 
+  /// Purpose: Provide the internal cors middleware helper for this file.
+  /// Inputs: None.
+  /// Returns: `Middleware`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Middleware _corsMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {
@@ -354,6 +454,11 @@ class LocalApiServer {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
+  /// Purpose: Provide the internal auth middleware helper for this file.
+  /// Inputs: None.
+  /// Returns: `Middleware`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Middleware _authMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {
@@ -391,6 +496,11 @@ class LocalApiServer {
     };
   }
 
+  /// Purpose: Provide the internal validate basic auth helper for this file.
+  /// Inputs: `header`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _validateBasicAuth(String header) {
     if (!header.startsWith('Basic ')) return false;
     try {
@@ -403,6 +513,11 @@ class LocalApiServer {
     }
   }
 
+  /// Purpose: Provide the internal error middleware helper for this file.
+  /// Inputs: None.
+  /// Returns: `Middleware`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Middleware _errorMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {

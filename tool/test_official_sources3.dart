@@ -6,6 +6,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> main() async {
   // ========== INTEL: Startpage → ARK product page ==========
   print('========== Intel ARK via Startpage ==========');
@@ -36,6 +41,11 @@ Future<void> main() async {
   await testAmdViaStartpage('EPYC 9654', 'processors');
 }
 
+/// Purpose: Test intel via startpage and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testIntelViaStartpage(String query) async {
   // Step 1: Find ARK URL via Startpage
   final resp = await http.post(
@@ -171,6 +181,11 @@ Future<void> testIntelViaStartpage(String query) async {
   }
 }
 
+/// Purpose: Test startpage intel and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testStartpageIntel(String query) async {
   final resp = await http.post(
     Uri.parse('https://www.startpage.com/sp/search'),
@@ -191,6 +206,11 @@ Future<void> testStartpageIntel(String query) async {
   for (final u in urls.take(10)) print('    $u');
 }
 
+/// Purpose: Test amd via startpage and report the outcome.
+/// Inputs: `query`, `category`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testAmdViaStartpage(String query, String category) async {
   final resp = await http.post(
     Uri.parse('https://www.startpage.com/sp/search'),

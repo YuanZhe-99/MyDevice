@@ -10,8 +10,18 @@ import 'device_storage.dart';
 class ExchangeRateException implements Exception {
   final String message;
 
+  /// Purpose: Create an exchange rate exception instance.
+  /// Inputs: `message`.
+  /// Returns: A new `ExchangeRateException` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   const ExchangeRateException(this.message);
 
+  /// Purpose: Implement the to string behavior for this file.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   @override
   String toString() => message;
 }
@@ -21,12 +31,22 @@ class DeviceExchangeRateData {
   final Map<String, double> rates;
   final DateTime? lastFetchedAt;
 
+  /// Purpose: Create a device exchange rate data instance.
+  /// Inputs: None.
+  /// Returns: A new `DeviceExchangeRateData` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const DeviceExchangeRateData({
     required this.baseCurrency,
     required this.rates,
     this.lastFetchedAt,
   });
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     'baseCurrency': baseCurrency,
     'rates': rates,
@@ -34,6 +54,11 @@ class DeviceExchangeRateData {
       'lastFetchedAt': lastFetchedAt!.toIso8601String(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `DeviceExchangeRateData.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory DeviceExchangeRateData.fromJson(Map<String, dynamic> json) =>
       DeviceExchangeRateData(
         baseCurrency: json['baseCurrency'] as String? ?? 'USD',
@@ -70,6 +95,11 @@ class DeviceExchangeRateService {
     'INR',
   ];
 
+  /// Purpose: Implement the currency symbol behavior for this file.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static String currencySymbol(String code) => switch (code.toUpperCase()) {
     'CNY' => '¥',
     'USD' => r'$',
@@ -88,29 +118,54 @@ class DeviceExchangeRateService {
     _ => code.toUpperCase(),
   };
 
+  /// Purpose: Implement the get default currency behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<String>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<String> getDefaultCurrency() async {
     final config = await DeviceStorage.readConfig();
     return (config['defaultCurrency'] as String? ?? defaultDefaultCurrency)
         .toUpperCase();
   }
 
+  /// Purpose: Update default currency with the provided value.
+  /// Inputs: `currency`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> setDefaultCurrency(String currency) async {
     final config = await DeviceStorage.readConfig();
     config['defaultCurrency'] = currency.toUpperCase();
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Implement the get auto update enabled behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<bool>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<bool> getAutoUpdateEnabled() async {
     final config = await DeviceStorage.readConfig();
     return config['autoUpdateExchangeRates'] as bool? ?? true;
   }
 
+  /// Purpose: Update auto update enabled with the provided value.
+  /// Inputs: `enabled`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> setAutoUpdateEnabled(bool enabled) async {
     final config = await DeviceStorage.readConfig();
     config['autoUpdateExchangeRates'] = enabled;
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Implement the refresh if needed behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> refreshIfNeeded() async {
     try {
       if (!await getAutoUpdateEnabled()) return;
@@ -122,11 +177,21 @@ class DeviceExchangeRateService {
     } catch (_) {}
   }
 
+  /// Purpose: Provide the internal get file helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<File>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   static Future<File> _getFile() async {
     final appDir = await DeviceStorage.getAppDir();
     return File(p.join(appDir.path, _fileName));
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: `baseCurrency`.
+  /// Returns: `Future<DeviceExchangeRateData>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<DeviceExchangeRateData> load(String baseCurrency) async {
     final base = baseCurrency.toUpperCase();
     try {
@@ -147,6 +212,11 @@ class DeviceExchangeRateService {
     );
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: `data`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<void> save(DeviceExchangeRateData data) async {
     final file = await _getFile();
     await file.writeAsString(
@@ -154,6 +224,11 @@ class DeviceExchangeRateService {
     );
   }
 
+  /// Purpose: Fetch and save latest from the relevant source.
+  /// Inputs: `baseCurrency`.
+  /// Returns: `Future<DeviceExchangeRateData?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<DeviceExchangeRateData?> fetchAndSaveLatest(
     String baseCurrency,
   ) async {
@@ -163,6 +238,11 @@ class DeviceExchangeRateService {
     return fetched;
   }
 
+  /// Purpose: Fetch latest from the relevant source.
+  /// Inputs: `baseCurrency`.
+  /// Returns: `Future<DeviceExchangeRateData?>`.
+  /// Side effects: May perform network I/O.
+  /// Notes: None.
   static Future<DeviceExchangeRateData?> fetchLatest(
     String baseCurrency,
   ) async {
@@ -186,6 +266,11 @@ class DeviceExchangeRateService {
     }
   }
 
+  /// Purpose: Implement the convert optional behavior for this file.
+  /// Inputs: `extraJson`.
+  /// Returns: `Future<MoneyValue?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<MoneyValue?> convertOptional({
     required double? amount,
     required String currency,
@@ -205,6 +290,11 @@ class DeviceExchangeRateService {
     );
   }
 
+  /// Purpose: Implement the convert behavior for this file.
+  /// Inputs: `extraJson`.
+  /// Returns: `Future<MoneyValue>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<MoneyValue> convert({
     required double amount,
     required String currency,
@@ -233,6 +323,11 @@ class DeviceExchangeRateService {
     );
   }
 
+  /// Purpose: Provide the internal rate to default helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<double>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<double> _rateToDefault({
     required String from,
     required String base,
@@ -261,6 +356,11 @@ class DeviceExchangeRateService {
     throw const ExchangeRateException('exchange_rate_unavailable');
   }
 
+  /// Purpose: Provide the internal should fetch today helper for this file.
+  /// Inputs: `lastFetch`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _shouldFetchToday(DateTime? lastFetch) {
     if (lastFetch == null) return true;
     final now = DateTime.now();
@@ -269,6 +369,11 @@ class DeviceExchangeRateService {
         now.day != lastFetch.day;
   }
 
+  /// Purpose: Provide the internal fallback rates for helper for this file.
+  /// Inputs: `baseCurrency`.
+  /// Returns: `Map<String, double>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<String, double> _fallbackRatesFor(String baseCurrency) {
     final base = baseCurrency.toUpperCase();
     final basePerUsd = _usdFallbackRates[base] ?? 1.0;

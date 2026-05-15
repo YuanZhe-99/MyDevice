@@ -14,18 +14,33 @@ class DataSetStorageLink {
   final List<int> storageIndices;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a data set storage link instance.
+  /// Inputs: `storageIndices`.
+  /// Returns: A new `DataSetStorageLink` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const DataSetStorageLink({
     required this.deviceId,
     this.storageIndices = const [],
     this.extraJson = const {},
   });
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'deviceId': deviceId,
     'storageIndices': storageIndices,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `DataSetStorageLink.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory DataSetStorageLink.fromJson(Map<String, dynamic> json) =>
       DataSetStorageLink(
         deviceId: json['deviceId'] as String,
@@ -37,6 +52,11 @@ class DataSetStorageLink {
         extraJson: unknownJsonFields(json, _dataSetStorageLinkJsonKeys),
       );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `DataSetStorageLink`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   DataSetStorageLink mergeUnknownFieldsFrom(
     DataSetStorageLink other, {
     DataSetStorageLink? base,
@@ -61,6 +81,11 @@ class DataSet {
   final DateTime modifiedAt;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a data set instance.
+  /// Inputs: `storageLinks`.
+  /// Returns: A new `DataSet` instance.
+  /// Side effects: None.
+  /// Notes: None.
   DataSet({
     String? id,
     required this.name,
@@ -71,6 +96,11 @@ class DataSet {
   }) : id = id ?? const Uuid().v4(),
        modifiedAt = modifiedAt ?? DateTime.now();
 
+  /// Purpose: Create a copy with selected fields replaced.
+  /// Inputs: None.
+  /// Returns: `DataSet`.
+  /// Side effects: None.
+  /// Notes: None.
   DataSet copyWith({
     String? name,
     String? emoji,
@@ -87,6 +117,11 @@ class DataSet {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -97,6 +132,11 @@ class DataSet {
     'modifiedAt': modifiedAt.toIso8601String(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `DataSet.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory DataSet.fromJson(Map<String, dynamic> json) => DataSet(
     id: json['id'] as String,
     name: json['name'] as String,
@@ -110,6 +150,11 @@ class DataSet {
     extraJson: unknownJsonFields(json, _dataSetJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `DataSet`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   DataSet mergeUnknownFieldsFrom(DataSet other, {DataSet? base}) {
     final json = toJson();
     json.addAll(
@@ -145,13 +190,28 @@ class DataSetData {
   final List<DataSet> datasets;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a data set data instance.
+  /// Inputs: `datasets`.
+  /// Returns: A new `DataSetData` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const DataSetData({this.datasets = const [], this.extraJson = const {}});
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'datasets': datasets.map((d) => d.toJson()).toList(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `DataSetData.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory DataSetData.fromJson(Map<String, dynamic> json) => DataSetData(
     datasets:
         (json['datasets'] as List<dynamic>?)

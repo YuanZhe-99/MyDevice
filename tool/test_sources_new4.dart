@@ -8,6 +8,11 @@ const ua =
 const googleBot =
     'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> main() async {
   // Test 1: TechPowerUp GPU page with Googlebot UA (SSR for crawlers?)
   print('=== TechPowerUp GPU - Googlebot UA ===');

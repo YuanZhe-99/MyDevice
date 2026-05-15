@@ -6,6 +6,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> main() async {
   final url = 'https://www.intel.com/content/www/us/en/products/sku/236773/intel-core-i9-processor-14900k-36m-cache-up-to-6-00-ghz/specifications.html';
 

@@ -21,8 +21,18 @@ class DeviceEditPage extends StatefulWidget {
   final Device? device;
   final Map<String, dynamic>? searchResult;
 
+  /// Purpose: Create a device edit page instance.
+  /// Inputs: None.
+  /// Returns: A new `DeviceEditPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DeviceEditPage({super.key, this.device, this.searchResult});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<DeviceEditPage> createState() => _DeviceEditPageState();
 }
@@ -98,8 +108,18 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   int _cpuAutoKey = 0;
   int _gpuAutoKey = 0;
 
+  /// Purpose: Provide the internal is editing helper for this file.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   bool get _isEditing => widget.device != null;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -215,6 +235,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _loadFinancialSettings();
   }
 
+  /// Purpose: Load financial settings into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadFinancialSettings() async {
     final defaultCurrency =
         await DeviceExchangeRateService.getDefaultCurrency();
@@ -234,6 +259,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
+  /// Purpose: Load presets into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadPresets() async {
     final cpus = await PresetService.loadCpus();
     final gpus = await PresetService.loadGpus();
@@ -250,6 +280,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -291,6 +326,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
 
   static const _memoryUnits = ['MB', 'GB', 'TB'];
 
+  /// Purpose: Implement the static behavior for this file.
+  /// Inputs: `String`, `value`.
+  /// Returns: `dynamic`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   /// Parse "16 GB" or "512 GB NVMe SSD" into ("16", "GB") or ("512", "GB").
   /// Falls back to (original, "GB") when no known unit is found.
   static (String, String) _parseValueUnit(String? value) {
@@ -306,27 +346,57 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     return (trimmed, 'GB');
   }
 
+  /// Purpose: Provide the internal combine value unit helper for this file.
+  /// Inputs: `value`, `unit`.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String? _combineValueUnit(String value, String unit) {
     final v = value.trim();
     if (v.isEmpty) return null;
     return '$v $unit';
   }
 
+  /// Purpose: Provide the internal non empty helper for this file.
+  /// Inputs: None.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String? _nonEmpty(String value) => value.trim().isEmpty ? null : value.trim();
 
+  /// Purpose: Provide the internal parse int helper for this file.
+  /// Inputs: None.
+  /// Returns: `int?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   int? _parseInt(String value) => int.tryParse(value.trim());
 
+  /// Purpose: Provide the internal parse money helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `double?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double? _parseMoney(String value) {
     final cleaned = value.trim().replaceAll(',', '');
     if (cleaned.isEmpty) return null;
     return double.tryParse(cleaned);
   }
 
+  /// Purpose: Provide the internal parse rate helper for this file.
+  /// Inputs: `controller`, `currency`.
+  /// Returns: `double?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double? _parseRate(TextEditingController controller, String currency) {
     if (currency == _defaultCurrency) return null;
     return _parseMoney(controller.text);
   }
 
+  /// Purpose: Return the display label for acquisition type label.
+  /// Inputs: `l10n`, `type`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _acquisitionTypeLabel(
     AppLocalizations l10n,
     DeviceAcquisitionType type,
@@ -340,6 +410,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
+  /// Purpose: Return the display label for recurring cost kind label.
+  /// Inputs: `l10n`, `kind`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _recurringCostKindLabel(
     AppLocalizations l10n,
     RecurringCostKind kind,
@@ -352,6 +427,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
+  /// Purpose: Return the display label for billing cycle label.
+  /// Inputs: `l10n`, `cycle`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _billingCycleLabel(AppLocalizations l10n, BillingCycle cycle) {
     return switch (cycle) {
       BillingCycle.monthly => l10n.billingMonthly,
@@ -359,6 +439,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
@@ -504,6 +589,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Purpose: Pick date from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -516,6 +606,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
   }
 
+  /// Purpose: Pick release date from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickReleaseDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -528,6 +623,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
   }
 
+  /// Purpose: Pick retired date from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickRetiredDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -540,6 +640,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
   }
 
+  /// Purpose: Return the display label for storage type label.
+  /// Inputs: `l10n`, `t`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _storageTypeLabel(AppLocalizations l10n, StorageType t) {
     return switch (t) {
       StorageType.ssd => l10n.storageTypeSsd,
@@ -548,6 +653,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
+  /// Purpose: Return the display label for storage interface label.
+  /// Inputs: `l10n`, `t`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _storageInterfaceLabel(AppLocalizations l10n, StorageInterface t) {
     return switch (t) {
       StorageInterface.m2Nvme => l10n.storageInterfaceM2Nvme,
@@ -557,6 +667,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
+  /// Purpose: Return the display label for category label.
+  /// Inputs: `l10n`, `cat`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _categoryLabel(AppLocalizations l10n, DeviceCategory cat) {
     return switch (cat) {
       DeviceCategory.desktop => l10n.deviceCategoryDesktop,
@@ -573,6 +688,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
+  /// Purpose: Provide the internal apply cpu preset helper for this file.
+  /// Inputs: `cpu`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _applyCpuPreset(CpuInfo cpu) {
     setState(() {
       _cpuModelCtrl.text = cpu.model ?? '';
@@ -586,6 +706,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
+  /// Purpose: Provide the internal apply gpu preset helper for this file.
+  /// Inputs: `gpu`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _applyGpuPreset(GpuInfo gpu) {
     setState(() {
       _gpuModelCtrl.text = gpu.model ?? '';
@@ -594,6 +719,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
+  /// Purpose: Search for cpu online using the current query or filters.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _searchCpuOnline() async {
     final cpu = await showCpuSearchDialog(
       context,
@@ -603,6 +733,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     if (cpu != null) _applyCpuPreset(cpu);
   }
 
+  /// Purpose: Search for gpu online using the current query or filters.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _searchGpuOnline() async {
     final gpu = await showGpuSearchDialog(
       context,
@@ -612,6 +747,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     if (gpu != null) _applyGpuPreset(gpu);
   }
 
+  /// Purpose: Pick cpu preset from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickCpuPreset() async {
     final cpu = await showModalBottomSheet<CpuInfo>(
       context: context,
@@ -621,6 +761,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     if (cpu != null) _applyCpuPreset(cpu);
   }
 
+  /// Purpose: Pick gpu preset from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickGpuPreset() async {
     final gpu = await showModalBottomSheet<GpuInfo>(
       context: context,
@@ -630,6 +775,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     if (gpu != null) _applyGpuPreset(gpu);
   }
 
+  /// Purpose: Show search dialog in the current UI flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _showSearchDialog() async {
     // Build initial query from existing name/model
     final query = _modelCtrl.text.trim().isNotEmpty
@@ -660,6 +810,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _applySearchResult(result);
   }
 
+  /// Purpose: Provide the internal apply search result helper for this file.
+  /// Inputs: `result`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _applySearchResult(Map<String, dynamic> result) {
     setState(() {
       if (result['brand'] is String) _brandCtrl.text = result['brand'];
@@ -757,6 +912,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     'razer': 'assets/logos/razer.svg',
   };
 
+  /// Purpose: Provide the internal detect logo for model helper for this file.
+  /// Inputs: `model`.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String? _detectLogoForModel(String model) {
     final lower = model.toLowerCase();
     for (final entry in _brandLogoMap.entries) {
@@ -765,6 +925,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     return null;
   }
 
+  /// Purpose: Provide the internal brand logo widget helper for this file.
+  /// Inputs: `logoPath`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _brandLogoWidget(String? logoPath) {
     if (logoPath == null) return const SizedBox.shrink();
     return Padding(
@@ -816,6 +981,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     '🧮',
   ];
 
+  /// Purpose: Show emoji picker in the current UI flow.
+  /// Inputs: `l10n`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild. Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   void _showEmojiPicker(AppLocalizations l10n) {
     showModalBottomSheet(
       context: context,
@@ -863,6 +1033,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
+  /// Purpose: Pick image from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _pickImage() async {
     final path = await ImageService.pickAndSaveImage();
     if (path != null) {
@@ -873,6 +1048,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
   }
 
+  /// Purpose: Provide the internal remove icon helper for this file.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _removeIcon() {
     setState(() {
       _emoji = null;
@@ -880,6 +1060,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
+  /// Purpose: Build and return icon section for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildIconSection(AppLocalizations l10n) {
     final preview = DeviceAvatar(
       category: _category,
@@ -923,6 +1108,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
+  /// Purpose: Provide the internal currency items helper for this file.
+  /// Inputs: `current`.
+  /// Returns: `List<DropdownMenuItem<String>>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   List<DropdownMenuItem<String>> _currencyItems(String current) {
     final currencies = [
       ...DeviceExchangeRateService.supportedCurrencies,
@@ -941,6 +1131,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         .toList();
   }
 
+  /// Purpose: Build and return money fields for the current context.
+  /// Inputs: None.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildMoneyFields({
     required AppLocalizations l10n,
     required String title,
@@ -1012,6 +1207,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
+  /// Purpose: Add recurring cost through the current flow.
+  /// Inputs: `kind`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _addRecurringCost({RecurringCostKind kind = RecurringCostKind.other}) {
     setState(() {
       _recurringCostDrafts.add(
@@ -1020,6 +1220,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
+  /// Purpose: Build and return recurring cost card for the current context.
+  /// Inputs: `l10n`, `index`, `draft`.
+  /// Returns: `Widget`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Widget _buildRecurringCostCard(
     AppLocalizations l10n,
     int index,
@@ -1111,6 +1316,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
+  /// Purpose: Build and return financial section for the current context.
+  /// Inputs: `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Widget _buildFinancialSection(AppLocalizations l10n, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1253,6 +1463,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1951,6 +2166,11 @@ class _RecurringCostDraft {
   final TextEditingController rateCtrl;
   final DeviceRecurringCost? existing;
 
+  /// Purpose: Create a recurring cost draft instance.
+  /// Inputs: `billingCycle`.
+  /// Returns: A new `_RecurringCostDraft` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   _RecurringCostDraft({
     required this.kind,
     required this.currency,
@@ -1964,6 +2184,11 @@ class _RecurringCostDraft {
        amountCtrl = TextEditingController(text: amount ?? ''),
        rateCtrl = TextEditingController(text: rate ?? '');
 
+  /// Purpose: Create a from cost instance.
+  /// Inputs: `cost`.
+  /// Returns: A new `_RecurringCostDraft.fromCost` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   factory _RecurringCostDraft.fromCost(DeviceRecurringCost cost) =>
       _RecurringCostDraft(
         kind: cost.kind,
@@ -1978,6 +2203,11 @@ class _RecurringCostDraft {
         existing: cost,
       );
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   void dispose() {
     nameCtrl.dispose();
     amountCtrl.dispose();
@@ -1989,8 +2219,18 @@ class _RecurringCostDraft {
 class _CpuPresetPicker extends StatefulWidget {
   final List<CpuInfo> presets;
 
+  /// Purpose: Create a cpu preset picker instance.
+  /// Inputs: None.
+  /// Returns: A new `_CpuPresetPicker` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _CpuPresetPicker({required this.presets});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_CpuPresetPicker> createState() => _CpuPresetPickerState();
 }
@@ -1998,6 +2238,11 @@ class _CpuPresetPicker extends StatefulWidget {
 class _CpuPresetPickerState extends State<_CpuPresetPicker> {
   String _query = '';
 
+  /// Purpose: Provide the internal filtered helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<CpuInfo>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<CpuInfo> get _filtered {
     if (_query.isEmpty) return widget.presets;
     final q = _query.toLowerCase();
@@ -2008,6 +2253,11 @@ class _CpuPresetPickerState extends State<_CpuPresetPicker> {
     }).toList();
   }
 
+  /// Purpose: Return the display label for cores label.
+  /// Inputs: `cpu`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _coresLabel(CpuInfo cpu) {
     final parts = <String>[];
     if (cpu.performanceCores != null) parts.add('${cpu.performanceCores}P');
@@ -2016,6 +2266,11 @@ class _CpuPresetPickerState extends State<_CpuPresetPicker> {
     return parts.join('+');
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final items = _filtered;
@@ -2073,8 +2328,18 @@ class _CpuPresetPickerState extends State<_CpuPresetPicker> {
 class _GpuPresetPicker extends StatefulWidget {
   final List<GpuInfo> presets;
 
+  /// Purpose: Create a gpu preset picker instance.
+  /// Inputs: None.
+  /// Returns: A new `_GpuPresetPicker` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _GpuPresetPicker({required this.presets});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_GpuPresetPicker> createState() => _GpuPresetPickerState();
 }
@@ -2082,6 +2347,11 @@ class _GpuPresetPicker extends StatefulWidget {
 class _GpuPresetPickerState extends State<_GpuPresetPicker> {
   String _query = '';
 
+  /// Purpose: Provide the internal filtered helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<GpuInfo>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<GpuInfo> get _filtered {
     if (_query.isEmpty) return widget.presets;
     final q = _query.toLowerCase();
@@ -2092,6 +2362,11 @@ class _GpuPresetPickerState extends State<_GpuPresetPicker> {
     }).toList();
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final items = _filtered;

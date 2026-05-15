@@ -5,8 +5,18 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/backup_service.dart';
 
 class BackupPage extends StatefulWidget {
+  /// Purpose: Create a backup page instance.
+  /// Inputs: None.
+  /// Returns: A new `BackupPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const BackupPage({super.key});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<BackupPage> createState() => _BackupPageState();
 }
@@ -19,12 +29,22 @@ class _BackupPageState extends State<BackupPage> {
 
   static const _retentionOptions = [0, 7, 14, 30, 60, 90];
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
     _load();
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _load() async {
     await BackupService.loadSettings();
     final backups = await BackupService.listBackups();
@@ -38,6 +58,11 @@ class _BackupPageState extends State<BackupPage> {
     }
   }
 
+  /// Purpose: Provide the internal create backup helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _createBackup() async {
     final l10n = AppLocalizations.of(context)!;
     final file = await BackupService.createBackup();
@@ -50,6 +75,11 @@ class _BackupPageState extends State<BackupPage> {
     }
   }
 
+  /// Purpose: Restore backup from a persisted source.
+  /// Inputs: `backup`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _restoreBackup(BackupInfo backup) async {
     final l10n = AppLocalizations.of(context)!;
 
@@ -101,6 +131,11 @@ class _BackupPageState extends State<BackupPage> {
     );
   }
 
+  /// Purpose: Delete backup from the relevant storage or state.
+  /// Inputs: `backup`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _deleteBackup(BackupInfo backup) async {
     final l10n = AppLocalizations.of(context)!;
     final ok = await showDialog<bool>(
@@ -126,18 +161,33 @@ class _BackupPageState extends State<BackupPage> {
     await _load();
   }
 
+  /// Purpose: Provide the internal toggle auto backup helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _toggleAutoBackup(bool value) async {
     setState(() => _autoBackup = value);
     BackupService.autoBackupEnabled = value;
     await BackupService.saveSettings();
   }
 
+  /// Purpose: Update retention with the provided value.
+  /// Inputs: `days`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _setRetention(int days) async {
     setState(() => _retentionDays = days);
     BackupService.retentionDays = days;
     await BackupService.saveSettings();
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -233,6 +283,11 @@ class _BackupPageState extends State<BackupPage> {
     );
   }
 
+  /// Purpose: Build and return section for the current context.
+  /// Inputs: `context`, `title`, `children`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildSection(
     BuildContext context,
     String title,
@@ -259,8 +314,18 @@ class _BackupPageState extends State<BackupPage> {
 /// Dialog to pick which modules to restore.
 class _RestoreModuleDialog extends StatefulWidget {
   final List<String> availableModules;
+  /// Purpose: Create a restore module dialog instance.
+  /// Inputs: None.
+  /// Returns: A new `_RestoreModuleDialog` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _RestoreModuleDialog({required this.availableModules});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_RestoreModuleDialog> createState() => _RestoreModuleDialogState();
 }
@@ -269,12 +334,22 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
   late final Set<String> _selected;
   bool _selectAll = true;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
     _selected = Set.of(widget.availableModules);
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

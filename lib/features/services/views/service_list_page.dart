@@ -24,6 +24,11 @@ enum _ServiceView { overview, devices, routes, ports }
 enum _TopologyInteractionMode { select, move }
 
 enum _QuickAccessMethod {
+  /// Purpose: Implement the direct behavior for this file.
+  /// Inputs: `custom`.
+  /// Returns: `dynamic`.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   direct(ServiceRouteMethod.direct),
   caddy(ServiceRouteMethod.caddy),
   nginx(ServiceRouteMethod.nginx),
@@ -37,16 +42,36 @@ enum _QuickAccessMethod {
 
   final ServiceRouteMethod routeMethod;
 
+  /// Purpose: Create a quick access method instance.
+  /// Inputs: `routeMethod`.
+  /// Returns: A new `_QuickAccessMethod` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   const _QuickAccessMethod(this.routeMethod);
 
+  /// Purpose: Return whether port mapping is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isPortMapping =>
       routeMethod == ServiceRouteMethod.frp ||
       routeMethod == ServiceRouteMethod.routerPortForward;
 }
 
 class ServiceListPage extends StatefulWidget {
+  /// Purpose: Create a service list page instance.
+  /// Inputs: None.
+  /// Returns: A new `ServiceListPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const ServiceListPage({super.key});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<ServiceListPage> createState() => _ServiceListPageState();
 }
@@ -59,6 +84,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
   _ServiceView _view = _ServiceView.overview;
   bool _loading = true;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -66,16 +96,31 @@ class _ServiceListPageState extends State<ServiceListPage> {
     _load();
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
     super.dispose();
   }
 
+  /// Purpose: Handle local data changed and trigger the appropriate follow-up work.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _handleLocalDataChanged() {
     if (mounted) _load();
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _load() async {
     final serviceData = await ServiceStorage.load();
     final deviceData = await DeviceStorage.load();
@@ -90,12 +135,27 @@ class _ServiceListPageState extends State<ServiceListPage> {
     });
   }
 
+  /// Purpose: Look up device by id from the current in-memory state.
+  /// Inputs: `id`.
+  /// Returns: `Device?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Device? _deviceById(String id) =>
       _devices.where((device) => device.id == id).firstOrNull;
 
+  /// Purpose: Look up service by id from the current in-memory state.
+  /// Inputs: `id`.
+  /// Returns: `ServiceNode?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   ServiceNode? _serviceById(String id) =>
       _services.where((service) => service.id == id).firstOrNull;
 
+  /// Purpose: Look up endpoint by id from the current in-memory state.
+  /// Inputs: `service`, `endpointId`.
+  /// Returns: `ServiceEndpoint?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   ServiceEndpoint? _endpointById(ServiceNode service, String? endpointId) {
     if (endpointId == null) return service.endpoints.firstOrNull;
     return service.endpoints
@@ -103,6 +163,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
         .firstOrNull;
   }
 
+  /// Purpose: Add service through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addService() async {
     final result = await Navigator.of(
       context,
@@ -111,6 +176,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (result == true) _load();
   }
 
+  /// Purpose: Edit service and refresh local state when needed.
+  /// Inputs: `service`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editService(ServiceNode service) async {
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (_) => ServiceEditPage(service: service)),
@@ -118,6 +188,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (result == true) _load();
   }
 
+  /// Purpose: Add route through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addRoute({ServiceNode? source}) async {
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
@@ -127,6 +202,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (result == true) _load();
   }
 
+  /// Purpose: Add access route through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addAccessRoute({ServiceNode? source}) async {
     final routes = await showDialog<List<ServiceRoute>>(
       context: context,
@@ -143,6 +223,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     await _load();
   }
 
+  /// Purpose: Edit route and refresh local state when needed.
+  /// Inputs: `route`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editRoute(ServiceRoute route) async {
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (_) => ServiceRouteEditPage(route: route)),
@@ -150,6 +235,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (result == true) _load();
   }
 
+  /// Purpose: Return the display label for view label.
+  /// Inputs: `l10n`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _viewLabel(AppLocalizations l10n, _ServiceView view) => switch (view) {
     _ServiceView.overview => l10n.servicesOverview,
     _ServiceView.devices => l10n.servicesByDevice,
@@ -157,6 +247,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     _ServiceView.ports => l10n.servicePorts,
   };
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -213,6 +308,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Build and return current view for the current context.
+  /// Inputs: None.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildCurrentView(AppLocalizations l10n) => switch (_view) {
     _ServiceView.overview => _buildOverview(l10n),
     _ServiceView.devices => _buildDevices(l10n),
@@ -220,6 +320,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     _ServiceView.ports => _buildPorts(l10n),
   };
 
+  /// Purpose: Build and return overview for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildOverview(AppLocalizations l10n) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
 
@@ -362,6 +467,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Build and return devices for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildDevices(AppLocalizations l10n) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
     final grouped = <String, List<ServiceNode>>{};
@@ -394,6 +504,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Build and return routes for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildRoutes(AppLocalizations l10n) {
     if (_routes.isEmpty) return _emptyState(l10n.noServiceRoutes);
     return ListView(
@@ -402,6 +517,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Build and return ports for the current context.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildPorts(AppLocalizations l10n) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
     final conflicts = findServicePortConflicts(_services);
@@ -483,6 +603,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal topology card helper for this file.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _topologyCard(AppLocalizations l10n) {
     final graph = buildServiceTopology(
       services: _services,
@@ -583,6 +708,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal open topology helper for this file.
+  /// Inputs: `graph`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _openTopology(ServiceTopologyGraph graph) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(
@@ -599,6 +729,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal routes grouped by service helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<MapEntry<String, List<ServiceRoute>>>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService() {
     final grouped = <String, List<ServiceRoute>>{};
     for (final route in _routes) {
@@ -613,6 +748,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return entries;
   }
 
+  /// Purpose: Provide the internal service route group card helper for this file.
+  /// Inputs: `l10n`, `serviceId`, `routes`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _serviceRouteGroupCard(
     AppLocalizations l10n,
     String serviceId,
@@ -659,6 +799,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal metric card helper for this file.
+  /// Inputs: `label`, `value`, `icon`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _metricCard(
     String label,
     int value,
@@ -685,6 +830,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal service tile helper for this file.
+  /// Inputs: `service`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _serviceTile(ServiceNode service) {
     final device = _deviceById(service.deviceId);
     final routeCount = _routes
@@ -729,6 +879,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal route card helper for this file.
+  /// Inputs: `route`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _routeCard(ServiceRoute route) {
     final source = _serviceById(route.sourceServiceId);
     final sourceEndpoint = source != null
@@ -749,6 +904,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Return the display label for hop label.
+  /// Inputs: `hop`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _hopLabel(ServiceRouteHop hop) {
     final service = hop.serviceId != null ? _serviceById(hop.serviceId!) : null;
     if (service != null) {
@@ -761,6 +921,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return hop.type.name;
   }
 
+  /// Purpose: Provide the internal route summary helper for this file.
+  /// Inputs: `route`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _routeSummary(
     ServiceRoute route, {
     ServiceNode? source,
@@ -778,6 +943,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return [path, route.accessLevel.name].join('\n');
   }
 
+  /// Purpose: Provide the internal routes for endpoint helper for this file.
+  /// Inputs: `serviceId`, `endpointId`.
+  /// Returns: `String?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String? _routesForEndpoint(String serviceId, String endpointId) {
     final routeNames = _routes
         .where(
@@ -795,6 +965,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return routeNames.join(', ');
   }
 
+  /// Purpose: Provide the internal warning text helper for this file.
+  /// Inputs: `l10n`, `warning`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _warningText(AppLocalizations l10n, ServiceWarning warning) {
     return switch (warning.kind) {
       ServiceWarningKind.missingDevice => l10n.serviceWarningMissingDevice(
@@ -825,6 +1000,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     };
   }
 
+  /// Purpose: Provide the internal empty state helper for this file.
+  /// Inputs: `message`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _emptyState(String message) {
     return Center(
       child: Padding(
@@ -840,6 +1020,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
+  /// Purpose: Provide the internal empty inline helper for this file.
+  /// Inputs: `message`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _emptyInline(String message) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -856,12 +1041,22 @@ class _QuickAccessRouteDialog extends StatefulWidget {
   final List<Device> devices;
   final ServiceNode? initialService;
 
+  /// Purpose: Create a quick access route dialog instance.
+  /// Inputs: None.
+  /// Returns: A new `_QuickAccessRouteDialog` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _QuickAccessRouteDialog({
     required this.services,
     required this.devices,
     this.initialService,
   });
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_QuickAccessRouteDialog> createState() =>
       _QuickAccessRouteDialogState();
@@ -880,6 +1075,11 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
   _QuickAccessMethod _method = _QuickAccessMethod.cloudflareTunnel;
   ServiceAccessLevel _accessLevel = ServiceAccessLevel.public;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -892,6 +1092,11 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     _sourceEndpointId = _selectedSource?.endpoints.firstOrNull?.id;
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _targetsCtrl.dispose();
@@ -901,12 +1106,22 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     super.dispose();
   }
 
+  /// Purpose: Provide the internal selected source helper for this file.
+  /// Inputs: None.
+  /// Returns: `ServiceNode?`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   ServiceNode? get _selectedSource => _sourceServiceId == null
       ? null
       : widget.services
             .where((service) => service.id == _sourceServiceId)
             .firstOrNull;
 
+  /// Purpose: Build and return routes for the current context.
+  /// Inputs: None.
+  /// Returns: `List<ServiceRoute>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   List<ServiceRoute> _buildRoutes() {
     final source = _selectedSource;
     if (source == null) return const [];
@@ -932,6 +1147,11 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     ];
   }
 
+  /// Purpose: Build and return hop for the current context.
+  /// Inputs: `method`.
+  /// Returns: `ServiceRouteHop`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   ServiceRouteHop _buildHop(ServiceRouteMethod method) {
     if (_method.isPortMapping) {
       return ServiceRouteHop(
@@ -959,11 +1179,21 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     );
   }
 
+  /// Purpose: Provide the internal submit helper for this file.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     Navigator.of(context).pop(_buildRoutes());
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1188,6 +1418,11 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     );
   }
 
+  /// Purpose: Provide the internal relay service options helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<ServiceNode>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   List<ServiceNode> _relayServiceOptions() {
     final candidates = widget.services
         .where((service) => service.id != _sourceServiceId)
@@ -1203,6 +1438,11 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     return candidates;
   }
 
+  /// Purpose: Provide the internal is frp like service helper for this file.
+  /// Inputs: `service`.
+  /// Returns: `bool`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   bool _isFrpLikeService(ServiceNode service) {
     final text = [
       service.name,
@@ -1213,6 +1453,11 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     return text.contains('frp') || service.kind == ServiceKind.tunnel;
   }
 
+  /// Purpose: Provide the internal device name helper for this file.
+  /// Inputs: `id`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _deviceName(String id) =>
       widget.devices.where((device) => device.id == id).firstOrNull?.name ?? id;
 }
@@ -1229,6 +1474,11 @@ class _ServiceTopologyView extends StatelessWidget {
   final int quarterTurns;
   final GlobalKey? repaintBoundaryKey;
 
+  /// Purpose: Create a service topology view instance.
+  /// Inputs: `mode`.
+  /// Returns: A new `_ServiceTopologyView` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _ServiceTopologyView({
     required this.graph,
     required this.services,
@@ -1242,6 +1492,11 @@ class _ServiceTopologyView extends StatelessWidget {
     this.repaintBoundaryKey,
   });
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -1268,6 +1523,11 @@ class _ServiceTopologyView extends StatelessWidget {
     );
   }
 
+  /// Purpose: Build and return viewer for the current context.
+  /// Inputs: `context`, `layout`, `turns`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildViewer(
     BuildContext context,
     ServiceTopologyLayout layout,
@@ -1322,6 +1582,11 @@ class _ServiceTopologyView extends StatelessWidget {
     );
   }
 
+  /// Purpose: Show node details in the current UI flow.
+  /// Inputs: `context`, `node`.
+  /// Returns: `void`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   void _showNodeDetails(BuildContext context, ServiceTopologyNode node) {
     final device = node.deviceId == null
         ? null
@@ -1446,6 +1711,11 @@ class _ServiceTopologyPage extends StatefulWidget {
   final ValueChanged<ServiceRoute> onEditRoute;
   final Future<void> Function({ServiceNode? source}) onAddAccess;
 
+  /// Purpose: Create a service topology page instance.
+  /// Inputs: None.
+  /// Returns: A new `_ServiceTopologyPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _ServiceTopologyPage({
     required this.graph,
     required this.services,
@@ -1456,6 +1726,11 @@ class _ServiceTopologyPage extends StatefulWidget {
     required this.onAddAccess,
   });
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_ServiceTopologyPage> createState() => _ServiceTopologyPageState();
 }
@@ -1466,6 +1741,11 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
   int _quarterTurns = 0;
   bool _exporting = false;
 
+  /// Purpose: Export topology image to an external representation.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _exportTopologyImage() async {
     final l10n = AppLocalizations.of(context)!;
     setState(() => _exporting = true);
@@ -1500,6 +1780,11 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
     }
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1579,12 +1864,22 @@ class _TopologyNodeCard extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
 
+  /// Purpose: Create a topology node card instance.
+  /// Inputs: None.
+  /// Returns: A new `_TopologyNodeCard` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _TopologyNodeCard({
     required this.node,
     required this.icon,
     required this.onTap,
   });
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -1703,12 +1998,22 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
   final ServiceTopologyLayout layout;
   final ColorScheme colorScheme;
 
+  /// Purpose: Create a service topology edge painter instance.
+  /// Inputs: None.
+  /// Returns: A new `_ServiceTopologyEdgePainter` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _ServiceTopologyEdgePainter({
     required this.graph,
     required this.layout,
     required this.colorScheme,
   });
 
+  /// Purpose: Implement the paint behavior for this file.
+  /// Inputs: `canvas`, `size`.
+  /// Returns: None.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   void paint(Canvas canvas, Size size) {
     for (final edge in graph.edges) {
@@ -1724,6 +2029,11 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
     }
   }
 
+  /// Purpose: Provide the internal draw polyline helper for this file.
+  /// Inputs: `canvas`, `paint`, `points`.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points) {
     final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (final point in points.skip(1)) {
@@ -1754,6 +2064,11 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
     canvas.drawPath(arrow, paint);
   }
 
+  /// Purpose: Provide the internal edge color helper for this file.
+  /// Inputs: None.
+  /// Returns: `Color`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Color _edgeColor(ServiceTopologyEdge edge) => switch (edge.lane) {
     ServiceAccessLane.local => colorScheme.tertiary,
     ServiceAccessLane.vpn => colorScheme.secondary,
@@ -1761,6 +2076,11 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
     null => colorScheme.outline,
   };
 
+  /// Purpose: Implement the should repaint behavior for this file.
+  /// Inputs: `oldDelegate`.
+  /// Returns: `bool`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   bool shouldRepaint(covariant _ServiceTopologyEdgePainter oldDelegate) =>
       oldDelegate.graph != graph ||

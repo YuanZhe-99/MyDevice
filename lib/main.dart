@@ -14,6 +14,11 @@ import 'shared/services/backup_service.dart';
 import 'shared/services/local_api_server.dart';
 import 'shared/services/tray_service.dart';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: None.
+/// Side effects: Starts the Flutter widget tree. Touches platform integration state.
+/// Notes: None.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

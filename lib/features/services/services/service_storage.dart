@@ -8,11 +8,21 @@ import '../models/service.dart';
 class ServiceStorage {
   static const dataFileName = 'service_data.json';
 
+  /// Purpose: Provide the internal get file helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<File>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   static Future<File> _getFile() async {
     final appDir = await DeviceStorage.getAppDir();
     return File('${appDir.path}/$dataFileName');
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<ServiceData>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<ServiceData> load() async {
     final file = await _getFile();
     if (!await file.exists()) return const ServiceData();
@@ -22,6 +32,11 @@ class ServiceStorage {
     return ServiceData.fromJson(json);
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: `data`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<void> save(ServiceData data) async {
     final file = await _getFile();
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
@@ -29,6 +44,11 @@ class ServiceStorage {
     AutoSyncService.instance.notifySaved();
   }
 
+  /// Purpose: Add or update service through the current flow.
+  /// Inputs: `service`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> addOrUpdateService(ServiceNode service) async {
     final data = await load();
     final services = List<ServiceNode>.of(data.services);
@@ -47,6 +67,11 @@ class ServiceStorage {
     );
   }
 
+  /// Purpose: Delete service from the relevant storage or state.
+  /// Inputs: `id`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> deleteService(String id) async {
     final data = await load();
     final services = data.services.where((s) => s.id != id).toList();
@@ -67,6 +92,11 @@ class ServiceStorage {
     );
   }
 
+  /// Purpose: Add or update route through the current flow.
+  /// Inputs: `route`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> addOrUpdateRoute(ServiceRoute route) async {
     final data = await load();
     final routes = List<ServiceRoute>.of(data.routes);
@@ -85,6 +115,11 @@ class ServiceStorage {
     );
   }
 
+  /// Purpose: Delete route from the relevant storage or state.
+  /// Inputs: `id`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> deleteRoute(String id) async {
     final data = await load();
     await save(
@@ -96,6 +131,11 @@ class ServiceStorage {
     );
   }
 
+  /// Purpose: Implement the remove device references behavior for this file.
+  /// Inputs: `deviceId`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> removeDeviceReferences(String deviceId) async {
     final data = await load();
     final removedServiceIds = data.services

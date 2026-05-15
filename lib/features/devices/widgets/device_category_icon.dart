@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../models/device.dart';
 
+/// Purpose: Implement the device category icon behavior for this file.
+/// Inputs: `category`.
+/// Returns: `IconData`.
+/// Side effects: None.
+/// Notes: None.
 IconData deviceCategoryIcon(DeviceCategory category) {
   return switch (category) {
     DeviceCategory.desktop => Icons.desktop_windows_outlined,

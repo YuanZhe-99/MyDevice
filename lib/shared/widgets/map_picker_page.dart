@@ -11,8 +11,18 @@ import '../../../l10n/app_localizations.dart';
 class MapPickerPage extends StatefulWidget {
   final LatLng? initialPosition;
 
+  /// Purpose: Create a map picker page instance.
+  /// Inputs: None.
+  /// Returns: A new `MapPickerPage` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const MapPickerPage({super.key, this.initialPosition});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: None.
+  /// Notes: None.
   @override
   State<MapPickerPage> createState() => _MapPickerPageState();
 }
@@ -22,18 +32,33 @@ class _MapPickerPageState extends State<MapPickerPage> {
   final _searchCtrl = TextEditingController();
   bool _searching = false;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
     _selected = widget.initialPosition ?? const LatLng(35.6762, 139.6503);
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  /// Purpose: Search for the requested result using the current query or filters.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild. May perform network I/O.
+  /// Notes: Internal helper used within this file only.
   Future<void> _search() async {
     final query = _searchCtrl.text.trim();
     if (query.isEmpty) return;
@@ -64,6 +89,11 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

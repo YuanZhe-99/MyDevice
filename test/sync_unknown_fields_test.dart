@@ -4,9 +4,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_device/features/devices/models/device.dart';
 import 'package:my_device/shared/services/sync_merge.dart';
 
+/// Purpose: Encode the requested value into a serialized form.
+/// Inputs: `json`.
+/// Returns: `String`.
+/// Side effects: None.
+/// Notes: None.
 String encode(Map<String, dynamic> json) =>
     const JsonEncoder.withIndent('  ').convert(json);
 
+/// Purpose: Register the test cases defined in this file.
+/// Inputs: None.
+/// Returns: None.
+/// Side effects: None.
+/// Notes: This serves as the test entry point for the file.
 void main() {
   test('device models preserve unknown fields during normal saves', () {
     final raw = {

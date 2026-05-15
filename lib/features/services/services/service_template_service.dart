@@ -11,6 +11,11 @@ class ServiceTemplate {
   final String? dockerCompose;
   final bool featured;
 
+  /// Purpose: Create a service template instance.
+  /// Inputs: `endpoints`.
+  /// Returns: A new `ServiceTemplate` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceTemplate({
     required this.id,
     required this.name,
@@ -52,6 +57,11 @@ class ServiceTemplate {
 }
 
 class ServiceTemplateService {
+  /// Purpose: Load templates into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `List<ServiceTemplate>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static List<ServiceTemplate> loadTemplates() => _templates;
 
   static const _emptyCompose = null;
@@ -421,6 +431,11 @@ class ServiceTemplateService {
     ),
   ];
 
+  /// Purpose: Provide the internal template helper for this file.
+  /// Inputs: `id`, `name`, `icon`, `kind`, plus related optional values from the signature.
+  /// Returns: `ServiceTemplate`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static ServiceTemplate _template(
     String id,
     String name,

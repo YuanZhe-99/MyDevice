@@ -77,8 +77,18 @@ enum ServiceKind {
   ai,
   custom;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceKind fromJson(String? value) =>
       ServiceKind.values.where((e) => e.name == value).firstOrNull ??
       ServiceKind.custom;
@@ -94,8 +104,18 @@ enum ServiceRuntime {
   container,
   custom;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceRuntime? fromJson(String? value) {
     if (value == null) return null;
     return ServiceRuntime.values.where((e) => e.name == value).firstOrNull;
@@ -108,8 +128,18 @@ enum ServiceState {
   deprecated,
   unknown;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceState fromJson(String? value) =>
       ServiceState.values.where((e) => e.name == value).firstOrNull ??
       ServiceState.active;
@@ -126,8 +156,18 @@ enum ServiceProtocol {
   vnc,
   custom;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceProtocol fromJson(String? value) =>
       ServiceProtocol.values.where((e) => e.name == value).firstOrNull ??
       ServiceProtocol.custom;
@@ -138,8 +178,18 @@ enum ServiceTransport {
   udp,
   tcpUdp;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceTransport fromJson(String? value) =>
       ServiceTransport.values.where((e) => e.name == value).firstOrNull ??
       ServiceTransport.tcp;
@@ -152,8 +202,18 @@ enum ServiceScope {
   public,
   custom;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceScope fromJson(String? value) =>
       ServiceScope.values.where((e) => e.name == value).firstOrNull ??
       ServiceScope.lan;
@@ -169,8 +229,18 @@ enum ServiceRouteHopType {
   dns,
   manual;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceRouteHopType fromJson(String? value) =>
       ServiceRouteHopType.values.where((e) => e.name == value).firstOrNull ??
       ServiceRouteHopType.manual;
@@ -188,8 +258,18 @@ enum ServiceRouteMethod {
   direct,
   custom;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceRouteMethod? fromJson(String? value) {
     if (value == null) return null;
     return ServiceRouteMethod.values.where((e) => e.name == value).firstOrNull;
@@ -203,8 +283,18 @@ enum ServiceAccessLevel {
   public,
   custom;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static ServiceAccessLevel fromJson(String? value) =>
       ServiceAccessLevel.values.where((e) => e.name == value).firstOrNull ??
       ServiceAccessLevel.lan;
@@ -225,6 +315,11 @@ class ServiceEndpoint {
   final String? notes;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a service endpoint instance.
+  /// Inputs: `protocol`.
+  /// Returns: A new `ServiceEndpoint` instance.
+  /// Side effects: None.
+  /// Notes: None.
   ServiceEndpoint({
     String? id,
     this.label,
@@ -278,6 +373,11 @@ class ServiceEndpoint {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -295,6 +395,11 @@ class ServiceEndpoint {
     if (notes != null && notes!.isNotEmpty) 'notes': notes,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `ServiceEndpoint.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory ServiceEndpoint.fromJson(Map<String, dynamic> json) =>
       ServiceEndpoint(
         id: json['id'] as String?,
@@ -312,6 +417,11 @@ class ServiceEndpoint {
         extraJson: unknownJsonFields(json, _serviceEndpointJsonKeys),
       );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `ServiceEndpoint`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   ServiceEndpoint mergeUnknownFieldsFrom(
     ServiceEndpoint other, {
     ServiceEndpoint? base,
@@ -326,6 +436,11 @@ class ServiceEndpoint {
     });
   }
 
+  /// Purpose: Return the current port text value.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get portText {
     if (port == null) return '-';
     if (portEnd != null && portEnd != port) return '$port-$portEnd';
@@ -406,6 +521,11 @@ class ServiceNode {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -448,6 +568,11 @@ class ServiceNode {
     extraJson: unknownJsonFields(json, _serviceNodeJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `ServiceNode`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   ServiceNode mergeUnknownFieldsFrom(ServiceNode other, {ServiceNode? base}) {
     final json = toJson();
     json.addAll(
@@ -492,6 +617,11 @@ class ServiceRouteHop {
   final String? notes;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a service route hop instance.
+  /// Inputs: `type`.
+  /// Returns: A new `ServiceRouteHop` instance.
+  /// Side effects: None.
+  /// Notes: None.
   ServiceRouteHop({
     String? id,
     this.type = ServiceRouteHopType.manual,
@@ -548,6 +678,11 @@ class ServiceRouteHop {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -564,6 +699,11 @@ class ServiceRouteHop {
     if (notes != null && notes!.isNotEmpty) 'notes': notes,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `ServiceRouteHop.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory ServiceRouteHop.fromJson(Map<String, dynamic> json) =>
       ServiceRouteHop(
         id: json['id'] as String?,
@@ -581,6 +721,11 @@ class ServiceRouteHop {
         extraJson: unknownJsonFields(json, _serviceRouteHopJsonKeys),
       );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `ServiceRouteHop`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   ServiceRouteHop mergeUnknownFieldsFrom(
     ServiceRouteHop other, {
     ServiceRouteHop? base,
@@ -608,6 +753,11 @@ class ServiceRoute {
   final DateTime modifiedAt;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a service route instance.
+  /// Inputs: `hops`.
+  /// Returns: A new `ServiceRoute` instance.
+  /// Side effects: None.
+  /// Notes: None.
   ServiceRoute({
     String? id,
     required this.name,
@@ -622,6 +772,11 @@ class ServiceRoute {
   }) : id = id ?? const Uuid().v4(),
        modifiedAt = modifiedAt ?? DateTime.now();
 
+  /// Purpose: Create a copy with selected fields replaced.
+  /// Inputs: `clearSourceEndpointId`.
+  /// Returns: `ServiceRoute`.
+  /// Side effects: None.
+  /// Notes: None.
   ServiceRoute copyWith({
     String? name,
     String? sourceServiceId,
@@ -651,6 +806,11 @@ class ServiceRoute {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -664,6 +824,11 @@ class ServiceRoute {
     'modifiedAt': modifiedAt.toIso8601String(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `ServiceRoute.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory ServiceRoute.fromJson(Map<String, dynamic> json) => ServiceRoute(
     id: json['id'] as String?,
     name: json['name'] as String,
@@ -681,6 +846,11 @@ class ServiceRoute {
     extraJson: unknownJsonFields(json, _serviceRouteJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `ServiceRoute`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   ServiceRoute mergeUnknownFieldsFrom(
     ServiceRoute other, {
     ServiceRoute? base,
@@ -716,18 +886,33 @@ class ServiceData {
   final List<ServiceRoute> routes;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a service data instance.
+  /// Inputs: `services`.
+  /// Returns: A new `ServiceData` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const ServiceData({
     this.services = const [],
     this.routes = const [],
     this.extraJson = const {},
   });
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'services': services.map((s) => s.toJson()).toList(),
     'routes': routes.map((r) => r.toJson()).toList(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `ServiceData.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory ServiceData.fromJson(Map<String, dynamic> json) => ServiceData(
     services:
         (json['services'] as List<dynamic>?)

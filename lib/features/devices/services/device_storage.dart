@@ -20,6 +20,11 @@ class DeviceStorage {
   static String? _customPath;
   static bool _configLoaded = false;
 
+  /// Purpose: Provide the internal get default app dir helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<Directory>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   /// Default app directory (~/Documents/MyDevice).
   static Future<Directory> _getDefaultAppDir() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -30,12 +35,22 @@ class DeviceStorage {
     return appDir;
   }
 
+  /// Purpose: Provide the internal get config file helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<File>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   /// Config file always lives in the default directory.
   static Future<File> _getConfigFile() async {
     final dir = await _getDefaultAppDir();
     return File(p.join(dir.path, _configFileName));
   }
 
+  /// Purpose: Load custom path into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   /// Load custom path from config (once).
   static Future<void> _loadCustomPath() async {
     if (_configLoaded) return;
@@ -52,6 +67,11 @@ class DeviceStorage {
     _configLoaded = true;
   }
 
+  /// Purpose: Implement the get app dir behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<Directory>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<Directory> getAppDir() async {
     await _loadCustomPath();
     if (_customPath != null && _customPath!.isNotEmpty) {
@@ -64,12 +84,22 @@ class DeviceStorage {
     return _getDefaultAppDir();
   }
 
+  /// Purpose: Implement the get storage path behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<String>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Return the display path of current storage location.
   static Future<String> getStoragePath() async {
     final appDir = await getAppDir();
     return appDir.path;
   }
 
+  /// Purpose: Update storage path with the provided value.
+  /// Inputs: `newPath`.
+  /// Returns: `Future<bool>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Change storage location. Migrates data if new location is empty,
   /// otherwise switches to existing data.
   static Future<bool> setStoragePath(String? newPath) async {
@@ -146,6 +176,11 @@ class DeviceStorage {
     }
   }
 
+  /// Purpose: Provide the internal read config from default helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<Map<String, dynamic>>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   /// Read config from the default location (for storagePath persistence).
   static Future<Map<String, dynamic>> _readConfigFromDefault() async {
     final file = await _getConfigFile();
@@ -155,6 +190,11 @@ class DeviceStorage {
     return jsonDecode(raw) as Map<String, dynamic>;
   }
 
+  /// Purpose: Provide the internal write config to default helper for this file.
+  /// Inputs: `config`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   /// Write config to the default location.
   static Future<void> _writeConfigToDefault(Map<String, dynamic> config) async {
     final file = await _getConfigFile();
@@ -163,6 +203,11 @@ class DeviceStorage {
     );
   }
 
+  /// Purpose: Provide the internal get file helper for this file.
+  /// Inputs: `name`.
+  /// Returns: `Future<File>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   static Future<File> _getFile(String name) async {
     final appDir = await getAppDir();
     return File(p.join(appDir.path, name));
@@ -170,6 +215,11 @@ class DeviceStorage {
 
   // ── Data persistence ──
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<DeviceData>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<DeviceData> load() async {
     final file = await _getFile(_dataFileName);
     if (!await file.exists()) return const DeviceData();
@@ -179,6 +229,11 @@ class DeviceStorage {
     return DeviceData.fromJson(json);
   }
 
+  /// Purpose: Save the relevant data to the relevant storage or service layer.
+  /// Inputs: `data`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<void> save(DeviceData data) async {
     final file = await _getFile(_dataFileName);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
@@ -186,6 +241,11 @@ class DeviceStorage {
     AutoSyncService.instance.notifySaved();
   }
 
+  /// Purpose: Add or update through the current flow.
+  /// Inputs: `device`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Add a new device or update an existing one (matched by id).
   static Future<void> addOrUpdate(Device device) async {
     final data = await load();
@@ -202,6 +262,11 @@ class DeviceStorage {
     }
   }
 
+  /// Purpose: Delete device from the relevant storage or state.
+  /// Inputs: `id`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Delete a device by id and clean up references in other modules.
   static Future<void> deleteDevice(String id) async {
     final data = await load();
@@ -210,6 +275,11 @@ class DeviceStorage {
     await _removeDeviceReferences(id);
   }
 
+  /// Purpose: Provide the internal remove device references helper for this file.
+  /// Inputs: `id`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<void> _removeDeviceReferences(String id) async {
     // Remove network assignments referencing this device
     final netData = await NetworkStorage.load();
@@ -247,6 +317,11 @@ class DeviceStorage {
 
   // ── Config persistence (theme, locale) ──
 
+  /// Purpose: Implement the read config behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<Map<String, dynamic>>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<Map<String, dynamic>> readConfig() async {
     final file = await _getFile(_configFileName);
     if (!await file.exists()) return {};
@@ -255,6 +330,11 @@ class DeviceStorage {
     return jsonDecode(raw) as Map<String, dynamic>;
   }
 
+  /// Purpose: Implement the write config behavior for this file.
+  /// Inputs: `config`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   static Future<void> writeConfig(Map<String, dynamic> config) async {
     final file = await _getFile(_configFileName);
     await file.writeAsString(
@@ -262,11 +342,21 @@ class DeviceStorage {
     );
   }
 
+  /// Purpose: Implement the get theme mode behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<String?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<String?> getThemeMode() async {
     final config = await readConfig();
     return config['themeMode'] as String?;
   }
 
+  /// Purpose: Update theme mode with the provided value.
+  /// Inputs: `mode`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> setThemeMode(String? mode) async {
     final config = await readConfig();
     if (mode == null) {
@@ -277,11 +367,21 @@ class DeviceStorage {
     await writeConfig(config);
   }
 
+  /// Purpose: Implement the get locale tag behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<String?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<String?> getLocaleTag() async {
     final config = await readConfig();
     return config['locale'] as String?;
   }
 
+  /// Purpose: Update locale tag with the provided value.
+  /// Inputs: `tag`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<void> setLocaleTag(String? tag) async {
     final config = await readConfig();
     if (tag == null) {

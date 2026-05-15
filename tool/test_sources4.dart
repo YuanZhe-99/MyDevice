@@ -1,6 +1,11 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: None.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 void main() async {
   const ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '

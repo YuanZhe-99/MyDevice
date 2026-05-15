@@ -15,8 +15,18 @@ enum NetworkDeviceSortMode { deviceOrder, alphabetical, ip }
 class NetworkDetailPage extends StatefulWidget {
   final String networkId;
 
+  /// Purpose: Create a network detail page instance.
+  /// Inputs: None.
+  /// Returns: A new `NetworkDetailPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const NetworkDetailPage({super.key, required this.networkId});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<NetworkDetailPage> createState() => _NetworkDetailPageState();
 }
@@ -30,12 +40,22 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
   bool _groupByCategory = false;
   bool _exitNodeFirst = false;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
     _loadSortPrefs().then((_) => _load());
   }
 
+  /// Purpose: Load sort prefs into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     final mode = config['netDetailSortMode'] as String?;
@@ -54,6 +74,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     });
   }
 
+  /// Purpose: Save sort prefs to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _saveSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     config['netDetailSortMode'] = _sortMode.name;
@@ -63,6 +88,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Provide the internal compare ip helper for this file.
+  /// Inputs: `a`, `b`.
+  /// Returns: `int`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   int _compareIp(String? a, String? b) {
     if (a == null && b == null) return 0;
     if (a == null) return 1;
@@ -76,6 +106,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     return a.compareTo(b);
   }
 
+  /// Purpose: Provide the internal sorted assignments helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<NetworkDevice>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<NetworkDevice> get _sortedAssignments {
     var list = List<NetworkDevice>.of(_assignments);
 
@@ -122,6 +157,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     return list;
   }
 
+  /// Purpose: Return the display label for category label.
+  /// Inputs: `context`, `category`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _categoryLabel(BuildContext context, DeviceCategory category) {
     final l10n = AppLocalizations.of(context)!;
     return switch (category) {
@@ -139,6 +179,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     };
   }
 
+  /// Purpose: Return the display label for sort mode label.
+  /// Inputs: `l10n`, `mode`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _sortModeLabel(AppLocalizations l10n, NetworkDeviceSortMode mode) =>
       switch (mode) {
         NetworkDeviceSortMode.deviceOrder => l10n.sortCustom,
@@ -146,6 +191,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
         NetworkDeviceSortMode.ip => l10n.sortByIp,
       };
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _load() async {
     final netData = await NetworkStorage.load();
     final devData = await DeviceStorage.load();
@@ -161,6 +211,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     });
   }
 
+  /// Purpose: Find and return device that matches the current criteria.
+  /// Inputs: `id`.
+  /// Returns: `Device?`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Device? _findDevice(String id) =>
       _allDevices.where((d) => d.id == id).firstOrNull;
 
@@ -170,6 +225,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     NetworkType.wireguard: 'assets/logos/wireguard.svg',
   };
 
+  /// Purpose: Return the display label for type label.
+  /// Inputs: `l10n`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _typeLabel(AppLocalizations l10n, NetworkType type) => switch (type) {
     NetworkType.lan => l10n.networkTypeLan,
     NetworkType.tailscale => l10n.networkTypeTailscale,
@@ -179,12 +239,22 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     NetworkType.other => l10n.networkTypeOther,
   };
 
+  /// Purpose: Add ress mode label through the current flow.
+  /// Inputs: `l10n`, `mode`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _addressModeLabel(AppLocalizations l10n, AddressMode mode) =>
       switch (mode) {
         AddressMode.dhcp => l10n.addressModeDhcp,
         AddressMode.static_ => l10n.addressModeStatic,
       };
 
+  /// Purpose: Delete network from the relevant storage or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _deleteNetwork() async {
     final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
@@ -211,6 +281,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     }
   }
 
+  /// Purpose: Add device through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addDevice() async {
     final assignedIds = _assignments.map((a) => a.deviceId).toSet();
     final available = _allDevices
@@ -237,6 +312,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     }
   }
 
+  /// Purpose: Edit assignment and refresh local state when needed.
+  /// Inputs: `assignment`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editAssignment(NetworkDevice assignment) async {
     final l10n = AppLocalizations.of(context)!;
     final result = await _showAssignmentDialog(l10n, assignment);
@@ -247,6 +327,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     }
   }
 
+  /// Purpose: Provide the internal remove assignment helper for this file.
+  /// Inputs: `assignment`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _removeAssignment(NetworkDevice assignment) async {
     final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
@@ -276,6 +361,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     }
   }
 
+  /// Purpose: Show assignment dialog in the current UI flow.
+  /// Inputs: `l10n`, `initial`.
+  /// Returns: `Future<NetworkDevice?>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<NetworkDevice?> _showAssignmentDialog(
     AppLocalizations l10n,
     NetworkDevice initial,
@@ -367,6 +457,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     );
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -537,6 +632,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     );
   }
 
+  /// Purpose: Build and return device list for the current context.
+  /// Inputs: `l10n`, `cs`.
+  /// Returns: `List<Widget>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   List<Widget> _buildDeviceList(AppLocalizations l10n, ColorScheme cs) {
     final sorted = _sortedAssignments;
     if (!_groupByCategory) {
@@ -565,6 +665,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     return widgets;
   }
 
+  /// Purpose: Build and return device card for the current context.
+  /// Inputs: `a`, `l10n`, `cs`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildDeviceCard(
     NetworkDevice a,
     AppLocalizations l10n,
@@ -597,6 +702,11 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     );
   }
 
+  /// Purpose: Provide the internal info row helper for this file.
+  /// Inputs: `label`, `value`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _infoRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -621,8 +731,18 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
 class _DevicePicker extends StatelessWidget {
   final List<Device> devices;
 
+  /// Purpose: Create a device picker instance.
+  /// Inputs: None.
+  /// Returns: A new `_DevicePicker` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _DevicePicker({required this.devices});
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     return Column(

@@ -9,6 +9,11 @@ import '../../features/devices/services/device_storage.dart';
 import '../../l10n/app_localizations.dart';
 
 class TrayService with TrayListener, WindowListener {
+  /// Purpose: Prevent direct instantiation and expose only static members.
+  /// Inputs: None.
+  /// Returns: A new `TrayService._` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   TrayService._();
   static final TrayService instance = TrayService._();
 
@@ -19,9 +24,24 @@ class TrayService with TrayListener, WindowListener {
   bool _initialized = false;
   Locale _locale = const Locale('en');
 
+  /// Purpose: Return the current minimize to tray value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get minimizeToTray => _minimizeToTray;
+  /// Purpose: Return the current close to tray value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get closeToTray => _closeToTray;
 
+  /// Purpose: Implement the init behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   Future<void> init() async {
     if (_initialized) return;
     if (!Platform.isWindows && !Platform.isMacOS && !Platform.isLinux) return;
@@ -40,6 +60,11 @@ class TrayService with TrayListener, WindowListener {
     _initialized = true;
   }
 
+  /// Purpose: Update up tray with the provided value.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   Future<void> _setupTray() async {
     final iconPath = Platform.isWindows
         ? 'assets/icon/app_icon.ico'
@@ -49,6 +74,11 @@ class TrayService with TrayListener, WindowListener {
     await _rebuildMenu();
   }
 
+  /// Purpose: Provide the internal rebuild menu helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   Future<void> _rebuildMenu() async {
     final l10n = lookupAppLocalizations(_locale);
     final menu = Menu(
@@ -61,6 +91,11 @@ class TrayService with TrayListener, WindowListener {
     await trayManager.setContextMenu(menu);
   }
 
+  /// Purpose: Update minimize to tray with the provided value.
+  /// Inputs: `value`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   Future<void> setMinimizeToTray(bool value) async {
     _minimizeToTray = value;
     final config = await DeviceStorage.readConfig();
@@ -68,6 +103,11 @@ class TrayService with TrayListener, WindowListener {
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Update close to tray with the provided value.
+  /// Inputs: `value`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   Future<void> setCloseToTray(bool value) async {
     _closeToTray = value;
     final config = await DeviceStorage.readConfig();
@@ -76,6 +116,11 @@ class TrayService with TrayListener, WindowListener {
     await windowManager.setPreventClose(value);
   }
 
+  /// Purpose: Update locale to keep local state consistent.
+  /// Inputs: `locale`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   Future<void> updateLocale(Locale locale) async {
     _locale = locale;
     if (_initialized) await _rebuildMenu();
@@ -83,16 +128,31 @@ class TrayService with TrayListener, WindowListener {
 
   // ─── TrayListener ──
 
+  /// Purpose: Implement the on tray icon mouse down behavior for this file.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   @override
   void onTrayIconMouseDown() {
     _showWindow();
   }
 
+  /// Purpose: Implement the on tray icon right mouse down behavior for this file.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   @override
   void onTrayIconRightMouseDown() {
     trayManager.popUpContextMenu();
   }
 
+  /// Purpose: Implement the on tray menu item click behavior for this file.
+  /// Inputs: `menuItem`.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     switch (menuItem.key) {
@@ -108,6 +168,11 @@ class TrayService with TrayListener, WindowListener {
 
   // ─── WindowListener ──
 
+  /// Purpose: Implement the on window close behavior for this file.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   @override
   void onWindowClose() {
     if (_closeToTray) {
@@ -118,6 +183,11 @@ class TrayService with TrayListener, WindowListener {
     }
   }
 
+  /// Purpose: Implement the on window minimize behavior for this file.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   @override
   void onWindowMinimize() {
     if (_minimizeToTray) {
@@ -128,12 +198,22 @@ class TrayService with TrayListener, WindowListener {
 
   // ─── macOS Dock ──
 
+  /// Purpose: Show window in the current UI flow.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   void _showWindow() {
     _setDockIconVisible(true);
     windowManager.show();
     windowManager.focus();
   }
 
+  /// Purpose: Update dock icon visible with the provided value.
+  /// Inputs: `visible`.
+  /// Returns: `void`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static void _setDockIconVisible(bool visible) {
     if (!Platform.isMacOS) return;
     _dockChannel.invokeMethod('setDockIconVisible', {'visible': visible});

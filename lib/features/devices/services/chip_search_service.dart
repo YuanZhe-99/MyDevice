@@ -19,6 +19,11 @@ class ChipSearchResult {
   final int? threads;
   final String? cache;
 
+  /// Purpose: Create a chip search result instance.
+  /// Inputs: None.
+  /// Returns: A new `ChipSearchResult` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ChipSearchResult({
     required this.source,
     this.sourceUrl,
@@ -31,6 +36,11 @@ class ChipSearchResult {
     this.cache,
   });
 
+  /// Purpose: Implement the to cpu info behavior for this file.
+  /// Inputs: None.
+  /// Returns: `CpuInfo`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   CpuInfo toCpuInfo() => CpuInfo(
     model: model,
     architecture: architecture,
@@ -41,6 +51,11 @@ class ChipSearchResult {
     cache: cache,
   );
 
+  /// Purpose: Implement the to gpu info behavior for this file.
+  /// Inputs: None.
+  /// Returns: `GpuInfo`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   GpuInfo toGpuInfo() => GpuInfo(model: model, architecture: architecture);
 }
 
@@ -58,6 +73,11 @@ class ChipSearchService {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+  /// Purpose: Search for cpu using the current query or filters.
+  /// Inputs: `query`, `presets`.
+  /// Returns: `Future<List<ChipSearchResult>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Search for a CPU by model name.
   /// Searches local [presets] first, then tries online sources in parallel.
   static Future<List<ChipSearchResult>> searchCpu(
@@ -106,6 +126,11 @@ class ChipSearchService {
     return results;
   }
 
+  /// Purpose: Search for gpu using the current query or filters.
+  /// Inputs: `query`, `presets`.
+  /// Returns: `Future<List<ChipSearchResult>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Search for a GPU by model name.
   /// Searches local [presets] first, then tries online sources in parallel.
   static Future<List<ChipSearchResult>> searchGpu(
@@ -149,6 +174,11 @@ class ChipSearchService {
 
   // ──── Startpage URL discovery ────
 
+  /// Purpose: Find and return tech power up url that matches the current criteria.
+  /// Inputs: `query`, `section`.
+  /// Returns: `Future<String?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   /// Find TechPowerUp URL via Startpage search.
   static Future<String?> _findTechPowerUpUrl(
     String query,
@@ -176,6 +206,11 @@ class ChipSearchService {
 
   // ──── TechPowerUp CPU ────
 
+  /// Purpose: Search for tech power up cpu using the current query or filters.
+  /// Inputs: `query`.
+  /// Returns: `Future<ChipSearchResult?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<ChipSearchResult?> _searchTechPowerUpCpu(String query) async {
     final tpuUrl = await _findTechPowerUpUrl(query, 'cpu-specs');
     if (tpuUrl == null) return null;
@@ -284,6 +319,11 @@ class ChipSearchService {
 
   // ──── TechPowerUp GPU (via og:meta) ────
 
+  /// Purpose: Search for tech power up gpu using the current query or filters.
+  /// Inputs: `query`.
+  /// Returns: `Future<ChipSearchResult?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<ChipSearchResult?> _searchTechPowerUpGpu(String query) async {
     final tpuUrl = await _findTechPowerUpUrl(query, 'gpu-specs');
     if (tpuUrl == null) return null;
@@ -347,6 +387,11 @@ class ChipSearchService {
 
   // ──── AMD (official) ────
 
+  /// Purpose: Find and return amd url that matches the current criteria.
+  /// Inputs: `query`, `category`.
+  /// Returns: `Future<String?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   /// Find AMD product URL via Startpage.
   static Future<String?> _findAmdUrl(String query, String category) async {
     final resp = await http
@@ -515,6 +560,11 @@ class ChipSearchService {
 
   // ──── Intel (official, limited — page returns 403 but URL slug has data) ────
 
+  /// Purpose: Search for intel cpu using the current query or filters.
+  /// Inputs: `query`.
+  /// Returns: `Future<ChipSearchResult?>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<ChipSearchResult?> _searchIntelCpu(String query) async {
     final queryLower = query.toLowerCase();
     if (!queryLower.contains('intel') &&

@@ -5,6 +5,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 /// Quick check: what fields does AMD GPU actually have?
 Future<void> main() async {
   print('=== AMD RX 7900 XTX: All DT/DD keys ===');
@@ -14,6 +19,11 @@ Future<void> main() async {
   await dumpAmdKeys('https://www.amd.com/en/products/graphics/desktops/radeon/9000-series/amd-radeon-rx-9070xt.html');
 }
 
+/// Purpose: Implement the dump amd keys behavior for this file.
+/// Inputs: `url`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> dumpAmdKeys(String url) async {
   final resp = await http.get(Uri.parse(url),
     headers: {'User-Agent': ua, 'Accept': 'text/html'},

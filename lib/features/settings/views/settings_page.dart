@@ -20,8 +20,18 @@ import 'license_page.dart' as app_license;
 import 'privacy_policy_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
+  /// Purpose: Create a settings page instance.
+  /// Inputs: None.
+  /// Returns: A new `SettingsPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const SettingsPage({super.key});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
@@ -42,6 +52,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
   bool _autoUpdateExchangeRates = true;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -55,11 +70,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Purpose: Load storage path into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadStoragePath() async {
     final path = await DeviceStorage.getStoragePath();
     if (mounted) setState(() => _storagePath = path);
   }
 
+  /// Purpose: Load version into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
     if (mounted) {
@@ -67,6 +92,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Purpose: Load exchange rate settings into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadExchangeRateSettings() async {
     final currency = await DeviceExchangeRateService.getDefaultCurrency();
     final autoUpdate = await DeviceExchangeRateService.getAutoUpdateEnabled();
@@ -77,6 +107,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     });
   }
 
+  /// Purpose: Build and return section for the current context.
+  /// Inputs: `title`, `children`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildSection(String title, List<Widget> children) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,9 +130,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Purpose: Provide the internal is desktop helper for this file.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   bool get _isDesktop =>
       !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
+  /// Purpose: Export data to an external representation.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _exportData() async {
     final l10n = AppLocalizations.of(context)!;
 
@@ -152,6 +197,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Purpose: Import data from an external representation.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _importData() async {
     final l10n = AppLocalizations.of(context)!;
     final result = await FilePicker.platform.pickFiles(
@@ -188,6 +238,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Purpose: Provide the internal open data folder helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _openDataFolder() async {
     final appDir = await DeviceStorage.getAppDir();
     final uri = Uri.directory(appDir.path);
@@ -200,6 +255,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Purpose: Show storage path dialog in the current UI flow.
+  /// Inputs: `context`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _showStoragePathDialog(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _storagePath);
@@ -262,6 +322,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Purpose: Load tray settings into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadTraySettings() async {
     final config = await DeviceStorage.readConfig();
     if (!mounted) return;
@@ -271,12 +336,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     });
   }
 
+  /// Purpose: Load auto start status into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild. Touches platform integration state.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadAutoStartStatus() async {
     final enabled = await launchAtStartup.isEnabled();
     if (!mounted) return;
     setState(() => _autoStart = enabled);
   }
 
+  /// Purpose: Load api settings into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadApiSettings() async {
     final config = await DeviceStorage.readConfig();
     if (!mounted) return;
@@ -289,6 +364,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     });
   }
 
+  /// Purpose: Show api settings dialog in the current UI flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _showApiSettingsDialog() async {
     final l10n = AppLocalizations.of(context)!;
     final portCtrl = TextEditingController(text: _apiPort.toString());
@@ -368,6 +448,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
+  /// Purpose: Provide the internal refresh exchange rates helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _refreshExchangeRates() async {
     final l10n = AppLocalizations.of(context)!;
     final result = await DeviceExchangeRateService.fetchAndSaveLatest(
@@ -385,6 +470,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

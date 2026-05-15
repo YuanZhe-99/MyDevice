@@ -11,8 +11,18 @@ import 'dataset_edit_page.dart';
 enum DataSetSortMode { custom, alphabetical }
 
 class DataSetListPage extends StatefulWidget {
+  /// Purpose: Create a data set list page instance.
+  /// Inputs: None.
+  /// Returns: A new `DataSetListPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DataSetListPage({super.key});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<DataSetListPage> createState() => _DataSetListPageState();
 }
@@ -25,6 +35,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
   bool _sortAscending = false;
   bool _reordering = false;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -32,16 +47,31 @@ class _DataSetListPageState extends State<DataSetListPage> {
     _loadSortPrefs().then((_) => _load());
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
     super.dispose();
   }
 
+  /// Purpose: Handle local data changed and trigger the appropriate follow-up work.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _handleLocalDataChanged() {
     if (mounted) _load();
   }
 
+  /// Purpose: Load sort prefs into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     final mode = config['datasetSortMode'] as String?;
@@ -54,6 +84,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     });
   }
 
+  /// Purpose: Save sort prefs to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _saveSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     config['datasetSortMode'] = _sortMode.name;
@@ -61,6 +96,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Provide the internal sorted datasets helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<DataSet>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<DataSet> get _sortedDatasets {
     var list = List<DataSet>.of(_datasets);
     if (_sortMode == DataSetSortMode.custom) return list;
@@ -73,6 +113,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     return list;
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _load() async {
     final dsData = await DataSetStorage.load();
     final devData = await DeviceStorage.load();
@@ -84,6 +129,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     });
   }
 
+  /// Purpose: Provide the internal storage lines helper for this file.
+  /// Inputs: `ds`.
+  /// Returns: `List<String>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   /// Build structured subtitle lines: group storages by device.
   List<String> _storageLines(DataSet ds) {
     final lines = <String>[];
@@ -105,6 +155,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     return lines;
   }
 
+  /// Purpose: Add data set through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addDataSet() async {
     final result = await Navigator.of(
       context,
@@ -113,6 +168,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     if (result == true) _load();
   }
 
+  /// Purpose: Edit data set and refresh local state when needed.
+  /// Inputs: `ds`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editDataSet(DataSet ds) async {
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (_) => DataSetEditPage(dataSet: ds)),
@@ -120,6 +180,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     if (result == true) _load();
   }
 
+  /// Purpose: Delete data set from the relevant storage or state.
+  /// Inputs: `ds`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   Future<void> _deleteDataSet(DataSet ds) async {
     final l10n = AppLocalizations.of(context)!;
     final ok = await showDialog<bool>(
@@ -146,6 +211,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     }
   }
 
+  /// Purpose: Provide the internal on reorder helper for this file.
+  /// Inputs: `oldIndex`, `newIndex`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
     final item = _datasets.removeAt(oldIndex);
@@ -155,6 +225,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     AutoSyncService.instance.notifySaved();
   }
 
+  /// Purpose: Build and return data set tile for the current context.
+  /// Inputs: `ds`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildDataSetTile(DataSet ds, {Widget? trailing}) {
     final lines = _storageLines(ds);
     return ListTile(
@@ -168,6 +243,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     );
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

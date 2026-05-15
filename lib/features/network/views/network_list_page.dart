@@ -12,8 +12,18 @@ import 'network_edit_page.dart';
 enum NetworkSortMode { custom, alphabetical, subnet }
 
 class NetworkListPage extends StatefulWidget {
+  /// Purpose: Create a network list page instance.
+  /// Inputs: None.
+  /// Returns: A new `NetworkListPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const NetworkListPage({super.key});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<NetworkListPage> createState() => _NetworkListPageState();
 }
@@ -24,6 +34,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
   bool _sortAscending = false;
   bool _reordering = false;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -31,16 +46,31 @@ class _NetworkListPageState extends State<NetworkListPage> {
     _loadSortPrefs().then((_) => _load());
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
     super.dispose();
   }
 
+  /// Purpose: Handle local data changed and trigger the appropriate follow-up work.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _handleLocalDataChanged() {
     if (mounted) _load();
   }
 
+  /// Purpose: Load sort prefs into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     final mode = config['networkSortMode'] as String?;
@@ -53,6 +83,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     });
   }
 
+  /// Purpose: Save sort prefs to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _saveSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     config['networkSortMode'] = _sortMode.name;
@@ -60,6 +95,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Provide the internal sorted networks helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<Network>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<Network> get _sortedNetworks {
     var list = List<Network>.of(_networks);
     if (_sortMode == NetworkSortMode.custom) return list;
@@ -83,11 +123,21 @@ class _NetworkListPageState extends State<NetworkListPage> {
     return list;
   }
 
+  /// Purpose: Load the relevant data into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _load() async {
     final data = await NetworkStorage.load();
     if (mounted) setState(() => _networks = data.networks);
   }
 
+  /// Purpose: Provide the internal on reorder helper for this file.
+  /// Inputs: `oldIndex`, `newIndex`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
     final item = _networks.removeAt(oldIndex);
@@ -99,6 +149,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     );
   }
 
+  /// Purpose: Provide the internal type icon helper for this file.
+  /// Inputs: None.
+  /// Returns: `IconData`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   IconData _typeIcon(NetworkType type) => switch (type) {
     NetworkType.lan => Icons.router,
     NetworkType.tailscale => Icons.vpn_lock,
@@ -114,6 +169,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     NetworkType.wireguard: 'assets/logos/wireguard.svg',
   };
 
+  /// Purpose: Return the display label for type label.
+  /// Inputs: `l10n`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _typeLabel(AppLocalizations l10n, NetworkType type) => switch (type) {
     NetworkType.lan => l10n.networkTypeLan,
     NetworkType.tailscale => l10n.networkTypeTailscale,
@@ -123,6 +183,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     NetworkType.other => l10n.networkTypeOther,
   };
 
+  /// Purpose: Return the display label for sort mode label.
+  /// Inputs: `l10n`, `mode`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _sortModeLabel(AppLocalizations l10n, NetworkSortMode mode) =>
       switch (mode) {
         NetworkSortMode.custom => l10n.sortCustom,
@@ -130,6 +195,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
         NetworkSortMode.subnet => l10n.sortSubnet,
       };
 
+  /// Purpose: Build and return network card for the current context.
+  /// Inputs: `net`, `cs`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildNetworkCard(
     Network net,
     ColorScheme cs,
@@ -175,6 +245,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     );
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

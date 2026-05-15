@@ -12,6 +12,11 @@ class DeviceAvatar extends StatelessWidget {
   final String? imagePath;
   final double size;
 
+  /// Purpose: Create a device avatar instance.
+  /// Inputs: `size`.
+  /// Returns: A new `DeviceAvatar` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const DeviceAvatar({
     super.key,
     required this.category,
@@ -20,6 +25,11 @@ class DeviceAvatar extends StatelessWidget {
     this.size = 40,
   });
 
+  /// Purpose: Create a from device instance.
+  /// Inputs: `device`.
+  /// Returns: A new `DeviceAvatar.fromDevice` instance.
+  /// Side effects: None.
+  /// Notes: None.
   factory DeviceAvatar.fromDevice(Device device, {double size = 40}) {
     return DeviceAvatar(
       category: device.category,
@@ -29,6 +39,11 @@ class DeviceAvatar extends StatelessWidget {
     );
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -75,6 +90,11 @@ class DeviceAvatar extends StatelessWidget {
     return _fallbackIcon(context);
   }
 
+  /// Purpose: Provide the internal fallback icon helper for this file.
+  /// Inputs: `context`.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   Widget _fallbackIcon(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return _AvatarFrame(
@@ -89,6 +109,11 @@ class DeviceAvatar extends StatelessWidget {
     );
   }
 
+  /// Purpose: Provide the internal fallback icon content helper for this file.
+  /// Inputs: `context`.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   Widget _fallbackIconContent(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Icon(
@@ -105,6 +130,11 @@ class _AvatarFrame extends StatelessWidget {
   final Color borderColor;
   final Widget child;
 
+  /// Purpose: Create an avatar frame instance.
+  /// Inputs: None.
+  /// Returns: A new `_AvatarFrame` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const _AvatarFrame({
     required this.size,
     required this.backgroundColor,
@@ -112,6 +142,11 @@ class _AvatarFrame extends StatelessWidget {
     required this.child,
   });
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     return SizedBox(

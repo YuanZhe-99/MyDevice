@@ -23,6 +23,11 @@ class ImportExportService {
     'service_data.json',
   ];
 
+  /// Purpose: Export zip to an external representation.
+  /// Inputs: `destDir`.
+  /// Returns: `Future<String?>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Export all data and images as a ZIP file.
   /// Returns the exported file path, or null on failure.
   static Future<String?> exportZip(String destDir) async {
@@ -62,6 +67,11 @@ class ImportExportService {
     }
   }
 
+  /// Purpose: Import zip from an external representation.
+  /// Inputs: `filePath`.
+  /// Returns: `Future<bool>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Import data from a previously exported ZIP file.
   /// Returns true on success.
   static Future<bool> importZip(String filePath) async {
@@ -102,6 +112,11 @@ class ImportExportService {
     }
   }
 
+  /// Purpose: Export markdown to an external representation.
+  /// Inputs: `destDir`.
+  /// Returns: `Future<String?>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Export all data as a Markdown file for LLM personalization.
   /// Returns the exported file path, or null on failure.
   static Future<String?> exportMarkdown(String destDir) async {
@@ -127,6 +142,11 @@ class ImportExportService {
     }
   }
 
+  /// Purpose: Build and return markdown for the current context.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static String buildMarkdown({
     required DeviceData deviceData,
     required NetworkData networkData,
@@ -474,6 +494,11 @@ class ImportExportService {
     return buf.toString();
   }
 
+  /// Purpose: Return the display label for category label.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _categoryLabel(DeviceCategory c) => switch (c) {
     DeviceCategory.desktop => 'Desktop',
     DeviceCategory.laptop => 'Laptop',
@@ -488,12 +513,22 @@ class ImportExportService {
     DeviceCategory.other => 'Other',
   };
 
+  /// Purpose: Return the display label for status label.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _statusLabel(DeviceLifecycleStatus status) => switch (status) {
     DeviceLifecycleStatus.inService => 'In Service',
     DeviceLifecycleStatus.retired => 'Retired',
     DeviceLifecycleStatus.sold => 'Sold',
   };
 
+  /// Purpose: Return the display label for acquisition type label.
+  /// Inputs: `type`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _acquisitionTypeLabel(DeviceAcquisitionType type) =>
       switch (type) {
         DeviceAcquisitionType.purchased => 'One-time Purchase',
@@ -503,6 +538,11 @@ class ImportExportService {
         DeviceAcquisitionType.other => 'Other',
       };
 
+  /// Purpose: Return the display label for recurring cost kind label.
+  /// Inputs: `kind`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _recurringCostKindLabel(RecurringCostKind kind) =>
       switch (kind) {
         RecurringCostKind.lease => 'Lease',
@@ -511,11 +551,21 @@ class ImportExportService {
         RecurringCostKind.other => 'Other',
       };
 
+  /// Purpose: Return the display label for billing cycle label.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _billingCycleLabel(BillingCycle cycle) => switch (cycle) {
     BillingCycle.monthly => 'month',
     BillingCycle.yearly => 'year',
   };
 
+  /// Purpose: Provide the internal money text helper for this file.
+  /// Inputs: `money`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _moneyText(MoneyValue money) {
     final symbol = DeviceExchangeRateService.currencySymbol(money.currency);
     final baseSymbol = DeviceExchangeRateService.currencySymbol(
@@ -526,6 +576,11 @@ class ImportExportService {
     return '$original ($baseSymbol${money.convertedAmount.toStringAsFixed(2)} ${money.defaultCurrency})';
   }
 
+  /// Purpose: Return the display label for network type label.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _networkTypeLabel(NetworkType t) => switch (t) {
     NetworkType.lan => 'LAN',
     NetworkType.tailscale => 'Tailscale',
@@ -535,6 +590,11 @@ class ImportExportService {
     NetworkType.other => 'Other',
   };
 
+  /// Purpose: Provide the internal service endpoint text helper for this file.
+  /// Inputs: `endpoint`, `networkMap`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _serviceEndpointText(
     ServiceEndpoint endpoint,
     Map<String, Network> networkMap,
@@ -559,6 +619,11 @@ class ImportExportService {
     return parts.join(', ');
   }
 
+  /// Purpose: Look up service endpoint by id from the current in-memory state.
+  /// Inputs: `service`, `endpointId`.
+  /// Returns: `ServiceEndpoint?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static ServiceEndpoint? _serviceEndpointById(
     ServiceNode service,
     String? endpointId,
@@ -569,6 +634,11 @@ class ImportExportService {
         .firstOrNull;
   }
 
+  /// Purpose: Provide the internal service route hop text helper for this file.
+  /// Inputs: `hop`, `serviceMap`, `deviceMap`, `networkMap`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _serviceRouteHopText(
     ServiceRouteHop hop,
     Map<String, ServiceNode> serviceMap,

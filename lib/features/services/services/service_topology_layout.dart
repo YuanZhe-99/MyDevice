@@ -10,6 +10,11 @@ class ServiceTopologyLayout {
   final Map<String, int> nodeRanks;
   final Map<ServiceTopologyEdge, List<Offset>> edgePaths;
 
+  /// Purpose: Create a service topology layout instance.
+  /// Inputs: None.
+  /// Returns: A new `ServiceTopologyLayout` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceTopologyLayout({
     required this.size,
     required this.nodeRects,
@@ -28,6 +33,11 @@ class ServiceTopologyLayout {
   static const _routingEscape = 18.0;
   static const _routingTrackGap = 22.0;
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `graph`, `routes`, `viewportWidth`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   static ServiceTopologyLayout build(
     ServiceTopologyGraph graph,
     List<ServiceRoute> routes,
@@ -82,6 +92,11 @@ class ServiceTopologyLayout {
     );
   }
 
+  /// Purpose: Provide the internal place nodes helper for this file.
+  /// Inputs: `graph`, `nodeRanks`, `desiredRows`.
+  /// Returns: `Map<String, Rect>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<String, Rect> _placeNodes(
     ServiceTopologyGraph graph,
     Map<String, int> nodeRanks,
@@ -143,6 +158,11 @@ class ServiceTopologyLayout {
     return rects;
   }
 
+  /// Purpose: Provide the internal node ranks helper for this file.
+  /// Inputs: `graph`, `validEdges`.
+  /// Returns: `Map<String, int>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<String, int> _nodeRanks(
     ServiceTopologyGraph graph,
     List<ServiceTopologyEdge> validEdges,
@@ -179,6 +199,11 @@ class ServiceTopologyLayout {
     };
   }
 
+  /// Purpose: Provide the internal align sibling port ranks helper for this file.
+  /// Inputs: `edges`, `nodeMap`, `ranks`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _alignSiblingPortRanks(
     List<ServiceTopologyEdge> edges,
     Map<String, ServiceTopologyNode> nodeMap,
@@ -216,12 +241,27 @@ class ServiceTopologyLayout {
     return changed;
   }
 
+  /// Purpose: Provide the internal node width helper for this file.
+  /// Inputs: `node`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _nodeWidth(ServiceTopologyNode node) =>
       node.compact ? portChipSize : nodeWidth;
 
+  /// Purpose: Provide the internal node height helper for this file.
+  /// Inputs: `node`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _nodeHeight(ServiceTopologyNode node) =>
       node.compact ? portChipSize : nodeHeight;
 
+  /// Purpose: Provide the internal route rows helper for this file.
+  /// Inputs: `graph`, `routes`, `nodeMap`.
+  /// Returns: `Map<String, double>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<String, double> _routeRows(
     ServiceTopologyGraph graph,
     List<ServiceRoute> routes,
@@ -267,6 +307,11 @@ class ServiceTopologyLayout {
     return rows;
   }
 
+  /// Purpose: Provide the internal desired rows helper for this file.
+  /// Inputs: `graph`, `routes`, `routeRows`, `incoming`, plus related optional values from the signature.
+  /// Returns: `Map<String, double>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<String, double> _desiredRows(
     ServiceTopologyGraph graph,
     List<ServiceRoute> routes,
@@ -332,6 +377,11 @@ class ServiceTopologyLayout {
     return desired;
   }
 
+  /// Purpose: Provide the internal route edges helper for this file.
+  /// Inputs: `validEdges`, `rects`, `ranks`, `size`.
+  /// Returns: `Map<ServiceTopologyEdge, List<Offset>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(
     List<ServiceTopologyEdge> validEdges,
     Map<String, Rect> rects,
@@ -383,6 +433,11 @@ class ServiceTopologyLayout {
     return paths;
   }
 
+  /// Purpose: Provide the internal port offsets helper for this file.
+  /// Inputs: `edges`, `rects`, `ranks`.
+  /// Returns: `Map<ServiceTopologyEdge, double>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Map<ServiceTopologyEdge, double> _portOffsets(
     List<ServiceTopologyEdge> edges,
     Map<String, Rect> rects,
@@ -422,6 +477,11 @@ class ServiceTopologyLayout {
     return offsets;
   }
 
+  /// Purpose: Provide the internal route edge helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<Offset>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static List<Offset> _routeEdge({
     required Rect from,
     required Rect to,
@@ -490,6 +550,11 @@ class ServiceTopologyLayout {
     return const [];
   }
 
+  /// Purpose: Provide the internal route between helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<Offset>?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static List<Offset>? _routeBetween({
     required Offset start,
     required Offset goal,
@@ -596,6 +661,11 @@ class ServiceTopologyLayout {
     return _simplifyPolyline(reversed.reversed.toList());
   }
 
+  /// Purpose: Provide the internal stub blocked helper for this file.
+  /// Inputs: `a`, `b`, `obstacles`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _stubBlocked(
     Offset a,
     Offset b,
@@ -609,6 +679,11 @@ class ServiceTopologyLayout {
     return false;
   }
 
+  /// Purpose: Provide the internal segment blocked helper for this file.
+  /// Inputs: `a`, `b`, `obstacles`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _segmentBlocked(Offset a, Offset b, List<Rect> obstacles) {
     if ((a.dx - b.dx).abs() > _epsilon && (a.dy - b.dy).abs() > _epsilon) {
       return true;
@@ -622,6 +697,11 @@ class ServiceTopologyLayout {
     return obstacles.any(rect.overlaps);
   }
 
+  /// Purpose: Provide the internal congestion cost helper for this file.
+  /// Inputs: `a`, `b`, `routedSegments`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _congestionCost(
     Offset a,
     Offset b,
@@ -639,6 +719,11 @@ class ServiceTopologyLayout {
     return cost;
   }
 
+  /// Purpose: Provide the internal segments for path helper for this file.
+  /// Inputs: `path`.
+  /// Returns: `List<_Segment>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static List<_Segment> _segmentsForPath(List<Offset> path) {
     final segments = <_Segment>[];
     for (var i = 1; i < path.length; i++) {
@@ -649,6 +734,11 @@ class ServiceTopologyLayout {
     return segments;
   }
 
+  /// Purpose: Provide the internal simplify polyline helper for this file.
+  /// Inputs: `points`.
+  /// Returns: `List<Offset>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static List<Offset> _simplifyPolyline(List<Offset> points) {
     final deduped = <Offset>[];
     for (final point in points) {
@@ -674,17 +764,32 @@ class ServiceTopologyLayout {
     return simplified;
   }
 
+  /// Purpose: Provide the internal anchor helper for this file.
+  /// Inputs: `rect`, `side`, `yOffset`.
+  /// Returns: `Offset`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Offset _anchor(Rect rect, _TopologySide side, double yOffset) =>
       switch (side) {
         _TopologySide.left => Offset(rect.left, rect.center.dy + yOffset),
         _TopologySide.right => Offset(rect.right, rect.center.dy + yOffset),
       };
 
+  /// Purpose: Provide the internal side vector helper for this file.
+  /// Inputs: None.
+  /// Returns: `Offset`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Offset _sideVector(_TopologySide side) => switch (side) {
     _TopologySide.left => const Offset(-1, 0),
     _TopologySide.right => const Offset(1, 0),
   };
 
+  /// Purpose: Provide the internal edge span helper for this file.
+  /// Inputs: `edge`, `rects`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _edgeSpan(ServiceTopologyEdge edge, Map<String, Rect> rects) {
     final from = rects[edge.from];
     final to = rects[edge.to];
@@ -692,8 +797,18 @@ class ServiceTopologyLayout {
     return (to.center - from.center).distance;
   }
 
+  /// Purpose: Provide the internal service node id helper for this file.
+  /// Inputs: `serviceId`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _serviceNodeId(String serviceId) => 'service:$serviceId';
 
+  /// Purpose: Provide the internal compare routes for layout helper for this file.
+  /// Inputs: `a`, `b`.
+  /// Returns: `int`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static int _compareRoutesForLayout(ServiceRoute a, ServiceRoute b) {
     final laneCmp = _laneOrder(
       serviceAccessLaneForRoute(a),
@@ -708,12 +823,22 @@ class ServiceTopologyLayout {
     ).toLowerCase().compareTo(serviceRouteDisplayTarget(b).toLowerCase());
   }
 
+  /// Purpose: Provide the internal lane order helper for this file.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static int _laneOrder(ServiceAccessLane lane) => switch (lane) {
     ServiceAccessLane.local => 0,
     ServiceAccessLane.vpn => 1,
     ServiceAccessLane.public => 2,
   };
 
+  /// Purpose: Provide the internal lane rank helper for this file.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static int _laneRank(ServiceAccessLane? lane) => switch (lane) {
     ServiceAccessLane.local => 0,
     ServiceAccessLane.vpn => 1,
@@ -721,6 +846,11 @@ class ServiceTopologyLayout {
     null => 3,
   };
 
+  /// Purpose: Provide the internal route method name helper for this file.
+  /// Inputs: `route`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String _routeMethodName(ServiceRoute route) =>
       route.hops
           .map((hop) => hop.method?.name)
@@ -728,6 +858,11 @@ class ServiceTopologyLayout {
           .firstOrNull ??
       '';
 
+  /// Purpose: Provide the internal median helper for this file.
+  /// Inputs: `values`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _median(List<double> values) {
     final ordered = [...values]..sort();
     final middle = ordered.length ~/ 2;
@@ -735,6 +870,11 @@ class ServiceTopologyLayout {
     return (ordered[middle - 1] + ordered[middle]) / 2;
   }
 
+  /// Purpose: Provide the internal role order helper for this file.
+  /// Inputs: `node`.
+  /// Returns: `int`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static int _roleOrder(ServiceTopologyNode node) {
     if (node.kind == ServiceTopologyNodeKind.endpoint &&
         node.role == ServiceTopologyNodeRole.remoteService) {
@@ -754,6 +894,11 @@ class ServiceTopologyLayout {
     };
   }
 
+  /// Purpose: Provide the internal lane bucket helper for this file.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static int _laneBucket(ServiceTopologyNode node) => switch (node.lane) {
     ServiceAccessLane.local => 0,
     ServiceAccessLane.vpn => 1,
@@ -761,19 +906,44 @@ class ServiceTopologyLayout {
     null => -1,
   };
 
+  /// Purpose: Provide the internal manhattan helper for this file.
+  /// Inputs: `a`, `b`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _manhattan(Offset a, Offset b) =>
       (a.dx - b.dx).abs() + (a.dy - b.dy).abs();
 
+  /// Purpose: Provide the internal snap offset helper for this file.
+  /// Inputs: `offset`.
+  /// Returns: `Offset`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Offset _snapOffset(Offset offset) =>
       Offset(_snap(offset.dx), _snap(offset.dy));
 
+  /// Purpose: Provide the internal clamp offset helper for this file.
+  /// Inputs: `offset`.
+  /// Returns: `Offset`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Offset _clampOffset(Offset offset, Size size) => Offset(
     offset.dx.clamp(0.0, size.width).toDouble(),
     offset.dy.clamp(0.0, size.height).toDouble(),
   );
 
+  /// Purpose: Provide the internal snap helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `double`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static double _snap(num value) => (value.toDouble() * 2).roundToDouble() / 2;
 
+  /// Purpose: Provide the internal same rect helper for this file.
+  /// Inputs: `a`, `b`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _sameRect(Rect a, Rect b) =>
       (a.left - b.left).abs() < _epsilon &&
       (a.top - b.top).abs() < _epsilon &&
@@ -789,12 +959,22 @@ class _Segment {
   final Offset a;
   final Offset b;
 
+  /// Purpose: Create a segment instance.
+  /// Inputs: `a`, `b`.
+  /// Returns: A new `_Segment` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   const _Segment(this.a, this.b);
 
   bool get horizontal => (a.dy - b.dy).abs() < _epsilon;
 
   bool get vertical => (a.dx - b.dx).abs() < _epsilon;
 
+  /// Purpose: Implement the same axis overlap behavior for this file.
+  /// Inputs: `other`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   bool sameAxisOverlap(_Segment other) {
     if (horizontal &&
         other.horizontal &&
@@ -807,6 +987,11 @@ class _Segment {
     return false;
   }
 
+  /// Purpose: Implement the crosses behavior for this file.
+  /// Inputs: `other`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   bool crosses(_Segment other) {
     if (horizontal && other.vertical) {
       return _between(other.a.dx, a.dx, b.dx) &&
@@ -819,6 +1004,11 @@ class _Segment {
     return false;
   }
 
+  /// Purpose: Provide the internal ranges overlap helper for this file.
+  /// Inputs: `a1`, `a2`, `b1`, `b2`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _rangesOverlap(double a1, double a2, double b1, double b2) {
     final aMin = math.min(a1, a2);
     final aMax = math.max(a1, a2);
@@ -827,6 +1017,11 @@ class _Segment {
     return math.max(aMin, bMin) < math.min(aMax, bMax) - _epsilon;
   }
 
+  /// Purpose: Provide the internal between helper for this file.
+  /// Inputs: `value`, `start`, `end`.
+  /// Returns: `bool`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static bool _between(double value, double start, double end) {
     final minValue = math.min(start, end) - _epsilon;
     final maxValue = math.max(start, end) + _epsilon;
@@ -838,19 +1033,39 @@ class _RouteState {
   final int index;
   final double cost;
 
+  /// Purpose: Create a route state instance.
+  /// Inputs: `index`, `cost`.
+  /// Returns: A new `_RouteState` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   const _RouteState(this.index, this.cost);
 }
 
 class _RouteHeap {
   final _items = <_RouteState>[];
 
+  /// Purpose: Return whether not empty is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isNotEmpty => _items.isNotEmpty;
 
+  /// Purpose: Add the requested value through the current flow.
+  /// Inputs: `state`.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   void add(_RouteState state) {
     _items.add(state);
     _bubbleUp(_items.length - 1);
   }
 
+  /// Purpose: Implement the remove first behavior for this file.
+  /// Inputs: None.
+  /// Returns: `_RouteState`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   _RouteState removeFirst() {
     final first = _items.first;
     final last = _items.removeLast();
@@ -861,6 +1076,11 @@ class _RouteHeap {
     return first;
   }
 
+  /// Purpose: Provide the internal bubble up helper for this file.
+  /// Inputs: `index`.
+  /// Returns: `void`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   void _bubbleUp(int index) {
     while (index > 0) {
       final parent = (index - 1) >> 1;
@@ -870,6 +1090,11 @@ class _RouteHeap {
     }
   }
 
+  /// Purpose: Provide the internal bubble down helper for this file.
+  /// Inputs: `index`.
+  /// Returns: `void`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   void _bubbleDown(int index) {
     while (true) {
       final left = index * 2 + 1;
@@ -887,6 +1112,11 @@ class _RouteHeap {
     }
   }
 
+  /// Purpose: Provide the internal swap helper for this file.
+  /// Inputs: `a`, `b`.
+  /// Returns: `void`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   void _swap(int a, int b) {
     final temp = _items[a];
     _items[a] = _items[b];

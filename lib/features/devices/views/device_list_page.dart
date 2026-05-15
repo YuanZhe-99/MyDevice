@@ -20,8 +20,18 @@ enum SortMode { custom, alphabetical, purchaseDate, releaseDate }
 enum DeviceStatusFilter { all, inService, retired, sold }
 
 class DeviceListPage extends StatefulWidget {
+  /// Purpose: Create a device list page instance.
+  /// Inputs: None.
+  /// Returns: A new `DeviceListPage` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const DeviceListPage({super.key});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<DeviceListPage> createState() => _DeviceListPageState();
 }
@@ -35,6 +45,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
   DeviceStatusFilter _statusFilter = DeviceStatusFilter.all;
   String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
 
+  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Registers listeners and may kick off asynchronous loading.
+  /// Notes: Guard any post-await UI updates with `mounted` when needed.
   @override
   void initState() {
     super.initState();
@@ -43,16 +58,31 @@ class _DeviceListPageState extends State<DeviceListPage> {
     _loadSortPrefs().then((_) => _loadDevices());
   }
 
+  /// Purpose: Release listeners, controllers, and other owned resources.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Releases owned resources and unregisters listeners.
+  /// Notes: Call the superclass implementation in the expected lifecycle order.
   @override
   void dispose() {
     AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged);
     super.dispose();
   }
 
+  /// Purpose: Handle local data changed and trigger the appropriate follow-up work.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   void _handleLocalDataChanged() {
     if (mounted) _loadDevices();
   }
 
+  /// Purpose: Load sort prefs into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     final mode = config['sortMode'] as String?;
@@ -67,11 +97,21 @@ class _DeviceListPageState extends State<DeviceListPage> {
     });
   }
 
+  /// Purpose: Load financial prefs into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadFinancialPrefs() async {
     final currency = await DeviceExchangeRateService.getDefaultCurrency();
     if (mounted) setState(() => _defaultCurrency = currency);
   }
 
+  /// Purpose: Save sort prefs to the relevant storage or service layer.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _saveSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     config['sortMode'] = _sortMode.name;
@@ -80,6 +120,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await DeviceStorage.writeConfig(config);
   }
 
+  /// Purpose: Provide the internal visible devices helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<Device>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<Device> get _visibleDevices {
     return _devices.where((device) {
       return switch (_statusFilter) {
@@ -93,6 +138,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     }).toList();
   }
 
+  /// Purpose: Provide the internal sorted devices helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<Device>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   /// Returns the sorted / grouped list for display.
   List<Device> get _sortedDevices {
     var list = List<Device>.of(_visibleDevices);
@@ -145,6 +195,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     return list;
   }
 
+  /// Purpose: Load devices into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _loadDevices() async {
     final data = await DeviceStorage.load();
     setState(() {
@@ -153,6 +208,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     });
   }
 
+  /// Purpose: Add device through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addDevice() async {
     await Navigator.of(
       context,
@@ -161,6 +221,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await _loadDevices();
   }
 
+  /// Purpose: Add from search through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addFromSearch() async {
     final result = await showDeviceSearchDialog(context);
     if (result == null || !mounted) return;
@@ -170,6 +235,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await _loadDevices();
   }
 
+  /// Purpose: Edit device and refresh local state when needed.
+  /// Inputs: `device`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _editDevice(Device device) async {
     await Navigator.of(
       context,
@@ -178,6 +248,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await _loadDevices();
   }
 
+  /// Purpose: Provide the internal view device helper for this file.
+  /// Inputs: `device`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _viewDevice(Device device) async {
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
@@ -188,6 +263,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await _loadDevices();
   }
 
+  /// Purpose: Provide the internal view financial overview helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _viewFinancialOverview() async {
     await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
@@ -200,6 +280,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     await _loadDevices();
   }
 
+  /// Purpose: Provide the internal confirm delete device helper for this file.
+  /// Inputs: `device`.
+  /// Returns: `Future<bool>`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Future<bool> _confirmDeleteDevice(Device device) async {
     final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
@@ -228,6 +313,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     return false;
   }
 
+  /// Purpose: Add from template through the current flow.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Internal helper used within this file only.
   Future<void> _addFromTemplate() async {
     final templates = await PresetService.loadTemplates();
     if (!mounted) return;
@@ -249,6 +339,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     }
   }
 
+  /// Purpose: Return the display label for category label.
+  /// Inputs: `context`, `category`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _categoryLabel(BuildContext context, DeviceCategory category) {
     final l10n = AppLocalizations.of(context)!;
     return switch (category) {
@@ -266,6 +361,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     };
   }
 
+  /// Purpose: Return the display label for sort mode label.
+  /// Inputs: `l10n`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _sortModeLabel(AppLocalizations l10n, SortMode mode) => switch (mode) {
     SortMode.custom => l10n.sortCustom,
     SortMode.alphabetical => l10n.sortAlphabetical,
@@ -273,6 +373,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     SortMode.releaseDate => l10n.sortReleaseDate,
   };
 
+  /// Purpose: Return the display label for filter label.
+  /// Inputs: `l10n`, `filter`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _filterLabel(AppLocalizations l10n, DeviceStatusFilter filter) =>
       switch (filter) {
         DeviceStatusFilter.all => l10n.filterAll,
@@ -281,35 +386,75 @@ class _DeviceListPageState extends State<DeviceListPage> {
         DeviceStatusFilter.sold => l10n.statusSold,
       };
 
+  /// Purpose: Provide the internal status count helper for this file.
+  /// Inputs: `status`.
+  /// Returns: `int`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   int _statusCount(DeviceLifecycleStatus status) =>
       _devices.where((d) => d.lifecycleStatus == status).length;
 
+  /// Purpose: Provide the internal total financial cost helper for this file.
+  /// Inputs: None.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _totalFinancialCost() =>
       _devices.fold(0, (sum, device) => sum + device.totalCost());
 
+  /// Purpose: Provide the internal total daily cost helper for this file.
+  /// Inputs: None.
+  /// Returns: `double`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   double _totalDailyCost() =>
       _devices.fold(0, (sum, device) => sum + (device.averageDailyCost() ?? 0));
 
+  /// Purpose: Provide the internal money text helper for this file.
+  /// Inputs: `amount`.
+  /// Returns: `String`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   String _moneyText(double amount) {
     final symbol = DeviceExchangeRateService.currencySymbol(_defaultCurrency);
     return '$symbol${amount.toStringAsFixed(2)}';
   }
 
+  /// Purpose: Update sort mode with the provided value.
+  /// Inputs: `mode`.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _setSortMode(SortMode mode) {
     setState(() => _sortMode = mode);
     _saveSortPrefs();
   }
 
+  /// Purpose: Provide the internal toggle group by category helper for this file.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _toggleGroupByCategory() {
     setState(() => _groupByCategory = !_groupByCategory);
     _saveSortPrefs();
   }
 
+  /// Purpose: Provide the internal toggle sort order helper for this file.
+  /// Inputs: None.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   void _toggleSortOrder() {
     setState(() => _sortAscending = !_sortAscending);
     _saveSortPrefs();
   }
 
+  /// Purpose: Provide the internal on reorder helper for this file.
+  /// Inputs: `oldIndex`, `newIndex`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
   Future<void> _onReorder(int oldIndex, int newIndex) async {
     if (newIndex > oldIndex) newIndex--;
     final item = _devices.removeAt(oldIndex);
@@ -320,6 +465,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
 
   bool _reordering = false;
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild. Opens or updates routes, dialogs, or other UI flows.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -479,6 +629,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// Purpose: Build and return device list for the current context.
+  /// Inputs: `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildDeviceList(AppLocalizations l10n, ThemeData theme) {
     final sorted = _sortedDevices;
     final header = _buildHomeHeader(l10n, theme);
@@ -535,6 +690,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// Purpose: Build and return home header for the current context.
+  /// Inputs: `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildHomeHeader(AppLocalizations l10n, ThemeData theme) {
     final cs = theme.colorScheme;
     final inService = _statusCount(DeviceLifecycleStatus.inService);
@@ -662,6 +822,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// Purpose: Build and return metric for the current context.
+  /// Inputs: `theme`, `label`, `value`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildMetric(ThemeData theme, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,6 +843,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// Purpose: Build and return status count for the current context.
+  /// Inputs: `theme`, `label`, `count`, `color`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildStatusCount(
     ThemeData theme,
     String label,
@@ -717,6 +887,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// Purpose: Build and return dismissible card for the current context.
+  /// Inputs: `device`, `l10n`, `theme`.
+  /// Returns: `Widget`.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: Internal helper used within this file only.
   Widget _buildDismissibleCard(
     Device device,
     AppLocalizations l10n,
@@ -784,6 +959,11 @@ class _DeviceCard extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? trailing;
 
+  /// Purpose: Create a device card instance.
+  /// Inputs: None.
+  /// Returns: A new `_DeviceCard` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _DeviceCard({
     super.key,
     required this.device,
@@ -792,6 +972,11 @@ class _DeviceCard extends StatelessWidget {
     this.trailing,
   });
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final subtitleParts = <String>[categoryLabel];
@@ -825,8 +1010,18 @@ class _DeviceCard extends StatelessWidget {
 class _TemplatePicker extends StatefulWidget {
   final List<DeviceTemplate> templates;
 
+  /// Purpose: Create a template picker instance.
+  /// Inputs: None.
+  /// Returns: A new `_TemplatePicker` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   const _TemplatePicker({required this.templates});
 
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `State` instance.
+  /// Side effects: May update UI state or trigger user-facing flows.
+  /// Notes: None.
   @override
   State<_TemplatePicker> createState() => _TemplatePickerState();
 }
@@ -834,6 +1029,11 @@ class _TemplatePicker extends StatefulWidget {
 class _TemplatePickerState extends State<_TemplatePicker> {
   String _query = '';
 
+  /// Purpose: Provide the internal filtered helper for this file.
+  /// Inputs: None.
+  /// Returns: `List<DeviceTemplate>`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
   List<DeviceTemplate> get _filtered {
     if (_query.isEmpty) return widget.templates;
     final q = _query.toLowerCase();
@@ -842,6 +1042,11 @@ class _TemplatePickerState extends State<_TemplatePicker> {
         .toList();
   }
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;

@@ -2,8 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 
 class AppTheme {
+  /// Purpose: Prevent direct instantiation and expose only static members.
+  /// Inputs: None.
+  /// Returns: A new `AppTheme._` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   AppTheme._();
 
+  /// Purpose: Return the current light value.
+  /// Inputs: None.
+  /// Returns: `ThemeData`.
+  /// Side effects: None.
+  /// Notes: None.
   static ThemeData get light => FlexThemeData.light(
     scheme: FlexScheme.blue,
     surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
@@ -19,6 +29,11 @@ class AppTheme {
     useMaterial3: true,
   );
 
+  /// Purpose: Return the current dark value.
+  /// Inputs: None.
+  /// Returns: `ThemeData`.
+  /// Side effects: None.
+  /// Notes: None.
   static ThemeData get dark => FlexThemeData.dark(
     scheme: FlexScheme.blue,
     surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,

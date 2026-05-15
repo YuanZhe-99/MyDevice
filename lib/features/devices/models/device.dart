@@ -88,8 +88,18 @@ enum DeviceCategory {
   devBoard,
   other;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static DeviceCategory fromJson(String value) => DeviceCategory.values
       .firstWhere((e) => e.name == value, orElse: () => DeviceCategory.other);
 }
@@ -101,8 +111,18 @@ enum DeviceAcquisitionType {
   purchasedWithSubscription,
   other;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static DeviceAcquisitionType? fromJson(String? value) {
     if (value == null) return null;
     return DeviceAcquisitionType.values
@@ -121,8 +141,18 @@ enum RecurringCostKind {
   subscription,
   other;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static RecurringCostKind fromJson(String? value) =>
       RecurringCostKind.values.where((e) => e.name == value).firstOrNull ??
       RecurringCostKind.other;
@@ -133,8 +163,18 @@ enum BillingCycle {
   monthly,
   yearly;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static BillingCycle fromJson(String? value) =>
       BillingCycle.values.where((e) => e.name == value).firstOrNull ??
       BillingCycle.monthly;
@@ -151,6 +191,11 @@ class CpuInfo {
   final String? cache;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a cpu info instance.
+  /// Inputs: `extraJson`.
+  /// Returns: A new `CpuInfo` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const CpuInfo({
     this.model,
     this.architecture,
@@ -162,6 +207,11 @@ class CpuInfo {
     this.extraJson = const {},
   });
 
+  /// Purpose: Return whether empty is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isEmpty =>
       model == null &&
       architecture == null &&
@@ -172,6 +222,11 @@ class CpuInfo {
       cache == null &&
       extraJson.isEmpty;
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     if (model != null) 'model': model,
@@ -183,6 +238,11 @@ class CpuInfo {
     if (cache != null) 'cache': cache,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `CpuInfo.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory CpuInfo.fromJson(Map<String, dynamic> json) => CpuInfo(
     model: json['model'] as String?,
     architecture: json['architecture'] as String?,
@@ -194,6 +254,11 @@ class CpuInfo {
     extraJson: unknownJsonFields(json, _cpuInfoJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `CpuInfo`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   CpuInfo mergeUnknownFieldsFrom(CpuInfo other, {CpuInfo? base}) {
     return CpuInfo.fromJson({
       ...toJson(),
@@ -212,23 +277,48 @@ class GpuInfo {
   final String? architecture;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a gpu info instance.
+  /// Inputs: `extraJson`.
+  /// Returns: A new `GpuInfo` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const GpuInfo({this.model, this.architecture, this.extraJson = const {}});
 
+  /// Purpose: Return whether empty is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isEmpty =>
       model == null && architecture == null && extraJson.isEmpty;
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     if (model != null) 'model': model,
     if (architecture != null) 'architecture': architecture,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `GpuInfo.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory GpuInfo.fromJson(Map<String, dynamic> json) => GpuInfo(
     model: json['model'] as String?,
     architecture: json['architecture'] as String?,
     extraJson: unknownJsonFields(json, _gpuInfoJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `GpuInfo`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   GpuInfo mergeUnknownFieldsFrom(GpuInfo other, {GpuInfo? base}) {
     return GpuInfo.fromJson({
       ...toJson(),
@@ -247,8 +337,18 @@ enum StorageType {
   sdCard,
   hdd;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static StorageType? fromJson(String? value) {
     if (value == null) return null;
     return StorageType.values.where((e) => e.name == value).firstOrNull;
@@ -267,8 +367,18 @@ enum RamType {
   lpddr5x,
   lpddr6;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Return the current display name value.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get displayName => switch (this) {
     RamType.ddr3 => 'DDR3',
     RamType.lpddr3 => 'LPDDR3',
@@ -281,6 +391,11 @@ enum RamType {
     RamType.lpddr6 => 'LPDDR6',
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static RamType? fromJson(String? value) {
     if (value == null) return null;
     return RamType.values.where((e) => e.name == value).firstOrNull;
@@ -294,8 +409,18 @@ enum StorageInterface {
   m2Sata,
   usb;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `value`.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static StorageInterface? fromJson(String? value) {
     if (value == null) return null;
     return StorageInterface.values.where((e) => e.name == value).firstOrNull;
@@ -311,6 +436,11 @@ class StorageInfo {
   final String? brand;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a storage info instance.
+  /// Inputs: `extraJson`.
+  /// Returns: A new `StorageInfo` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const StorageInfo({
     this.capacity,
     this.type,
@@ -320,6 +450,11 @@ class StorageInfo {
     this.extraJson = const {},
   });
 
+  /// Purpose: Return whether empty is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isEmpty =>
       capacity == null &&
       type == null &&
@@ -328,6 +463,11 @@ class StorageInfo {
       brand == null &&
       extraJson.isEmpty;
 
+  /// Purpose: Return the current display string value.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   /// Human-readable summary, e.g. "512 GB SSD (M.2 NVMe)".
   String get displayString {
     final parts = <String>[];
@@ -936,13 +1076,28 @@ class DeviceData {
   final List<Device> devices;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a device data instance.
+  /// Inputs: `devices`.
+  /// Returns: A new `DeviceData` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const DeviceData({this.devices = const [], this.extraJson = const {}});
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'devices': devices.map((d) => d.toJson()).toList(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `DeviceData.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory DeviceData.fromJson(Map<String, dynamic> json) => DeviceData(
     devices:
         (json['devices'] as List<dynamic>?)

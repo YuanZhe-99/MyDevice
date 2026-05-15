@@ -5,6 +5,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> main() async {
   // ============ Intel ARK ============
   print('========== INTEL ARK ==========');
@@ -129,6 +134,11 @@ Future<void> main() async {
   await testStartpage('GeForce RTX 4090 specifications site:nvidia.com', 'NVIDIA via Startpage');
 }
 
+/// Purpose: Test url and report the outcome.
+/// Inputs: `url`, `label`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testUrl(String url, String label, {bool showBody = false, int bodyLimit = 500}) async {
   try {
     final resp = await http.get(
@@ -151,6 +161,11 @@ Future<void> testUrl(String url, String label, {bool showBody = false, int bodyL
   }
 }
 
+/// Purpose: Test startpage and report the outcome.
+/// Inputs: `query`, `label`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testStartpage(String query, String label) async {
   try {
     final resp = await http.post(

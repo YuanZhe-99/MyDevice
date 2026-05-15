@@ -8,8 +8,18 @@ import 'router.dart';
 import 'theme.dart';
 
 class MyDeviceApp extends ConsumerWidget {
+  /// Purpose: Create a my device app instance.
+  /// Inputs: None.
+  /// Returns: A new `MyDeviceApp` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const MyDeviceApp({super.key});
 
+  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Inputs: `context`, `ref`.
+  /// Returns: The widget tree for the current state.
+  /// Side effects: Creates UI widgets from the current state.
+  /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(appSettingsProvider);

@@ -7,6 +7,11 @@ import 'package:my_device/features/services/models/service.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
 import 'package:my_device/features/services/services/service_topology_layout.dart';
 
+/// Purpose: Register the test cases defined in this file.
+/// Inputs: None.
+/// Returns: None.
+/// Side effects: None.
+/// Notes: This serves as the test entry point for the file.
 void main() {
   test('topology layout renders port nodes as square chips', () {
     final graph = _buildSampleGraph();
@@ -135,6 +140,11 @@ void main() {
   });
 }
 
+/// Purpose: Build and return sample graph for the current context.
+/// Inputs: None.
+/// Returns: `_SampleGraph`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 _SampleGraph _buildSampleGraph() {
   final devices = [
     Device(id: 'mac-mini', name: 'Mac mini', category: DeviceCategory.desktop),
@@ -216,6 +226,11 @@ _SampleGraph _buildSampleGraph() {
   return _SampleGraph(graph, routes);
 }
 
+/// Purpose: Provide the internal frp topology data helper for this file.
+/// Inputs: None.
+/// Returns: `_FrpTopologyData`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 _FrpTopologyData _frpTopologyData() {
   final devices = [
     Device(id: 'mac', name: 'Mac mini', category: DeviceCategory.desktop),
@@ -277,12 +292,27 @@ _FrpTopologyData _frpTopologyData() {
   return _FrpTopologyData(devices: devices, services: services, routes: routes);
 }
 
+/// Purpose: Provide the internal node helper for this file.
+/// Inputs: `graph`, `id`.
+/// Returns: `ServiceTopologyNode`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 ServiceTopologyNode _node(ServiceTopologyGraph graph, String id) =>
     graph.nodes.singleWhere((node) => node.id == id);
 
+/// Purpose: Provide the internal has edge helper for this file.
+/// Inputs: `graph`, `from`, `to`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 bool _hasEdge(ServiceTopologyGraph graph, String from, String to) =>
     graph.edges.any((edge) => edge.from == from && edge.to == to);
 
+/// Purpose: Provide the internal horizontal helper for this file.
+/// Inputs: `a`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 bool _horizontal(Offset a, Offset b) => (a.dy - b.dy).abs() < 0.01;
 
 bool _vertical(Offset a, Offset b) => (a.dx - b.dx).abs() < 0.01;
@@ -290,6 +320,11 @@ bool _vertical(Offset a, Offset b) => (a.dx - b.dx).abs() < 0.01;
 bool _onHorizontalSide(Offset point, Rect rect) =>
     (point.dx - rect.left).abs() < 0.01 || (point.dx - rect.right).abs() < 0.01;
 
+/// Purpose: Provide the internal segment crosses rect interior helper for this file.
+/// Inputs: `a`, `b`, `rect`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 bool _segmentCrossesRectInterior(Offset a, Offset b, Rect rect) {
   final inner = rect.deflate(0.5);
   if (inner.isEmpty) return false;
@@ -304,6 +339,11 @@ bool _segmentCrossesRectInterior(Offset a, Offset b, Rect rect) {
   return true;
 }
 
+/// Purpose: Provide the internal polyline intersects rect helper for this file.
+/// Inputs: `path`, `rect`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 bool _polylineIntersectsRect(List<Offset> path, Rect rect) {
   for (var i = 1; i < path.length; i++) {
     if (_segmentIntersectsRect(path[i - 1], path[i], rect)) return true;
@@ -311,6 +351,11 @@ bool _polylineIntersectsRect(List<Offset> path, Rect rect) {
   return false;
 }
 
+/// Purpose: Provide the internal segment intersects rect helper for this file.
+/// Inputs: `a`, `b`, `rect`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 bool _segmentIntersectsRect(Offset a, Offset b, Rect rect) {
   final bounds = Rect.fromLTRB(
     math.min(a.dx, b.dx),
@@ -332,6 +377,11 @@ bool _segmentIntersectsRect(Offset a, Offset b, Rect rect) {
   return true;
 }
 
+/// Purpose: Provide the internal ranges overlap helper for this file.
+/// Inputs: `a1`, `a2`, `b1`, `b2`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
 bool _rangesOverlap(double a1, double a2, double b1, double b2) {
   final aMin = math.min(a1, a2);
   final aMax = math.max(a1, a2);
@@ -345,6 +395,11 @@ class _FrpTopologyData {
   final List<ServiceNode> services;
   final List<ServiceRoute> routes;
 
+  /// Purpose: Create a frp topology data instance.
+  /// Inputs: None.
+  /// Returns: A new `_FrpTopologyData` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const _FrpTopologyData({
     required this.devices,
     required this.services,
@@ -356,5 +411,10 @@ class _SampleGraph {
   final ServiceTopologyGraph graph;
   final List<ServiceRoute> routes;
 
+  /// Purpose: Create a sample graph instance.
+  /// Inputs: `graph`, `routes`.
+  /// Returns: A new `_SampleGraph` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   const _SampleGraph(this.graph, this.routes);
 }

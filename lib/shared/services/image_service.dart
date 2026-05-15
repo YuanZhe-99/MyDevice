@@ -8,6 +8,11 @@ import 'package:uuid/uuid.dart';
 import '../../features/devices/services/device_storage.dart';
 
 class ImageService {
+  /// Purpose: Provide the internal get image dir helper for this file.
+  /// Inputs: None.
+  /// Returns: `Future<Directory>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   static Future<Directory> _getImageDir() async {
     final appDir = await DeviceStorage.getAppDir();
     final imgDir = Directory(p.join(appDir.path, 'images'));
@@ -17,6 +22,11 @@ class ImageService {
     return imgDir;
   }
 
+  /// Purpose: Pick and save image from user-provided input.
+  /// Inputs: None.
+  /// Returns: `Future<String?>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Pick an image file and copy it into app storage.
   /// Returns the relative path e.g. "images/xxx.png", or null if cancelled.
   static Future<String?> pickAndSaveImage() async {
@@ -36,12 +46,22 @@ class ImageService {
     return 'images/$newName';
   }
 
+  /// Purpose: Resolve the requested value into the form required by the caller.
+  /// Inputs: `relativePath`.
+  /// Returns: `Future<File>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Resolve a relative imagePath to an absolute File.
   static Future<File> resolve(String relativePath) async {
     final appDir = await DeviceStorage.getAppDir();
     return File(p.join(appDir.path, relativePath));
   }
 
+  /// Purpose: Delete the relevant data from the relevant storage or state.
+  /// Inputs: `relativePath`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Delete a previously saved image.
   static Future<void> delete(String relativePath) async {
     final file = await resolve(relativePath);
@@ -50,6 +70,11 @@ class ImageService {
     }
   }
 
+  /// Purpose: Save image from url to the relevant storage or service layer.
+  /// Inputs: `url`.
+  /// Returns: `Future<String?>`.
+  /// Side effects: Performs local file-system I/O.
+  /// Notes: None.
   /// Download an image from a URL and save it into app storage.
   /// Returns the relative path e.g. "images/xxx.jpg", or null on failure.
   static Future<String?> saveImageFromUrl(String url) async {

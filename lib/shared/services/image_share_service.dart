@@ -10,6 +10,11 @@ import 'package:share_plus/share_plus.dart';
 import '../../l10n/app_localizations.dart';
 
 class ImageShareService {
+  /// Purpose: Share png bytes through the platform-specific path.
+  /// Inputs: `context`, `imageBytes`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Performs local file-system I/O. Touches platform integration state.
+  /// Notes: None.
   static Future<void> sharePngBytes(
     BuildContext context,
     Uint8List imageBytes, {
@@ -41,6 +46,11 @@ class ImageShareService {
     }
   }
 
+  /// Purpose: Show desktop preview in the current UI flow.
+  /// Inputs: `context`, `imageBytes`, `tempPath`, `l10n`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Opens or updates routes, dialogs, or other UI flows. Performs local file-system I/O.
+  /// Notes: Internal helper used within this file only.
   static Future<void> _showDesktopPreview(
     BuildContext context,
     Uint8List imageBytes,
@@ -111,6 +121,11 @@ class ImageShareService {
     );
   }
 
+  /// Purpose: Provide the internal copy image to clipboard helper for this file.
+  /// Inputs: `imagePath`.
+  /// Returns: `Future<void>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static Future<void> _copyImageToClipboard(String imagePath) async {
     if (Platform.isWindows) {
       await Process.run('powershell', [

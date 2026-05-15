@@ -6,6 +6,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> main() async {
   // Test Intel product spec pages (found via Startpage)
   print('========== Intel Core i5-520M Specifications ==========');
@@ -30,6 +35,11 @@ Future<void> main() async {
   await findAndTestIntelGpu('Intel Arc B580');
 }
 
+/// Purpose: Test intel product page and report the outcome.
+/// Inputs: `url`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testIntelProductPage(String url) async {
   print('  URL: $url');
   final client = HttpClient()
@@ -123,6 +133,11 @@ Future<void> testIntelProductPage(String url) async {
   }
 }
 
+/// Purpose: Find and return and test intel that matches the current criteria.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> findAndTestIntel(String query) async {
   print('\n--- $query ---');
   final resp = await http.post(
@@ -159,6 +174,11 @@ Future<void> findAndTestIntel(String query) async {
   }
 }
 
+/// Purpose: Find and return and test intel gpu that matches the current criteria.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> findAndTestIntelGpu(String query) async {
   print('\n--- $query ---');
   final resp = await http.post(

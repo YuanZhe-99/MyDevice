@@ -43,6 +43,11 @@ class ServiceTopologyNode {
   final bool compact;
   final List<String> routeIds;
 
+  /// Purpose: Create a service topology node instance.
+  /// Inputs: `compact`.
+  /// Returns: A new `ServiceTopologyNode` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceTopologyNode({
     required this.id,
     required this.kind,
@@ -59,11 +64,21 @@ class ServiceTopologyNode {
     this.routeIds = const [],
   });
 
+  /// Purpose: Implement the merge route behavior for this file.
+  /// Inputs: `routeId`.
+  /// Returns: `ServiceTopologyNode`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   ServiceTopologyNode mergeRoute(String routeId) {
     if (routeIds.contains(routeId)) return this;
     return merge(this, routeId: routeId);
   }
 
+  /// Purpose: Implement the merge behavior for this file.
+  /// Inputs: `other`.
+  /// Returns: `ServiceTopologyNode`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   ServiceTopologyNode merge(ServiceTopologyNode other, {String? routeId}) {
     final routes = <String>{...routeIds, ...other.routeIds};
     if (routeId != null) routes.add(routeId);
@@ -102,6 +117,11 @@ class ServiceTopologyEdge {
   final ServiceAccessLane? lane;
   final ServiceRouteMethod? method;
 
+  /// Purpose: Create a service topology edge instance.
+  /// Inputs: None.
+  /// Returns: A new `ServiceTopologyEdge` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceTopologyEdge({
     required this.from,
     required this.to,
@@ -116,8 +136,18 @@ class ServiceTopologyGraph {
   final List<ServiceTopologyNode> nodes;
   final List<ServiceTopologyEdge> edges;
 
+  /// Purpose: Create a service topology graph instance.
+  /// Inputs: None.
+  /// Returns: A new `ServiceTopologyGraph` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceTopologyGraph({required this.nodes, required this.edges});
 
+  /// Purpose: Return whether empty is true.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isEmpty => nodes.isEmpty;
 }
 
@@ -128,6 +158,11 @@ class ServicePortUse {
   final int port;
   final String bindAddress;
 
+  /// Purpose: Create a service port use instance.
+  /// Inputs: None.
+  /// Returns: A new `ServicePortUse` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServicePortUse({
     required this.service,
     required this.endpoint,
@@ -136,6 +171,11 @@ class ServicePortUse {
     required this.bindAddress,
   });
 
+  /// Purpose: Return the current uses any address value.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get usesAnyAddress => bindAddress == '*';
 }
 
@@ -146,6 +186,11 @@ class ServicePortConflict {
   final List<ServicePortUse> uses;
   final bool potential;
 
+  /// Purpose: Create a service port conflict instance.
+  /// Inputs: `potential`.
+  /// Returns: A new `ServicePortConflict` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServicePortConflict({
     required this.deviceId,
     required this.port,
@@ -174,6 +219,11 @@ class ServiceWarning {
   final String name;
   final String? detail;
 
+  /// Purpose: Create a service warning instance.
+  /// Inputs: `kind`, `name`.
+  /// Returns: A new `ServiceWarning` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const ServiceWarning(this.kind, this.name, {this.detail});
 }
 
@@ -204,6 +254,11 @@ List<ServicePortUse> listServicePortUses(List<ServiceNode> services) {
       }
     }
   }
+  /// Purpose: Implement the sort behavior for this file.
+  /// Inputs: `deviceCmp`.
+  /// Returns: `dynamic`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   uses.sort((a, b) {
     final deviceCmp = a.service.deviceId.compareTo(b.service.deviceId);
     if (deviceCmp != 0) return deviceCmp;
@@ -264,6 +319,11 @@ ServiceTopologyGraph buildServiceTopology({
   final nodes = <String, ServiceTopologyNode>{};
   final edges = <String, ServiceTopologyEdge>{};
 
+  /// Purpose: Add node through the current flow.
+  /// Inputs: `node`.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   void addNode(ServiceTopologyNode node, {String? routeId}) {
     nodes.update(
       node.id,
@@ -272,6 +332,11 @@ ServiceTopologyGraph buildServiceTopology({
     );
   }
 
+  /// Purpose: Add edge through the current flow.
+  /// Inputs: `from`, `to`.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   void addEdge(String from, String to, {String? label, String? routeId}) {
     if (from == to || !nodes.containsKey(from) || !nodes.containsKey(to)) {
       return;
@@ -299,11 +364,31 @@ ServiceTopologyGraph buildServiceTopology({
     );
   }
 
+  /// Purpose: Implement the device node id behavior for this file.
+  /// Inputs: `deviceId`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String deviceNodeId(String deviceId) => 'device:$deviceId';
+  /// Purpose: Implement the service node id behavior for this file.
+  /// Inputs: `serviceId`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String serviceNodeId(String serviceId) => 'service:$serviceId';
+  /// Purpose: Implement the endpoint node id behavior for this file.
+  /// Inputs: `serviceId`, `endpointId`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String endpointNodeId(String serviceId, String endpointId) =>
       'endpoint:$serviceId:$endpointId';
 
+  /// Purpose: Add device node through the current flow.
+  /// Inputs: `deviceId`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String addDeviceNode(String deviceId) {
     final device = deviceMap[deviceId];
     final id = deviceNodeId(deviceId);
@@ -320,6 +405,11 @@ ServiceTopologyGraph buildServiceTopology({
     return id;
   }
 
+  /// Purpose: Add remote device node through the current flow.
+  /// Inputs: `deviceId`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String addRemoteDeviceNode(String deviceId, {String? routeId}) {
     final device = deviceMap[deviceId];
     final id = deviceNodeId(deviceId);
@@ -337,6 +427,11 @@ ServiceTopologyGraph buildServiceTopology({
     return id;
   }
 
+  /// Purpose: Add service node through the current flow.
+  /// Inputs: `service`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String addServiceNode(
     ServiceNode service, {
     bool remote = false,
@@ -379,6 +474,11 @@ ServiceTopologyGraph buildServiceTopology({
     return id;
   }
 
+  /// Purpose: Add endpoint node through the current flow.
+  /// Inputs: `service`, `endpoint`.
+  /// Returns: `String`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   String addEndpointNode(
     ServiceNode service,
     ServiceEndpoint endpoint, {
@@ -867,6 +967,11 @@ String serviceRouteMethodLabel(ServiceRouteMethod method) => switch (method) {
 
 List<String> serviceRouteAccessTargets(ServiceRoute route) {
   final targets = <String>[];
+  /// Purpose: Add target through the current flow.
+  /// Inputs: `value`.
+  /// Returns: None.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   void addTarget(Object? value) {
     if (value is! String) return;
     final target = value.trim();
@@ -878,6 +983,11 @@ List<String> serviceRouteAccessTargets(ServiceRoute route) {
     targets.add(target);
   }
 
+  /// Purpose: Add target through the current flow.
+  /// Inputs: `finalUrl`.
+  /// Returns: `dynamic`.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   addTarget(route.finalUrl);
   final extraTargets = route.extraJson[serviceRoutePublicTargetsKey];
   if (extraTargets is Iterable) {

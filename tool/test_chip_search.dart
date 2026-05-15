@@ -5,6 +5,11 @@ const ua =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
     '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/// Purpose: Initialize startup services and launch the app entry point.
+/// Inputs: None.
+/// Returns: `Future<void>`.
+/// Side effects: None.
+/// Notes: Primarily intended for local validation or one-off tooling.
 /// Test all online chip search sources: TechPowerUp, AMD, Intel.
 Future<void> main() async {
   // ======== CPU Tests ========
@@ -38,6 +43,11 @@ Future<void> main() async {
 }
 
 // ──── TechPowerUp CPU ────
+/// Purpose: Test cpu tech power up and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testCpuTechPowerUp(String query) async {
   print('  [TechPowerUp]');
   try {
@@ -56,6 +66,11 @@ Future<void> testCpuTechPowerUp(String query) async {
 }
 
 // ──── TechPowerUp GPU ────
+/// Purpose: Test gpu tech power up and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testGpuTechPowerUp(String query) async {
   print('  [TechPowerUp]');
   try {
@@ -75,6 +90,11 @@ Future<void> testGpuTechPowerUp(String query) async {
 }
 
 // ──── AMD CPU ────
+/// Purpose: Test cpu amd and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testCpuAmd(String query) async {
   print('  [AMD]');
   try {
@@ -99,6 +119,11 @@ Future<void> testCpuAmd(String query) async {
 }
 
 // ──── AMD GPU ────
+/// Purpose: Test gpu amd and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testGpuAmd(String query) async {
   print('  [AMD]');
   try {
@@ -120,6 +145,11 @@ Future<void> testGpuAmd(String query) async {
 }
 
 // ──── Intel CPU (URL slug) ────
+/// Purpose: Test cpu intel and report the outcome.
+/// Inputs: `query`.
+/// Returns: `Future<void>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<void> testCpuIntel(String query) async {
   print('  [Intel]');
   try {
@@ -154,6 +184,11 @@ Future<void> testCpuIntel(String query) async {
 }
 
 // ──── Helpers ────
+/// Purpose: Find and return tpu url that matches the current criteria.
+/// Inputs: `query`, `section`.
+/// Returns: `Future<String?>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<String?> findTpuUrl(String query, String section) async {
   final resp = await http.post(
     Uri.parse('https://www.startpage.com/sp/search'),
@@ -165,6 +200,11 @@ Future<String?> findTpuUrl(String query, String section) async {
       .firstMatch(resp.body)?.group(0);
 }
 
+/// Purpose: Find and return amd url that matches the current criteria.
+/// Inputs: `query`, `category`.
+/// Returns: `Future<String?>`.
+/// Side effects: May perform network I/O.
+/// Notes: Primarily intended for local validation or one-off tooling.
 Future<String?> findAmdUrl(String query, String category) async {
   final resp = await http.post(
     Uri.parse('https://www.startpage.com/sp/search'),

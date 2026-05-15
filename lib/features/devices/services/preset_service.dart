@@ -5,6 +5,11 @@ import 'package:flutter/services.dart';
 import '../models/device.dart';
 
 class PresetService {
+  /// Purpose: Prevent direct instantiation and expose only static members.
+  /// Inputs: None.
+  /// Returns: A new `PresetService._` instance.
+  /// Side effects: Implementation-dependent.
+  /// Notes: Implementations should preserve this contract.
   PresetService._();
 
   static List<CpuInfo>? _cpus;
@@ -12,6 +17,11 @@ class PresetService {
   static List<BrandEntry>? _brands;
   static List<DeviceTemplate>? _templates;
 
+  /// Purpose: Load cpus into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<List<CpuInfo>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<List<CpuInfo>> loadCpus() async {
     if (_cpus != null) return _cpus!;
     final raw = await rootBundle.loadString('assets/presets/cpus.json');
@@ -23,6 +33,11 @@ class PresetService {
     return list;
   }
 
+  /// Purpose: Load gpus into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<List<GpuInfo>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<List<GpuInfo>> loadGpus() async {
     if (_gpus != null) return _gpus!;
     final raw = await rootBundle.loadString('assets/presets/gpus.json');
@@ -34,6 +49,11 @@ class PresetService {
     return list;
   }
 
+  /// Purpose: Load brands into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<List<BrandEntry>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<List<BrandEntry>> loadBrands() async {
     if (_brands != null) return _brands!;
     final raw = await rootBundle.loadString('assets/presets/brands.json');
@@ -45,6 +65,11 @@ class PresetService {
     return list;
   }
 
+  /// Purpose: Load templates into the current workflow or state.
+  /// Inputs: None.
+  /// Returns: `Future<List<DeviceTemplate>>`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   static Future<List<DeviceTemplate>> loadTemplates() async {
     if (_templates != null) return _templates!;
     final raw = await rootBundle.loadString(
@@ -63,8 +88,18 @@ class BrandEntry {
   final String name;
   final String? logo;
 
+  /// Purpose: Create a brand entry instance.
+  /// Inputs: None.
+  /// Returns: A new `BrandEntry` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const BrandEntry({required this.name, this.logo});
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `BrandEntry.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory BrandEntry.fromJson(Map<String, dynamic> json) =>
       BrandEntry(name: json['name'] as String, logo: json['logo'] as String?);
 }
@@ -85,6 +120,11 @@ class DeviceTemplate {
   final String? os;
   final DateTime? releaseDate;
 
+  /// Purpose: Create a device template instance.
+  /// Inputs: `storage`.
+  /// Returns: A new `DeviceTemplate` instance.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   const DeviceTemplate({
     required this.name,
     required this.category,
@@ -102,6 +142,11 @@ class DeviceTemplate {
     this.releaseDate,
   });
 
+  /// Purpose: Provide the internal as string helper for this file.
+  /// Inputs: `value`.
+  /// Returns: `String?`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: Internal helper used within this file only.
   static String? _asString(dynamic value) {
     if (value is String) return value;
     if (value is Map<String, dynamic>) return value['model'] as String?;
@@ -131,6 +176,11 @@ class DeviceTemplate {
         : null,
   );
 
+  /// Purpose: Implement the to device behavior for this file.
+  /// Inputs: None.
+  /// Returns: `Device`.
+  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Notes: None.
   /// Convert to a new Device, pre-filling all template fields.
   /// If [cpuPresets] / [gpuPresets] are provided, matching entries
   /// will be used to fill in full CPU/GPU details automatically.

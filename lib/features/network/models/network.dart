@@ -33,8 +33,18 @@ enum NetworkType {
   wireguard,
   other;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => name;
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static NetworkType fromJson(String value) => NetworkType.values.firstWhere(
     (e) => e.name == value,
     orElse: () => NetworkType.other,
@@ -46,11 +56,21 @@ enum AddressMode {
   dhcp,
   static_;
 
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
   String get jsonValue => switch (this) {
     AddressMode.dhcp => 'dhcp',
     AddressMode.static_ => 'static',
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: The parsed model instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   static AddressMode fromJson(String value) => switch (value) {
     'static' => AddressMode.static_,
     _ => AddressMode.dhcp,
@@ -69,6 +89,11 @@ class Network {
   final DateTime modifiedAt;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a network instance.
+  /// Inputs: `dnsServers`.
+  /// Returns: A new `Network` instance.
+  /// Side effects: None.
+  /// Notes: None.
   Network({
     String? id,
     required this.name,
@@ -82,6 +107,11 @@ class Network {
   }) : id = id ?? const Uuid().v4(),
        modifiedAt = modifiedAt ?? DateTime.now();
 
+  /// Purpose: Create a copy with selected fields replaced.
+  /// Inputs: `clearSubnet`.
+  /// Returns: `Network`.
+  /// Side effects: None.
+  /// Notes: None.
   Network copyWith({
     String? name,
     NetworkType? type,
@@ -107,6 +137,11 @@ class Network {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -119,6 +154,11 @@ class Network {
     'modifiedAt': modifiedAt.toIso8601String(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `Network.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory Network.fromJson(Map<String, dynamic> json) => Network(
     id: json['id'] as String,
     name: json['name'] as String,
@@ -133,6 +173,11 @@ class Network {
     extraJson: unknownJsonFields(json, _networkJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `Network`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   Network mergeUnknownFieldsFrom(Network other, {Network? base}) {
     return Network.fromJson({
       ...toJson(),
@@ -155,6 +200,11 @@ class NetworkDevice {
   final bool isExitNode;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a network device instance.
+  /// Inputs: `addressMode`.
+  /// Returns: A new `NetworkDevice` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const NetworkDevice({
     required this.networkId,
     required this.deviceId,
@@ -165,6 +215,11 @@ class NetworkDevice {
     this.extraJson = const {},
   });
 
+  /// Purpose: Create a copy with selected fields replaced.
+  /// Inputs: `clearIpAddress`.
+  /// Returns: `NetworkDevice`.
+  /// Side effects: None.
+  /// Notes: None.
   NetworkDevice copyWith({
     AddressMode? addressMode,
     String? ipAddress,
@@ -184,6 +239,11 @@ class NetworkDevice {
     );
   }
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'networkId': networkId,
@@ -194,6 +254,11 @@ class NetworkDevice {
     if (isExitNode) 'isExitNode': true,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `NetworkDevice.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory NetworkDevice.fromJson(Map<String, dynamic> json) => NetworkDevice(
     networkId: json['networkId'] as String,
     deviceId: json['deviceId'] as String,
@@ -204,6 +269,11 @@ class NetworkDevice {
     extraJson: unknownJsonFields(json, _networkDeviceJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`.
+  /// Returns: `NetworkDevice`.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   NetworkDevice mergeUnknownFieldsFrom(
     NetworkDevice other, {
     NetworkDevice? base,
@@ -225,18 +295,33 @@ class NetworkData {
   final List<NetworkDevice> assignments;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a network data instance.
+  /// Inputs: `networks`.
+  /// Returns: A new `NetworkData` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const NetworkData({
     this.networks = const [],
     this.assignments = const [],
     this.extraJson = const {},
   });
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'networks': networks.map((n) => n.toJson()).toList(),
     'assignments': assignments.map((a) => a.toJson()).toList(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A new `NetworkData.fromJson` instance.
+  /// Side effects: None.
+  /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory NetworkData.fromJson(Map<String, dynamic> json) => NetworkData(
     networks: (json['networks'] as List<dynamic>? ?? [])
         .map((e) => Network.fromJson(e as Map<String, dynamic>))

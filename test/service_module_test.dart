@@ -11,9 +11,19 @@ import 'package:my_device/shared/services/import_export_service.dart';
 import 'package:my_device/shared/services/local_api_server.dart';
 import 'package:my_device/shared/services/sync_merge.dart';
 
+/// Purpose: Encode the requested value into a serialized form.
+/// Inputs: `json`.
+/// Returns: `String`.
+/// Side effects: None.
+/// Notes: None.
 String encode(Map<String, dynamic> json) =>
     const JsonEncoder.withIndent('  ').convert(json);
 
+/// Purpose: Register the test cases defined in this file.
+/// Inputs: None.
+/// Returns: None.
+/// Side effects: None.
+/// Notes: This serves as the test entry point for the file.
 void main() {
   test('service models preserve unknown fields and docker compose', () {
     final raw = {

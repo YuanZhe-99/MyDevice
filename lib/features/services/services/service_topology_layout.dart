@@ -33,11 +33,11 @@ class ServiceTopologyLayout {
   static const _routingEscape = 18.0;
   static const _routingTrackGap = 22.0;
 
-  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Purpose: Calculate node positions and pre-routed edge paths for a topology graph.
   /// Inputs: `graph`, `routes`, `viewportWidth`.
-  /// Returns: The widget tree for the current state.
-  /// Side effects: Creates UI widgets from the current state.
-  /// Notes: Keep this method cheap because Flutter may call it often.
+  /// Returns: A `ServiceTopologyLayout` with canvas size, node rectangles, ranks, and edge paths.
+  /// Side effects: None.
+  /// Notes: Rows are compacted after semantic placement so unused route lanes do not stretch the canvas.
   static ServiceTopologyLayout build(
     ServiceTopologyGraph graph,
     List<ServiceRoute> routes,
@@ -70,7 +70,8 @@ class ServiceTopologyLayout {
       outgoing,
     );
     final nodeRanks = _nodeRanks(graph, validEdges);
-    final nodeRects = _placeNodes(graph, nodeRanks, desiredRows);
+    final compactRows = _compactDesiredRows(graph, desiredRows);
+    final nodeRects = _placeNodes(graph, nodeRanks, compactRows);
 
     var maxRight = padding;
     var maxBottom = padding;
@@ -92,11 +93,11 @@ class ServiceTopologyLayout {
     );
   }
 
-  /// Purpose: Provide the internal place nodes helper for this file.
+  /// Purpose: Place topology nodes into rank columns and compact rows within each rank.
   /// Inputs: `graph`, `nodeRanks`, `desiredRows`.
-  /// Returns: `Map<String, Rect>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Returns: Node rectangles keyed by node id.
+  /// Side effects: None.
+  /// Notes: Rank-local row compaction removes blank vertical bands that only matter to other ranks.
   static Map<String, Rect> _placeNodes(
     ServiceTopologyGraph graph,
     Map<String, int> nodeRanks,
@@ -143,12 +144,13 @@ class ServiceTopologyLayout {
     const rowStride = nodeHeight + 44;
     for (final rank in orderedRanks) {
       final nodes = ranked[rank] ?? const <ServiceTopologyNode>[];
+      final rankRows = _compactRankRows(nodes, desiredRows);
       final rankWidth = rankWidths[rank] ?? nodeWidth;
       var previousBottom = padding - verticalGap;
       for (final node in nodes) {
         final width = _nodeWidth(node);
         final height = _nodeHeight(node);
-        final targetY = padding + (desiredRows[node.id] ?? 0) * rowStride;
+        final targetY = padding + (rankRows[node.id] ?? 0) * rowStride;
         final y = math.max(targetY, previousBottom + verticalGap);
         final centeredX = (rankX[rank] ?? padding) + (rankWidth - width) / 2;
         rects[node.id] = Rect.fromLTWH(centeredX, y, width, height);
@@ -156,6 +158,88 @@ class ServiceTopologyLayout {
       }
     }
     return rects;
+  }
+
+  /// Purpose: Compact desired rows within one rank before turning them into y positions.
+  /// Inputs: `nodes`, `desiredRows`.
+  /// Returns: A compact row number for each node in the rank.
+  /// Side effects: None.
+  /// Notes: Prevents rows used only in other ranks from leaving tall blank bands in this rank.
+  static Map<String, double> _compactRankRows(
+    List<ServiceTopologyNode> nodes,
+    Map<String, double> desiredRows,
+  ) {
+    final rowMap = _compactRowValueMap(
+      nodes.map((node) => desiredRows[node.id]).whereType<double>(),
+    );
+    return {
+      for (final node in nodes)
+        node.id: _compactRowValue(desiredRows[node.id] ?? 0, rowMap),
+    };
+  }
+
+  /// Purpose: Remove row gaps that are only reserved by routes without visible nodes.
+  /// Inputs: `graph`, `desiredRows`.
+  /// Returns: A compacted desired-row map keyed by node id.
+  /// Side effects: None.
+  /// Notes: Keeps visible row order while preventing stale or shared route rows from stretching the canvas.
+  static Map<String, double> _compactDesiredRows(
+    ServiceTopologyGraph graph,
+    Map<String, double> desiredRows,
+  ) {
+    final usedRows =
+        graph.nodes
+            .map((node) => desiredRows[node.id])
+            .whereType<double>()
+            .toList()
+          ..sort();
+    if (usedRows.isEmpty) return desiredRows;
+
+    final compacted = _compactRowValueMap(usedRows);
+
+    return {
+      for (final entry in desiredRows.entries)
+        entry.key: _compactRowValue(entry.value, compacted),
+    };
+  }
+
+  /// Purpose: Build a compact value map from sparse desired-row values.
+  /// Inputs: `rows`.
+  /// Returns: A raw-row to compact-row map.
+  /// Side effects: None.
+  /// Notes: Large raw gaps collapse while tiny ordering gaps still leave visual breathing room.
+  static Map<double, double> _compactRowValueMap(Iterable<double> rows) {
+    final uniqueRows = rows.toList()..sort();
+    final compactedRows = <double>[];
+    for (final row in uniqueRows) {
+      if (compactedRows.isEmpty ||
+          (row - compactedRows.last).abs() > _rowEpsilon) {
+        compactedRows.add(row);
+      }
+    }
+
+    final compacted = <double, double>{};
+    var nextRow = 0.0;
+    for (var i = 0; i < compactedRows.length; i++) {
+      if (i > 0) {
+        final rawGap = compactedRows[i] - compactedRows[i - 1];
+        nextRow += rawGap.clamp(0.72, 1.0).toDouble();
+      }
+      compacted[compactedRows[i]] = nextRow;
+    }
+    return compacted;
+  }
+
+  /// Purpose: Look up a compacted row value for one raw desired row.
+  /// Inputs: `row`, `rowMap`.
+  /// Returns: The compact row or original value when no match exists.
+  /// Side effects: None.
+  /// Notes: Floating-point row keys are matched with `_rowEpsilon` tolerance.
+  static double _compactRowValue(double row, Map<double, double> rowMap) {
+    for (final entry in rowMap.entries) {
+      if ((row - entry.key).abs() <= _rowEpsilon) return entry.value;
+    }
+    return row;
   }
 
   /// Purpose: Provide the internal node ranks helper for this file.
@@ -477,11 +561,11 @@ class ServiceTopologyLayout {
     return offsets;
   }
 
-  /// Purpose: Provide the internal route edge helper for this file.
-  /// Inputs: None.
-  /// Returns: `List<Offset>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Route one edge between two node rectangles using the best valid anchor pair.
+  /// Inputs: `from`, `to`, anchor offsets, obstacles, prior routed segments, and `size`.
+  /// Returns: A simplified orthogonal polyline, or an empty list when routing fails.
+  /// Side effects: None.
+  /// Notes: Candidate anchor pairs are scored so cleaner routes can beat the first valid path.
   static List<Offset> _routeEdge({
     required Rect from,
     required Rect to,
@@ -520,6 +604,8 @@ class ServiceTopologyLayout {
 
     final fromObstacle = from.inflate(_routingClearance);
     final toObstacle = to.inflate(_routingClearance);
+    List<Offset>? bestPath;
+    var bestScore = double.infinity;
     for (final candidate in candidates) {
       final start = _snapOffset(_anchor(from, candidate.start, fromOffset));
       final end = _snapOffset(_anchor(to, candidate.end, toOffset));
@@ -544,17 +630,27 @@ class ServiceTopologyLayout {
         size: size,
       );
       if (middle == null) continue;
-      return _simplifyPolyline([start, startExit, ...middle.skip(1), end]);
+      final path = _simplifyPolyline([
+        start,
+        startExit,
+        ...middle.skip(1),
+        end,
+      ]);
+      final score = _pathScore(path, routedSegments);
+      if (score < bestScore) {
+        bestScore = score;
+        bestPath = path;
+      }
     }
 
-    return const [];
+    return bestPath ?? const [];
   }
 
-  /// Purpose: Provide the internal route between helper for this file.
-  /// Inputs: None.
-  /// Returns: `List<Offset>?`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Find an obstacle-avoiding orthogonal path between two already-escaped points.
+  /// Inputs: `start`, `goal`, obstacles, prior routed segments, and `size`.
+  /// Returns: A simplified polyline or null when no grid path is available.
+  /// Side effects: None.
+  /// Notes: Routing tracks include node, endpoint, and prior-edge-adjacent lanes for cleaner fan-out.
   static List<Offset>? _routeBetween({
     required Offset start,
     required Offset goal,
@@ -574,6 +670,10 @@ class ServiceTopologyLayout {
     for (final point in [start, goal]) {
       addX(point.dx);
       addY(point.dy);
+      addX(point.dx - _routingTrackGap);
+      addX(point.dx + _routingTrackGap);
+      addY(point.dy - _routingTrackGap);
+      addY(point.dy + _routingTrackGap);
     }
     for (final obstacle in obstacles) {
       addX(obstacle.left - _routingTrackGap);
@@ -582,6 +682,20 @@ class ServiceTopologyLayout {
       addY(obstacle.top - _routingTrackGap);
       addY(obstacle.bottom + _routingTrackGap);
       addY(obstacle.center.dy);
+    }
+    for (final segment in routedSegments) {
+      addX(segment.a.dx);
+      addX(segment.b.dx);
+      addY(segment.a.dy);
+      addY(segment.b.dy);
+      if (segment.vertical) {
+        addX(segment.a.dx - _routingTrackGap);
+        addX(segment.a.dx + _routingTrackGap);
+      }
+      if (segment.horizontal) {
+        addY(segment.a.dy - _routingTrackGap);
+        addY(segment.a.dy + _routingTrackGap);
+      }
     }
 
     final xValues = xs.toList()..sort();
@@ -661,6 +775,29 @@ class ServiceTopologyLayout {
     return _simplifyPolyline(reversed.reversed.toList());
   }
 
+  /// Purpose: Score a routed edge path so competing anchor choices can choose the cleaner route.
+  /// Inputs: `path`, `routedSegments`.
+  /// Returns: A lower score for shorter paths with fewer turns and less congestion.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
+  static double _pathScore(List<Offset> path, List<_Segment> routedSegments) {
+    if (path.length < 2) return double.infinity;
+    var score = 0.0;
+    var previousDirection = 0;
+    for (var i = 1; i < path.length; i++) {
+      final a = path[i - 1];
+      final b = path[i];
+      score += _manhattan(a, b);
+      score += _congestionCost(a, b, routedSegments);
+      final direction = (a.dx - b.dx).abs() < _epsilon ? 2 : 1;
+      if (previousDirection != 0 && previousDirection != direction) {
+        score += 26.0;
+      }
+      previousDirection = direction;
+    }
+    return score;
+  }
+
   /// Purpose: Provide the internal stub blocked helper for this file.
   /// Inputs: `a`, `b`, `obstacles`.
   /// Returns: `bool`.
@@ -697,11 +834,11 @@ class ServiceTopologyLayout {
     return obstacles.any(rect.overlaps);
   }
 
-  /// Purpose: Provide the internal congestion cost helper for this file.
+  /// Purpose: Score how much a candidate segment conflicts with already routed segments.
   /// Inputs: `a`, `b`, `routedSegments`.
   /// Returns: `double`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: None.
+  /// Notes: Hardly penalizes crossings, strongly penalizes reused lanes, and softly penalizes nearby parallel lanes.
   static double _congestionCost(
     Offset a,
     Offset b,
@@ -711,9 +848,11 @@ class ServiceTopologyLayout {
     final candidate = _Segment(a, b);
     for (final segment in routedSegments) {
       if (candidate.sameAxisOverlap(segment)) {
-        cost += 72.0;
+        cost += 180.0;
+      } else if (candidate.nearAxisOverlap(segment, _routingTrackGap * 0.85)) {
+        cost += 58.0;
       } else if (candidate.crosses(segment)) {
-        cost += 24.0;
+        cost += 28.0;
       }
     }
     return cost;
@@ -954,6 +1093,7 @@ class ServiceTopologyLayout {
 enum _TopologySide { left, right }
 
 const _epsilon = 0.01;
+const _rowEpsilon = 0.0001;
 
 class _Segment {
   final Offset a;
@@ -982,6 +1122,23 @@ class _Segment {
       return _rangesOverlap(a.dx, b.dx, other.a.dx, other.b.dx);
     }
     if (vertical && other.vertical && (a.dx - other.a.dx).abs() < _epsilon) {
+      return _rangesOverlap(a.dy, b.dy, other.a.dy, other.b.dy);
+    }
+    return false;
+  }
+
+  /// Purpose: Check whether two parallel segments run close enough to look bundled.
+  /// Inputs: `other`, `distance`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Used as a soft routing penalty, not as an obstacle.
+  bool nearAxisOverlap(_Segment other, double distance) {
+    if (horizontal &&
+        other.horizontal &&
+        (a.dy - other.a.dy).abs() <= distance) {
+      return _rangesOverlap(a.dx, b.dx, other.a.dx, other.b.dx);
+    }
+    if (vertical && other.vertical && (a.dx - other.a.dx).abs() <= distance) {
       return _rangesOverlap(a.dy, b.dy, other.a.dy, other.b.dy);
     }
     return false;

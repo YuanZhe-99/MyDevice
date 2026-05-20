@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `0.5.10+23` in `pubspec.yaml`, `0.5.10.0` for MSIX, and `0.5.10` in `installer.iss`.
+- **Current version:** `0.5.11+24` in `pubspec.yaml`, `0.5.11.0` for MSIX, and `0.5.11` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -153,7 +153,7 @@ Primary tests currently include:
 - `test/sync_unknown_fields_test.dart`
 - `test/widget_test.dart`
 
-The `tool/` directory contains ad hoc validation and source-testing scripts, especially around CPU/GPU scraping and preset data. Prefer focused tests for production behavior and keep tool scripts out of release-critical paths unless the user asks for them.
+The `tool/` directory contains ad hoc validation and source-testing scripts, especially around CPU/GPU scraping and preset data. Prefer focused tests for production behavior and keep tool scripts out of release-critical paths unless the user asks for them. Standard `flutter analyze` excludes `tool/**`; analyze individual tool scripts explicitly only when changing them.
 
 ## Core Architecture
 
@@ -407,3 +407,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.5.8`: Services overview cards and topology actions now reflow by screen width so narrow devices do not squeeze titles vertically; topology edges add corridor offsets for same-column and adjacent-column orthogonal routes to reduce overlapping arrows.
 - `v0.5.9`: Services topology replaces fixed role columns with compressed graph-rank placement, renders endpoints/remote entries as square port chips, and precomputes obstacle-avoiding A* orthogonal edge paths before painting.
 - `v0.5.10`: Services topology shows FRP ingress and public ports as sibling FRP port chips, connects source endpoints to the FRP ingress port, and hardens orthogonal routing so arrows leave and enter nodes perpendicularly while avoiding element interiors.
+- `v0.5.11`: Services topology compacts sparse route rows, improves edge routing track choices and congestion costs, and narrows duplicate public target warnings to cross-device or overlapping-source-port cases.

@@ -45,6 +45,16 @@ void main() {
     },
   );
 
+  test('topology layout compacts sparse route rows within each rank', () {
+    final graph = _buildSparseRouteGraph();
+    final layout = ServiceTopologyLayout.build(graph.graph, graph.routes, 640);
+
+    final appA = layout.nodeRects['service:app-a']!;
+    final appB = layout.nodeRects['service:app-b']!;
+
+    expect((appB.top - appA.top).abs(), lessThan(180));
+  });
+
   test('topology router keeps edge paths out of unrelated node rectangles', () {
     final graph = _buildSampleGraph();
     final layout = ServiceTopologyLayout.build(graph.graph, graph.routes, 480);
@@ -222,6 +232,58 @@ _SampleGraph _buildSampleGraph() {
     services: [jellyfin, vaultwarden, caddy],
     routes: routes,
     devices: devices,
+  );
+  return _SampleGraph(graph, routes);
+}
+
+/// Purpose: Build a graph whose route rows would be sparse without rank-local compaction.
+/// Inputs: None.
+/// Returns: `_SampleGraph`.
+/// Side effects: None.
+/// Notes: Internal helper used within this file only.
+_SampleGraph _buildSparseRouteGraph() {
+  final device = Device(
+    id: 'device-1',
+    name: 'Mac mini',
+    category: DeviceCategory.desktop,
+  );
+  final appA = ServiceNode(
+    id: 'app-a',
+    deviceId: device.id,
+    name: 'App A',
+    endpoints: [ServiceEndpoint(id: 'endpoint-a', port: 8000)],
+  );
+  final appB = ServiceNode(
+    id: 'app-b',
+    deviceId: device.id,
+    name: 'App B',
+    endpoints: [ServiceEndpoint(id: 'endpoint-b', port: 9000)],
+  );
+  final routes = [
+    for (var i = 0; i < 6; i++)
+      ServiceRoute(
+        id: 'app-a-route-$i',
+        name: 'App A Public $i',
+        sourceServiceId: appA.id,
+        sourceEndpointId: 'endpoint-a',
+        accessLevel: ServiceAccessLevel.public,
+        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+        finalUrl: 'https://a$i.example.com',
+      ),
+    ServiceRoute(
+      id: 'app-b-route',
+      name: 'App B Public',
+      sourceServiceId: appB.id,
+      sourceEndpointId: 'endpoint-b',
+      accessLevel: ServiceAccessLevel.public,
+      hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+      finalUrl: 'https://b.example.com',
+    ),
+  ];
+  final graph = buildServiceTopology(
+    services: [appA, appB],
+    routes: routes,
+    devices: [device],
   );
   return _SampleGraph(graph, routes);
 }

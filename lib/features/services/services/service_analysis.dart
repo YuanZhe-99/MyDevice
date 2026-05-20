@@ -254,6 +254,7 @@ List<ServicePortUse> listServicePortUses(List<ServiceNode> services) {
       }
     }
   }
+
   /// Purpose: Implement the sort behavior for this file.
   /// Inputs: `deviceCmp`.
   /// Returns: `dynamic`.
@@ -370,12 +371,14 @@ ServiceTopologyGraph buildServiceTopology({
   /// Side effects: May read or mutate application state, storage, or service resources.
   /// Notes: None.
   String deviceNodeId(String deviceId) => 'device:$deviceId';
+
   /// Purpose: Implement the service node id behavior for this file.
   /// Inputs: `serviceId`.
   /// Returns: `String`.
   /// Side effects: May read or mutate application state, storage, or service resources.
   /// Notes: None.
   String serviceNodeId(String serviceId) => 'service:$serviceId';
+
   /// Purpose: Implement the endpoint node id behavior for this file.
   /// Inputs: `serviceId`, `endpointId`.
   /// Returns: `String`.
@@ -706,6 +709,11 @@ ServiceTopologyGraph buildServiceTopology({
   return ServiceTopologyGraph(nodes: sortedNodes, edges: edges.values.toList());
 }
 
+/// Purpose: Find service and route references that look broken or ambiguous.
+/// Inputs: `services`, `routes`, `devices`, `networks`.
+/// Returns: A list of warnings for the Services overview.
+/// Side effects: None.
+/// Notes: Duplicate public targets are only ambiguous across devices or overlapping source ports.
 List<ServiceWarning> findServiceReferenceWarnings({
   required List<ServiceNode> services,
   required List<ServiceRoute> routes,
@@ -714,6 +722,7 @@ List<ServiceWarning> findServiceReferenceWarnings({
 }) {
   final warnings = <ServiceWarning>[];
   final deviceMap = {for (final d in devices) d.id: d};
+  final serviceMap = {for (final service in services) service.id: service};
   final networkIds = networks.map((n) => n.id).toSet();
 
   for (final service in services) {
@@ -742,9 +751,7 @@ List<ServiceWarning> findServiceReferenceWarnings({
 
   final finalUrls = <String, List<ServiceRoute>>{};
   for (final route in routes) {
-    final source = services
-        .where((s) => s.id == route.sourceServiceId)
-        .firstOrNull;
+    final source = serviceMap[route.sourceServiceId];
     if (source == null) {
       warnings.add(
         ServiceWarning(ServiceWarningKind.missingSourceService, route.name),
@@ -801,12 +808,16 @@ List<ServiceWarning> findServiceReferenceWarnings({
   }
 
   for (final entry in finalUrls.entries) {
-    if (entry.value.length > 1) {
+    final conflictingRoutes = _conflictingPublicTargetRoutes(
+      entry.value,
+      serviceMap,
+    );
+    if (conflictingRoutes.length > 1) {
       warnings.add(
         ServiceWarning(
           ServiceWarningKind.duplicateFinalUrl,
           entry.key,
-          detail: entry.value.map((route) => route.name).join(', '),
+          detail: conflictingRoutes.map((route) => route.name).join(', '),
         ),
       );
     }
@@ -824,6 +835,84 @@ String normalizedBindAddress(String? bindAddress) {
 }
 
 bool _bindsOverlap(String a, String b) => a == '*' || b == '*' || a == b;
+
+/// Purpose: Return only routes that make a shared public target ambiguous.
+/// Inputs: `routes`, `serviceMap`.
+/// Returns: Routes involved in at least one duplicate-target conflict.
+/// Side effects: None.
+/// Notes: Same-device routes with clearly different source ports can share a public hostname.
+List<ServiceRoute> _conflictingPublicTargetRoutes(
+  List<ServiceRoute> routes,
+  Map<String, ServiceNode> serviceMap,
+) {
+  final conflicting = <ServiceRoute>{};
+  for (var i = 0; i < routes.length; i++) {
+    for (var j = i + 1; j < routes.length; j++) {
+      if (_publicTargetRoutesConflict(routes[i], routes[j], serviceMap)) {
+        conflicting.add(routes[i]);
+        conflicting.add(routes[j]);
+      }
+    }
+  }
+  return [
+    for (final route in routes)
+      if (conflicting.contains(route)) route,
+  ];
+}
+
+/// Purpose: Decide whether two routes sharing a public target should warn.
+/// Inputs: `a`, `b`, `serviceMap`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Unknown source services or ports are treated conservatively as ambiguous.
+bool _publicTargetRoutesConflict(
+  ServiceRoute a,
+  ServiceRoute b,
+  Map<String, ServiceNode> serviceMap,
+) {
+  final aService = serviceMap[a.sourceServiceId];
+  final bService = serviceMap[b.sourceServiceId];
+  if (aService == null || bService == null) return true;
+  if (aService.deviceId != bService.deviceId) return true;
+
+  final aEndpoint = _sourceEndpointForDuplicateTargetCheck(aService, a);
+  final bEndpoint = _sourceEndpointForDuplicateTargetCheck(bService, b);
+  if (aEndpoint == null || bEndpoint == null) return true;
+  return _endpointPortsOverlap(aEndpoint, bEndpoint);
+}
+
+/// Purpose: Resolve the source endpoint to use when checking duplicate public targets.
+/// Inputs: `service`, `route`.
+/// Returns: The selected endpoint, inferred single endpoint, or null.
+/// Side effects: None.
+/// Notes: A missing endpoint is ambiguous unless the service has exactly one endpoint.
+ServiceEndpoint? _sourceEndpointForDuplicateTargetCheck(
+  ServiceNode service,
+  ServiceRoute route,
+) {
+  final selected = _endpointForRoute(service, route.sourceEndpointId);
+  if (selected != null) return selected;
+  if (route.sourceEndpointId == null && service.endpoints.length == 1) {
+    return service.endpoints.single;
+  }
+  return null;
+}
+
+/// Purpose: Check whether two endpoint port ranges overlap.
+/// Inputs: `a`, `b`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Missing ports are considered overlapping because the target cannot be disambiguated.
+bool _endpointPortsOverlap(ServiceEndpoint a, ServiceEndpoint b) {
+  final aStart = a.port;
+  final bStart = b.port;
+  if (aStart == null || bStart == null) return true;
+  final aEnd = a.portEnd != null && a.portEnd! >= aStart ? a.portEnd! : aStart;
+  final bEnd = b.portEnd != null && b.portEnd! >= bStart ? b.portEnd! : bStart;
+  final maxStart = aStart > bStart ? aStart : bStart;
+  final minEnd = aEnd < bEnd ? aEnd : bEnd;
+  return maxStart <= minEnd;
+}
 
 ServiceTopologyNodeRole _preferTopologyRole(
   ServiceTopologyNodeRole current,
@@ -967,6 +1056,7 @@ String serviceRouteMethodLabel(ServiceRouteMethod method) => switch (method) {
 
 List<String> serviceRouteAccessTargets(ServiceRoute route) {
   final targets = <String>[];
+
   /// Purpose: Add target through the current flow.
   /// Inputs: `value`.
   /// Returns: None.

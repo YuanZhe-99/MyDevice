@@ -252,6 +252,135 @@ void main() {
     },
   );
 
+  test(
+    'duplicate public URL ignores same device with different source ports',
+    () {
+      final services = [
+        ServiceNode(
+          id: 'service-1',
+          deviceId: 'device-1',
+          name: 'Jellyfin',
+          endpoints: [ServiceEndpoint(id: 'endpoint-1', port: 8096)],
+        ),
+        ServiceNode(
+          id: 'service-2',
+          deviceId: 'device-1',
+          name: 'Gitea',
+          endpoints: [ServiceEndpoint(id: 'endpoint-2', port: 59922)],
+        ),
+      ];
+      final routes = [
+        ServiceRoute(
+          id: 'route-1',
+          name: 'Jellyfin Public',
+          sourceServiceId: 'service-1',
+          sourceEndpointId: 'endpoint-1',
+          finalUrl: 'https://cloud.example.com',
+          accessLevel: ServiceAccessLevel.public,
+          hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+        ),
+        ServiceRoute(
+          id: 'route-2',
+          name: 'Gitea Public',
+          sourceServiceId: 'service-2',
+          sourceEndpointId: 'endpoint-2',
+          finalUrl: 'https://cloud.example.com',
+          accessLevel: ServiceAccessLevel.public,
+          hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+        ),
+      ];
+
+      final warnings = findServiceReferenceWarnings(
+        services: services,
+        routes: routes,
+        devices: [
+          Device(
+            id: 'device-1',
+            name: 'Mac mini',
+            category: DeviceCategory.desktop,
+          ),
+        ],
+        networks: const [],
+      );
+
+      expect(
+        warnings.map((warning) => warning.kind),
+        isNot(contains(ServiceWarningKind.duplicateFinalUrl)),
+      );
+    },
+  );
+
+  test('duplicate public URL warns across devices or overlapping ports', () {
+    final services = [
+      ServiceNode(
+        id: 'service-1',
+        deviceId: 'device-1',
+        name: 'App A',
+        endpoints: [ServiceEndpoint(id: 'endpoint-1', port: 443)],
+      ),
+      ServiceNode(
+        id: 'service-2',
+        deviceId: 'device-1',
+        name: 'App B',
+        endpoints: [ServiceEndpoint(id: 'endpoint-2', port: 443)],
+      ),
+      ServiceNode(
+        id: 'service-3',
+        deviceId: 'device-2',
+        name: 'App C',
+        endpoints: [ServiceEndpoint(id: 'endpoint-3', port: 8443)],
+      ),
+    ];
+    final routes = [
+      ServiceRoute(
+        id: 'route-1',
+        name: 'App A Public',
+        sourceServiceId: 'service-1',
+        sourceEndpointId: 'endpoint-1',
+        finalUrl: 'https://shared.example.com',
+        accessLevel: ServiceAccessLevel.public,
+        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+      ),
+      ServiceRoute(
+        id: 'route-2',
+        name: 'App B Public',
+        sourceServiceId: 'service-2',
+        sourceEndpointId: 'endpoint-2',
+        finalUrl: 'https://shared.example.com',
+        accessLevel: ServiceAccessLevel.public,
+        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+      ),
+      ServiceRoute(
+        id: 'route-3',
+        name: 'App C Public',
+        sourceServiceId: 'service-3',
+        sourceEndpointId: 'endpoint-3',
+        finalUrl: 'https://shared.example.com',
+        accessLevel: ServiceAccessLevel.public,
+        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
+      ),
+    ];
+
+    final warnings = findServiceReferenceWarnings(
+      services: services,
+      routes: routes,
+      devices: [
+        Device(
+          id: 'device-1',
+          name: 'Mac mini',
+          category: DeviceCategory.desktop,
+        ),
+        Device(id: 'device-2', name: 'NUC', category: DeviceCategory.desktop),
+      ],
+      networks: const [],
+    );
+
+    expect(
+      warnings.map((warning) => warning.kind),
+      contains(ServiceWarningKind.duplicateFinalUrl),
+    );
+  });
+
   test('service templates include featured entries and compose examples', () {
     final templates = ServiceTemplateService.loadTemplates();
     final jellyfin = templates

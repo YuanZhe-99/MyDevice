@@ -1462,7 +1462,7 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
       widget.devices.where((device) => device.id == id).firstOrNull?.name ?? id;
 }
 
-class _ServiceTopologyView extends StatelessWidget {
+class _ServiceTopologyView extends StatefulWidget {
   final ServiceTopologyGraph graph;
   final List<ServiceNode> services;
   final List<Device> devices;
@@ -1473,12 +1473,13 @@ class _ServiceTopologyView extends StatelessWidget {
   final _TopologyInteractionMode mode;
   final int quarterTurns;
   final GlobalKey? repaintBoundaryKey;
+  final ValueChanged<bool>? onLayoutReadyChanged;
 
   /// Purpose: Create a service topology view instance.
-  /// Inputs: `mode`.
+  /// Inputs: `graph`, service data, callbacks, `mode`, rotation, and optional capture/layout callbacks.
   /// Returns: A new `_ServiceTopologyView` instance.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: None.
+  /// Side effects: None.
+  /// Notes: The associated state object caches expensive topology layouts.
   const _ServiceTopologyView({
     required this.graph,
     required this.services,
@@ -1490,37 +1491,133 @@ class _ServiceTopologyView extends StatelessWidget {
     this.mode = _TopologyInteractionMode.select,
     this.quarterTurns = 0,
     this.repaintBoundaryKey,
+    this.onLayoutReadyChanged,
   });
+
+  /// Purpose: Create the mutable state object for this widget.
+  /// Inputs: None.
+  /// Returns: A new `_ServiceTopologyViewState` instance.
+  /// Side effects: None.
+  /// Notes: The state defers layout work until after the route can paint.
+  @override
+  State<_ServiceTopologyView> createState() => _ServiceTopologyViewState();
+}
+
+class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
+  ServiceTopologyLayout? _layout;
+  _TopologyLayoutRequest? _completedRequest;
+  _TopologyLayoutRequest? _pendingRequest;
+  bool? _reportedLayoutReady;
+  int _layoutGeneration = 0;
 
   /// Purpose: Build the current widget subtree for the active UI state.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
-  /// Side effects: Creates UI widgets from the current state.
-  /// Notes: Keep this method cheap because Flutter may call it often.
+  /// Side effects: Schedules asynchronous layout work when viewport inputs change.
+  /// Notes: Keeps expensive topology layout out of the first synchronous page build.
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final turns = quarterTurns % 4;
+        final turns = widget.quarterTurns % 4;
         final viewportWidth = turns.isOdd && constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : constraints.maxWidth;
-        final layout = ServiceTopologyLayout.build(
-          graph,
-          routes,
-          viewportWidth,
+        final request = _TopologyLayoutRequest(
+          graph: widget.graph,
+          routes: widget.routes,
+          viewportWidth: viewportWidth.round(),
         );
+        final ready = _completedRequest == request && _layout != null;
+        if (!ready) _ensureLayout(request);
+        _reportLayoutReady(ready);
         return ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: ColoredBox(
             color: Theme.of(
               context,
             ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-            child: _buildViewer(context, layout, turns),
+            child: ready
+                ? _buildViewer(context, _layout!, turns)
+                : _buildLoading(),
           ),
         );
       },
     );
+  }
+
+  /// Purpose: Schedule layout computation for the requested topology inputs.
+  /// Inputs: `request`.
+  /// Returns: None.
+  /// Side effects: Updates cached layout state after asynchronous computation finishes.
+  /// Notes: Multiple rebuilds for the same request share one pending computation.
+  void _ensureLayout(_TopologyLayoutRequest request) {
+    if (_pendingRequest == request) return;
+    _pendingRequest = request;
+    final generation = ++_layoutGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _calculateLayout(request, generation);
+    });
+  }
+
+  /// Purpose: Calculate and cache a topology layout for one request.
+  /// Inputs: `request`, `generation`.
+  /// Returns: None.
+  /// Side effects: Updates widget state and triggers a rebuild when still current.
+  /// Notes: Runs after the first frame so the topology page can show immediately.
+  Future<void> _calculateLayout(
+    _TopologyLayoutRequest request,
+    int generation,
+  ) async {
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted ||
+        generation != _layoutGeneration ||
+        _pendingRequest != request) {
+      return;
+    }
+    final layout = ServiceTopologyLayout.build(
+      request.graph,
+      request.routes,
+      request.viewportWidth.toDouble(),
+    );
+    if (!mounted ||
+        generation != _layoutGeneration ||
+        _pendingRequest != request) {
+      return;
+    }
+    setState(() {
+      _layout = layout;
+      _completedRequest = request;
+      _pendingRequest = null;
+    });
+  }
+
+  /// Purpose: Build the loading placeholder shown while topology layout is calculated.
+  /// Inputs: None.
+  /// Returns: A lightweight loading widget.
+  /// Side effects: None.
+  /// Notes: Avoids heavy work in the first route transition frame.
+  Widget _buildLoading() {
+    return const Center(
+      child: SizedBox.square(
+        dimension: 28,
+        child: CircularProgressIndicator(strokeWidth: 2.6),
+      ),
+    );
+  }
+
+  /// Purpose: Report whether the current topology layout can be captured or exported.
+  /// Inputs: `ready`.
+  /// Returns: None.
+  /// Side effects: Calls the parent readiness callback after the current frame.
+  /// Notes: The callback is deferred so build remains side-effect-free.
+  void _reportLayoutReady(bool ready) {
+    if (_reportedLayoutReady == ready) return;
+    _reportedLayoutReady = ready;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onLayoutReadyChanged?.call(ready);
+    });
   }
 
   /// Purpose: Build and return viewer for the current context.
@@ -1540,20 +1637,24 @@ class _ServiceTopologyView extends StatelessWidget {
           Positioned.fill(
             child: CustomPaint(
               painter: _ServiceTopologyEdgePainter(
-                graph: graph,
+                graph: widget.graph,
                 layout: layout,
                 colorScheme: Theme.of(context).colorScheme,
               ),
             ),
           ),
-          for (final node in graph.nodes)
+          for (final node in widget.graph.nodes)
             if (layout.nodeRects[node.id] != null)
               Positioned.fromRect(
                 rect: layout.nodeRects[node.id]!,
                 child: _TopologyNodeCard(
                   node: node,
-                  icon: _iconForTopologyNode(node, services, devices),
-                  onTap: mode == _TopologyInteractionMode.select
+                  icon: _iconForTopologyNode(
+                    node,
+                    widget.services,
+                    widget.devices,
+                  ),
+                  onTap: widget.mode == _TopologyInteractionMode.select
                       ? () => _showNodeDetails(context, node)
                       : null,
                 ),
@@ -1564,10 +1665,10 @@ class _ServiceTopologyView extends StatelessWidget {
     if (turns != 0) {
       canvas = RotatedBox(quarterTurns: turns, child: canvas);
     }
-    if (repaintBoundaryKey != null) {
-      canvas = RepaintBoundary(key: repaintBoundaryKey, child: canvas);
+    if (widget.repaintBoundaryKey != null) {
+      canvas = RepaintBoundary(key: widget.repaintBoundaryKey, child: canvas);
     }
-    if (mode == _TopologyInteractionMode.select) {
+    if (widget.mode == _TopologyInteractionMode.select) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: SingleChildScrollView(child: canvas),
@@ -1590,11 +1691,15 @@ class _ServiceTopologyView extends StatelessWidget {
   void _showNodeDetails(BuildContext context, ServiceTopologyNode node) {
     final device = node.deviceId == null
         ? null
-        : devices.where((device) => device.id == node.deviceId).firstOrNull;
+        : widget.devices
+              .where((device) => device.id == node.deviceId)
+              .firstOrNull;
     final service = node.serviceId == null
         ? null
-        : services.where((service) => service.id == node.serviceId).firstOrNull;
-    final relatedRoutes = routes
+        : widget.services
+              .where((service) => service.id == node.serviceId)
+              .firstOrNull;
+    final relatedRoutes = widget.routes
         .where(
           (route) =>
               node.routeIds.contains(route.id) ||
@@ -1615,7 +1720,9 @@ class _ServiceTopologyView extends StatelessWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
-                  child: Icon(_iconForTopologyNode(node, services, devices)),
+                  child: Icon(
+                    _iconForTopologyNode(node, widget.services, widget.devices),
+                  ),
                 ),
                 title: Text(node.label),
                 subtitle: Text(
@@ -1652,7 +1759,7 @@ class _ServiceTopologyView extends StatelessWidget {
                     FilledButton.icon(
                       onPressed: () {
                         Navigator.pop(sheetContext);
-                        onEditService(service);
+                        widget.onEditService(service);
                       },
                       icon: const Icon(Icons.edit_outlined),
                       label: Text(AppLocalizations.of(context)!.editService),
@@ -1660,7 +1767,7 @@ class _ServiceTopologyView extends StatelessWidget {
                     OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(sheetContext);
-                        onAddAccess(source: service);
+                        widget.onAddAccess(source: service);
                       },
                       icon: const Icon(Icons.add_link),
                       label: Text(
@@ -1690,7 +1797,7 @@ class _ServiceTopologyView extends StatelessWidget {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       Navigator.pop(sheetContext);
-                      onEditRoute(route);
+                      widget.onEditRoute(route);
                     },
                   ),
               ],
@@ -1700,6 +1807,48 @@ class _ServiceTopologyView extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TopologyLayoutRequest {
+  final ServiceTopologyGraph graph;
+  final List<ServiceRoute> routes;
+  final int viewportWidth;
+
+  /// Purpose: Create a topology layout request cache key.
+  /// Inputs: `graph`, `routes`, `viewportWidth`.
+  /// Returns: A new `_TopologyLayoutRequest` instance.
+  /// Side effects: None.
+  /// Notes: Uses graph and route list identity so mode-only rebuilds reuse the cached layout.
+  const _TopologyLayoutRequest({
+    required this.graph,
+    required this.routes,
+    required this.viewportWidth,
+  });
+
+  /// Purpose: Compare layout request keys for cache reuse.
+  /// Inputs: `other`.
+  /// Returns: Whether both requests describe the same layout inputs.
+  /// Side effects: None.
+  /// Notes: Viewport width is rounded to avoid tiny constraint jitter causing re-layout.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _TopologyLayoutRequest &&
+          identical(other.graph, graph) &&
+          identical(other.routes, routes) &&
+          other.viewportWidth == viewportWidth;
+
+  /// Purpose: Produce a hash for the layout request cache key.
+  /// Inputs: None.
+  /// Returns: An integer hash code.
+  /// Side effects: None.
+  /// Notes: Matches the equality contract for graph identity, route identity, and viewport width.
+  @override
+  int get hashCode => Object.hash(
+    identityHashCode(graph),
+    identityHashCode(routes),
+    viewportWidth,
+  );
 }
 
 class _ServiceTopologyPage extends StatefulWidget {
@@ -1740,6 +1889,7 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
   final _captureKey = GlobalKey();
   int _quarterTurns = 0;
   bool _exporting = false;
+  bool _layoutReady = false;
 
   /// Purpose: Export topology image to an external representation.
   /// Inputs: None.
@@ -1748,6 +1898,12 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
   /// Notes: Internal helper used within this file only.
   Future<void> _exportTopologyImage() async {
     final l10n = AppLocalizations.of(context)!;
+    if (!_layoutReady) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.serviceTopology)));
+      return;
+    }
     setState(() => _exporting = true);
     try {
       await WidgetsBinding.instance.endOfFrame;
@@ -1801,7 +1957,9 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
           ),
           IconButton(
             tooltip: l10n.serviceExportTopologyImage,
-            onPressed: _exporting ? null : _exportTopologyImage,
+            onPressed: _exporting || !_layoutReady
+                ? null
+                : _exportTopologyImage,
             icon: _exporting
                 ? const SizedBox.square(
                     dimension: 18,
@@ -1850,6 +2008,10 @@ class _ServiceTopologyPageState extends State<_ServiceTopologyPage> {
                 mode: _mode,
                 quarterTurns: _quarterTurns,
                 repaintBoundaryKey: _captureKey,
+                onLayoutReadyChanged: (ready) {
+                  if (_layoutReady == ready) return;
+                  setState(() => _layoutReady = ready);
+                },
               ),
             ),
           ),

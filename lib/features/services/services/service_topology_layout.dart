@@ -464,8 +464,8 @@ class ServiceTopologyLayout {
   /// Purpose: Provide the internal route edges helper for this file.
   /// Inputs: `validEdges`, `rects`, `ranks`, `size`.
   /// Returns: `Map<ServiceTopologyEdge, List<Offset>>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: None.
+  /// Notes: Reuses obstacle-derived routing tracks across edge searches.
   static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(
     List<ServiceTopologyEdge> validEdges,
     Map<String, Rect> rects,
@@ -484,11 +484,12 @@ class ServiceTopologyLayout {
       ranks,
       outgoing: false,
     );
-    final routedSegments = <_Segment>[];
-    final paths = <ServiceTopologyEdge, List<Offset>>{};
     final obstacles = [
       for (final rect in rects.values) rect.inflate(_routingClearance),
     ];
+    final gridBase = _RoutingGridBase.fromObstacles(obstacles, size);
+    final routedSegments = <_Segment>[];
+    final paths = <ServiceTopologyEdge, List<Offset>>{};
     final orderedEdges = [...validEdges]
       ..sort((a, b) {
         final spanCmp = _edgeSpan(b, rects).compareTo(_edgeSpan(a, rects));
@@ -508,6 +509,7 @@ class ServiceTopologyLayout {
         fromOffset: outgoingOffsets[edge] ?? 0,
         toOffset: incomingOffsets[edge] ?? 0,
         obstacles: obstacles,
+        gridBase: gridBase,
         routedSegments: routedSegments,
         size: size,
       );
@@ -562,16 +564,17 @@ class ServiceTopologyLayout {
   }
 
   /// Purpose: Route one edge between two node rectangles using the best valid anchor pair.
-  /// Inputs: `from`, `to`, anchor offsets, obstacles, prior routed segments, and `size`.
+  /// Inputs: `from`, `to`, anchor offsets, obstacles, `gridBase`, prior routed segments, and `size`.
   /// Returns: A simplified orthogonal polyline, or an empty list when routing fails.
   /// Side effects: None.
-  /// Notes: Candidate anchor pairs are scored so cleaner routes can beat the first valid path.
+  /// Notes: Fast clear candidates are tried before the A* fallback.
   static List<Offset> _routeEdge({
     required Rect from,
     required Rect to,
     required double fromOffset,
     required double toOffset,
     required List<Rect> obstacles,
+    required _RoutingGridBase gridBase,
     required List<_Segment> routedSegments,
     required Size size,
   }) {
@@ -622,13 +625,22 @@ class ServiceTopologyLayout {
           _stubBlocked(endEntry, end, obstacles, allowed: toObstacle)) {
         continue;
       }
-      final middle = _routeBetween(
-        start: startExit,
-        goal: endEntry,
-        obstacles: obstacles,
-        routedSegments: routedSegments,
-        size: size,
-      );
+      final middle =
+          _fastRouteBetween(
+            start: startExit,
+            goal: endEntry,
+            obstacles: obstacles,
+            routedSegments: routedSegments,
+            size: size,
+          ) ??
+          _routeBetween(
+            start: startExit,
+            goal: endEntry,
+            obstacles: obstacles,
+            gridBase: gridBase,
+            routedSegments: routedSegments,
+            size: size,
+          );
       if (middle == null) continue;
       final path = _simplifyPolyline([
         start,
@@ -646,27 +658,84 @@ class ServiceTopologyLayout {
     return bestPath ?? const [];
   }
 
-  /// Purpose: Find an obstacle-avoiding orthogonal path between two already-escaped points.
+  /// Purpose: Try simple orthogonal edge paths before falling back to A* routing.
   /// Inputs: `start`, `goal`, obstacles, prior routed segments, and `size`.
-  /// Returns: A simplified polyline or null when no grid path is available.
+  /// Returns: A clear simplified polyline, or null when a routed grid search is needed.
   /// Side effects: None.
-  /// Notes: Routing tracks include node, endpoint, and prior-edge-adjacent lanes for cleaner fan-out.
-  static List<Offset>? _routeBetween({
+  /// Notes: Keeps common left-to-right routes cheap while preserving obstacle checks.
+  static List<Offset>? _fastRouteBetween({
     required Offset start,
     required Offset goal,
     required List<Rect> obstacles,
     required List<_Segment> routedSegments,
     required Size size,
   }) {
-    final xs = <double>{};
-    final ys = <double>{};
+    final candidates = <List<Offset>>[];
+
+    void addCandidate(List<Offset> points) {
+      final path = _simplifyPolyline(points.map(_snapOffset).toList());
+      if (path.length < 2 || !_pathClear(path, obstacles)) return;
+      candidates.add(path);
+    }
+
+    if ((start.dx - goal.dx).abs() < _epsilon ||
+        (start.dy - goal.dy).abs() < _epsilon) {
+      addCandidate([start, goal]);
+    }
+
+    addCandidate([start, Offset(goal.dx, start.dy), goal]);
+    addCandidate([start, Offset(start.dx, goal.dy), goal]);
+
+    final midX = _snap((start.dx + goal.dx) / 2);
+    final midY = _snap((start.dy + goal.dy) / 2);
+    addCandidate([start, Offset(midX, start.dy), Offset(midX, goal.dy), goal]);
+    addCandidate([start, Offset(start.dx, midY), Offset(goal.dx, midY), goal]);
+
+    final minX = math.min(start.dx, goal.dx);
+    final maxX = math.max(start.dx, goal.dx);
+    final minY = math.min(start.dy, goal.dy);
+    final maxY = math.max(start.dy, goal.dy);
+    final leftTrack = _snap((minX - _routingTrackGap).clamp(0.0, size.width));
+    final rightTrack = _snap((maxX + _routingTrackGap).clamp(0.0, size.width));
+    final topTrack = _snap((minY - _routingTrackGap).clamp(0.0, size.height));
+    final bottomTrack = _snap(
+      (maxY + _routingTrackGap).clamp(0.0, size.height),
+    );
+    for (final x in {leftTrack, rightTrack}) {
+      addCandidate([start, Offset(x, start.dy), Offset(x, goal.dy), goal]);
+    }
+    for (final y in {topTrack, bottomTrack}) {
+      addCandidate([start, Offset(start.dx, y), Offset(goal.dx, y), goal]);
+    }
+
+    if (candidates.isEmpty) return null;
+    candidates.sort(
+      (a, b) => _pathScore(
+        a,
+        routedSegments,
+      ).compareTo(_pathScore(b, routedSegments)),
+    );
+    return candidates.first;
+  }
+
+  /// Purpose: Find an obstacle-avoiding orthogonal path between two already-escaped points.
+  /// Inputs: `start`, `goal`, obstacles, `gridBase`, prior routed segments, and `size`.
+  /// Returns: A simplified polyline or null when no grid path is available.
+  /// Side effects: None.
+  /// Notes: Reuses obstacle-derived tracks and adds per-edge lanes for cleaner fan-out.
+  static List<Offset>? _routeBetween({
+    required Offset start,
+    required Offset goal,
+    required List<Rect> obstacles,
+    required _RoutingGridBase gridBase,
+    required List<_Segment> routedSegments,
+    required Size size,
+  }) {
+    final xs = {...gridBase.xs};
+    final ys = {...gridBase.ys};
     void addX(double value) => xs.add(_snap(value.clamp(0.0, size.width)));
     void addY(double value) => ys.add(_snap(value.clamp(0.0, size.height)));
 
-    addX(padding / 2);
-    addX(size.width - padding / 2);
-    addY(padding / 2);
-    addY(size.height - padding / 2);
     for (final point in [start, goal]) {
       addX(point.dx);
       addY(point.dy);
@@ -674,14 +743,6 @@ class ServiceTopologyLayout {
       addX(point.dx + _routingTrackGap);
       addY(point.dy - _routingTrackGap);
       addY(point.dy + _routingTrackGap);
-    }
-    for (final obstacle in obstacles) {
-      addX(obstacle.left - _routingTrackGap);
-      addX(obstacle.right + _routingTrackGap);
-      addX(obstacle.center.dx);
-      addY(obstacle.top - _routingTrackGap);
-      addY(obstacle.bottom + _routingTrackGap);
-      addY(obstacle.center.dy);
     }
     for (final segment in routedSegments) {
       addX(segment.a.dx);
@@ -796,6 +857,19 @@ class ServiceTopologyLayout {
       previousDirection = direction;
     }
     return score;
+  }
+
+  /// Purpose: Check whether every segment in a candidate polyline avoids obstacles.
+  /// Inputs: `path`, `obstacles`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Used by the fast router before accepting a non-A* path.
+  static bool _pathClear(List<Offset> path, List<Rect> obstacles) {
+    if (path.length < 2) return false;
+    for (var i = 1; i < path.length; i++) {
+      if (_segmentBlocked(path[i - 1], path[i], obstacles)) return false;
+    }
+    return true;
   }
 
   /// Purpose: Provide the internal stub blocked helper for this file.
@@ -1094,6 +1168,44 @@ enum _TopologySide { left, right }
 
 const _epsilon = 0.01;
 const _rowEpsilon = 0.0001;
+
+class _RoutingGridBase {
+  final Set<double> xs;
+  final Set<double> ys;
+
+  /// Purpose: Create a reusable routing grid base.
+  /// Inputs: `xs`, `ys`.
+  /// Returns: A new `_RoutingGridBase` instance.
+  /// Side effects: None.
+  /// Notes: Stores obstacle-derived tracks shared by all edge A* searches.
+  const _RoutingGridBase({required this.xs, required this.ys});
+
+  /// Purpose: Build shared routing tracks from node obstacles and canvas size.
+  /// Inputs: `obstacles`, `size`.
+  /// Returns: A `_RoutingGridBase` with reusable x and y track sets.
+  /// Side effects: None.
+  /// Notes: Omits obstacle center tracks to keep A* grids smaller.
+  factory _RoutingGridBase.fromObstacles(List<Rect> obstacles, Size size) {
+    final xs = <double>{};
+    final ys = <double>{};
+    void addX(double value) =>
+        xs.add(ServiceTopologyLayout._snap(value.clamp(0.0, size.width)));
+    void addY(double value) =>
+        ys.add(ServiceTopologyLayout._snap(value.clamp(0.0, size.height)));
+
+    addX(ServiceTopologyLayout.padding / 2);
+    addX(size.width - ServiceTopologyLayout.padding / 2);
+    addY(ServiceTopologyLayout.padding / 2);
+    addY(size.height - ServiceTopologyLayout.padding / 2);
+    for (final obstacle in obstacles) {
+      addX(obstacle.left - ServiceTopologyLayout._routingTrackGap);
+      addX(obstacle.right + ServiceTopologyLayout._routingTrackGap);
+      addY(obstacle.top - ServiceTopologyLayout._routingTrackGap);
+      addY(obstacle.bottom + ServiceTopologyLayout._routingTrackGap);
+    }
+    return _RoutingGridBase(xs: xs, ys: ys);
+  }
+}
 
 class _Segment {
   final Offset a;

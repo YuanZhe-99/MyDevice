@@ -63,6 +63,10 @@ jobs:
   # ── Windows x64 installer (full) ──
   windows-x64:
     runs-on: windows-latest
+    env:
+      # Temporary VS/MSVC 18 compatibility until Windows plugin/WinRT
+      # dependencies stop reaching deprecated <experimental/coroutine>.
+      CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
     steps:
       - uses: actions/checkout@v4
 
@@ -90,6 +94,10 @@ jobs:
   # ── Windows ARM64 installer (full, Flutter master — stable has no ARM64 engine yet) ──
   windows-arm64:
     runs-on: windows-11-arm
+    env:
+      # Keep Windows builds aligned while plugin/WinRT dependencies still
+      # include deprecated <experimental/coroutine> on newer MSVC toolchains.
+      CL: /D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS
     steps:
       - uses: actions/checkout@v4
 

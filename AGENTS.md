@@ -320,6 +320,7 @@ Cross-reference rules:
 - The installer creates Start Menu shortcuts. Do not create shortcuts programmatically.
 - App icon: `windows/runner/resources/app_icon.ico`.
 - MSIX configuration is in `pubspec.yaml` under `msix_config` with `internetClient`.
+- GitHub Actions Windows x64 and ARM64 jobs set `CL=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` as a temporary VS/MSVC 18 compatibility workaround for dependency chains that still reach deprecated WinRT `<experimental/coroutine>` headers. Remove it once the Windows plugin/WinRT dependency stack no longer needs the suppression.
 
 ### macOS
 
@@ -335,6 +336,9 @@ Cross-reference rules:
 
 - `CFBundleDisplayName` is `MyDevice!!!!!` in `Info.plist`.
 - HTTPS network access needs no special entitlement.
+- iOS AppIcon assets are generated from `assets/icon/app_icon_ios.png`, `assets/icon/app_icon_ios_dark.png`, and `assets/icon/app_icon_ios_tinted.png`; run `dart run tool/generate_ios_icons.dart`, then `dart run flutter_launcher_icons`, then `dart run tool/validate_ios_icons.dart --clean` when updating them.
+- The iOS default icon source uses an opaque white background, while dark and tinted sources use transparent backgrounds. The tinted source must stay grayscale so iOS can apply the user's selected tint.
+- Do not add native Icon Composer or Liquid Glass Clear-specific assets; rely on the default/dark/tinted fallback set in `flutter_launcher_icons.yaml`.
 - App Store IPA requires signing/provisioning and is not built by CI.
 
 ### Android
@@ -372,6 +376,9 @@ flutter pub get
 flutter analyze
 flutter test
 flutter gen-l10n
+dart run tool/generate_ios_icons.dart
+dart run flutter_launcher_icons
+dart run tool/validate_ios_icons.dart --clean
 flutter build apk --release --no-tree-shake-icons --dart-define=FLAVOR=full
 flutter build appbundle --release --no-tree-shake-icons --dart-define=FLAVOR=store
 flutter build windows --release --dart-define=FLAVOR=full

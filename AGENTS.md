@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `0.5.12+25` in `pubspec.yaml`, `0.5.12.0` for MSIX, and `0.5.12` in `installer.iss`.
+- **Current version:** `0.6.0+26` in `pubspec.yaml`, `0.6.0.0` for MSIX, and `0.6.0` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -150,6 +150,8 @@ lib/
 Primary tests currently include:
 
 - `test/device_finance_test.dart`
+- `test/service_module_test.dart`
+- `test/service_topology_layout_test.dart`
 - `test/sync_unknown_fields_test.dart`
 - `test/widget_test.dart`
 
@@ -250,7 +252,9 @@ These are lazy-loaded and cached.
 ### Desktop API, Tray, and Startup
 
 - `local_api_server.dart`: desktop-only Shelf server, default port `7789`.
-- Endpoints include `GET /ping`, `GET /device/list(?category=)`, `GET /device/search?q=`, `POST /device/add`, and `GET /device/stats`. Device stats include service counts from `service_data.json`.
+- Endpoints include `GET /ping`, `GET /device/list(?category=)`, `GET /device/search?q=`, `POST /device/add`, `GET /device/stats`, `GET /network/list`, `GET /network/search?q=`, `GET /dataset/list`, `GET /dataset/search?q=`, `GET /service/list(?deviceId=&kind=&state=)`, `GET /service/search?q=`, `GET /service/routes`, and `GET /service/stats`.
+- Device API JSON includes current lifecycle, location, image, screen resolution, purchase/sold price, recurring cost, and computed finance summary fields. The add endpoint accepts these optional fields while preserving the minimal name/category flow.
+- Network, dataset, and service API endpoints are read-only. They expose manually saved inventory data, enriched with linked device/network names where useful, and must not perform discovery, scanning, or operations.
 - CORS is permissive. Basic auth is required when listening on non-localhost and optional on loopback. The server refuses unsafe non-localhost startup without credentials.
 - `tray_service.dart`: system tray, Show/Hide, Quit, minimize-to-tray, close-to-tray, and macOS dock icon visibility through `com.yuanzhe.my_device/dock`.
 - `launch_at_startup` handles desktop auto-start. macOS uses LaunchAtLogin-Modern via Swift Package Manager.
@@ -416,3 +420,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.5.10`: Services topology shows FRP ingress and public ports as sibling FRP port chips, connects source endpoints to the FRP ingress port, and hardens orthogonal routing so arrows leave and enter nodes perpendicularly while avoiding element interiors.
 - `v0.5.11`: Services topology compacts sparse route rows, improves edge routing track choices and congestion costs, and narrows duplicate public target warnings to cross-device or overlapping-source-port cases.
 - `v0.5.12`: Services topology opens faster by deferring and caching full-screen layout work, trying fast clear orthogonal routes before A* routing, and reusing obstacle-derived routing tracks.
+- `v0.6.0`: Local API refresh adds lifecycle/finance/device detail fields, read-only network/dataset/service endpoints, richer cross-module stats, service route export over the API, and updated AstrBot integration coverage.

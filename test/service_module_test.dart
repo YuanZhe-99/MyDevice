@@ -397,7 +397,7 @@ void main() {
     expect(cloudflared.dockerCompose, contains('cloudflared'));
   });
 
-  test('local API stats can include service summary shape', () {
+  test('local API stats can include cross-module summary shape', () {
     final stats = LocalApiServer.buildStatsJson(
       devices: [
         Device(
@@ -416,10 +416,235 @@ void main() {
           sourceServiceId: 'service-1',
         ),
       ],
+      networks: [
+        Network(id: 'network-1', name: 'Home LAN', type: NetworkType.lan),
+      ],
+      assignments: const [
+        NetworkDevice(
+          networkId: 'network-1',
+          deviceId: 'device-1',
+          ipAddress: '192.168.1.10',
+        ),
+      ],
+      datasets: [
+        DataSet(
+          id: 'dataset-1',
+          name: 'Media',
+          emoji: '🎞️',
+          storageLinks: const [
+            DataSetStorageLink(deviceId: 'device-1', storageIndices: [0]),
+          ],
+        ),
+      ],
     );
 
     expect(stats['total'], 1);
-    expect(stats['services'], {'total': 1, 'routes': 1, 'devices': 1});
+    expect(stats['byLifecycle'], containsPair('inService', 1));
+    expect(stats['services'], containsPair('total', 1));
+    expect(stats['services'], containsPair('routes', 1));
+    expect(stats['services'], containsPair('devices', 1));
+    expect(stats['networks'], containsPair('total', 1));
+    expect(stats['networks'], containsPair('assignments', 1));
+    expect(stats['datasets'], containsPair('total', 1));
+    expect(stats['datasets'], containsPair('storageLinks', 1));
+  });
+
+  test('local API serializes device lifecycle finance and search fields', () {
+    final device = Device(
+      id: 'device-1',
+      name: 'Mac mini',
+      category: DeviceCategory.desktop,
+      imagePath: 'images/mac.png',
+      brand: 'Apple',
+      model: 'M4',
+      serialNumber: 'SERIAL-1',
+      cpu: const CpuInfo(model: 'Apple M4', architecture: 'arm64'),
+      gpu: const GpuInfo(model: 'M4 GPU', architecture: 'Apple'),
+      ram: '24 GB',
+      storage: const [
+        StorageInfo(
+          capacity: '1 TB',
+          type: StorageType.ssd,
+          interface_: StorageInterface.m2Nvme,
+          brand: 'Apple',
+          serialNumber: 'SSD-1',
+        ),
+      ],
+      screenResolutionW: 3840,
+      screenResolutionH: 2160,
+      locationName: 'Desk',
+      latitude: 35.0,
+      longitude: 139.0,
+      purchaseDate: DateTime(2026, 1, 1),
+      acquisitionType: DeviceAcquisitionType.purchasedWithSubscription,
+      purchasePrice: MoneyValue(
+        amount: 1000,
+        currency: 'USD',
+        defaultCurrency: 'USD',
+        convertedAmount: 1000,
+        exchangeRate: 1,
+        autoRate: false,
+      ),
+      recurringCosts: [
+        DeviceRecurringCost(
+          kind: RecurringCostKind.subscription,
+          name: 'AppleCare',
+          price: MoneyValue(
+            amount: 10,
+            currency: 'USD',
+            defaultCurrency: 'USD',
+            convertedAmount: 10,
+            exchangeRate: 1,
+            autoRate: false,
+          ),
+        ),
+      ],
+    );
+
+    final json = LocalApiServer.deviceToJson(device);
+    expect(json['imagePath'], 'images/mac.png');
+    expect(json['screenResolutionW'], 3840);
+    expect(json['latitude'], 35.0);
+    expect(json['acquisitionType'], 'purchasedWithSubscription');
+    expect(json['lifecycleStatus'], 'inService');
+    expect(json['purchasePrice'], isA<Map<String, dynamic>>());
+    expect(json['recurringCosts'], hasLength(1));
+    expect(json['finance'], containsPair('hasFinancialData', true));
+
+    final matches = LocalApiServer.filterDevicesForSearch(
+      devices: [device],
+      query: 'SSD-1',
+    );
+    expect(matches.single.id, device.id);
+  });
+
+  test('local API serializes and filters networks datasets and services', () {
+    final device = Device(
+      id: 'device-1',
+      name: 'Mac mini',
+      category: DeviceCategory.desktop,
+      storage: const [
+        StorageInfo(capacity: '2 TB', type: StorageType.ssd, brand: 'Samsung'),
+      ],
+    );
+    final network = Network(
+      id: 'network-1',
+      name: 'Tailnet',
+      type: NetworkType.tailscale,
+      subnet: '100.64.0.0/10',
+    );
+    const assignment = NetworkDevice(
+      networkId: 'network-1',
+      deviceId: 'device-1',
+      hostname: 'mac-mini',
+      ipAddress: '100.64.1.2',
+    );
+    final dataset = DataSet(
+      id: 'dataset-1',
+      name: 'Backups',
+      emoji: '💾',
+      storageLinks: const [
+        DataSetStorageLink(deviceId: 'device-1', storageIndices: [0]),
+      ],
+    );
+    final service = ServiceNode(
+      id: 'service-1',
+      deviceId: 'device-1',
+      name: 'Gitea',
+      kind: ServiceKind.git,
+      runtime: ServiceRuntime.compose,
+      endpoints: [
+        ServiceEndpoint(
+          id: 'endpoint-1',
+          label: 'Web',
+          protocol: ServiceProtocol.http,
+          port: 3000,
+          networkId: 'network-1',
+        ),
+      ],
+      tags: const ['git'],
+    );
+    final route = ServiceRoute(
+      id: 'route-1',
+      name: 'Gitea public',
+      sourceServiceId: 'service-1',
+      sourceEndpointId: 'endpoint-1',
+      finalUrl: 'https://git.example.com',
+      extraJson: const {
+        'publicTargets': ['https://git.example.com', 'git.example.com'],
+      },
+    );
+
+    final networks = LocalApiServer.buildNetworkListJson(
+      networks: [network],
+      assignments: const [assignment],
+      devices: [device],
+    );
+    expect(networks.single['assignments'], hasLength(1));
+    expect(
+      (networks.single['assignments'] as List).single,
+      containsPair('deviceName', 'Mac mini'),
+    );
+    expect(
+      LocalApiServer.filterNetworksForSearch(
+        networks: [network],
+        assignments: const [assignment],
+        devices: [device],
+        query: 'mac-mini',
+      ),
+      hasLength(1),
+    );
+
+    final datasets = LocalApiServer.buildDataSetListJson(
+      datasets: [dataset],
+      devices: [device],
+    );
+    final storageLinks = datasets.single['storageLinks'] as List<dynamic>;
+    expect(storageLinks.single, containsPair('deviceName', 'Mac mini'));
+    expect(
+      LocalApiServer.filterDataSetsForSearch(
+        datasets: [dataset],
+        devices: [device],
+        query: 'Samsung',
+      ),
+      hasLength(1),
+    );
+
+    final services = LocalApiServer.buildServiceListJson(
+      services: [service],
+      devices: [device],
+      networks: [network],
+    );
+    expect(services.single, containsPair('deviceName', 'Mac mini'));
+    expect(
+      ((services.single['endpoints'] as List<dynamic>).single
+          as Map<String, dynamic>),
+      containsPair('networkName', 'Tailnet'),
+    );
+    expect(
+      LocalApiServer.filterServicesForSearch(
+        services: [service],
+        devices: [device],
+        networks: [network],
+        query: '3000',
+      ),
+      hasLength(1),
+    );
+
+    final routes = LocalApiServer.buildServiceRouteListJson(
+      routes: [route],
+      services: [service],
+      devices: [device],
+    );
+    expect(routes.single, containsPair('sourceServiceName', 'Gitea'));
+    expect(routes.single['publicTargets'], hasLength(2));
+    expect(
+      LocalApiServer.buildServiceStatsJson(
+        services: [service],
+        routes: [route],
+      ),
+      containsPair('publicTargets', 2),
+    );
   });
 
   test('markdown export includes services routes and public targets', () {

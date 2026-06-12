@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `0.6.0+26` in `pubspec.yaml`, `0.6.0.0` for MSIX, and `0.6.0` in `installer.iss`.
+- **Current version:** `1.0.0+27` in `pubspec.yaml`, `1.0.0.0` for MSIX, and `1.0.0` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -149,6 +149,7 @@ lib/
 
 Primary tests currently include:
 
+- `test/audit_fixes_test.dart` (identical-content conflict suppression, UTC timestamps)
 - `test/device_finance_test.dart`
 - `test/service_module_test.dart`
 - `test/service_topology_layout_test.dart`
@@ -166,7 +167,7 @@ The `tool/` directory contains ad hoc validation and source-testing scripts, esp
 - File I/O should go through `DeviceStorage.getAppDir()` so custom storage paths work.
 - JSON output is pretty-printed with `JsonEncoder.withIndent('  ')`.
 - Optional null/empty fields are usually omitted from JSON using conditional map entries.
-- Model timestamps use `DateTime.now()` local time.
+- Model `modifiedAt` timestamps use `DateTime.now().toUtc()`. Local-time `modifiedAt` values break sync conflict detection across timezones; old data written in local time stays parse-compatible but new writes must be UTC.
 - Preserve unknown JSON fields with the existing `extraJson` pattern so older versions do not delete newer fields during normal saves or sync merges.
 
 ## Feature Areas
@@ -200,7 +201,7 @@ Dataset data is in `lib/features/datasets/models/dataset.dart`.
 - `DataSet`: `id`, `name`, default emoji, storage links, `modifiedAt`, and unknown JSON fields.
 - `DataSetStorageLink`: `deviceId` plus storage slot indices on that device.
 
-Datasets link to device storage slots by index, so be careful when changing storage list behavior.
+Datasets link to device storage slots by index, so be careful when changing storage list behavior. The device editor tracks each storage row's original slot index and calls `DataSetStorage.remapDeviceStorageLinks()` on save, shifting linked indices when slots are removed/compacted and dropping links whose slots disappeared (changed datasets get a bumped `modifiedAt` so the fix syncs). Any new code path that reorders or removes device storage slots must do the same.
 
 ### Services
 
@@ -255,7 +256,7 @@ These are lazy-loaded and cached.
 - Endpoints include `GET /ping`, `GET /device/list(?category=)`, `GET /device/search?q=`, `POST /device/add`, `GET /device/stats`, `GET /network/list`, `GET /network/search?q=`, `GET /dataset/list`, `GET /dataset/search?q=`, `GET /service/list(?deviceId=&kind=&state=)`, `GET /service/search?q=`, `GET /service/routes`, and `GET /service/stats`.
 - Device API JSON includes current lifecycle, location, image, screen resolution, purchase/sold price, recurring cost, and computed finance summary fields. The add endpoint accepts these optional fields while preserving the minimal name/category flow.
 - Network, dataset, and service API endpoints are read-only. They expose manually saved inventory data, enriched with linked device/network names where useful, and must not perform discovery, scanning, or operations.
-- CORS is permissive. Basic auth is required when listening on non-localhost and optional on loopback. The server refuses unsafe non-localhost startup without credentials.
+- CORS is permissive. When credentials are configured, Basic Auth is required for every request including loopback (permissive CORS would otherwise let any local web page read the API). Without credentials, loopback requests are allowed and the server refuses unsafe non-localhost startup.
 - `tray_service.dart`: system tray, Show/Hide, Quit, minimize-to-tray, close-to-tray, and macOS dock icon visibility through `com.yuanzhe.my_device/dock`.
 - `launch_at_startup` handles desktop auto-start. macOS uses LaunchAtLogin-Modern via Swift Package Manager.
 
@@ -265,15 +266,15 @@ WebDAV sync is per-record three-way merge, not whole-file replacement.
 
 Flow:
 
-1. Download remote JSON.
+1. Download remote JSON with a discriminated result: only HTTP 404 counts as "missing on remote"; any other failure (auth/server/network) records a per-file error and skips that file, so local data is never uploaded over an unreadable remote file.
 2. Load local JSON and `.sync_base/` base snapshots.
-3. Merge per record using `modifiedAt` where available.
+3. Merge per record using `modifiedAt` where available. Records whose serialized content is identical on both sides merge without a conflict.
 4. Auto-resolve when only one side changed.
 5. Detect conflict when the same record changed on both sides after the last sync.
-6. Upload merged data.
-7. Save the new base snapshot.
+6. Upload merged data. Uploads send `If-Match` with the strong ETag captured at download (first uploads send `If-None-Match: *`); HTTP 412 and any other upload failure are recorded as per-file errors and the base snapshot is not saved, so the next sync re-merges instead of silently reporting success.
+7. Save the new base snapshot only after the upload succeeds.
 
-Manual sync uses `autoResolve: false` and shows conflict dialogs. Auto-sync uses `autoResolve: true` and last-writer-wins per record without blocking the UI.
+Manual sync uses `autoResolve: false` and shows conflict dialogs. Auto-sync uses `autoResolve: true` and last-writer-wins per record without blocking the UI. `finalizePendingSync` re-reads the remote per file for an `If-Match` precondition and returns false when any file's remote read or upload fails; failed files keep their base snapshots untouched.
 
 Important sync constraints:
 
@@ -286,6 +287,7 @@ Important sync constraints:
 - `_atomicWrite()` uses tmp-then-rename to avoid corrupting local files.
 - Each data file merge has per-file error handling so one malformed file does not block other files.
 - Local files are re-read after network I/O to detect concurrent user edits during sync.
+- Servers without ETags fall back to unconditional PUTs (previous behavior); weak ETags are never used in `If-Match`.
 - Sync errors and image warnings should be visible in dialogs, not only snackbars.
 
 Auto-sync triggers include app launch, app resume, a 30-second debounce after storage saves, and a 15-minute timer while the app process is alive. Mobile OS suspension may delay timers until resume. Storage-layer `save()` methods should notify auto-sync so non-UI writes are covered.
@@ -421,3 +423,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.5.11`: Services topology compacts sparse route rows, improves edge routing track choices and congestion costs, and narrows duplicate public target warnings to cross-device or overlapping-source-port cases.
 - `v0.5.12`: Services topology opens faster by deferring and caching full-screen layout work, trying fast clear orthogonal routes before A* routing, and reusing obstacle-derived routing tracks.
 - `v0.6.0`: Local API refresh adds lifecycle/finance/device detail fields, read-only network/dataset/service endpoints, richer cross-module stats, service route export over the API, and updated AstrBot integration coverage.
+- `v1.0.0`: Pre-release audit hardening — WebDAV downloads distinguish 404 from errors so transient failures can never overwrite the remote or cascade into cross-device deletions, upload failures (including ETag `If-Match` 412 conflicts) surface as per-file sync errors instead of silent success, conflict-resolution finalize reports failures, identical-content concurrent edits no longer raise conflicts, all `modifiedAt` timestamps are written in UTC, dataset storage links are re-mapped when device storage slots are removed, Basic Auth is enforced on loopback when API credentials are configured, and versions are unified to `1.0.0+27` / MSIX `1.0.0.0` / installer `1.0.0`.

@@ -105,7 +105,7 @@ class Network {
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
-       modifiedAt = modifiedAt ?? DateTime.now();
+       modifiedAt = modifiedAt ?? DateTime.now().toUtc();
 
   /// Purpose: Create a copy with selected fields replaced.
   /// Inputs: `clearSubnet`.
@@ -132,7 +132,7 @@ class Network {
       gateway: clearGateway ? null : (gateway ?? this.gateway),
       dnsServers: dnsServers ?? this.dnsServers,
       notes: clearNotes ? null : (notes ?? this.notes),
-      modifiedAt: modifiedAt ?? DateTime.now(),
+      modifiedAt: modifiedAt ?? DateTime.now().toUtc(),
       extraJson: extraJson,
     );
   }

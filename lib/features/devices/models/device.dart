@@ -731,7 +731,7 @@ class Device {
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
-       modifiedAt = modifiedAt ?? DateTime.now();
+       modifiedAt = modifiedAt ?? DateTime.now().toUtc();
 
   DeviceLifecycleStatus get lifecycleStatus {
     if (isSold) return DeviceLifecycleStatus.sold;
@@ -892,7 +892,7 @@ class Device {
       soldPrice: clearSoldPrice ? null : (soldPrice ?? this.soldPrice),
       recurringCosts: recurringCosts ?? this.recurringCosts,
       notes: clearNotes ? null : (notes ?? this.notes),
-      modifiedAt: modifiedAt ?? DateTime.now(),
+      modifiedAt: modifiedAt ?? DateTime.now().toUtc(),
       extraJson: extraJson,
     );
   }

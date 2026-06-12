@@ -1348,7 +1348,10 @@ class LocalApiServer {
   /// Inputs: None.
   /// Returns: `Middleware`.
   /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. When credentials are
+  /// configured, Basic Auth is required for every request including loopback,
+  /// because permissive CORS would otherwise let any local web page read the
+  /// API. Without credentials only loopback requests are allowed.
   static Middleware _authMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {
@@ -1368,7 +1371,7 @@ class LocalApiServer {
             'authentication required for non-localhost access',
           );
         }
-        if (hasCredentials && !isLoopback) {
+        if (hasCredentials) {
           final authHeader = request.headers['authorization'];
           if (authHeader == null || !_validateBasicAuth(authHeader)) {
             return Response(

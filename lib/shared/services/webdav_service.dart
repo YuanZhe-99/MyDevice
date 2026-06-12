@@ -158,6 +158,52 @@ class PendingSync {
   ];
 }
 
+/// Outcome status of a remote file download attempt.
+enum RemoteFileStatus { found, notFound, error }
+
+/// Discriminated result of a remote file download.
+///
+/// Distinguishes "the file does not exist on the remote" (HTTP 404) from
+/// transport/server failures, because only a true 404 may trigger the
+/// upload-local-as-new sync path. Treating errors as "missing" can overwrite
+/// remote data and cascade into cross-device record deletion.
+class RemoteFile {
+  final RemoteFileStatus status;
+  final String? content;
+  final String? etag;
+  final String? error;
+
+  /// Purpose: Create a found result with downloaded content.
+  /// Inputs: `content`, optional `etag` response header value.
+  /// Returns: A new `RemoteFile` instance with `RemoteFileStatus.found`.
+  /// Side effects: None.
+  /// Notes: None.
+  const RemoteFile.found(String this.content, {this.etag})
+    : status = RemoteFileStatus.found,
+      error = null;
+
+  /// Purpose: Create a not-found result for HTTP 404.
+  /// Inputs: None.
+  /// Returns: A new `RemoteFile` instance with `RemoteFileStatus.notFound`.
+  /// Side effects: None.
+  /// Notes: None.
+  const RemoteFile.notFound()
+    : status = RemoteFileStatus.notFound,
+      content = null,
+      etag = null,
+      error = null;
+
+  /// Purpose: Create an error result for any non-404 failure.
+  /// Inputs: `error` message.
+  /// Returns: A new `RemoteFile` instance with `RemoteFileStatus.error`.
+  /// Side effects: None.
+  /// Notes: None.
+  const RemoteFile.failure(String this.error)
+    : status = RemoteFileStatus.error,
+      content = null,
+      etag = null;
+}
+
 class WebDAVService {
   static const _configFileName = 'webdav_config.json';
   static const _syncBaseDirName = '.sync_base';
@@ -358,15 +404,20 @@ class WebDAVService {
   }
 
   /// Purpose: Provide the internal upload helper for this file.
-  /// Inputs: `config`, `fileName`, `content`.
-  /// Returns: `Future<bool>`.
+  /// Inputs: `config`, `fileName`, `content`, optional `ifMatchEtag`, optional `ifNoneMatchAll`.
+  /// Returns: `Future<String?>` — `null` on success, otherwise an error message.
   /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static Future<bool> _upload(
+  /// Notes: Internal helper used within this file only. When `ifMatchEtag` is set the PUT
+  /// carries an `If-Match` precondition; `ifNoneMatchAll` sends `If-None-Match: *` so a
+  /// first upload cannot overwrite a file created concurrently by another device.
+  /// HTTP 412 means the remote changed during sync and the caller must re-sync.
+  static Future<String?> _upload(
     WebDAVConfig config,
     String fileName,
-    String content,
-  ) async {
+    String content, {
+    String? ifMatchEtag,
+    bool ifNoneMatchAll = false,
+  }) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, fileName));
       final response = await http
@@ -375,31 +426,58 @@ class WebDAVService {
             headers: {
               ..._authHeaders(config),
               'Content-Type': 'application/octet-stream',
+              'If-Match': ?ifMatchEtag,
+              if (ifNoneMatchAll) 'If-None-Match': '*',
             },
             body: utf8.encode(content),
           )
           .timeout(const Duration(seconds: 30));
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (_) {
-      return false;
+      if (response.statusCode == 412) {
+        return 'remote file changed during sync (HTTP 412); run sync again';
+      }
+      if (response.statusCode >= 200 && response.statusCode < 300) return null;
+      return 'HTTP ${response.statusCode}';
+    } catch (e) {
+      return '$e';
     }
   }
 
-  /// Purpose: Provide the internal download helper for this file.
+  /// Purpose: Return [etag] only when it is a strong ETag usable in `If-Match`.
+  /// Inputs: `etag` from a download response, possibly null or weak (`W/...`).
+  /// Returns: `String?` — the strong ETag, or null when absent/weak.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only. Weak ETags must not be
+  /// used in `If-Match` preconditions (RFC 9110 strong comparison).
+  static String? _strongEtag(String? etag) {
+    if (etag == null || etag.startsWith('W/')) return null;
+    return etag;
+  }
+
+  /// Purpose: Download a remote data file with a discriminated outcome.
   /// Inputs: `config`, `fileName`.
-  /// Returns: `Future<String?>`.
+  /// Returns: `Future<RemoteFile>` — found with content/ETag, notFound for HTTP 404,
+  /// or error for any other failure.
   /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static Future<String?> _download(WebDAVConfig config, String fileName) async {
+  /// Notes: Internal helper used within this file only. Callers must treat only
+  /// `notFound` as "file missing on remote"; an `error` outcome (auth/server/network
+  /// failure) must abort that file's sync so local data is never uploaded over an
+  /// unreadable remote file.
+  static Future<RemoteFile> _download(
+    WebDAVConfig config,
+    String fileName,
+  ) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, fileName));
       final response = await http
           .get(url, headers: _authHeaders(config))
           .timeout(const Duration(seconds: 30));
-      if (response.statusCode == 200) return response.body;
-      return null;
-    } catch (_) {
-      return null;
+      if (response.statusCode == 200) {
+        return RemoteFile.found(response.body, etag: response.headers['etag']);
+      }
+      if (response.statusCode == 404) return const RemoteFile.notFound();
+      return RemoteFile.failure('HTTP ${response.statusCode}');
+    } catch (e) {
+      return RemoteFile.failure('$e');
     }
   }
 
@@ -641,7 +719,17 @@ class WebDAVService {
       for (final name in _dataFileNames) {
         final localFile = File('${appDir.path}/$name');
         final localExists = await localFile.exists();
-        final remoteRaw = await _download(config, name);
+        final remote = await _download(config, name);
+
+        // Any non-404 download failure aborts this file's sync; treating it
+        // as "missing on remote" would overwrite remote data and can cascade
+        // into cross-device record deletion on the next merge.
+        if (remote.status == RemoteFileStatus.error) {
+          perFileErrors.add('$name: download failed: ${remote.error}');
+          continue;
+        }
+        final remoteRaw = remote.content;
+        final remoteEtag = _strongEtag(remote.etag);
 
         if (!localExists && remoteRaw == null) continue;
 
@@ -657,8 +745,19 @@ class WebDAVService {
         if (name == 'device_data.json') localDeviceJson = localRaw;
 
         if (localExists && remoteRaw == null) {
-          final uploaded = await _upload(config, name, localRaw);
-          if (uploaded) await _saveBase(name, localRaw);
+          // Only on local → upload as new; If-None-Match: * prevents
+          // overwriting a file another device created concurrently.
+          final uploadError = await _upload(
+            config,
+            name,
+            localRaw,
+            ifNoneMatchAll: true,
+          );
+          if (uploadError == null) {
+            await _saveBase(name, localRaw);
+          } else {
+            perFileErrors.add('$name: upload failed: $uploadError');
+          }
           continue;
         }
 
@@ -704,11 +803,20 @@ class WebDAVService {
                   '  ',
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
-                final uploaded = await _upload(config, name, mergedJson);
-                if (uploaded) await _saveBase(name, mergedJson);
+                _localDataChanged = true;
+                final uploadError = await _upload(
+                  config,
+                  name,
+                  mergedJson,
+                  ifMatchEtag: remoteEtag,
+                );
+                if (uploadError == null) {
+                  await _saveBase(name, mergedJson);
+                } else {
+                  perFileErrors.add('$name: upload failed: $uploadError');
+                }
                 // Use merged result for image reference computation.
                 localDeviceJson = mergedJson;
-                _localDataChanged = true;
               }
             case 'network_data.json':
               var result = mergeNetworkData(
@@ -740,9 +848,18 @@ class WebDAVService {
                   '  ',
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
-                final uploaded = await _upload(config, name, mergedJson);
-                if (uploaded) await _saveBase(name, mergedJson);
                 _localDataChanged = true;
+                final uploadError = await _upload(
+                  config,
+                  name,
+                  mergedJson,
+                  ifMatchEtag: remoteEtag,
+                );
+                if (uploadError == null) {
+                  await _saveBase(name, mergedJson);
+                } else {
+                  perFileErrors.add('$name: upload failed: $uploadError');
+                }
               }
             case 'dataset_data.json':
               var result = mergeDataSetData(
@@ -773,9 +890,18 @@ class WebDAVService {
                   '  ',
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
-                final uploaded = await _upload(config, name, mergedJson);
-                if (uploaded) await _saveBase(name, mergedJson);
                 _localDataChanged = true;
+                final uploadError = await _upload(
+                  config,
+                  name,
+                  mergedJson,
+                  ifMatchEtag: remoteEtag,
+                );
+                if (uploadError == null) {
+                  await _saveBase(name, mergedJson);
+                } else {
+                  perFileErrors.add('$name: upload failed: $uploadError');
+                }
               }
             case 'service_data.json':
               var result = mergeServiceData(
@@ -807,9 +933,18 @@ class WebDAVService {
                   '  ',
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
-                final uploaded = await _upload(config, name, mergedJson);
-                if (uploaded) await _saveBase(name, mergedJson);
                 _localDataChanged = true;
+                final uploadError = await _upload(
+                  config,
+                  name,
+                  mergedJson,
+                  ifMatchEtag: remoteEtag,
+                );
+                if (uploadError == null) {
+                  await _saveBase(name, mergedJson);
+                } else {
+                  perFileErrors.add('$name: upload failed: $uploadError');
+                }
               }
           }
         } catch (e) {
@@ -859,19 +994,50 @@ class WebDAVService {
     }
   }
 
+  /// Purpose: Write a resolved data file locally, upload it, and save the base.
+  /// Inputs: `config`, `fileName`, `mergedJson` (serialized resolved data).
+  /// Returns: `Future<bool>` — false when the remote read or upload fails.
+  /// Side effects: Downloads the current remote file for an If-Match precondition,
+  /// writes the local file, uploads, saves the base snapshot.
+  /// Notes: Internal helper used within this file only. A remote download error
+  /// aborts the file so resolutions are never uploaded over an unreadable remote;
+  /// an upload failure (including HTTP 412 when the remote changed since download)
+  /// leaves the base snapshot untouched so the next sync re-merges.
+  static Future<bool> _finalizeFile(
+    WebDAVConfig config,
+    String fileName,
+    String mergedJson,
+  ) async {
+    final appDir = await DeviceStorage.getAppDir();
+    final remote = await _download(config, fileName);
+    if (remote.status == RemoteFileStatus.error) return false;
+    await _atomicWrite(File('${appDir.path}/$fileName'), mergedJson);
+    _localDataChanged = true;
+    final uploadError = await _upload(
+      config,
+      fileName,
+      mergedJson,
+      ifMatchEtag: _strongEtag(remote.etag),
+      ifNoneMatchAll: remote.status == RemoteFileStatus.notFound,
+    );
+    if (uploadError != null) return false;
+    await _saveBase(fileName, mergedJson);
+    return true;
+  }
+
   /// Purpose: Implement the finalize pending sync behavior for this file.
   /// Inputs: `config`, `pending`, `resolutions`.
-  /// Returns: `Future<bool>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  /// Finalize sync by applying user's conflict resolutions.
+  /// Returns: `Future<bool>` — false when any file's remote read or upload fails.
+  /// Side effects: Performs local file-system and network I/O.
+  /// Notes: Finalize sync by applying user's conflict resolutions. Failed files
+  /// keep their base snapshots untouched so the next sync re-merges them.
   static Future<bool> finalizePendingSync(
     WebDAVConfig config,
     PendingSync pending,
     Map<String, dynamic> resolutions,
   ) async {
     try {
-      final appDir = await DeviceStorage.getAppDir();
+      var allOk = true;
 
       if (pending.deviceMerge != null) {
         final deviceResolutions = <String, Device>{};
@@ -885,9 +1051,8 @@ class WebDAVService {
         final mergedJson = const JsonEncoder.withIndent(
           '  ',
         ).convert(mergedData.toJson());
-        await _atomicWrite(File('${appDir.path}/device_data.json'), mergedJson);
-        final uploaded = await _upload(config, 'device_data.json', mergedJson);
-        if (uploaded) await _saveBase('device_data.json', mergedJson);
+        final ok = await _finalizeFile(config, 'device_data.json', mergedJson);
+        allOk = allOk && ok;
       }
 
       if (pending.networkMerge != null) {
@@ -902,12 +1067,8 @@ class WebDAVService {
         final mergedJson = const JsonEncoder.withIndent(
           '  ',
         ).convert(mergedData.toJson());
-        await _atomicWrite(
-          File('${appDir.path}/network_data.json'),
-          mergedJson,
-        );
-        final uploaded = await _upload(config, 'network_data.json', mergedJson);
-        if (uploaded) await _saveBase('network_data.json', mergedJson);
+        final ok = await _finalizeFile(config, 'network_data.json', mergedJson);
+        allOk = allOk && ok;
       }
 
       if (pending.dataSetMerge != null) {
@@ -922,12 +1083,8 @@ class WebDAVService {
         final mergedJson = const JsonEncoder.withIndent(
           '  ',
         ).convert(mergedData.toJson());
-        await _atomicWrite(
-          File('${appDir.path}/dataset_data.json'),
-          mergedJson,
-        );
-        final uploaded = await _upload(config, 'dataset_data.json', mergedJson);
-        if (uploaded) await _saveBase('dataset_data.json', mergedJson);
+        final ok = await _finalizeFile(config, 'dataset_data.json', mergedJson);
+        allOk = allOk && ok;
       }
 
       if (pending.serviceMerge != null) {
@@ -935,15 +1092,11 @@ class WebDAVService {
         final mergedJson = const JsonEncoder.withIndent(
           '  ',
         ).convert(mergedData.toJson());
-        await _atomicWrite(
-          File('${appDir.path}/service_data.json'),
-          mergedJson,
-        );
-        final uploaded = await _upload(config, 'service_data.json', mergedJson);
-        if (uploaded) await _saveBase('service_data.json', mergedJson);
+        final ok = await _finalizeFile(config, 'service_data.json', mergedJson);
+        allOk = allOk && ok;
       }
 
-      return true;
+      return allOk;
     } catch (_) {
       return false;
     }

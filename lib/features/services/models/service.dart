@@ -480,7 +480,7 @@ class ServiceNode {
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
-       modifiedAt = modifiedAt ?? DateTime.now();
+       modifiedAt = modifiedAt ?? DateTime.now().toUtc();
 
   ServiceNode copyWith({
     String? deviceId,
@@ -516,7 +516,7 @@ class ServiceNode {
       dockerCompose: clearDockerCompose
           ? null
           : (dockerCompose ?? this.dockerCompose),
-      modifiedAt: modifiedAt ?? DateTime.now(),
+      modifiedAt: modifiedAt ?? DateTime.now().toUtc(),
       extraJson: extraJson,
     );
   }
@@ -770,7 +770,7 @@ class ServiceRoute {
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
-       modifiedAt = modifiedAt ?? DateTime.now();
+       modifiedAt = modifiedAt ?? DateTime.now().toUtc();
 
   /// Purpose: Create a copy with selected fields replaced.
   /// Inputs: `clearSourceEndpointId`.
@@ -801,7 +801,7 @@ class ServiceRoute {
       finalUrl: clearFinalUrl ? null : (finalUrl ?? this.finalUrl),
       accessLevel: accessLevel ?? this.accessLevel,
       notes: clearNotes ? null : (notes ?? this.notes),
-      modifiedAt: modifiedAt ?? DateTime.now(),
+      modifiedAt: modifiedAt ?? DateTime.now().toUtc(),
       extraJson: extraJson,
     );
   }

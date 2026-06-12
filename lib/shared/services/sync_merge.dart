@@ -42,10 +42,12 @@ class RecordMergeResult<T> {
 }
 
 /// Purpose: Implement the merge records behavior for this file.
-/// Inputs: `autoResolve`.
+/// Inputs: `autoResolve`, optional `serialize`.
 /// Returns: `RecordMergeResult<T>`.
 /// Side effects: May read or mutate application state, storage, or service resources.
-/// Notes: None.
+/// Notes: When `serialize` is provided, records whose serialized content is
+/// identical are merged without raising a conflict even if both sides bumped
+/// `modifiedAt` (e.g. after a stale base caused by an earlier failed upload).
 /// Three-way merge for a list of records by ID.
 ///
 /// Uses [base] (last synced version) to detect which side changed:
@@ -65,6 +67,7 @@ RecordMergeResult<T> mergeRecords<T>({
   required String Function(T) getDisplayName,
   T Function(T primary, T secondary, T? base)? mergeUnknownFields,
   bool autoResolve = false,
+  String Function(T)? serialize,
 }) {
   final localMap = {for (final r in local) getId(r): r};
   final remoteMap = {for (final r in remote) getId(r): r};
@@ -91,7 +94,10 @@ RecordMergeResult<T> mergeRecords<T>({
         final remoteChanged = getModifiedAt(r).isAfter(getModifiedAt(b));
 
         if (localChanged && remoteChanged) {
-          if (autoResolve) {
+          if (serialize != null && serialize(l) == serialize(r)) {
+            // Identical content on both sides is not a real conflict.
+            merged.add(preserveUnknown(l, r, b));
+          } else if (autoResolve) {
             final primary = getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r;
             final secondary = identical(primary, l) ? r : l;
             merged.add(preserveUnknown(primary, secondary, b));
@@ -288,6 +294,7 @@ DeviceMergeResult mergeDeviceData(
     mergeUnknownFields: (primary, secondary, base) =>
         primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
+    serialize: (x) => jsonEncode(x.toJson()),
   );
 
   return DeviceMergeResult(
@@ -378,6 +385,7 @@ NetworkMergeResult mergeNetworkData(
     mergeUnknownFields: (primary, secondary, base) =>
         primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
+    serialize: (x) => jsonEncode(x.toJson()),
   );
 
   final assignmentResult = mergeAssignments(
@@ -469,6 +477,7 @@ DataSetMergeResult mergeDataSetData(
     mergeUnknownFields: (primary, secondary, base) =>
         primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
+    serialize: (x) => jsonEncode(x.toJson()),
   );
 
   return DataSetMergeResult(
@@ -580,6 +589,7 @@ ServiceMergeResult mergeServiceData(
     mergeUnknownFields: (primary, secondary, base) =>
         primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
+    serialize: (x) => jsonEncode(x.toJson()),
   );
 
   final routeResult = mergeRecords<ServiceRoute>(
@@ -592,6 +602,7 @@ ServiceMergeResult mergeServiceData(
     mergeUnknownFields: (primary, secondary, base) =>
         primary.mergeUnknownFieldsFrom(secondary, base: base),
     autoResolve: autoResolve,
+    serialize: (x) => jsonEncode(x.toJson()),
   );
 
   return ServiceMergeResult(

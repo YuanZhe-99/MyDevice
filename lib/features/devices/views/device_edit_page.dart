@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../app/flavor.dart';
+import '../../datasets/services/dataset_storage.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_service.dart';
 import '../../../shared/widgets/map_picker_page.dart';
@@ -95,6 +96,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   late List<StorageInterface?> _storageInterfaces;
   late List<TextEditingController> _storageBrandCtrls;
   late List<TextEditingController> _storageSerialCtrls;
+
+  /// Original storage slot index per editor row (null for rows added in this
+  /// session); used to re-map positional dataset storage links on save.
+  late List<int?> _storageOriginalIndices;
   late String _ramUnit;
   RamType? _ramType;
   double? _latitude;
@@ -211,7 +216,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       _storageInterfaces = <StorageInterface?>[];
       _storageBrandCtrls = <TextEditingController>[];
       _storageSerialCtrls = <TextEditingController>[];
-      for (final s in d.storage) {
+      _storageOriginalIndices = <int?>[];
+      for (var i = 0; i < d.storage.length; i++) {
+        final s = d.storage[i];
         final parsed = _parseValueUnit(s.capacity);
         _storageEntries.add(parsed.$1);
         _storageUnits.add(parsed.$2);
@@ -221,6 +228,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         _storageSerialCtrls.add(
           TextEditingController(text: s.serialNumber ?? ''),
         );
+        _storageOriginalIndices.add(i);
       }
     } else {
       _storageEntries = [''];
@@ -229,6 +237,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       _storageInterfaces = [null];
       _storageBrandCtrls = [TextEditingController()];
       _storageSerialCtrls = [TextEditingController()];
+      _storageOriginalIndices = [null];
     }
 
     _loadPresets();
@@ -449,6 +458,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     final l10n = AppLocalizations.of(context)!;
 
     final storageList = <StorageInfo>[];
+    // Original slot index → saved slot index, used to re-map positional
+    // dataset storage links after slots are removed or compacted away.
+    final storageIndexMap = <int, int>{};
     for (int i = 0; i < _storageEntries.length; i++) {
       final v = _storageEntries[i].trim();
       final brand = _nonEmpty(_storageBrandCtrls[i].text);
@@ -458,6 +470,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
           _storageInterfaces[i] != null ||
           brand != null ||
           serial != null) {
+        final originalIndex = _storageOriginalIndices[i];
+        if (originalIndex != null) {
+          storageIndexMap[originalIndex] = storageList.length;
+        }
         storageList.add(
           StorageInfo(
             capacity: v.isNotEmpty ? '$v ${_storageUnits[i]}' : null,
@@ -466,8 +482,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
             brand: brand,
             serialNumber: serial,
             extraJson:
-                widget.device != null && i < widget.device!.storage.length
-                ? widget.device!.storage[i].extraJson
+                widget.device != null &&
+                    originalIndex != null &&
+                    originalIndex < widget.device!.storage.length
+                ? widget.device!.storage[originalIndex].extraJson
                 : const {},
           ),
         );
@@ -585,6 +603,15 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
 
     await DeviceStorage.addOrUpdate(device);
+    if (widget.device != null) {
+      // Storage slots are referenced positionally by dataset links; shift or
+      // drop linked indices when slots were removed/compacted in this edit.
+      await DataSetStorage.remapDeviceStorageLinks(
+        deviceId: widget.device!.id,
+        oldSlotCount: widget.device!.storage.length,
+        indexMap: storageIndexMap,
+      );
+    }
     AutoSyncService.instance.notifySaved();
     if (mounted) Navigator.of(context).pop();
   }
@@ -1871,6 +1898,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                     _storageInterfaces.add(null);
                     _storageBrandCtrls.add(TextEditingController());
                     _storageSerialCtrls.add(TextEditingController());
+                    _storageOriginalIndices.add(null);
                   }),
                 ),
               ],
@@ -1922,6 +1950,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                               _storageInterfaces.removeAt(i);
                               _storageBrandCtrls.removeAt(i);
                               _storageSerialCtrls.removeAt(i);
+                              _storageOriginalIndices.removeAt(i);
                             }),
                           ),
                       ],

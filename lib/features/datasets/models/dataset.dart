@@ -94,7 +94,7 @@ class DataSet {
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
-       modifiedAt = modifiedAt ?? DateTime.now();
+       modifiedAt = modifiedAt ?? DateTime.now().toUtc();
 
   /// Purpose: Create a copy with selected fields replaced.
   /// Inputs: None.
@@ -112,7 +112,7 @@ class DataSet {
       name: name ?? this.name,
       emoji: emoji ?? this.emoji,
       storageLinks: storageLinks ?? this.storageLinks,
-      modifiedAt: modifiedAt ?? DateTime.now(),
+      modifiedAt: modifiedAt ?? DateTime.now().toUtc(),
       extraJson: extraJson,
     );
   }

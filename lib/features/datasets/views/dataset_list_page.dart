@@ -215,9 +215,8 @@ class _DataSetListPageState extends State<DataSetListPage> {
   /// Inputs: `oldIndex`, `newIndex`.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: `onReorderItem` already adjusts `newIndex` after removal.
   Future<void> _onReorder(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex--;
     final item = _datasets.removeAt(oldIndex);
     _datasets.insert(newIndex, item);
     setState(() {});
@@ -331,7 +330,7 @@ class _DataSetListPageState extends State<DataSetListPage> {
           : _reordering
           ? ReorderableListView.builder(
               itemCount: _datasets.length,
-              onReorder: _onReorder,
+              onReorderItem: _onReorder,
               itemBuilder: (context, index) {
                 final ds = _datasets[index];
                 return KeyedSubtree(

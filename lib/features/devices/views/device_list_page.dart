@@ -454,9 +454,8 @@ class _DeviceListPageState extends State<DeviceListPage> {
   /// Inputs: `oldIndex`, `newIndex`.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: `onReorderItem` already adjusts `newIndex` after removal.
   Future<void> _onReorder(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex--;
     final item = _devices.removeAt(oldIndex);
     _devices.insert(newIndex, item);
     setState(() {});
@@ -584,13 +583,14 @@ class _DeviceListPageState extends State<DeviceListPage> {
           ? ReorderableListView.builder(
               padding: const EdgeInsets.only(bottom: 80),
               itemCount: _devices.length,
-              onReorder: _onReorder,
+              onReorderItem: _onReorder,
               itemBuilder: (context, index) {
                 final device = _devices[index];
                 return _DeviceCard(
                   key: ValueKey(device.id),
                   device: device,
                   categoryLabel: _categoryLabel(context, device.category),
+                  defaultCurrency: _defaultCurrency,
                   onTap: () {},
                   trailing: ReorderableDragStartListener(
                     index: index,
@@ -947,6 +947,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
       child: _DeviceCard(
         device: device,
         categoryLabel: _categoryLabel(context, device.category),
+        defaultCurrency: _defaultCurrency,
         onTap: () => _viewDevice(device),
       ),
     );
@@ -956,11 +957,12 @@ class _DeviceListPageState extends State<DeviceListPage> {
 class _DeviceCard extends StatelessWidget {
   final Device device;
   final String categoryLabel;
+  final String defaultCurrency;
   final VoidCallback onTap;
   final Widget? trailing;
 
   /// Purpose: Create a device card instance.
-  /// Inputs: None.
+  /// Inputs: `device`, `categoryLabel`, `defaultCurrency`, `onTap`, optional `trailing`.
   /// Returns: A new `_DeviceCard` instance.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: None.
@@ -968,6 +970,7 @@ class _DeviceCard extends StatelessWidget {
     super.key,
     required this.device,
     required this.categoryLabel,
+    required this.defaultCurrency,
     required this.onTap,
     this.trailing,
   });
@@ -979,15 +982,15 @@ class _DeviceCard extends StatelessWidget {
   /// Notes: Keep this method cheap because Flutter may call it often.
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final subtitleParts = <String>[categoryLabel];
     if (device.brand != null) subtitleParts.add(device.brand!);
-    if (device.cpu.model != null) subtitleParts.add(device.cpu.model!);
-    if (device.storage.isNotEmpty) {
-      final total = device.storage
-          .where((s) => s.capacity != null)
-          .map((s) => s.capacity!)
-          .join(' + ');
-      if (total.isNotEmpty) subtitleParts.add(total);
+    final dailyCost = device.averageDailyCost();
+    if (dailyCost != null) {
+      final symbol = DeviceExchangeRateService.currencySymbol(defaultCurrency);
+      subtitleParts.add(
+        '${l10n.financialDailyCost}: $symbol${dailyCost.toStringAsFixed(2)}',
+      );
     }
 
     return Card(

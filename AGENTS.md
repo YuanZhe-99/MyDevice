@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `1.0.0+27` in `pubspec.yaml`, `1.0.0.0` for MSIX, and `1.0.0` in `installer.iss`.
+- **Current version:** `1.0.1+28` in `pubspec.yaml`, `1.0.1.0` for MSIX, and `1.0.1` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -424,3 +424,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.5.12`: Services topology opens faster by deferring and caching full-screen layout work, trying fast clear orthogonal routes before A* routing, and reusing obstacle-derived routing tracks.
 - `v0.6.0`: Local API refresh adds lifecycle/finance/device detail fields, read-only network/dataset/service endpoints, richer cross-module stats, service route export over the API, and updated AstrBot integration coverage.
 - `v1.0.0`: Pre-release audit hardening — WebDAV downloads distinguish 404 from errors so transient failures can never overwrite the remote or cascade into cross-device deletions, upload failures (including ETag `If-Match` 412 conflicts) surface as per-file sync errors instead of silent success, conflict-resolution finalize reports failures, identical-content concurrent edits no longer raise conflicts, all `modifiedAt` timestamps are written in UTC, dataset storage links are re-mapped when device storage slots are removed, Basic Auth is enforced on loopback when API credentials are configured, and versions are unified to `1.0.0+27` / MSIX `1.0.0.0` / installer `1.0.0`.
+- `v1.0.1`: Device home cards now show per-device daily cost when finance data and service dates allow it, remove CPU/storage from card subtitles, and versions are unified to `1.0.1+28` / MSIX `1.0.1.0` / installer `1.0.1`.

@@ -137,9 +137,8 @@ class _NetworkListPageState extends State<NetworkListPage> {
   /// Inputs: `oldIndex`, `newIndex`.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: `onReorderItem` already adjusts `newIndex` after removal.
   Future<void> _onReorder(int oldIndex, int newIndex) async {
-    if (newIndex > oldIndex) newIndex--;
     final item = _networks.removeAt(oldIndex);
     _networks.insert(newIndex, item);
     setState(() {});
@@ -321,7 +320,7 @@ class _NetworkListPageState extends State<NetworkListPage> {
           ? ReorderableListView.builder(
               padding: const EdgeInsets.all(8),
               itemCount: _networks.length,
-              onReorder: _onReorder,
+              onReorderItem: _onReorder,
               itemBuilder: (context, index) {
                 final net = _networks[index];
                 return KeyedSubtree(

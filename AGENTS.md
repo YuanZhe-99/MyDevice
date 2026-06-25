@@ -29,7 +29,7 @@ Maintenance rules:
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
 - **Current version:** `1.0.1+28` in `pubspec.yaml`, `1.0.1.0` for MSIX, and `1.0.1` in `installer.iss`.
-- **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.41.6`.
+- **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.44.2`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
 - **Remotes:**

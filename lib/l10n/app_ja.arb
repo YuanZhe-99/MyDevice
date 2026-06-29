@@ -200,6 +200,9 @@
   "settingsWebDAVAutoSyncDesc": "データ変更時に自動的に同期",
   "settingsWebDAVDisconnect": "切断",
   "settingsWebDAVConfigRemoved": "WebDAV設定を削除しました",
+  "settingsWebDAVAutoSyncFailed": "自動同期に失敗しました",
+  "settingsWebDAVAutoSyncConflict": "同期の競合は手動解決が必要です",
+  "settingsWebDAVLastSuccess": "前回の同期成功",
 
   "backupRestoreModules": "復元するモジュールを選択",
   "backupSelectAll": "すべて選択",

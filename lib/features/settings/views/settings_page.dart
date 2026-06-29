@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/providers/app_settings.dart';
+import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/import_export_service.dart';
 import '../../../shared/services/local_api_server.dart';
 import '../../../shared/services/tray_service.dart';
@@ -63,11 +64,50 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _loadVersion();
     _loadStoragePath();
     _loadExchangeRateSettings();
+    AutoSyncService.instance.addOnStatusChanged(_refreshSyncStatus);
     if (_isDesktop) {
       _loadTraySettings();
       _loadAutoStartStatus();
       _loadApiSettings();
     }
+  }
+
+  /// Purpose: Refresh visible sync status in settings.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Triggers a rebuild.
+  /// Notes: Internal helper used within this file only.
+  void _refreshSyncStatus() {
+    if (mounted) setState(() {});
+  }
+
+  /// Purpose: Clean up settings page listeners.
+  /// Inputs: None.
+  /// Returns: None.
+  /// Side effects: Removes registered service listeners.
+  /// Notes: Keep paired with registrations in `initState`.
+  @override
+  void dispose() {
+    AutoSyncService.instance.removeOnStatusChanged(_refreshSyncStatus);
+    super.dispose();
+  }
+
+  /// Purpose: Build a short WebDAV sync status line for settings.
+  /// Inputs: `l10n`.
+  /// Returns: `String?`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
+  String? _webDavStatusText(AppLocalizations l10n) {
+    final service = AutoSyncService.instance;
+    if (service.lastError != null) {
+      return service.hasPendingConflicts
+          ? '${l10n.settingsWebDAVAutoSyncConflict}: ${service.lastError}'
+          : '${l10n.settingsWebDAVAutoSyncFailed}: ${service.lastError}';
+    }
+    if (service.lastSuccessAt != null) {
+      return '${l10n.settingsWebDAVLastSuccess}: ${service.lastSuccessAt!.toLocal()}';
+    }
+    return null;
   }
 
   /// Purpose: Load storage path into the current workflow or state.
@@ -479,6 +519,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final settings = ref.watch(appSettingsProvider);
+    final webDavStatus = _webDavStatusText(l10n);
     final notifier = ref.read(appSettingsProvider.notifier);
 
     return Scaffold(
@@ -590,6 +631,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ListTile(
               leading: const Icon(Icons.sync_outlined),
               title: Text(l10n.settingsWebDAVSync),
+              subtitle: webDavStatus == null
+                  ? null
+                  : Text(
+                      webDavStatus,
+                      style: TextStyle(
+                        color: AutoSyncService.instance.lastError == null
+                            ? null
+                            : Theme.of(context).colorScheme.error,
+                      ),
+                    ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context, rootNavigator: true).push(
                 MaterialPageRoute(builder: (_) => const WebDAVConfigPage()),

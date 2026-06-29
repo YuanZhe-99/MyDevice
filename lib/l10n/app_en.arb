@@ -212,6 +212,9 @@
   "settingsWebDAVAutoSyncDesc": "Sync automatically when data changes",
   "settingsWebDAVDisconnect": "Disconnect",
   "settingsWebDAVConfigRemoved": "WebDAV configuration removed",
+  "settingsWebDAVAutoSyncFailed": "Auto sync failed",
+  "settingsWebDAVAutoSyncConflict": "Sync conflict needs manual resolution",
+  "settingsWebDAVLastSuccess": "Last successful sync",
 
   "backupRestoreModules": "Select Modules to Restore",
   "backupSelectAll": "Select All",

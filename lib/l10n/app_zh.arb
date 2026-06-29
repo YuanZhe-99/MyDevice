@@ -202,6 +202,9 @@
   "settingsWebDAVAutoSyncDesc": "数据变更时自动同步",
   "settingsWebDAVDisconnect": "断开连接",
   "settingsWebDAVConfigRemoved": "WebDAV 配置已移除",
+  "settingsWebDAVAutoSyncFailed": "自动同步失败",
+  "settingsWebDAVAutoSyncConflict": "同步冲突需要手动处理",
+  "settingsWebDAVLastSuccess": "上次成功同步",
 
   "backupRestoreModules": "选择要还原的模块",
   "backupSelectAll": "全选",

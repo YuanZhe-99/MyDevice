@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `1.0.1+28` in `pubspec.yaml`, `1.0.1.0` for MSIX, and `1.0.1` in `installer.iss`.
+- **Current version:** `1.1.0+29` in `pubspec.yaml`, `1.1.0.0` for MSIX, and `1.1.0` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.44.2`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -274,7 +274,7 @@ Flow:
 6. Upload merged data. Uploads send `If-Match` with the strong ETag captured at download (first uploads send `If-None-Match: *`); HTTP 412 and any other upload failure are recorded as per-file errors and the base snapshot is not saved, so the next sync re-merges instead of silently reporting success.
 7. Save the new base snapshot only after the upload succeeds.
 
-Manual sync uses `autoResolve: false` and shows conflict dialogs. Auto-sync uses `autoResolve: true` and last-writer-wins per record without blocking the UI. `finalizePendingSync` re-reads the remote per file for an `If-Match` precondition and returns false when any file's remote read or upload fails; failed files keep their base snapshots untouched.
+Manual sync uses `autoResolve: false` and shows conflict dialogs. Auto-sync also leaves `autoResolve` disabled: it records failures and true two-sided conflicts as visible status in Settings/WebDAV instead of silently applying last-writer-wins. Users must open the WebDAV page and resolve conflicts manually. `finalizePendingSync` re-reads the remote per file for an `If-Match` precondition and returns false when any file's remote read or upload fails; failed files keep their base snapshots untouched.
 
 Important sync constraints:
 
@@ -290,7 +290,7 @@ Important sync constraints:
 - Servers without ETags fall back to unconditional PUTs (previous behavior); weak ETags are never used in `If-Match`.
 - Sync errors and image warnings should be visible in dialogs, not only snackbars.
 
-Auto-sync triggers include app launch, app resume, a 30-second debounce after storage saves, and a 15-minute timer while the app process is alive. Mobile OS suspension may delay timers until resume. Storage-layer `save()` methods should notify auto-sync so non-UI writes are covered.
+Auto-sync triggers include app launch, app resume, a 30-second debounce after storage saves, and a 15-minute timer while the app process is alive. Mobile OS suspension may delay timers until resume. Storage-layer `save()` methods should notify auto-sync so non-UI writes are covered. Auto-sync records latest success, failure, and pending-conflict state in memory so Settings and the WebDAV page can surface sync health.
 
 ## Persisted Data Inventory
 
@@ -425,3 +425,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v0.6.0`: Local API refresh adds lifecycle/finance/device detail fields, read-only network/dataset/service endpoints, richer cross-module stats, service route export over the API, and updated AstrBot integration coverage.
 - `v1.0.0`: Pre-release audit hardening — WebDAV downloads distinguish 404 from errors so transient failures can never overwrite the remote or cascade into cross-device deletions, upload failures (including ETag `If-Match` 412 conflicts) surface as per-file sync errors instead of silent success, conflict-resolution finalize reports failures, identical-content concurrent edits no longer raise conflicts, all `modifiedAt` timestamps are written in UTC, dataset storage links are re-mapped when device storage slots are removed, Basic Auth is enforced on loopback when API credentials are configured, and versions are unified to `1.0.0+27` / MSIX `1.0.0.0` / installer `1.0.0`.
 - `v1.0.1`: Device home cards now show per-device daily cost when finance data and service dates allow it, remove CPU/storage from card subtitles, and versions are unified to `1.0.1+28` / MSIX `1.0.1.0` / installer `1.0.1`.
+- `v1.1.0`: WebDAV auto-sync failures and true sync conflicts are surfaced in Settings/WebDAV, background sync no longer silently resolves conflicts with LWW, manual conflict resolution clears the visible status on success, and versions are unified to `1.1.0+29` / MSIX `1.1.0.0` / installer `1.1.0`.

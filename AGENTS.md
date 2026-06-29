@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `1.1.0+29` in `pubspec.yaml`, `1.1.0.0` for MSIX, and `1.1.0` in `installer.iss`.
+- **Current version:** `1.1.1+30` in `pubspec.yaml`, `1.1.1.0` for MSIX, and `1.1.1` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.44.2`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -271,8 +271,9 @@ Flow:
 3. Merge per record using `modifiedAt` where available. Records whose serialized content is identical on both sides merge without a conflict.
 4. Auto-resolve when only one side changed.
 5. Detect conflict when the same record changed on both sides after the last sync.
-6. Upload merged data. Uploads send `If-Match` with the strong ETag captured at download (first uploads send `If-None-Match: *`); HTTP 412 and any other upload failure are recorded as per-file errors and the base snapshot is not saved, so the next sync re-merges instead of silently reporting success.
-7. Save the new base snapshot only after the upload succeeds.
+6. Before any upload, acquire remote `.lock` with the local client id, upload token, UTC timestamp, and 150-second TTL. Active locks from another client block uploads; expired locks are treated as failed uploads and may be replaced. Local `.sync_base/upload_lock.json` lets the next launch detect interrupted uploads and re-download/re-merge before uploading again.
+7. Upload merged data. Uploads send `If-Match` with the strong ETag captured at download (first uploads send `If-None-Match: *`); HTTP 412 triggers a fresh remote download and another per-record merge, and only unresolvable record conflicts are shown to the user.
+8. Save the new base snapshot only after the upload succeeds, then clear the matching remote/local upload lock.
 
 Manual sync uses `autoResolve: false` and shows conflict dialogs. Auto-sync also leaves `autoResolve` disabled: it records failures and true two-sided conflicts as visible status in Settings/WebDAV instead of silently applying last-writer-wins. Users must open the WebDAV page and resolve conflicts manually. `finalizePendingSync` re-reads the remote per file for an `If-Match` precondition and returns false when any file's remote read or upload fails; failed files keep their base snapshots untouched.
 
@@ -426,3 +427,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v1.0.0`: Pre-release audit hardening — WebDAV downloads distinguish 404 from errors so transient failures can never overwrite the remote or cascade into cross-device deletions, upload failures (including ETag `If-Match` 412 conflicts) surface as per-file sync errors instead of silent success, conflict-resolution finalize reports failures, identical-content concurrent edits no longer raise conflicts, all `modifiedAt` timestamps are written in UTC, dataset storage links are re-mapped when device storage slots are removed, Basic Auth is enforced on loopback when API credentials are configured, and versions are unified to `1.0.0+27` / MSIX `1.0.0.0` / installer `1.0.0`.
 - `v1.0.1`: Device home cards now show per-device daily cost when finance data and service dates allow it, remove CPU/storage from card subtitles, and versions are unified to `1.0.1+28` / MSIX `1.0.1.0` / installer `1.0.1`.
 - `v1.1.0`: WebDAV auto-sync failures and true sync conflicts are surfaced in Settings/WebDAV, background sync no longer silently resolves conflicts with LWW, manual conflict resolution clears the visible status on success, and versions are unified to `1.1.0+29` / MSIX `1.1.0.0` / installer `1.1.0`.
+- `v1.1.1`: WebDAV uploads now use a remote `.lock` with a stable local client id and 150-second TTL, interrupted local uploads are detected on the next sync, and HTTP 412 upload races re-download remote data and re-run per-record merge before surfacing only true record conflicts; versions are unified to `1.1.1+30` / MSIX `1.1.1.0` / installer `1.1.1`.

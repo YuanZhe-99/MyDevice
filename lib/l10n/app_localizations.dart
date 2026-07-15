@@ -1058,8 +1058,86 @@ abstract class AppLocalizations {
   /// No description provided for @settingsWebDAVNextcloud.
   ///
   /// In en, this message translates to:
-  /// **'Nextcloud'**
+  /// **'Nextcloud Preset'**
   String get settingsWebDAVNextcloud;
+
+  /// No description provided for @settingsWebDAVForceUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Upload'**
+  String get settingsWebDAVForceUpload;
+
+  /// No description provided for @settingsWebDAVForceDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Download'**
+  String get settingsWebDAVForceDownload;
+
+  /// No description provided for @settingsWebDAVForceUploadConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force upload?'**
+  String get settingsWebDAVForceUploadConfirmTitle;
+
+  /// No description provided for @settingsWebDAVForceUploadConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will overwrite all remote data and images with your local copies. Remote changes since the last sync will be lost.'**
+  String get settingsWebDAVForceUploadConfirmBody;
+
+  /// No description provided for @settingsWebDAVForceDownloadConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force download?'**
+  String get settingsWebDAVForceDownloadConfirmTitle;
+
+  /// No description provided for @settingsWebDAVForceDownloadConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will replace all local data and images with the remote copies. Local changes since the last sync will be lost.'**
+  String get settingsWebDAVForceDownloadConfirmBody;
+
+  /// No description provided for @syncPhaseConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting…'**
+  String get syncPhaseConnecting;
+
+  /// No description provided for @syncPhaseDownloadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading {file} ({current}/{total})'**
+  String syncPhaseDownloadingData(String file, int current, int total);
+
+  /// No description provided for @syncPhaseMerging.
+  ///
+  /// In en, this message translates to:
+  /// **'Merging {file}…'**
+  String syncPhaseMerging(String file);
+
+  /// No description provided for @syncPhaseUploadingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {file}…'**
+  String syncPhaseUploadingData(String file);
+
+  /// No description provided for @syncPhaseUploadingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading images ({current}/{total})'**
+  String syncPhaseUploadingImages(int current, int total);
+
+  /// No description provided for @syncPhaseDownloadingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading images ({current}/{total})'**
+  String syncPhaseDownloadingImages(int current, int total);
+
+  /// No description provided for @commonOk.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get commonOk;
 
   /// No description provided for @settingsWebDAVTestConnection.
   ///
@@ -1082,7 +1160,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsWebDAVConfigSaved.
   ///
   /// In en, this message translates to:
-  /// **'WebDAV configuration saved'**
+  /// **'Configuration saved'**
   String get settingsWebDAVConfigSaved;
 
   /// No description provided for @settingsWebDAVSyncNow.
@@ -1124,7 +1202,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsWebDAVAutoSyncDesc.
   ///
   /// In en, this message translates to:
-  /// **'Sync automatically when data changes'**
+  /// **'Automatically sync after editing and when the app resumes'**
   String get settingsWebDAVAutoSyncDesc;
 
   /// No description provided for @settingsWebDAVDisconnect.
@@ -1136,19 +1214,19 @@ abstract class AppLocalizations {
   /// No description provided for @settingsWebDAVConfigRemoved.
   ///
   /// In en, this message translates to:
-  /// **'WebDAV configuration removed'**
+  /// **'Configuration removed'**
   String get settingsWebDAVConfigRemoved;
 
   /// No description provided for @settingsWebDAVAutoSyncFailed.
   ///
   /// In en, this message translates to:
-  /// **'Auto sync failed'**
+  /// **'Auto-sync failed'**
   String get settingsWebDAVAutoSyncFailed;
 
   /// No description provided for @settingsWebDAVAutoSyncConflict.
   ///
   /// In en, this message translates to:
-  /// **'Sync conflict needs manual resolution'**
+  /// **'Auto-sync found conflicts'**
   String get settingsWebDAVAutoSyncConflict;
 
   /// No description provided for @settingsWebDAVLastSuccess.
@@ -1546,6 +1624,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remote version:'**
   String get syncConflictRemoteVersion;
+
+  /// No description provided for @syncConflictModifiedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Modified: {time}'**
+  String syncConflictModifiedAt(String time);
+
+  /// No description provided for @syncConflictRecordId.
+  ///
+  /// In en, this message translates to:
+  /// **'ID: {id}'**
+  String syncConflictRecordId(String id);
 
   /// No description provided for @syncConflictKeepLocal.
   ///

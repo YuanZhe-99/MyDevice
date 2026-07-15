@@ -494,7 +494,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWebDAVRemotePath => '远程路径';
 
   @override
-  String get settingsWebDAVNextcloud => 'Nextcloud';
+  String get settingsWebDAVNextcloud => 'Nextcloud 预设';
+
+  @override
+  String get settingsWebDAVForceUpload => '强制上传';
+
+  @override
+  String get settingsWebDAVForceDownload => '强制下载';
+
+  @override
+  String get settingsWebDAVForceUploadConfirmTitle => '确认强制上传？';
+
+  @override
+  String get settingsWebDAVForceUploadConfirmBody =>
+      '将用本地数据和图片覆盖远程内容。上次同步后远程的更改将丢失。';
+
+  @override
+  String get settingsWebDAVForceDownloadConfirmTitle => '确认强制下载？';
+
+  @override
+  String get settingsWebDAVForceDownloadConfirmBody =>
+      '将用远程数据和图片替换本地内容。上次同步后本地的更改将丢失。';
+
+  @override
+  String get syncPhaseConnecting => '正在连接…';
+
+  @override
+  String syncPhaseDownloadingData(String file, int current, int total) {
+    return '正在下载 $file（$current/$total）';
+  }
+
+  @override
+  String syncPhaseMerging(String file) {
+    return '正在合并 $file…';
+  }
+
+  @override
+  String syncPhaseUploadingData(String file) {
+    return '正在上传 $file…';
+  }
+
+  @override
+  String syncPhaseUploadingImages(int current, int total) {
+    return '正在上传图片（$current/$total）';
+  }
+
+  @override
+  String syncPhaseDownloadingImages(int current, int total) {
+    return '正在下载图片（$current/$total）';
+  }
+
+  @override
+  String get commonOk => '确定';
 
   @override
   String get settingsWebDAVTestConnection => '测试连接';
@@ -506,7 +557,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWebDAVConnectionFailed => '连接失败';
 
   @override
-  String get settingsWebDAVConfigSaved => 'WebDAV 配置已保存';
+  String get settingsWebDAVConfigSaved => '配置已保存';
 
   @override
   String get settingsWebDAVSyncNow => '立即同步';
@@ -529,19 +580,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsWebDAVAutoSync => '自动同步';
 
   @override
-  String get settingsWebDAVAutoSyncDesc => '数据变更时自动同步';
+  String get settingsWebDAVAutoSyncDesc => '编辑后和应用恢复时自动同步';
 
   @override
   String get settingsWebDAVDisconnect => '断开连接';
 
   @override
-  String get settingsWebDAVConfigRemoved => 'WebDAV 配置已移除';
+  String get settingsWebDAVConfigRemoved => '配置已移除';
 
   @override
   String get settingsWebDAVAutoSyncFailed => '自动同步失败';
 
   @override
-  String get settingsWebDAVAutoSyncConflict => '同步冲突需要手动处理';
+  String get settingsWebDAVAutoSyncConflict => '自动同步发现冲突';
 
   @override
   String get settingsWebDAVLastSuccess => '上次成功同步';
@@ -744,6 +795,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get syncConflictRemoteVersion => '远端版本：';
+
+  @override
+  String syncConflictModifiedAt(String time) {
+    return '修改时间: $time';
+  }
+
+  @override
+  String syncConflictRecordId(String id) {
+    return 'ID: $id';
+  }
 
   @override
   String get syncConflictKeepLocal => '保留本地';
@@ -1808,7 +1869,58 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWebDAVRemotePath => '遠端路徑';
 
   @override
-  String get settingsWebDAVNextcloud => 'Nextcloud';
+  String get settingsWebDAVNextcloud => 'Nextcloud 預設';
+
+  @override
+  String get settingsWebDAVForceUpload => '強制上傳';
+
+  @override
+  String get settingsWebDAVForceDownload => '強制下載';
+
+  @override
+  String get settingsWebDAVForceUploadConfirmTitle => '確認強制上傳？';
+
+  @override
+  String get settingsWebDAVForceUploadConfirmBody =>
+      '將用本地資料與圖片覆蓋遠端內容。上次同步後遠端的變更將遺失。';
+
+  @override
+  String get settingsWebDAVForceDownloadConfirmTitle => '確認強制下載？';
+
+  @override
+  String get settingsWebDAVForceDownloadConfirmBody =>
+      '將用遠端資料與圖片取代本地內容。上次同步後本地的變更將遺失。';
+
+  @override
+  String get syncPhaseConnecting => '正在連線…';
+
+  @override
+  String syncPhaseDownloadingData(String file, int current, int total) {
+    return '正在下載 $file（$current/$total）';
+  }
+
+  @override
+  String syncPhaseMerging(String file) {
+    return '正在合併 $file…';
+  }
+
+  @override
+  String syncPhaseUploadingData(String file) {
+    return '正在上傳 $file…';
+  }
+
+  @override
+  String syncPhaseUploadingImages(int current, int total) {
+    return '正在上傳圖片（$current/$total）';
+  }
+
+  @override
+  String syncPhaseDownloadingImages(int current, int total) {
+    return '正在下載圖片（$current/$total）';
+  }
+
+  @override
+  String get commonOk => '確定';
 
   @override
   String get settingsWebDAVTestConnection => '測試連線';
@@ -1820,7 +1932,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWebDAVConnectionFailed => '連線失敗';
 
   @override
-  String get settingsWebDAVConfigSaved => 'WebDAV 設定已儲存';
+  String get settingsWebDAVConfigSaved => '設定已儲存';
 
   @override
   String get settingsWebDAVSyncNow => '立即同步';
@@ -1843,19 +1955,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsWebDAVAutoSync => '自動同步';
 
   @override
-  String get settingsWebDAVAutoSyncDesc => '資料變更時自動同步';
+  String get settingsWebDAVAutoSyncDesc => '編輯後與應用程式恢復時自動同步';
 
   @override
   String get settingsWebDAVDisconnect => '中斷連線';
 
   @override
-  String get settingsWebDAVConfigRemoved => 'WebDAV 設定已移除';
+  String get settingsWebDAVConfigRemoved => '設定已移除';
 
   @override
   String get settingsWebDAVAutoSyncFailed => '自動同步失敗';
 
   @override
-  String get settingsWebDAVAutoSyncConflict => '同步衝突需要手動處理';
+  String get settingsWebDAVAutoSyncConflict => '自動同步發現衝突';
 
   @override
   String get settingsWebDAVLastSuccess => '上次成功同步';
@@ -2058,6 +2170,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get syncConflictRemoteVersion => '遠端版本：';
+
+  @override
+  String syncConflictModifiedAt(String time) {
+    return '修改時間: $time';
+  }
+
+  @override
+  String syncConflictRecordId(String id) {
+    return 'ID: $id';
+  }
 
   @override
   String get syncConflictKeepLocal => '保留本機';

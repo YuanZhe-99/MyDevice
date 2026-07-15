@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+
+import 'package:flutter/foundation.dart';
 
 import '../../features/datasets/models/dataset.dart';
 import '../../features/devices/models/device.dart';
@@ -13,6 +14,7 @@ import '../../features/devices/services/device_storage.dart';
 import '../../features/network/models/network.dart';
 import '../../features/services/models/service.dart';
 import 'sync_merge.dart';
+import 'sync_progress.dart';
 
 /// Persisted WebDAV configuration.
 class WebDAVConfig {
@@ -191,7 +193,8 @@ class WebDAVUploadLock {
       token: json['token'] as String,
       startedAt: DateTime.parse(json['startedAt'] as String).toUtc(),
       updatedAt: DateTime.parse(json['updatedAt'] as String).toUtc(),
-      ttlSeconds: json['ttlSeconds'] as int? ?? 150,
+      ttlSeconds:
+          json['ttlSeconds'] as int? ?? WebDAVService._lockTtlSeconds,
     );
   }
 
@@ -327,6 +330,69 @@ class WebDAVService {
     final v = _localDataChanged;
     _localDataChanged = false;
     return v;
+  }
+
+  /// Live progress of the currently running sync/force operation.
+  ///
+  /// UI pages bind with `ValueListenableBuilder<SyncProgress>`; the service
+  /// reports raw phases/counts only and the UI localizes the phase text.
+  static final ValueNotifier<SyncProgress> progress = ValueNotifier(
+    SyncProgress.idle,
+  );
+
+  /// Purpose: Publish a progress snapshot for the running sync operation.
+  /// Inputs: `phase`, optional `detail`, `current`, `total`.
+  /// Returns: None.
+  /// Side effects: Updates the [progress] value notifier.
+  /// Notes: Internal helper used within this file only.
+  static void _reportProgress(
+    SyncPhase phase, {
+    String? detail,
+    int current = 0,
+    int total = 0,
+  }) {
+    progress.value = SyncProgress(
+      phase,
+      detail: detail,
+      current: current,
+      total: total,
+    );
+  }
+
+  /// Purpose: Retry a network operation on transient failures.
+  /// Inputs: `attempt` closure, optional `shouldRetry` on the produced value,
+  /// `retries` (extra attempts after the first).
+  /// Returns: `Future<T>` — the last attempt's value, or rethrows its error.
+  /// Side effects: Waits 1s/2s between attempts.
+  /// Notes: Internal helper used within this file only. Retries on
+  /// socket/timeout/client/HTTP exceptions and on `shouldRetry` (used for
+  /// HTTP 5xx); 4xx results are never retried by callers.
+  static Future<T> _withRetry<T>(
+    Future<T> Function() attempt, {
+    bool Function(T value)? shouldRetry,
+    int retries = 2,
+  }) async {
+    var attemptIndex = 0;
+    while (true) {
+      try {
+        final value = await attempt();
+        if (attemptIndex < retries && (shouldRetry?.call(value) ?? false)) {
+          attemptIndex += 1;
+          await Future<void>.delayed(Duration(seconds: attemptIndex));
+          continue;
+        }
+        return value;
+      } on Object catch (e) {
+        final transient =
+            e is SocketException ||
+            e is TimeoutException ||
+            e is http.ClientException ||
+            e is HttpException;
+        if (!transient || attemptIndex >= retries) rethrow;
+        attemptIndex += 1;
+        await Future<void>.delayed(Duration(seconds: attemptIndex));
+      }
+    }
   }
 
   // ── Config persistence ──
@@ -558,33 +624,40 @@ class WebDAVService {
   }
 
   /// Purpose: Upload content to a remote WebDAV path.
-  /// Inputs: `config`, `fileName`, `content`, optional lock-file preconditions.
+  /// Inputs: `config`, `fileName`, `content`, optional lock-file preconditions,
+  /// `retries` for transient-failure retry (0 for `.lock` writes so a retried
+  /// create-only PUT cannot misreport lock contention).
   /// Returns: `Future<({bool is412, String? error})>` — null error on success.
   /// Side effects: May read or mutate application state, storage, or service resources.
   /// Notes: Conditional headers are used for `.lock` writes only. Data JSON
   /// writes go through `_uploadWithSession()` and do not pass data-file
-  /// preconditions.
+  /// preconditions. Retries cover network errors and HTTP 5xx only.
   static Future<({bool is412, String? error})> _upload(
     WebDAVConfig config,
     String fileName,
     String content, {
     String? ifMatchEtag,
     bool ifNoneMatchAll = false,
+    int retries = 2,
   }) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, fileName));
-      final response = await http
-          .put(
-            url,
-            headers: {
-              ..._authHeaders(config),
-              'Content-Type': 'application/octet-stream',
-              'If-Match': ?ifMatchEtag,
-              if (ifNoneMatchAll) 'If-None-Match': '*',
-            },
-            body: utf8.encode(content),
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await _withRetry(
+        () => http
+            .put(
+              url,
+              headers: {
+                ..._authHeaders(config),
+                'Content-Type': 'application/octet-stream',
+                'If-Match': ?ifMatchEtag,
+                if (ifNoneMatchAll) 'If-None-Match': '*',
+              },
+              body: utf8.encode(content),
+            )
+            .timeout(const Duration(seconds: 30)),
+        shouldRetry: (r) => r.statusCode >= 500,
+        retries: retries,
+      );
       if (response.statusCode == 412) {
         return (is412: true, error: 'conditional WebDAV PUT failed (HTTP 412)');
       }
@@ -623,9 +696,12 @@ class WebDAVService {
   ) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, fileName));
-      final response = await http
-          .get(url, headers: _authHeaders(config))
-          .timeout(const Duration(seconds: 30));
+      final response = await _withRetry(
+        () => http
+            .get(url, headers: _authHeaders(config))
+            .timeout(const Duration(seconds: 30)),
+        shouldRetry: (r) => r.statusCode >= 500,
+      );
       if (response.statusCode == 200) {
         return RemoteFile.found(response.body, etag: response.headers['etag']);
       }
@@ -679,6 +755,7 @@ class WebDAVService {
       jsonEncode(lock.toJson()),
       ifMatchEtag: ifMatchEtag,
       ifNoneMatchAll: ifNoneMatchAll,
+      retries: 0,
     );
   }
 
@@ -898,16 +975,19 @@ class WebDAVService {
     Uint8List bytes,
   ) async {
     final url = Uri.parse(_remoteFileUrl(config, remotePath));
-    final response = await http
-        .put(
-          url,
-          headers: {
-            ..._authHeaders(config),
-            'Content-Type': 'application/octet-stream',
-          },
-          body: bytes,
-        )
-        .timeout(const Duration(seconds: 120));
+    final response = await _withRetry(
+      () => http
+          .put(
+            url,
+            headers: {
+              ..._authHeaders(config),
+              'Content-Type': 'application/octet-stream',
+            },
+            body: bytes,
+          )
+          .timeout(const Duration(seconds: 120)),
+      shouldRetry: (r) => r.statusCode >= 500,
+    );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('HTTP ${response.statusCode}');
     }
@@ -924,9 +1004,12 @@ class WebDAVService {
     String remotePath,
   ) async {
     final url = Uri.parse(_remoteFileUrl(config, remotePath));
-    final response = await http
-        .get(url, headers: _authHeaders(config))
-        .timeout(const Duration(seconds: 120));
+    final response = await _withRetry(
+      () => http
+          .get(url, headers: _authHeaders(config))
+          .timeout(const Duration(seconds: 120)),
+      shouldRetry: (r) => r.statusCode >= 500,
+    );
     if (response.statusCode == 200) return response.bodyBytes;
     throw Exception('HTTP ${response.statusCode}');
   }
@@ -950,27 +1033,31 @@ class WebDAVService {
 
   /// Purpose: Collect and return remote files.
   /// Inputs: `config`, `subDir`.
-  /// Returns: `Future<Set<String>>`.
+  /// Returns: `Future<Set<String>?>` — null when the listing failed.
   /// Side effects: May perform network I/O.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. A null result means
+  /// the remote state is unknown (network/server error); callers must not
+  /// treat it as an empty directory, otherwise every referenced image would
+  /// be re-uploaded on any transient PROPFIND failure.
   /// List file names in a remote sub-directory via PROPFIND.
-  static Future<Set<String>> _listRemoteFiles(
+  static Future<Set<String>?> _listRemoteFiles(
     WebDAVConfig config,
     String subDir,
   ) async {
     try {
       final url = Uri.parse(_remoteFileUrl(config, '$subDir/'));
-      final request = http.Request('PROPFIND', url);
-      request.headers.addAll(_authHeaders(config));
-      request.headers['Depth'] = '1';
-      request.headers['Content-Type'] = 'application/xml';
-      request.body =
-          '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>';
-
-      final streamed = await http.Client()
-          .send(request)
-          .timeout(const Duration(seconds: 15));
-      if (streamed.statusCode != 207) return {};
+      final streamed = await _withRetry(() {
+        final request = http.Request('PROPFIND', url);
+        request.headers.addAll(_authHeaders(config));
+        request.headers['Depth'] = '1';
+        request.headers['Content-Type'] = 'application/xml';
+        request.body =
+            '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>';
+        return http.Client()
+            .send(request)
+            .timeout(const Duration(seconds: 15));
+      }, shouldRetry: (r) => r.statusCode >= 500);
+      if (streamed.statusCode != 207) return null;
 
       final body = await streamed.stream.bytesToString();
       // Parse <d:href> entries; skip the directory itself
@@ -987,7 +1074,7 @@ class WebDAVService {
       }
       return names;
     } catch (_) {
-      return {};
+      return null;
     }
   }
 
@@ -1049,46 +1136,73 @@ class WebDAVService {
       }
     }
 
-    // List all remote file names to avoid re-uploading existing files
+    // List all remote file names to avoid re-uploading existing files.
+    // A null listing means the remote state is unknown, so the image phase is
+    // skipped entirely instead of re-uploading every image.
     final remoteNames = await _listRemoteFiles(config, 'images');
+    if (remoteNames == null) {
+      errors.add(
+        'Image sync skipped: could not list the remote images directory',
+      );
+      return errors;
+    }
 
     // Upload local referenced images missing on remote
-    for (final name in localNames) {
-      if (!remoteNames.contains(name)) {
-        final uploadSession = await ensureUploadSession();
-        if (uploadSession == null) {
-          errors.add('Upload skipped for $name: upload lock was not acquired');
-          continue;
-        }
-        try {
-          final bytes = await File(p.join(imgDir.path, name)).readAsBytes();
-          await _uploadBytesWithSession(
-            config,
-            'images/$name',
-            bytes,
-            uploadSession,
-          );
-        } on TimeoutException {
-          errors.add('Upload timed out: $name');
-        } catch (e) {
-          errors.add('Upload failed for $name: $e');
-        }
+    final toUpload = localNames.where((n) => !remoteNames.contains(n)).toList();
+    var uploadIndex = 0;
+    for (final name in toUpload) {
+      uploadIndex += 1;
+      _reportProgress(
+        SyncPhase.uploadingImages,
+        detail: name,
+        current: uploadIndex,
+        total: toUpload.length,
+      );
+      final uploadSession = await ensureUploadSession();
+      if (uploadSession == null) {
+        errors.add('Upload skipped for $name: upload lock was not acquired');
+        continue;
+      }
+      try {
+        final bytes = await File(p.join(imgDir.path, name)).readAsBytes();
+        await _uploadBytesWithSession(
+          config,
+          'images/$name',
+          bytes,
+          uploadSession,
+        );
+      } on TimeoutException {
+        errors.add('Upload timed out: $name');
+      } catch (e) {
+        errors.add('Upload failed for $name: $e');
       }
     }
 
     // Download referenced remote images missing locally
-    for (final name in referencedImages) {
-      if (!localNames.contains(name) && remoteNames.contains(name)) {
-        try {
-          final bytes = await _downloadBytes(config, 'images/$name');
-          if (bytes != null) {
-            await File(p.join(imgDir.path, name)).writeAsBytes(bytes);
-          }
-        } on TimeoutException {
-          errors.add('Download timed out: $name');
-        } catch (e) {
-          errors.add('Download failed for $name: $e');
+    final toDownload = referencedImages
+        .where((n) => !localNames.contains(n) && remoteNames.contains(n))
+        .toList();
+    var downloadIndex = 0;
+    for (final name in toDownload) {
+      downloadIndex += 1;
+      _reportProgress(
+        SyncPhase.downloadingImages,
+        detail: name,
+        current: downloadIndex,
+        total: toDownload.length,
+      );
+      try {
+        final bytes = await _downloadBytes(config, 'images/$name');
+        if (bytes != null) {
+          await File(p.join(imgDir.path, name)).writeAsBytes(bytes);
+          // New image files must trigger a UI reload even when the data JSON
+          // itself did not change during this sync.
+          _localDataChanged = true;
         }
+      } on TimeoutException {
+        errors.add('Download timed out: $name');
+      } catch (e) {
+        errors.add('Download failed for $name: $e');
       }
     }
 
@@ -1098,14 +1212,16 @@ class WebDAVService {
   // ── Per-record merge sync ──
 
   /// Purpose: Sync the relevant data with the relevant peer or storage.
-  /// Inputs: `config`.
+  /// Inputs: `config`, `autoResolve`.
   /// Returns: `Future<SyncResult>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
+  /// Side effects: Performs local file-system and network I/O.
+  /// Notes: Progress is published through [progress].
   /// Sync data files with the remote server using per-record three-way merge.
   ///
-  /// When [autoResolve] is true, conflicts are resolved automatically using
-  /// last-writer-wins per record. Used by auto-sync to prevent blocking.
+  /// When [autoResolve] is true, two-sided conflicts fall back to
+  /// last-writer-wins per record. Every production caller (manual sync and
+  /// auto-sync) leaves it false so true conflicts always surface for manual
+  /// resolution.
   static Future<SyncResult> sync(
     WebDAVConfig config, {
     bool autoResolve = false,
@@ -1117,6 +1233,30 @@ class WebDAVService {
       );
     }
     _syncing = true;
+    try {
+      _reportProgress(SyncPhase.connecting);
+      final result = await _syncLocked(config, autoResolve: autoResolve);
+      _reportProgress(
+        result.success ? SyncPhase.done : SyncPhase.error,
+        detail: result.error,
+      );
+      return result;
+    } finally {
+      _syncing = false;
+    }
+  }
+
+  /// Purpose: Run the merge-based sync body while `_syncing` is held.
+  /// Inputs: `config`, `autoResolve`.
+  /// Returns: `Future<SyncResult>`.
+  /// Side effects: Reads and writes local data files, base snapshots, remote
+  /// WebDAV files, and sync state.
+  /// Notes: Internal helper used within this file only. Callers must set and
+  /// clear the `_syncing` guard.
+  static Future<SyncResult> _syncLocked(
+    WebDAVConfig config, {
+    bool autoResolve = false,
+  }) async {
     _UploadSession? uploadSession;
     try {
       await _ensureRemoteDir(config);
@@ -1174,7 +1314,15 @@ class WebDAVService {
       String? localDeviceJson;
       String? remoteDeviceJson;
 
+      var fileIndex = 0;
       for (final name in _dataFileNames) {
+        fileIndex += 1;
+        _reportProgress(
+          SyncPhase.downloadingData,
+          detail: name,
+          current: fileIndex,
+          total: _dataFileNames.length,
+        );
         final localFile = File('${appDir.path}/$name');
         final localExists = await localFile.exists();
         final remote = await _download(config, name);
@@ -1203,6 +1351,12 @@ class WebDAVService {
 
         if (localExists && remoteRaw == null) {
           // Only on local → force-upload as new under the remote lock.
+          _reportProgress(
+            SyncPhase.uploadingData,
+            detail: name,
+            current: fileIndex,
+            total: _dataFileNames.length,
+          );
           final uploadResult = await uploadJson(name, localRaw);
           if (uploadResult.error == null) {
             await _saveBase(name, localRaw);
@@ -1222,6 +1376,12 @@ class WebDAVService {
         }
 
         final baseJson = await _readBase(name);
+        _reportProgress(
+          SyncPhase.merging,
+          detail: name,
+          current: fileIndex,
+          total: _dataFileNames.length,
+        );
 
         // Per-file try-catch: if one file fails to merge, others still sync.
         try {
@@ -1261,6 +1421,12 @@ class WebDAVService {
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 _localDataChanged = true;
+                _reportProgress(
+                  SyncPhase.uploadingData,
+                  detail: name,
+                  current: fileIndex,
+                  total: _dataFileNames.length,
+                );
                 final uploadResult = await uploadJson(name, mergedJson);
                 if (uploadResult.error == null) {
                   await _saveBase(name, mergedJson);
@@ -1305,6 +1471,12 @@ class WebDAVService {
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 _localDataChanged = true;
+                _reportProgress(
+                  SyncPhase.uploadingData,
+                  detail: name,
+                  current: fileIndex,
+                  total: _dataFileNames.length,
+                );
                 final uploadResult = await uploadJson(name, mergedJson);
                 if (uploadResult.error == null) {
                   await _saveBase(name, mergedJson);
@@ -1347,6 +1519,12 @@ class WebDAVService {
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 _localDataChanged = true;
+                _reportProgress(
+                  SyncPhase.uploadingData,
+                  detail: name,
+                  current: fileIndex,
+                  total: _dataFileNames.length,
+                );
                 final uploadResult = await uploadJson(name, mergedJson);
                 if (uploadResult.error == null) {
                   await _saveBase(name, mergedJson);
@@ -1390,6 +1568,12 @@ class WebDAVService {
                 ).convert(mergedData.toJson());
                 await _atomicWrite(localFile, mergedJson);
                 _localDataChanged = true;
+                _reportProgress(
+                  SyncPhase.uploadingData,
+                  detail: name,
+                  current: fileIndex,
+                  total: _dataFileNames.length,
+                );
                 final uploadResult = await uploadJson(name, mergedJson);
                 if (uploadResult.error == null) {
                   await _saveBase(name, mergedJson);
@@ -1449,7 +1633,6 @@ class WebDAVService {
       return SyncResult(success: false, error: '$e\n$st');
     } finally {
       await _releaseUploadSession(config, uploadSession);
-      _syncing = false;
     }
   }
 
@@ -1593,5 +1776,308 @@ class WebDAVService {
     } finally {
       await _releaseUploadSession(config, uploadSession);
     }
+  }
+
+  // ── Force upload / download ──
+
+  /// Purpose: Upload all local data files and referenced images to the remote,
+  /// overwriting remote data without any conflict check or merge.
+  /// Inputs: `config`.
+  /// Returns: `Future<SyncResult>`.
+  /// Side effects: Overwrites remote data files, uploads images, saves base
+  /// snapshots, and publishes progress through [progress].
+  /// Notes: Remote changes made since the last sync are lost. Runs under the
+  /// remote `.lock` and the `_syncing` guard like a normal sync.
+  static Future<SyncResult> forceUpload(WebDAVConfig config) async {
+    if (_syncing) {
+      return const SyncResult(
+        success: false,
+        error: 'Sync already in progress',
+      );
+    }
+    _syncing = true;
+    try {
+      _reportProgress(SyncPhase.connecting);
+      final result = await _forceUploadLocked(config);
+      _reportProgress(
+        result.success ? SyncPhase.done : SyncPhase.error,
+        detail: result.error,
+      );
+      return result;
+    } finally {
+      _syncing = false;
+    }
+  }
+
+  /// Purpose: Run the force-upload body while `_syncing` is held.
+  /// Inputs: `config`.
+  /// Returns: `Future<SyncResult>`.
+  /// Side effects: Uploads local data/images and saves base snapshots.
+  /// Notes: Internal helper used within this file only.
+  static Future<SyncResult> _forceUploadLocked(WebDAVConfig config) async {
+    _UploadSession? uploadSession;
+    try {
+      await _ensureRemoteDir(config);
+      final appDir = await DeviceStorage.getAppDir();
+      final clientId = await _loadClientId();
+      final interrupted = await _prepareInterruptedUpload(config, clientId);
+      if (interrupted.error != null) {
+        return SyncResult(success: false, error: interrupted.error);
+      }
+      final acquired = await _acquireUploadSession(
+        config,
+        clientId,
+        resumeToken: interrupted.resumeToken,
+      );
+      uploadSession = acquired.session;
+      if (uploadSession == null) {
+        return SyncResult(
+          success: false,
+          error: acquired.error ?? 'Upload lock was not acquired',
+        );
+      }
+
+      String? localDeviceJson;
+      var fileIndex = 0;
+      for (final name in _dataFileNames) {
+        fileIndex += 1;
+        final localFile = File('${appDir.path}/$name');
+        if (!await localFile.exists()) continue;
+        final localRaw = await localFile.readAsString();
+        if (name == 'device_data.json') localDeviceJson = localRaw;
+        _reportProgress(
+          SyncPhase.uploadingData,
+          detail: name,
+          current: fileIndex,
+          total: _dataFileNames.length,
+        );
+        final uploadResult = await _uploadWithSession(
+          config,
+          name,
+          localRaw,
+          uploadSession,
+        );
+        if (uploadResult.error != null) {
+          return SyncResult(
+            success: false,
+            error: 'Failed to force-upload $name: ${uploadResult.error}',
+          );
+        }
+        // The remote now equals local, so local content is the new base.
+        await _saveBase(name, localRaw);
+      }
+
+      final warnings = await _forceUploadImages(
+        config,
+        appDir,
+        _getReferencedImageNames(localDeviceJson),
+        uploadSession,
+      );
+      return SyncResult(success: true, warnings: warnings);
+    } catch (e) {
+      return SyncResult(success: false, error: '$e');
+    } finally {
+      await _releaseUploadSession(config, uploadSession);
+    }
+  }
+
+  /// Purpose: Upload all referenced local images during a force upload.
+  /// Inputs: `config`, `appDir`, `referencedImages`, `session`.
+  /// Returns: `Future<List<String>>` — non-fatal per-image warnings.
+  /// Side effects: Uploads image bytes and publishes progress.
+  /// Notes: Internal helper used within this file only. Image names are
+  /// immutable UUIDs, so names already present remotely are skipped when the
+  /// remote listing is available; a failed listing falls back to uploading
+  /// everything because force upload must guarantee remote completeness.
+  static Future<List<String>> _forceUploadImages(
+    WebDAVConfig config,
+    Directory appDir,
+    Set<String> referencedImages,
+    _UploadSession session,
+  ) async {
+    final errors = <String>[];
+    if (referencedImages.isEmpty) return errors;
+
+    final imgDir = Directory(p.join(appDir.path, 'images'));
+    if (!await imgDir.exists()) return errors;
+
+    await _ensureRemoteSubDir(config, 'images');
+
+    final localNames = <String>[];
+    await for (final entity in imgDir.list()) {
+      if (entity is File) {
+        final name = p.basename(entity.path);
+        if (referencedImages.contains(name)) localNames.add(name);
+      }
+    }
+
+    final remoteNames = await _listRemoteFiles(config, 'images');
+    final toUpload = remoteNames == null
+        ? localNames
+        : localNames.where((n) => !remoteNames.contains(n)).toList();
+
+    var uploadIndex = 0;
+    for (final name in toUpload) {
+      uploadIndex += 1;
+      _reportProgress(
+        SyncPhase.uploadingImages,
+        detail: name,
+        current: uploadIndex,
+        total: toUpload.length,
+      );
+      try {
+        final bytes = await File(p.join(imgDir.path, name)).readAsBytes();
+        await _uploadBytesWithSession(config, 'images/$name', bytes, session);
+      } on TimeoutException {
+        errors.add('Upload timed out: $name');
+      } catch (e) {
+        errors.add('Upload failed for $name: $e');
+      }
+    }
+    return errors;
+  }
+
+  /// Purpose: Replace local data files and images with the remote copies,
+  /// without any conflict check or merge.
+  /// Inputs: `config`.
+  /// Returns: `Future<SyncResult>`.
+  /// Side effects: Overwrites local data files, saves base snapshots, sets the
+  /// local-data-changed flag, and publishes progress through [progress].
+  /// Notes: Local changes made since the last sync are lost. Download-only, so
+  /// no remote `.lock` is taken; the `_syncing` guard still applies.
+  static Future<SyncResult> forceDownload(WebDAVConfig config) async {
+    if (_syncing) {
+      return const SyncResult(
+        success: false,
+        error: 'Sync already in progress',
+      );
+    }
+    _syncing = true;
+    try {
+      _reportProgress(SyncPhase.connecting);
+      final result = await _forceDownloadLocked(config);
+      _reportProgress(
+        result.success ? SyncPhase.done : SyncPhase.error,
+        detail: result.error,
+      );
+      return result;
+    } finally {
+      _syncing = false;
+    }
+  }
+
+  /// Purpose: Run the force-download body while `_syncing` is held.
+  /// Inputs: `config`.
+  /// Returns: `Future<SyncResult>`.
+  /// Side effects: Overwrites local data files and downloads images.
+  /// Notes: Internal helper used within this file only. Remote content is
+  /// JSON-validated before it replaces any local file; a missing remote file
+  /// keeps the local copy and adds a warning.
+  static Future<SyncResult> _forceDownloadLocked(WebDAVConfig config) async {
+    try {
+      final appDir = await DeviceStorage.getAppDir();
+      final warnings = <String>[];
+      String? remoteDeviceJson;
+
+      var fileIndex = 0;
+      for (final name in _dataFileNames) {
+        fileIndex += 1;
+        _reportProgress(
+          SyncPhase.downloadingData,
+          detail: name,
+          current: fileIndex,
+          total: _dataFileNames.length,
+        );
+        final remote = await _download(config, name);
+        if (remote.status == RemoteFileStatus.error) {
+          return SyncResult(
+            success: false,
+            error: 'Failed to download $name from remote: ${remote.error}',
+          );
+        }
+        if (remote.status == RemoteFileStatus.notFound ||
+            remote.content == null) {
+          warnings.add('$name: not found on remote; local file kept');
+          continue;
+        }
+        final remoteRaw = remote.content!;
+        try {
+          jsonDecode(remoteRaw);
+        } catch (_) {
+          return SyncResult(
+            success: false,
+            error: '$name: remote content is not valid JSON',
+          );
+        }
+        await _atomicWrite(File('${appDir.path}/$name'), remoteRaw);
+        await _saveBase(name, remoteRaw);
+        _localDataChanged = true;
+        if (name == 'device_data.json') remoteDeviceJson = remoteRaw;
+      }
+
+      warnings.addAll(
+        await _forceDownloadImages(
+          config,
+          appDir,
+          _getReferencedImageNames(remoteDeviceJson),
+        ),
+      );
+      return SyncResult(success: true, warnings: warnings);
+    } catch (e) {
+      return SyncResult(success: false, error: '$e');
+    }
+  }
+
+  /// Purpose: Download referenced remote images during a force download.
+  /// Inputs: `config`, `appDir`, `referencedImages`.
+  /// Returns: `Future<List<String>>` — non-fatal per-image warnings.
+  /// Side effects: Writes image files locally and publishes progress.
+  /// Notes: Internal helper used within this file only. Image names are
+  /// immutable UUIDs, so names already present locally are kept as-is.
+  static Future<List<String>> _forceDownloadImages(
+    WebDAVConfig config,
+    Directory appDir,
+    Set<String> referencedImages,
+  ) async {
+    final errors = <String>[];
+    if (referencedImages.isEmpty) return errors;
+
+    final imgDir = Directory(p.join(appDir.path, 'images'));
+    if (!await imgDir.exists()) await imgDir.create(recursive: true);
+
+    final remoteNames = await _listRemoteFiles(config, 'images');
+    if (remoteNames == null) {
+      errors.add(
+        'Image download skipped: could not list the remote images directory',
+      );
+      return errors;
+    }
+
+    final toDownload = referencedImages
+        .where(remoteNames.contains)
+        .where((n) => !File(p.join(imgDir.path, n)).existsSync())
+        .toList();
+    var downloadIndex = 0;
+    for (final name in toDownload) {
+      downloadIndex += 1;
+      _reportProgress(
+        SyncPhase.downloadingImages,
+        detail: name,
+        current: downloadIndex,
+        total: toDownload.length,
+      );
+      try {
+        final bytes = await _downloadBytes(config, 'images/$name');
+        if (bytes != null) {
+          await File(p.join(imgDir.path, name)).writeAsBytes(bytes);
+          _localDataChanged = true;
+        }
+      } on TimeoutException {
+        errors.add('Download timed out: $name');
+      } catch (e) {
+        errors.add('Download failed for $name: $e');
+      }
+    }
+    return errors;
   }
 }

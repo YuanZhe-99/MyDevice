@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/app_localizations.dart';
 import '../../shared/services/auto_sync_service.dart';
 import '../../shared/services/sync_merge.dart';
+import '../../shared/services/sync_progress.dart';
 import '../../shared/services/webdav_service.dart';
 
 class WebDAVConfigPage extends StatefulWidget {
@@ -109,6 +110,9 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     final config = _currentConfig;
     await WebDAVService.saveConfig(config);
     setState(() => _isConfigured = config.isConfigured);
+    if (config.isConfigured && config.autoSync) {
+      AutoSyncService.instance.requestSyncNow();
+    }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -152,6 +156,7 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     final result = await WebDAVService.sync(_currentConfig);
     if (!mounted) return;
     AutoSyncService.instance.recordSyncResult(result);
+    AutoSyncService.instance.notifyLocalDataChangedIfNeeded();
     setState(() => _syncing = false);
 
     if (result.hasConflicts) {
@@ -159,6 +164,16 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
       return;
     }
 
+    await _showSyncResult(result);
+  }
+
+  /// Purpose: Present a non-conflict sync/force result to the user.
+  /// Inputs: `result`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Shows a dialog for failures/warnings or a snackbar on success.
+  /// Notes: Internal helper used within this file only.
+  Future<void> _showSyncResult(SyncResult result) async {
+    if (!mounted) return;
     final l10n = AppLocalizations.of(context)!;
 
     if (!result.success) {
@@ -166,11 +181,13 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: Text(l10n.settingsWebDAVSyncFailed),
-          content: SingleChildScrollView(child: Text(result.error ?? '-')),
+          content: SingleChildScrollView(
+            child: SelectableText(result.error ?? '-'),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
+              child: Text(l10n.commonOk),
             ),
           ],
         ),
@@ -204,7 +221,7 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK'),
+              child: Text(l10n.commonOk),
             ),
           ],
         ),
@@ -215,6 +232,116 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(l10n.settingsWebDAVSyncSuccess)));
+  }
+
+  /// Purpose: Confirm and run a force upload (local overwrites remote).
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Overwrites remote data after user confirmation.
+  /// Notes: Internal helper used within this file only.
+  Future<void> _forceUpload() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await _confirmForceAction(
+      title: l10n.settingsWebDAVForceUploadConfirmTitle,
+      body: l10n.settingsWebDAVForceUploadConfirmBody,
+      confirmLabel: l10n.settingsWebDAVForceUpload,
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _syncing = true);
+    final result = await WebDAVService.forceUpload(_currentConfig);
+    if (!mounted) return;
+    AutoSyncService.instance.recordSyncResult(result);
+    AutoSyncService.instance.notifyLocalDataChangedIfNeeded();
+    setState(() => _syncing = false);
+    await _showSyncResult(result);
+  }
+
+  /// Purpose: Confirm and run a force download (remote overwrites local).
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Overwrites local data after user confirmation.
+  /// Notes: Internal helper used within this file only.
+  Future<void> _forceDownload() async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await _confirmForceAction(
+      title: l10n.settingsWebDAVForceDownloadConfirmTitle,
+      body: l10n.settingsWebDAVForceDownloadConfirmBody,
+      confirmLabel: l10n.settingsWebDAVForceDownload,
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _syncing = true);
+    final result = await WebDAVService.forceDownload(_currentConfig);
+    if (!mounted) return;
+    AutoSyncService.instance.recordSyncResult(result);
+    AutoSyncService.instance.notifyLocalDataChangedIfNeeded();
+    setState(() => _syncing = false);
+    await _showSyncResult(result);
+  }
+
+  /// Purpose: Ask the user to confirm a destructive force upload/download.
+  /// Inputs: `title`, `body`, `confirmLabel`.
+  /// Returns: `Future<bool?>` — true when confirmed.
+  /// Side effects: Opens a modal dialog.
+  /// Notes: Internal helper used within this file only.
+  Future<bool?> _confirmForceAction({
+    required String title,
+    required String body,
+    required String confirmLabel,
+  }) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(AppLocalizations.of(ctx)!.cancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Purpose: Map a sync progress snapshot to a localized status line.
+  /// Inputs: `l10n`, `progress`.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
+  String _progressText(AppLocalizations l10n, SyncProgress progress) {
+    switch (progress.phase) {
+      case SyncPhase.connecting:
+        return l10n.syncPhaseConnecting;
+      case SyncPhase.downloadingData:
+        return l10n.syncPhaseDownloadingData(
+          progress.detail ?? '',
+          progress.current,
+          progress.total,
+        );
+      case SyncPhase.merging:
+        return l10n.syncPhaseMerging(progress.detail ?? '');
+      case SyncPhase.uploadingData:
+        return l10n.syncPhaseUploadingData(progress.detail ?? '');
+      case SyncPhase.uploadingImages:
+        return l10n.syncPhaseUploadingImages(progress.current, progress.total);
+      case SyncPhase.downloadingImages:
+        return l10n.syncPhaseDownloadingImages(
+          progress.current,
+          progress.total,
+        );
+      case SyncPhase.idle:
+      case SyncPhase.done:
+      case SyncPhase.error:
+        return '';
+    }
   }
 
   /// Purpose: Resolve conflicts into the form required by the caller.
@@ -430,6 +557,26 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                     ),
                     const SizedBox(height: 12),
                   ],
+                  ValueListenableBuilder<SyncProgress>(
+                    valueListenable: WebDAVService.progress,
+                    builder: (context, progress, _) {
+                      if (!progress.isRunning) {
+                        return const SizedBox.shrink();
+                      }
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LinearProgressIndicator(value: progress.fraction),
+                          const SizedBox(height: 8),
+                          Text(
+                            _progressText(l10n, progress),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      );
+                    },
+                  ),
                   FilledButton.icon(
                     onPressed: _syncing ? null : _syncNow,
                     icon: _syncing
@@ -446,6 +593,26 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _syncing ? null : _forceUpload,
+                          icon: const Icon(Icons.upload, size: 18),
+                          label: Text(l10n.settingsWebDAVForceUpload),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _syncing ? null : _forceDownload,
+                          icon: const Icon(Icons.download, size: 18),
+                          label: Text(l10n.settingsWebDAVForceDownload),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(l10n.settingsWebDAVAutoSync),
@@ -453,15 +620,20 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                     value: _autoSync,
                     onChanged: (v) async {
                       setState(() => _autoSync = v);
-                      await WebDAVService.saveConfig(_currentConfig);
+                      final config = _currentConfig;
+                      await WebDAVService.saveConfig(config);
+                      if (v && config.isConfigured) {
+                        AutoSyncService.instance.requestSyncNow();
+                      }
                     },
                   ),
                   const SizedBox(height: 12),
-                  TextButton(
+                  OutlinedButton.icon(
                     onPressed: _disconnect,
-                    child: Text(
-                      l10n.settingsWebDAVDisconnect,
-                      style: TextStyle(color: theme.colorScheme.error),
+                    icon: const Icon(Icons.link_off),
+                    label: Text(l10n.settingsWebDAVDisconnect),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
                     ),
                   ),
                 ],
@@ -481,6 +653,23 @@ class _ConflictDialog extends StatelessWidget {
   /// Notes: None.
   const _ConflictDialog({required this.conflict});
 
+  /// Purpose: Extract the modified timestamp from a merge record when present.
+  /// Inputs: `record` — a dynamic conflict record (Device/Network/DataSet/...).
+  /// Returns: `String?` — the local-time timestamp, or null when unavailable.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only. `NetworkDevice`
+  /// assignments intentionally have no `modifiedAt`, so this falls back to
+  /// null and the dialog shows the record ID instead.
+  static String? _modifiedAtOf(dynamic record) {
+    try {
+      final value = record.modifiedAt;
+      if (value is DateTime) return value.toLocal().toString();
+    } catch (_) {
+      // Record type has no modifiedAt field.
+    }
+    return null;
+  }
+
   /// Purpose: Build the current widget subtree for the active UI state.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
@@ -489,6 +678,8 @@ class _ConflictDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final localModified = _modifiedAtOf(conflict.localRecord);
+    final remoteModified = _modifiedAtOf(conflict.remoteRecord);
     return AlertDialog(
       title: Text(l10n.syncConflictTitle(conflict.displayName)),
       content: SizedBox(
@@ -503,13 +694,21 @@ class _ConflictDialog extends StatelessWidget {
               l10n.syncConflictLocalVersion,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            Text('ID: ${conflict.id}'),
+            Text(
+              localModified != null
+                  ? l10n.syncConflictModifiedAt(localModified)
+                  : l10n.syncConflictRecordId(conflict.id),
+            ),
             const SizedBox(height: 12),
             Text(
               l10n.syncConflictRemoteVersion,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            Text('ID: ${conflict.id}'),
+            Text(
+              remoteModified != null
+                  ? l10n.syncConflictModifiedAt(remoteModified)
+                  : l10n.syncConflictRecordId(conflict.id),
+            ),
           ],
         ),
       ),

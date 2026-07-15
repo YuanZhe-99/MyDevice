@@ -494,7 +494,58 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsWebDAVRemotePath => 'リモートパス';
 
   @override
-  String get settingsWebDAVNextcloud => 'Nextcloud';
+  String get settingsWebDAVNextcloud => 'Nextcloud プリセット';
+
+  @override
+  String get settingsWebDAVForceUpload => '強制アップロード';
+
+  @override
+  String get settingsWebDAVForceDownload => '強制ダウンロード';
+
+  @override
+  String get settingsWebDAVForceUploadConfirmTitle => '強制アップロードしますか？';
+
+  @override
+  String get settingsWebDAVForceUploadConfirmBody =>
+      'リモートのデータと画像をローカルの内容で上書きします。前回の同期以降のリモートの変更は失われます。';
+
+  @override
+  String get settingsWebDAVForceDownloadConfirmTitle => '強制ダウンロードしますか？';
+
+  @override
+  String get settingsWebDAVForceDownloadConfirmBody =>
+      'ローカルのデータと画像をリモートの内容で置き換えます。前回の同期以降のローカルの変更は失われます。';
+
+  @override
+  String get syncPhaseConnecting => '接続中…';
+
+  @override
+  String syncPhaseDownloadingData(String file, int current, int total) {
+    return '$file をダウンロード中（$current/$total）';
+  }
+
+  @override
+  String syncPhaseMerging(String file) {
+    return '$file をマージ中…';
+  }
+
+  @override
+  String syncPhaseUploadingData(String file) {
+    return '$file をアップロード中…';
+  }
+
+  @override
+  String syncPhaseUploadingImages(int current, int total) {
+    return '画像をアップロード中（$current/$total）';
+  }
+
+  @override
+  String syncPhaseDownloadingImages(int current, int total) {
+    return '画像をダウンロード中（$current/$total）';
+  }
+
+  @override
+  String get commonOk => 'OK';
 
   @override
   String get settingsWebDAVTestConnection => '接続テスト';
@@ -506,7 +557,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsWebDAVConnectionFailed => '接続に失敗しました';
 
   @override
-  String get settingsWebDAVConfigSaved => 'WebDAV設定を保存しました';
+  String get settingsWebDAVConfigSaved => '設定を保存しました';
 
   @override
   String get settingsWebDAVSyncNow => '今すぐ同期';
@@ -529,19 +580,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsWebDAVAutoSync => '自動同期';
 
   @override
-  String get settingsWebDAVAutoSyncDesc => 'データ変更時に自動的に同期';
+  String get settingsWebDAVAutoSyncDesc => '編集後やアプリ再開時に自動的に同期します';
 
   @override
   String get settingsWebDAVDisconnect => '切断';
 
   @override
-  String get settingsWebDAVConfigRemoved => 'WebDAV設定を削除しました';
+  String get settingsWebDAVConfigRemoved => '設定を削除しました';
 
   @override
-  String get settingsWebDAVAutoSyncFailed => '自動同期に失敗しました';
+  String get settingsWebDAVAutoSyncFailed => '自動同期失敗';
 
   @override
-  String get settingsWebDAVAutoSyncConflict => '同期の競合は手動解決が必要です';
+  String get settingsWebDAVAutoSyncConflict => '自動同期で競合を検出';
 
   @override
   String get settingsWebDAVLastSuccess => '前回の同期成功';
@@ -744,6 +795,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get syncConflictRemoteVersion => 'リモート版：';
+
+  @override
+  String syncConflictModifiedAt(String time) {
+    return '更新日時: $time';
+  }
+
+  @override
+  String syncConflictRecordId(String id) {
+    return 'ID: $id';
+  }
 
   @override
   String get syncConflictKeepLocal => 'ローカルを保持';

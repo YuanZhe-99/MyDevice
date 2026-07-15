@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `1.1.2+31` in `pubspec.yaml`, `1.1.2.0` for MSIX, and `1.1.2` in `installer.iss`.
+- **Current version:** `1.2.0+32` in `pubspec.yaml`, `1.2.0.0` for MSIX, and `1.2.0` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.44.2`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -65,7 +65,7 @@ When the user confirms the version and wants to push:
    - `pubspec.yaml`: `version: X.Y.Z+N` where `N` is the Flutter build number and increments for releases.
    - `pubspec.yaml`: `msix_config.msix_version: X.Y.Z.0`.
    - `installer.iss`: `AppVersion=X.Y.Z`.
-   - `installer.iss`: both `OutputBaseFilename=MyDevice_X.Y.Z_Setup` and `OutputBaseFilename=MyDevice_X.Y.Z_arm64_Setup`.
+   - `installer.iss`: output filenames use `{#SetupSetting("AppVersion")}` for both x64 and ARM64; keep them derived from `AppVersion`.
    - Do not manually edit in-app version display; `settings_page.dart` reads `PackageInfo.fromPlatform()`.
 2. Re-run appropriate verification.
 3. Commit all intended changes.
@@ -138,6 +138,7 @@ lib/
       import_export_service.dart
       local_api_server.dart
       sync_merge.dart
+      sync_progress.dart
       tray_service.dart
       webdav_service.dart
     utils/json_preservation.dart
@@ -291,8 +292,15 @@ Important sync constraints:
 - Local files are re-read after network I/O to detect concurrent user edits during sync.
 - Data JSON uploads are complete-file force PUTs under `.lock`; only `.lock` writes/deletes use ETag preconditions, and weak ETags are never used for those lock preconditions.
 - Sync errors and image warnings should be visible in dialogs, not only snackbars.
+- Remote image directory listings return null on any failure; `_syncImages` then skips the image phase with a visible warning instead of treating the unknown remote state as empty, which previously re-uploaded every referenced image after a transient PROPFIND failure.
+- Downloaded images set the local-data-changed flag so UI pages reload even when the data JSON itself did not change.
+- Transient network failures (socket/timeout/client errors and HTTP 5xx) are retried up to 2 extra times with 1s/2s backoff on data GET/PUT, byte GET/PUT, and PROPFIND listings. `.lock` writes are never retried so a retried create-only PUT cannot misreport lock contention; 4xx responses are never retried.
+- `WebDAVService.progress` is a `ValueNotifier<SyncProgress>` (see `sync_progress.dart`) publishing connecting/downloading/merging/uploading phases with per-file and per-image counts. The service emits raw phases and file names only; the WebDAV page maps phases to localized text and renders a `LinearProgressIndicator`.
+- `WebDAVService.forceUpload()` overwrites remote data files and uploads referenced images without any merge or conflict check, under the remote `.lock`, then saves base snapshots. `WebDAVService.forceDownload()` replaces local data files (JSON-validated first, atomic writes) and downloads referenced images without merging, saves base snapshots, and sets the local-data-changed flag; it is download-only and takes no remote lock. Both share the `_syncing` guard and require a destructive-action confirmation dialog in the WebDAV page.
+- After manual sync or force operations the WebDAV page calls `AutoSyncService.notifyLocalDataChangedIfNeeded()` so open pages reload without waiting for the next background sync.
+- The conflict dialog shows each side's `modifiedAt` (falling back to the record ID for `NetworkDevice` assignments, which have no timestamp) instead of a bare ID on both sides.
 
-Auto-sync triggers include app launch, app resume, a 30-second debounce after storage saves, and a 15-minute timer while the app process is alive. Mobile OS suspension may delay timers until resume. Storage-layer `save()` methods should notify auto-sync so non-UI writes are covered. Auto-sync records latest success, failure, and pending-conflict state in memory so Settings and the WebDAV page can surface sync health.
+Auto-sync triggers include app launch, app resume, a 30-second debounce after storage saves, a 15-minute timer while the app process is alive, and saving/enabling a fully configured auto-sync WebDAV setup (immediate sync via `requestSyncNow()`, aligned with MyAnime/MyDay). `_trySync` holds an instance-level `_syncing` guard so overlapping triggers are silently skipped instead of surfacing a spurious "Sync already in progress" failure banner. Mobile OS suspension may delay timers until resume. Storage-layer `save()` methods should notify auto-sync so non-UI writes are covered. Auto-sync records latest success, failure, and pending-conflict state in memory so Settings and the WebDAV page can surface sync health.
 
 ## Persisted Data Inventory
 
@@ -430,3 +438,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v1.1.0`: WebDAV auto-sync failures and true sync conflicts are surfaced in Settings/WebDAV, background sync no longer silently resolves conflicts with LWW, manual conflict resolution clears the visible status on success, and versions are unified to `1.1.0+29` / MSIX `1.1.0.0` / installer `1.1.0`.
 - `v1.1.1`: WebDAV uploads now use a remote `.lock` with a stable local client id and 150-second TTL, interrupted local uploads are detected on the next sync, and HTTP 412 upload races re-download remote data and re-run per-record merge before surfacing only true record conflicts; versions are unified to `1.1.1+30` / MSIX `1.1.1.0` / installer `1.1.1`.
 - `v1.1.2`: WebDAV now acquires `.lock` before downloading and merging remote data, lowers the lock TTL to 60 seconds, and force-uploads complete merged/resolved JSON under the valid lock without data-file `If-Match`/`If-None-Match` retry loops; versions are unified to `1.1.2+31` / MSIX `1.1.2.0` / installer `1.1.2`.
+- `v1.2.0`: WebDAV sync hardening and force transfers — remote image listing failures no longer masquerade as an empty directory (fixing repeated re-uploads of already-uploaded images), transient network errors and HTTP 5xx are retried with backoff, sync progress is published through `WebDAVService.progress` and shown as a progress bar with localized phase text, Force Upload / Force Download actions with confirmation dialogs were added to the WebDAV page, auto-sync gained a re-entrancy guard plus `requestSyncNow()` on enabling auto-sync, the conflict dialog shows per-side modified timestamps instead of bare IDs, downloaded images trigger UI reloads, manual sync notifies reload listeners, WebDAV terminology was standardized across MyAnime/MyDay/MyDevice, installer filenames derive from `AppVersion`, and versions are unified to `1.2.0+32` / MSIX `1.2.0.0` / installer `1.2.0`.

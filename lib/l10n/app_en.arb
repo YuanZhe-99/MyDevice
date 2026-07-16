@@ -27,7 +27,7 @@
   "deviceNotes": "Notes",
   "deviceLocation": "Location",
   "mapPickLocation": "Pick Location",
-  "mapSearchHint": "Search location...",
+  "mapSearchHint": "Search location…",
 
   "cpuInfo": "CPU",
   "cpuModel": "Model",
@@ -124,8 +124,8 @@
   "settingsStoragePathHint": "Enter the directory path for storing data. Leave empty to use default.",
   "settingsDirectoryPath": "Directory Path",
   "settingsResetDefault": "Reset to Default",
-  "settingsResetDefaultLocation": "Reset to default location",
-  "settingsStoragePathUpdated": "Storage path updated",
+  "settingsResetDefaultLocation": "Storage location reset to default",
+  "settingsStoragePathUpdated": "Storage location updated",
 
   "totalDevices": "{count} device(s)",
   "@totalDevices": {
@@ -154,7 +154,7 @@
   "sortAscending": "Ascending",
   "sortSubnet": "Subnet",
   "sortGroupByCategory": "Group by Category",
-  "sortReorder": "Reorder...",
+  "sortReorder": "Reorder…",
   "sortByIp": "IP Address",
   "sortExitNodeFirst": "Exit Nodes First",
 
@@ -226,7 +226,7 @@
   "settingsWebDAVSyncFailed": "Sync failed",
   "settingsWebDAVSyncImageWarnings": "Sync completed, but {count} image(s) failed to transfer",
   "@settingsWebDAVSyncImageWarnings": { "placeholders": { "count": { "type": "int" } } },
-  "settingsWebDAVAutoSync": "Auto Sync",
+  "settingsWebDAVAutoSync": "Auto-sync",
   "settingsWebDAVAutoSyncDesc": "Automatically sync after editing and when the app resumes",
   "settingsWebDAVDisconnect": "Disconnect",
   "settingsWebDAVConfigRemoved": "Configuration removed",
@@ -271,7 +271,7 @@
 
   "fetchFromInternet": "Fetch Online",
   "searchDeviceInfo": "Fetch Device Info",
-  "searchHint": "Search device name...",
+  "searchHint": "Search device name…",
   "searchButton": "Search",
   "searchNoResults": "No results found",
   "searchApply": "Apply",
@@ -279,15 +279,15 @@
   "searchFetched": "Fetched",
   "searchDeviceImage": "Device Image",
   "searchFetchImage": "Download",
-  "searchFetchingDetail": "Fetching details...",
+  "searchFetchingDetail": "Fetching details…",
   "searchCpuInfo": "Search CPU",
   "searchGpuInfo": "Search GPU",
-  "searchCpuHint": "Enter CPU model...",
-  "searchGpuHint": "Enter GPU model...",
+  "searchCpuHint": "Enter CPU model…",
+  "searchGpuHint": "Enter GPU model…",
 
-  "searchTemplatePlaceholder": "Search...",
-  "cpuPresetSearch": "Search CPU...",
-  "gpuPresetSearch": "Search GPU...",
+  "searchTemplatePlaceholder": "Search…",
+  "cpuPresetSearch": "Search CPU…",
+  "gpuPresetSearch": "Search GPU…",
 
   "cpuArchHint": "e.g. ARM Cortex-A78, x86-64",
   "cpuFreqHint": "e.g. 3.5 GHz",

@@ -27,7 +27,7 @@
   "deviceNotes": "備註",
   "deviceLocation": "位置",
   "mapPickLocation": "選擇位置",
-  "mapSearchHint": "搜尋位置...",
+  "mapSearchHint": "搜尋位置…",
 
   "cpuInfo": "CPU",
   "cpuModel": "型號",
@@ -87,7 +87,7 @@
   "backupCreate": "建立備份",
   "backupCreated": "備份已建立",
   "backupAutoBackup": "自動備份",
-  "backupRetention": "保留時間",
+  "backupRetention": "保留期限",
   "backupKeepForever": "永久保留",
   "backupKeepDays": "{days} 天",
   "@backupKeepDays": {
@@ -95,7 +95,7 @@
       "days": { "type": "int" }
     }
   },
-  "backupHistory": "歷史紀錄 ({count})",
+  "backupHistory": "歷史記錄 ({count})",
   "@backupHistory": {
     "placeholders": {
       "count": { "type": "int" }
@@ -125,7 +125,7 @@
   "settingsDirectoryPath": "目錄路徑",
   "settingsResetDefault": "恢復預設",
   "settingsResetDefaultLocation": "已恢復預設儲存位置",
-  "settingsStoragePathUpdated": "儲存路徑已更新",
+  "settingsStoragePathUpdated": "儲存位置已更新",
 
   "totalDevices": "{count} 台裝置",
   "@totalDevices": {
@@ -266,7 +266,7 @@
 
   "fetchFromInternet": "線上查詢",
   "searchDeviceInfo": "取得裝置資訊",
-  "searchHint": "搜尋裝置名稱...",
+  "searchHint": "搜尋裝置名稱…",
   "searchButton": "搜尋",
   "searchNoResults": "找不到結果",
   "searchApply": "套用",
@@ -274,11 +274,11 @@
   "searchFetched": "取得",
   "searchDeviceImage": "裝置圖片",
   "searchFetchImage": "下載",
-  "searchFetchingDetail": "正在取得詳細資訊...",
+  "searchFetchingDetail": "正在取得詳細資訊…",
   "searchCpuInfo": "搜尋 CPU",
   "searchGpuInfo": "搜尋 GPU",
-  "searchCpuHint": "輸入 CPU 型號...",
-  "searchGpuHint": "輸入 GPU 型號...",
+  "searchCpuHint": "輸入 CPU 型號…",
+  "searchGpuHint": "輸入 GPU 型號…",
 
   "searchTemplatePlaceholder": "搜尋…",
   "cpuPresetSearch": "搜尋 CPU…",

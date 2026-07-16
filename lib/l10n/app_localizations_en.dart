@@ -78,7 +78,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapPickLocation => 'Pick Location';
 
   @override
-  String get mapSearchHint => 'Search location...';
+  String get mapSearchHint => 'Search location…';
 
   @override
   String get cpuInfo => 'CPU';
@@ -314,10 +314,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsResetDefault => 'Reset to Default';
 
   @override
-  String get settingsResetDefaultLocation => 'Reset to default location';
+  String get settingsResetDefaultLocation =>
+      'Storage location reset to default';
 
   @override
-  String get settingsStoragePathUpdated => 'Storage path updated';
+  String get settingsStoragePathUpdated => 'Storage location updated';
 
   @override
   String totalDevices(int count) {
@@ -379,7 +380,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sortGroupByCategory => 'Group by Category';
 
   @override
-  String get sortReorder => 'Reorder...';
+  String get sortReorder => 'Reorder…';
 
   @override
   String get sortByIp => 'IP Address';
@@ -583,7 +584,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsWebDAVAutoSync => 'Auto Sync';
+  String get settingsWebDAVAutoSync => 'Auto-sync';
 
   @override
   String get settingsWebDAVAutoSyncDesc =>
@@ -691,7 +692,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchDeviceInfo => 'Fetch Device Info';
 
   @override
-  String get searchHint => 'Search device name...';
+  String get searchHint => 'Search device name…';
 
   @override
   String get searchButton => 'Search';
@@ -715,7 +716,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchFetchImage => 'Download';
 
   @override
-  String get searchFetchingDetail => 'Fetching details...';
+  String get searchFetchingDetail => 'Fetching details…';
 
   @override
   String get searchCpuInfo => 'Search CPU';
@@ -724,19 +725,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchGpuInfo => 'Search GPU';
 
   @override
-  String get searchCpuHint => 'Enter CPU model...';
+  String get searchCpuHint => 'Enter CPU model…';
 
   @override
-  String get searchGpuHint => 'Enter GPU model...';
+  String get searchGpuHint => 'Enter GPU model…';
 
   @override
-  String get searchTemplatePlaceholder => 'Search...';
+  String get searchTemplatePlaceholder => 'Search…';
 
   @override
-  String get cpuPresetSearch => 'Search CPU...';
+  String get cpuPresetSearch => 'Search CPU…';
 
   @override
-  String get gpuPresetSearch => 'Search GPU...';
+  String get gpuPresetSearch => 'Search GPU…';
 
   @override
   String get cpuArchHint => 'e.g. ARM Cortex-A78, x86-64';

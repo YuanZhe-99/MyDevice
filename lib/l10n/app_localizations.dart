@@ -242,7 +242,7 @@ abstract class AppLocalizations {
   /// No description provided for @mapSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search location...'**
+  /// **'Search location…'**
   String get mapSearchHint;
 
   /// No description provided for @cpuInfo.
@@ -692,13 +692,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsResetDefaultLocation.
   ///
   /// In en, this message translates to:
-  /// **'Reset to default location'**
+  /// **'Storage location reset to default'**
   String get settingsResetDefaultLocation;
 
   /// No description provided for @settingsStoragePathUpdated.
   ///
   /// In en, this message translates to:
-  /// **'Storage path updated'**
+  /// **'Storage location updated'**
   String get settingsStoragePathUpdated;
 
   /// No description provided for @totalDevices.
@@ -818,7 +818,7 @@ abstract class AppLocalizations {
   /// No description provided for @sortReorder.
   ///
   /// In en, this message translates to:
-  /// **'Reorder...'**
+  /// **'Reorder…'**
   String get sortReorder;
 
   /// No description provided for @sortByIp.
@@ -1196,7 +1196,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsWebDAVAutoSync.
   ///
   /// In en, this message translates to:
-  /// **'Auto Sync'**
+  /// **'Auto-sync'**
   String get settingsWebDAVAutoSync;
 
   /// No description provided for @settingsWebDAVAutoSyncDesc.
@@ -1406,7 +1406,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search device name...'**
+  /// **'Search device name…'**
   String get searchHint;
 
   /// No description provided for @searchButton.
@@ -1454,7 +1454,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchFetchingDetail.
   ///
   /// In en, this message translates to:
-  /// **'Fetching details...'**
+  /// **'Fetching details…'**
   String get searchFetchingDetail;
 
   /// No description provided for @searchCpuInfo.
@@ -1472,31 +1472,31 @@ abstract class AppLocalizations {
   /// No description provided for @searchCpuHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter CPU model...'**
+  /// **'Enter CPU model…'**
   String get searchCpuHint;
 
   /// No description provided for @searchGpuHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter GPU model...'**
+  /// **'Enter GPU model…'**
   String get searchGpuHint;
 
   /// No description provided for @searchTemplatePlaceholder.
   ///
   /// In en, this message translates to:
-  /// **'Search...'**
+  /// **'Search…'**
   String get searchTemplatePlaceholder;
 
   /// No description provided for @cpuPresetSearch.
   ///
   /// In en, this message translates to:
-  /// **'Search CPU...'**
+  /// **'Search CPU…'**
   String get cpuPresetSearch;
 
   /// No description provided for @gpuPresetSearch.
   ///
   /// In en, this message translates to:
-  /// **'Search GPU...'**
+  /// **'Search GPU…'**
   String get gpuPresetSearch;
 
   /// No description provided for @cpuArchHint.

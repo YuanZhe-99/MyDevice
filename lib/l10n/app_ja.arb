@@ -27,7 +27,7 @@
   "deviceNotes": "メモ",
   "deviceLocation": "場所",
   "mapPickLocation": "場所を選択",
-  "mapSearchHint": "場所を検索...",
+  "mapSearchHint": "場所を検索…",
 
   "cpuInfo": "CPU",
   "cpuModel": "モデル",
@@ -83,7 +83,7 @@
   "backupCreated": "バックアップを作成しました",
   "backupAutoBackup": "自動バックアップ",
   "backupRetention": "保持期間",
-  "backupKeepForever": "永久に保持",
+  "backupKeepForever": "永久保持",
   "backupKeepDays": "{days} 日間",
   "@backupKeepDays": {
     "placeholders": {
@@ -120,7 +120,7 @@
   "settingsDirectoryPath": "ディレクトリパス",
   "settingsResetDefault": "デフォルトに戻す",
   "settingsResetDefaultLocation": "デフォルトの保存場所に戻しました",
-  "settingsStoragePathUpdated": "保存パスを更新しました",
+  "settingsStoragePathUpdated": "保存場所を更新しました",
 
   "totalDevices": "{count} 台のデバイス",
 
@@ -254,7 +254,7 @@
 
   "fetchFromInternet": "オンライン検索",
   "searchDeviceInfo": "デバイス情報を取得",
-  "searchHint": "デバイス名を検索...",
+  "searchHint": "デバイス名を検索…",
   "searchButton": "検索",
   "searchNoResults": "結果が見つかりません",
   "searchApply": "適用",
@@ -262,11 +262,11 @@
   "searchFetched": "取得",
   "searchDeviceImage": "デバイス画像",
   "searchFetchImage": "ダウンロード",
-  "searchFetchingDetail": "詳細を取得中...",
+  "searchFetchingDetail": "詳細を取得中…",
   "searchCpuInfo": "CPU を検索",
   "searchGpuInfo": "GPU を検索",
-  "searchCpuHint": "CPUモデルを入力...",
-  "searchGpuHint": "GPUモデルを入力...",
+  "searchCpuHint": "CPUモデルを入力…",
+  "searchGpuHint": "GPUモデルを入力…",
 
   "searchTemplatePlaceholder": "検索…",
   "cpuPresetSearch": "CPUを検索…",

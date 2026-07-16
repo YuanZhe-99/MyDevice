@@ -78,7 +78,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get mapPickLocation => '場所を選択';
 
   @override
-  String get mapSearchHint => '場所を検索...';
+  String get mapSearchHint => '場所を検索…';
 
   @override
   String get cpuInfo => 'CPU';
@@ -230,7 +230,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get backupRetention => '保持期間';
 
   @override
-  String get backupKeepForever => '永久に保持';
+  String get backupKeepForever => '永久保持';
 
   @override
   String backupKeepDays(int days) {
@@ -312,7 +312,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsResetDefaultLocation => 'デフォルトの保存場所に戻しました';
 
   @override
-  String get settingsStoragePathUpdated => '保存パスを更新しました';
+  String get settingsStoragePathUpdated => '保存場所を更新しました';
 
   @override
   String totalDevices(int count) {
@@ -684,7 +684,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchDeviceInfo => 'デバイス情報を取得';
 
   @override
-  String get searchHint => 'デバイス名を検索...';
+  String get searchHint => 'デバイス名を検索…';
 
   @override
   String get searchButton => '検索';
@@ -708,7 +708,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchFetchImage => 'ダウンロード';
 
   @override
-  String get searchFetchingDetail => '詳細を取得中...';
+  String get searchFetchingDetail => '詳細を取得中…';
 
   @override
   String get searchCpuInfo => 'CPU を検索';
@@ -717,10 +717,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchGpuInfo => 'GPU を検索';
 
   @override
-  String get searchCpuHint => 'CPUモデルを入力...';
+  String get searchCpuHint => 'CPUモデルを入力…';
 
   @override
-  String get searchGpuHint => 'GPUモデルを入力...';
+  String get searchGpuHint => 'GPUモデルを入力…';
 
   @override
   String get searchTemplatePlaceholder => '検索…';

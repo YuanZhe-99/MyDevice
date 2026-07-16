@@ -78,7 +78,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapPickLocation => '选择位置';
 
   @override
-  String get mapSearchHint => '搜索位置...';
+  String get mapSearchHint => '搜索位置…';
 
   @override
   String get cpuInfo => 'CPU';
@@ -227,7 +227,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupAutoBackup => '自动备份';
 
   @override
-  String get backupRetention => '保留时间';
+  String get backupRetention => '保留期限';
 
   @override
   String get backupKeepForever => '永久保留';
@@ -312,7 +312,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsResetDefaultLocation => '已恢复默认存储位置';
 
   @override
-  String get settingsStoragePathUpdated => '存储路径已更新';
+  String get settingsStoragePathUpdated => '存储位置已更新';
 
   @override
   String totalDevices(int count) {
@@ -684,7 +684,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchDeviceInfo => '获取设备信息';
 
   @override
-  String get searchHint => '搜索设备名称...';
+  String get searchHint => '搜索设备名称…';
 
   @override
   String get searchButton => '搜索';
@@ -708,7 +708,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchFetchImage => '下载';
 
   @override
-  String get searchFetchingDetail => '正在获取详情...';
+  String get searchFetchingDetail => '正在获取详情…';
 
   @override
   String get searchCpuInfo => '搜索 CPU';
@@ -717,10 +717,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchGpuInfo => '搜索 GPU';
 
   @override
-  String get searchCpuHint => '输入 CPU 型号...';
+  String get searchCpuHint => '输入 CPU 型号…';
 
   @override
-  String get searchGpuHint => '输入 GPU 型号...';
+  String get searchGpuHint => '输入 GPU 型号…';
 
   @override
   String get searchTemplatePlaceholder => '搜索…';
@@ -1453,7 +1453,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get mapPickLocation => '選擇位置';
 
   @override
-  String get mapSearchHint => '搜尋位置...';
+  String get mapSearchHint => '搜尋位置…';
 
   @override
   String get cpuInfo => 'CPU';
@@ -1602,7 +1602,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get backupAutoBackup => '自動備份';
 
   @override
-  String get backupRetention => '保留時間';
+  String get backupRetention => '保留期限';
 
   @override
   String get backupKeepForever => '永久保留';
@@ -1614,7 +1614,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String backupHistory(int count) {
-    return '歷史紀錄 ($count)';
+    return '歷史記錄 ($count)';
   }
 
   @override
@@ -1687,7 +1687,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsResetDefaultLocation => '已恢復預設儲存位置';
 
   @override
-  String get settingsStoragePathUpdated => '儲存路徑已更新';
+  String get settingsStoragePathUpdated => '儲存位置已更新';
 
   @override
   String totalDevices(int count) {
@@ -2059,7 +2059,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get searchDeviceInfo => '取得裝置資訊';
 
   @override
-  String get searchHint => '搜尋裝置名稱...';
+  String get searchHint => '搜尋裝置名稱…';
 
   @override
   String get searchButton => '搜尋';
@@ -2083,7 +2083,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get searchFetchImage => '下載';
 
   @override
-  String get searchFetchingDetail => '正在取得詳細資訊...';
+  String get searchFetchingDetail => '正在取得詳細資訊…';
 
   @override
   String get searchCpuInfo => '搜尋 CPU';
@@ -2092,10 +2092,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get searchGpuInfo => '搜尋 GPU';
 
   @override
-  String get searchCpuHint => '輸入 CPU 型號...';
+  String get searchCpuHint => '輸入 CPU 型號…';
 
   @override
-  String get searchGpuHint => '輸入 GPU 型號...';
+  String get searchGpuHint => '輸入 GPU 型號…';
 
   @override
   String get searchTemplatePlaceholder => '搜尋…';

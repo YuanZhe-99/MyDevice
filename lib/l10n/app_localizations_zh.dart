@@ -249,7 +249,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupRestore => '还原';
 
   @override
-  String get backupRestoreConfirm => '这将覆盖当前数据，确定继续吗？';
+  String get backupRestoreConfirm => '这将使用备份覆盖所选数据，是否继续？';
 
   @override
   String get backupRestored => '备份已还原';
@@ -258,7 +258,35 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupRestoreFailed => '还原失败';
 
   @override
-  String get backupDeleteConfirm => '确定删除这个备份吗？';
+  String get backupDeleteConfirm => '删除此备份？此操作无法撤销。';
+
+  @override
+  String get backupFailed => '备份失败';
+
+  @override
+  String get backupAutoBackupDesc => '每天自动创建一次备份';
+
+  @override
+  String get backupLocalOnlyNote => '备份仅存储在本设备上。云端备份请使用 WebDAV 同步。';
+
+  @override
+  String get backupCorrupt => '已损坏';
+
+  @override
+  String get backupRestoredSyncDisabled => '备份已还原。为保护还原的数据，已停用自动同步。';
+
+  @override
+  String get backupForceUploadPrompt =>
+      '现在将还原的数据上传到 WebDAV 吗？远程数据将被还原后的本地数据覆盖。';
+
+  @override
+  String get backupForceUploadSkip => '暂不';
+
+  @override
+  String get backupForceUploadDone => '强制上传完成';
+
+  @override
+  String get backupForceUploadFailed => '强制上传失败';
 
   @override
   String get exportData => '导出数据';
@@ -1624,7 +1652,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get backupRestore => '還原';
 
   @override
-  String get backupRestoreConfirm => '這將覆蓋目前的資料，確定要繼續嗎？';
+  String get backupRestoreConfirm => '這將使用備份覆蓋所選資料，是否繼續？';
 
   @override
   String get backupRestored => '備份已還原';
@@ -1633,7 +1661,35 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get backupRestoreFailed => '還原失敗';
 
   @override
-  String get backupDeleteConfirm => '確定刪除這個備份嗎？';
+  String get backupDeleteConfirm => '刪除此備份？此操作無法復原。';
+
+  @override
+  String get backupFailed => '備份失敗';
+
+  @override
+  String get backupAutoBackupDesc => '每天自動建立一次備份';
+
+  @override
+  String get backupLocalOnlyNote => '備份僅儲存在本裝置上。雲端備份請使用 WebDAV 同步。';
+
+  @override
+  String get backupCorrupt => '已損壞';
+
+  @override
+  String get backupRestoredSyncDisabled => '備份已還原。為保護還原的資料，已停用自動同步。';
+
+  @override
+  String get backupForceUploadPrompt =>
+      '現在將還原的資料上傳到 WebDAV 嗎？遠端資料將被還原後的本地資料覆蓋。';
+
+  @override
+  String get backupForceUploadSkip => '暫不';
+
+  @override
+  String get backupForceUploadDone => '強制上傳完成';
+
+  @override
+  String get backupForceUploadFailed => '強制上傳失敗';
 
   @override
   String get exportData => '匯出資料';

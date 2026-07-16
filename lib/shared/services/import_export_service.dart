@@ -89,7 +89,7 @@ class ImportExportService {
           final allowed =
               _dataFileNames.contains(normalizedName) ||
               (normalizedName.startsWith('images/') &&
-                  p.basename(normalizedName) == normalizedName.split('/').last);
+                  normalizedName.split('/').length == 2);
           if (!allowed || normalizedName.contains('..')) continue;
 
           final outFile = File(p.join(appDir.path, normalizedName));

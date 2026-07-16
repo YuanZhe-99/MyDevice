@@ -250,7 +250,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupRestoreConfirm =>
-      'This will overwrite your current data. Continue?';
+      'This will overwrite the selected data with the backup. Continue?';
 
   @override
   String get backupRestored => 'Backup restored';
@@ -259,7 +259,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backupRestoreFailed => 'Restore failed';
 
   @override
-  String get backupDeleteConfirm => 'Delete this backup?';
+  String get backupDeleteConfirm =>
+      'Delete this backup? This cannot be undone.';
+
+  @override
+  String get backupFailed => 'Backup failed';
+
+  @override
+  String get backupAutoBackupDesc => 'Automatically creates one backup per day';
+
+  @override
+  String get backupLocalOnlyNote =>
+      'Backups are stored locally on this device only. Use WebDAV Sync for cloud backup.';
+
+  @override
+  String get backupCorrupt => 'Corrupted';
+
+  @override
+  String get backupRestoredSyncDisabled =>
+      'Backup restored. Auto-sync has been disabled to protect the restored data.';
+
+  @override
+  String get backupForceUploadPrompt =>
+      'Upload the restored data to WebDAV now? The remote data will be overwritten with the restored local data.';
+
+  @override
+  String get backupForceUploadSkip => 'Not now';
+
+  @override
+  String get backupForceUploadDone => 'Force upload completed';
+
+  @override
+  String get backupForceUploadFailed => 'Force upload failed';
 
   @override
   String get exportData => 'Export Data';

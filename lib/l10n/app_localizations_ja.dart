@@ -249,7 +249,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get backupRestore => '復元';
 
   @override
-  String get backupRestoreConfirm => '現在のデータが上書きされます。続行しますか？';
+  String get backupRestoreConfirm => '選択したデータがバックアップで上書きされます。続行しますか？';
 
   @override
   String get backupRestored => 'バックアップを復元しました';
@@ -258,7 +258,37 @@ class AppLocalizationsJa extends AppLocalizations {
   String get backupRestoreFailed => '復元に失敗しました';
 
   @override
-  String get backupDeleteConfirm => 'このバックアップを削除しますか？';
+  String get backupDeleteConfirm => 'このバックアップを削除しますか？この操作は取り消せません。';
+
+  @override
+  String get backupFailed => 'バックアップに失敗しました';
+
+  @override
+  String get backupAutoBackupDesc => '1日1回自動でバックアップを作成します';
+
+  @override
+  String get backupLocalOnlyNote =>
+      'バックアップはこのデバイスにのみ保存されます。クラウドバックアップにはWebDAV同期を使用してください。';
+
+  @override
+  String get backupCorrupt => '破損';
+
+  @override
+  String get backupRestoredSyncDisabled =>
+      'バックアップを復元しました。復元したデータを保護するため、自動同期を無効にしました。';
+
+  @override
+  String get backupForceUploadPrompt =>
+      '復元したデータを今すぐWebDAVにアップロードしますか？リモートのデータは復元したローカルデータで上書きされます。';
+
+  @override
+  String get backupForceUploadSkip => '後で';
+
+  @override
+  String get backupForceUploadDone => '強制アップロードが完了しました';
+
+  @override
+  String get backupForceUploadFailed => '強制アップロードに失敗しました';
 
   @override
   String get exportData => 'データをエクスポート';

@@ -28,7 +28,7 @@ Maintenance rules:
 - **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
 - **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
 - **License:** GPL-3.0.
-- **Current version:** `1.2.1+33` in `pubspec.yaml`, `1.2.1.0` for MSIX, and `1.2.1` in `installer.iss`.
+- **Current version:** `1.2.2+34` in `pubspec.yaml`, `1.2.2.0` for MSIX, and `1.2.2` in `installer.iss`.
 - **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.44.2`.
 - **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
 - **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
@@ -76,6 +76,10 @@ When the user confirms the version and wants to push:
 GitHub Actions release builds are triggered by tag pushes to `github`. Tags must be pushed explicitly, either with `git push <remote> <tag>` or an intentional `--tags`.
 
 For documentation-only maintenance that the user explicitly says does not require a release, commit and push the documentation change to the requested remotes without changing versions or creating a tag.
+
+## Agent Co-Author Attribution
+
+An Agent that made a real, material contribution to a commit may add its own accurate `Co-authored-by:` trailer. Attribution is per commit: do not add an Agent merely because it reviewed, observed, or continued work produced by another Agent, and never copy a trailer automatically from an earlier commit. When multiple Agents materially contributed, include one accurate trailer for each. Use the Agent's actual documented identity; never invent a provider, model, name, or email. Approved examples are `Co-authored-by: Codex <noreply@openai.com>` and, for Claude Code, `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` with the model name replaced by the actual Claude model that performed the work (for example Claude Opus 4.6 or Claude Fable 5). For OpenCode or another Agent, use its verified documented identity; if none is verified, omit the AI trailer unless the repository owner explicitly approves one.
 
 ## Build Flavors
 
@@ -152,6 +156,7 @@ lib/
 Primary tests currently include:
 
 - `test/audit_fixes_test.dart` (identical-content conflict suppression, UTC timestamps)
+- `test/backup_service_test.dart` (backup format v2 blob dedup, reference-counted blob GC, legacy inline-image restore, image-name sanitization, images module gating, corrupt-bundle detection)
 - `test/device_finance_test.dart`
 - `test/service_module_test.dart`
 - `test/service_topology_layout_test.dart`
@@ -247,7 +252,11 @@ These are lazy-loaded and cached.
 
 ### Backup, Export, Import, and Images
 
-- `backup_service.dart`: local auto-backup once per day, manual backups, retention, selective restore by module.
+- `backup_service.dart`: local auto-backup once per day, manual backups, retention, selective restore by module (including a synthetic `images` module).
+- Backup format v2: each `backups/backup_*.json` bundle stores data-module JSON strings plus an `_imageRefs` map pointing at content-addressed image blobs in `backups/blobs/<sha256><ext>`. Identical images are stored once and shared by every backup; a blob is physically deleted only when no remaining backup references it (GC runs after create/delete/retention, aborts if any remaining bundle is unparseable, and never deletes blobs younger than a 10-minute grace window). Legacy v1 bundles with inline base64 `_images` (bare basenames) remain restorable.
+- Bundle writes are atomic (tmp-then-rename). Corrupt (unparseable) bundles are flagged in the backup history with restore disabled and do not count as "already backed up today", so an interrupted auto-backup is retried. `runAutoBackupIfNeeded()` is re-entrancy guarded; auto-backup triggers are app launch, app resume, and the auto-sync 15-minute periodic timer (covers desktop instances running across midnight).
+- Restore validates each selected module payload via its model parser (`DeviceData`/`NetworkData`/`DataSetData`/`ServiceData.fromJson`) before writing anything, writes atomically, and sanitizes image names (flat basenames only; traversal/absolute paths rejected). Images restore only when the `images` module is selected.
+- After a successful restore the backup page reloads open pages (`AutoSyncService.notifyLocalDataChangedNow()`) and — only when WebDAV sync is configured — automatically disables auto-sync in `webdav_config.json` and asks whether to force-upload the restored data (wake lock held, result recorded in sync status). Without this, the next sync would treat restored-old data as local edits/deletions and propagate them to the remote and other devices.
 - `import_export_service.dart`: ZIP export/import for data JSON files plus `images/`; Markdown export for LLM-friendly device/network/dataset/service summaries including service endpoints, routes, hops, Docker Compose notes, and grouped public targets.
 - ZIP import must keep path traversal protection.
 - `image_service.dart`: file picking, URL download, UUID filenames in `images/`, relative path resolution, deletion.
@@ -320,7 +329,8 @@ Default app data directory is `Documents/MyDevice` on desktop or the platform ap
 | Theme, locale, backup settings, sort preferences, default currency, exchange-rate settings | `storage_config.json` | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
-| Backups | `backups/*.json` | No | Local recovery |
+| Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
+| Backup image blobs | `backups/blobs/` | No | Content-addressed (`sha256`), shared across backups, reference-counted GC |
 | Exchange-rate cache | `exchange_rates.json` | No | Local cache/fallback data |
 
 Cross-reference rules:
@@ -443,3 +453,4 @@ Use the narrowest relevant command set for verification. For model/sync changes,
 - `v1.1.2`: WebDAV now acquires `.lock` before downloading and merging remote data, lowers the lock TTL to 60 seconds, and force-uploads complete merged/resolved JSON under the valid lock without data-file `If-Match`/`If-None-Match` retry loops; versions are unified to `1.1.2+31` / MSIX `1.1.2.0` / installer `1.1.2`.
 - `v1.2.0`: WebDAV sync hardening and force transfers — remote image listing failures no longer masquerade as an empty directory (fixing repeated re-uploads of already-uploaded images), transient network errors and HTTP 5xx are retried with backoff, sync progress is published through `WebDAVService.progress` and shown as a progress bar with localized phase text, Force Upload / Force Download actions with confirmation dialogs were added to the WebDAV page, auto-sync gained a re-entrancy guard plus `requestSyncNow()` on enabling auto-sync, the conflict dialog shows per-side modified timestamps instead of bare IDs, downloaded images trigger UI reloads, manual sync notifies reload listeners, WebDAV terminology was standardized across MyAnime/MyDay/MyDevice, installer filenames derive from `AppVersion`, and versions are unified to `1.2.0+32` / MSIX `1.2.0.0` / installer `1.2.0`.
 - `v1.2.1`: Foreground sync operations (manual sync, conflict finalize, force upload/download) hold a screen wake lock via the new `sync_wake_lock.dart` and `wakelock_plus`, released in `finally` on completion/failure/cancel/exception; dismissing a sync conflict dialog now aborts the resolution instead of silently uploading keep-local; backup retention gains a 3-day option; settings/backup terminology was aligned with MyAnime/MyDay ("Auto-sync", "Storage location updated/reset to default", ja `backupKeepForever`, zh/zh_TW `backupRetention`/`backupHistory`); remaining ASCII `...` in localization strings was converted to `…`; and versions are unified to `1.2.1+33` / MSIX `1.2.1.0` / installer `1.2.1`.
+- `v1.2.2`: Backup overhaul — backup format v2 stores images once in a content-addressed `backups/blobs/` store shared by all backups with reference-counted GC (a blob is deleted only when no remaining backup references it; legacy inline-image bundles stay restorable), bundle writes are atomic and corrupt bundles are flagged in the history (restore disabled) without suppressing the daily auto-backup retry, restore now validates module JSON via the model parsers and sanitizes image names before writing, restoring a backup reloads open pages, disables WebDAV auto-sync when sync is configured and offers an explicit force upload of the restored data (preventing restored-old data from propagating deletions to other devices), auto-backup also runs from the 15-minute periodic timer with a re-entrancy guard, backup failures show a snackbar, the ZIP import "flat files under images/" allowlist check was fixed (the old basename comparison was always true and admitted nested entries), backup UI text/CJK terminology was standardized across MyAnime/MyDay/MyDevice, and versions are unified to `1.2.2+34` / MSIX `1.2.2.0` / installer `1.2.2`.

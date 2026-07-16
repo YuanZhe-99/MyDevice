@@ -103,24 +103,51 @@ void main() {
 
       await File(p.join(tempDir.path, 'images', 'photo1.png')).delete();
 
-      var ok = await BackupService.restoreBackup(
+      var result = await BackupService.restoreBackup(
         b1!,
         moduleKeys: {'devices'},
       );
-      expect(ok, isTrue);
+      expect(result.ok, isTrue);
       expect(
         await File(p.join(tempDir.path, 'images', 'photo1.png')).exists(),
         isFalse,
       );
 
-      ok = await BackupService.restoreBackup(
+      result = await BackupService.restoreBackup(
         b1,
         moduleKeys: {'devices', 'images'},
       );
-      expect(ok, isTrue);
+      expect(result.ok, isTrue);
+      expect(result.wroteAnything, isTrue);
+      expect(result.missingImages, 0);
       expect(
         await File(p.join(tempDir.path, 'images', 'photo1.png')).readAsBytes(),
         [1, 2, 3, 4],
+      );
+    });
+
+    test('restore reports missing blobs instead of dropping them silently',
+        () async {
+      await writeData('device_data.json', '{"devices": []}');
+      await writeImage('photo1.png', [1, 2, 3, 4]);
+      final b1 = await BackupService.createBackup();
+
+      // Simulate an incomplete blob store, e.g. a bundle copied to another
+      // machine without backups/blobs/.
+      for (final blob in await listBlobs()) {
+        await blob.delete();
+      }
+      await File(p.join(tempDir.path, 'images', 'photo1.png')).delete();
+
+      final result = await BackupService.restoreBackup(
+        b1!,
+        moduleKeys: {'devices', 'images'},
+      );
+      expect(result.ok, isTrue);
+      expect(result.missingImages, 1);
+      expect(
+        await File(p.join(tempDir.path, 'images', 'photo1.png')).exists(),
+        isFalse,
       );
     });
   });
@@ -143,8 +170,8 @@ void main() {
       );
       await file.writeAsString(jsonEncode(legacy));
 
-      final ok = await BackupService.restoreBackup(file);
-      expect(ok, isTrue);
+      final result = await BackupService.restoreBackup(file);
+      expect(result.ok, isTrue);
       expect(
         await File(p.join(tempDir.path, 'images', 'legacy.png')).exists(),
         isTrue,
@@ -170,8 +197,9 @@ void main() {
         jsonEncode({'device_data.json': 'not valid json'}),
       );
 
-      final ok = await BackupService.restoreBackup(file);
-      expect(ok, isFalse);
+      final result = await BackupService.restoreBackup(file);
+      expect(result.ok, isFalse);
+      expect(result.wroteAnything, isFalse);
       expect(
         await File(p.join(tempDir.path, 'device_data.json')).readAsString(),
         '{"devices": []}',

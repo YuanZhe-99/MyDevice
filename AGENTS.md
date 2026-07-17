@@ -43,6 +43,7 @@ Do not include secrets, credentials, personal device data, WebDAV credentials, s
 1. Treat the user's message as the modification request.
 2. Before making any modification, fetch the relevant remote(s) and check whether the local branch is behind. If remote updates exist, sync or ask the user how to proceed before editing.
 3. Read this `AGENTS.md`, then read the function explanations in the relevant source files as the first-pass orientation layer, then inspect the implementation details you need before editing.
+   - When investigating an implementation, read the relevant comments first. Only inspect the detailed code if the comments are insufficient or if reading the code is necessary to understand the actual behavior.
 4. Make a concise plan when the work is non-trivial, then implement the requested changes directly in the workspace.
 5. Keep changes scoped. Do not revert unrelated user work in the tree.
 6. Update `AGENTS.md` in the same change set whenever architecture, behavior, data formats, commands, release process, version locations, remotes, caveats, or project descriptions change. This document replaces the older role of an external summary and must stay current and complete.

@@ -172,7 +172,13 @@ lib/
     views/webdav_config_page.dart
     widgets/
   l10n/
+packages/
+  myapps_data/            # git submodule: shared sync/backup/ZIP engines
 ```
+
+`lib/app/data_modules.dart` holds the `StorageAdapter` and `DataModule` registry that connect this
+app to `packages/myapps_data`. The services listed under `shared/services/` above are facades over
+that package — see "Shared Package (`myapps_data`)".
 
 Primary tests currently include:
 
@@ -185,6 +191,65 @@ Primary tests currently include:
 - `test/widget_test.dart`
 
 The `tool/` directory contains ad hoc validation and source-testing scripts, especially around CPU/GPU scraping and preset data. Prefer focused tests for production behavior and keep tool scripts out of release-critical paths unless the user asks for them. Standard `flutter analyze` excludes `tool/**`; analyze individual tool scripts explicitly only when changing them.
+
+## Shared Package (`myapps_data`)
+
+The WebDAV sync engine, backup engine, ZIP transfer engine, and auto-sync scheduler are **not in
+this repo**. They live in the shared `myapps_data` package, embedded at `packages/myapps_data` as a
+git submodule and consumed as a pub path dependency. MyAnime, MyDay, and MyDevice all use it.
+
+What stays here: all models, the per-feature storage hubs, the per-module merge wrappers
+(`mergeDeviceData`, `mergeNetworkData` + `mergeAssignments`, `mergeDataSetData`, `mergeServiceData`),
+the Markdown export, and every page. What moved: the transport, lock lifecycle, merge pipeline, base
+snapshots, image sync, backup bundle/blob store, ZIP allowlist, and sync scheduling.
+
+`lib/app/data_modules.dart` is the seam and **the single source of truth** for MyDevice's four data
+files. It declares the `StorageAdapter` over `DeviceStorage` plus one `DataModule` per file — name,
+backup module id, validator, merge callback, and (for devices only) referenced images. Registry
+order is the sync/backup/progress order. Never hardcode a data-file name or backup module key
+anywhere else; read it from the registry.
+
+`lib/shared/services/` still holds `WebDAVService`, `BackupService`, `ImportExportService`, and
+`AutoSyncService`, but they are now thin facades that delegate to the package. Their public APIs are
+deliberately unchanged. **If a change seems to require editing a facade's public shape, stop** — the
+facade exists so call sites and tests keep working. Behavior changes belong in the package.
+
+`sync_progress.dart`, `sync_wake_lock.dart`, `utils/json_preservation.dart`, and the generic half of
+`sync_merge.dart` are re-export shims over the package. Do not reintroduce implementations in them.
+MyDevice-specific merge logic that deliberately stayed app-side: `mergeAssignments` (composite key,
+no timestamps) and the synthetic `images` backup module (an engine constructor knob).
+
+### Working with the submodule
+
+Fresh clone:
+
+```bash
+git clone --recurse-submodules <app-url>
+```
+
+After a plain clone, or when the pointer moves:
+
+```bash
+git submodule update --init
+```
+
+`.gitmodules` uses the **relative** URL `../MyApps-DATA.git`, so it resolves against whichever remote
+this clone tracks: a Gitea clone fetches from Gitea, a GitHub clone from GitHub. Never write a host
+name into `.gitmodules` — the real Gitea address must not appear in any committed file.
+
+Consuming a newer shared version:
+
+```bash
+cd packages/myapps_data
+git fetch origin --tags && git checkout vX.Y.Z
+cd ../..
+flutter analyze && flutter test
+git add packages/myapps_data && git commit -m "Bump myapps_data to vX.Y.Z"
+```
+
+Changing shared code: the submodule checks out detached, so `git switch main` inside it first, then
+commit and **push to both remotes before** committing the pointer bump here. A pointer to an
+unpushed commit breaks every other clone and CI.
 
 ## Core Architecture
 
@@ -279,7 +344,7 @@ These are lazy-loaded and cached.
 - Restore validates each selected module payload via its model parser (`DeviceData`/`NetworkData`/`DataSetData`/`ServiceData.fromJson`) before writing anything, writes atomically, and sanitizes image names (flat basenames only; traversal/absolute paths rejected). Images restore only when the `images` module is selected.
 - When WebDAV auto-sync is enabled, restoring a backup disables auto-sync in `webdav_config.json` *before* the first file is written (no `mounted` gate), so a crash or page disposal mid-restore can never leave restored-old data with auto-sync still on. `BackupService.restoreBackup` returns a `RestoreResult` (`ok`, `wroteAnything`, `missingImages`); auto-sync is re-enabled only when the restore failed with `wroteAnything == false` (local data guaranteed untouched). After a successful restore the backup page reloads open pages (`AutoSyncService.notifyLocalDataChangedNow()`), warns when v2 image blobs were missing from the blob store (`backupRestoreMissingImages`), and — only when WebDAV sync is configured — asks whether to force-upload the restored data (wake lock held, result recorded in sync status). Without this, the next sync would treat restored-old data as local edits/deletions and propagate them to the remote and other devices.
 - `import_export_service.dart`: ZIP export/import for data JSON files plus `images/`; Markdown export for LLM-friendly device/network/dataset/service summaries including service endpoints, routes, hops, Docker Compose notes, and grouped public targets.
-- ZIP import must keep path traversal protection.
+- ZIP import must keep path traversal protection. Only allowlisted entries (the registry's data files and flat files under `images/`) are extracted, and every entry must resolve inside the app dir. Every entry is classified before any is written, so an archive containing a traversal entry is **rejected outright** (`importZip` returns false and writes nothing) rather than having the bad entry skipped. Unknown entries are still skipped, so an archive from a newer build still imports.
 - `image_service.dart`: file picking, URL download, UUID filenames in `images/`, relative path resolution, deletion.
 
 ### Desktop API, Tray, and Startup
@@ -405,6 +470,10 @@ Cross-reference rules:
 ## CI/CD
 
 `.github/workflows/build.yml` runs on `v*` tag pushes and `workflow_dispatch`.
+
+Every checkout step passes `submodules: recursive`. Without it `flutter pub get` fails on the
+missing `packages/myapps_data` path dependency. The relative submodule URL resolves to the public
+GitHub copy in CI, so the default `GITHUB_TOKEN` is sufficient.
 
 Jobs:
 

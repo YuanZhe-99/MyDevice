@@ -503,7 +503,7 @@ void main() {
       await outDir.delete(recursive: true);
     });
 
-    test('import path-traversal entry skipped', () async {
+    test('import rejects an archive containing path traversal', () async {
       final sb = await newSandbox();
       final zip = _buildZip({
         '../evil.json': utf8.encode('{"devices":[]}'),
@@ -511,11 +511,17 @@ void main() {
       });
       final zipFile = File(p.join(sb.dir.path, 'evil.zip'));
       await zipFile.writeAsBytes(zip);
-      // MyDevice skips bad entries but still imports the valid one (returns true).
       final ok = await ImportExportService.importZip(zipFile.path);
-      expect(ok, isTrue, reason: 'MyDevice skips bad entries but imports valid');
+      // Accepted unification (PLAN.md, P3.3.3): MyDevice used to skip the bad
+      // entry and import the rest. The shared engine classifies every entry
+      // before writing any, so an archive containing a traversal entry is
+      // rejected outright. Strictly safer — a tampered archive can no longer be
+      // half-applied — and it matches MyDay's long-standing behavior.
+      expect(ok, isFalse);
       expect(await File(p.join(sb.dir.path, 'evil.json')).exists(), isFalse,
           reason: 'traversal entry must not be written outside appDir');
+      expect(await File(p.join(sb.appDir, 'device_data.json')).exists(), isFalse,
+          reason: 'a rejected archive must not write any of its entries');
       await sb.dir.delete(recursive: true);
     });
   });

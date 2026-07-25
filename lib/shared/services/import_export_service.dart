@@ -1,9 +1,20 @@
+/// Purpose: MyDevice's ZIP and Markdown export/import API. The ZIP half is now
+/// a facade over the shared `ZipTransfer` engine; the Markdown export is
+/// domain-specific and stays here (PLAN.md M14 non-goal).
+/// Inputs: Destination directories and ZIP file paths from the settings pages.
+/// Returns: Written file paths, or import success flags.
+/// Side effects: Reads and writes the app data directory.
+/// Notes: PLAN.md P3.3.3. `exportZip`/`importZip` keep their names, signatures,
+/// and archive naming (`mydevice_export_<stamp>.zip`) (I7).
+library;
+
 import 'dart:io';
 
-import 'package:archive/archive.dart';
 import 'package:intl/intl.dart';
+import 'package:myapps_data/myapps_data.dart' as shared;
 import 'package:path/path.dart' as p;
 
+import '../../app/data_modules.dart';
 import '../../features/datasets/models/dataset.dart';
 import '../../features/datasets/services/dataset_storage.dart';
 import '../../features/devices/models/device.dart';
@@ -16,101 +27,42 @@ import '../../features/services/services/service_analysis.dart';
 import '../../features/services/services/service_storage.dart';
 
 class ImportExportService {
-  static const _dataFileNames = [
-    'device_data.json',
-    'network_data.json',
-    'dataset_data.json',
-    'service_data.json',
-  ];
+  /// Shared ZIP engine configured to match MyDevice's existing leniency.
+  ///
+  /// Unknown entries are skipped rather than rejected so an archive from a
+  /// newer build still imports, and payloads are written as raw bytes without
+  /// UTF-8 or model validation — exactly what this service did before.
+  /// Path traversal is the one thing that is not configurable: the engine
+  /// always refuses such an archive outright.
+  static final shared.ZipTransfer _zip = shared.ZipTransfer(
+    storage: const DeviceStorageAdapter(),
+    modules: deviceModuleRegistry,
+    archiveNamePrefix: deviceArchiveNamePrefix,
+    rejectUnknownEntries: false,
+    strictUtf8: false,
+    validateBeforeWrite: false,
+    atomicWrites: false,
+  );
 
   /// Purpose: Export zip to an external representation.
   /// Inputs: `destDir`.
-  /// Returns: `Future<String?>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  /// Export all data and images as a ZIP file.
-  /// Returns the exported file path, or null on failure.
-  static Future<String?> exportZip(String destDir) async {
-    try {
-      final appDir = await DeviceStorage.getAppDir();
-      final archive = Archive();
+  /// Returns: `Future<String?>` — the exported file path, or null on failure.
+  /// Side effects: Writes `mydevice_export_<yyyyMMdd_HHmmss>.zip` in `destDir`.
+  /// Notes: Bundles the registry's data files in registry order plus flat
+  /// `images/<name>` entries. Config, `.sync_base/`, and `backups/` are never
+  /// included.
+  static Future<String?> exportZip(String destDir) => _zip.exportZip(destDir);
 
-      // Add data files
-      for (final name in _dataFileNames) {
-        final file = File(p.join(appDir.path, name));
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          archive.addFile(ArchiveFile(name, bytes.length, bytes));
-        }
-      }
-
-      // Add images
-      final imagesDir = Directory(p.join(appDir.path, 'images'));
-      if (await imagesDir.exists()) {
-        await for (final entity in imagesDir.list()) {
-          if (entity is File) {
-            final bytes = await entity.readAsBytes();
-            final name = 'images/${p.basename(entity.path)}';
-            archive.addFile(ArchiveFile(name, bytes.length, bytes));
-          }
-        }
-      }
-
-      final zipBytes = ZipEncoder().encode(archive);
-
-      final stamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final outFile = File(p.join(destDir, 'mydevice_export_$stamp.zip'));
-      await outFile.writeAsBytes(zipBytes);
-      return outFile.path;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Purpose: Import zip from an external representation.
+  /// Purpose: Import data from a previously exported ZIP file.
   /// Inputs: `filePath`.
-  /// Returns: `Future<bool>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  /// Import data from a previously exported ZIP file.
-  /// Returns true on success.
-  static Future<bool> importZip(String filePath) async {
-    try {
-      final file = File(filePath);
-      if (!await file.exists()) return false;
-
-      final bytes = await file.readAsBytes();
-      final archive = ZipDecoder().decodeBytes(bytes);
-      final appDir = await DeviceStorage.getAppDir();
-
-      for (final entry in archive) {
-        if (entry.isFile) {
-          final normalizedName = p.normalize(entry.name).replaceAll('\\', '/');
-          final allowed =
-              _dataFileNames.contains(normalizedName) ||
-              (normalizedName.startsWith('images/') &&
-                  normalizedName.split('/').length == 2);
-          if (!allowed || normalizedName.contains('..')) continue;
-
-          final outFile = File(p.join(appDir.path, normalizedName));
-          final normalizedOut = p.normalize(outFile.absolute.path);
-          final normalizedAppDir = p.normalize(appDir.absolute.path);
-          if (!p.isWithin(normalizedAppDir, normalizedOut) &&
-              normalizedOut != normalizedAppDir) {
-            continue;
-          }
-          final parentDir = outFile.parent;
-          if (!await parentDir.exists()) {
-            await parentDir.create(recursive: true);
-          }
-          await outFile.writeAsBytes(entry.content as List<int>);
-        }
-      }
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
+  /// Returns: `Future<bool>` — true on success.
+  /// Side effects: Overwrites allowlisted data files and images.
+  /// Notes: Only allowlisted entries (the registry's data files and flat files
+  /// under `images/`) are extracted, and every entry must resolve inside the
+  /// app dir. An archive containing a traversal entry is now rejected outright
+  /// (returns false, writes nothing) rather than having the bad entry skipped —
+  /// see PLAN.md's accepted-unification list.
+  static Future<bool> importZip(String filePath) => _zip.importZip(filePath);
 
   /// Purpose: Export markdown to an external representation.
   /// Inputs: `destDir`.

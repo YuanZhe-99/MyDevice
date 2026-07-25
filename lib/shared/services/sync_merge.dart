@@ -1,153 +1,27 @@
 import 'dart:convert';
 
+import 'package:myapps_data/myapps_data.dart';
+
 import '../../features/datasets/models/dataset.dart';
 import '../../features/devices/models/device.dart';
 import '../../features/network/models/network.dart';
 import '../../features/services/models/service.dart';
-import '../utils/json_preservation.dart';
 
 // ─── Generic record merge ───────────────────────────────────────────
-
-/// A single record-level conflict: same ID, both sides changed since base.
-class RecordConflict<T> {
-  final String id;
-  final T localRecord;
-  final T remoteRecord;
-  final String displayName;
-
-  /// Purpose: Create a record conflict instance.
-  /// Inputs: None.
-  /// Returns: A new `RecordConflict` instance.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  const RecordConflict({
-    required this.id,
-    required this.localRecord,
-    required this.remoteRecord,
-    required this.displayName,
-  });
-}
-
-/// Result of merging a list of records.
-class RecordMergeResult<T> {
-  final List<T> merged;
-  final List<RecordConflict<T>> conflicts;
-
-  /// Purpose: Create a record merge result instance.
-  /// Inputs: `conflicts`.
-  /// Returns: A new `RecordMergeResult` instance.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  const RecordMergeResult({required this.merged, this.conflicts = const []});
-}
-
-/// Purpose: Implement the merge records behavior for this file.
-/// Inputs: `autoResolve`, optional `serialize`.
-/// Returns: `RecordMergeResult<T>`.
-/// Side effects: May read or mutate application state, storage, or service resources.
-/// Notes: When `serialize` is provided, records whose serialized content is
-/// identical are merged without raising a conflict even if both sides bumped
-/// `modifiedAt` (e.g. after a stale base caused by an earlier failed upload).
-/// Three-way merge for a list of records by ID.
-///
-/// Uses [base] (last synced version) to detect which side changed:
-/// - Only local changed → use local
-/// - Only remote changed → use remote
-/// - Both changed → conflict (or LWW when [autoResolve] is true)
-/// - Neither changed → use either
-/// - New record on one side only → include it
-/// - Record deleted on one side, unchanged on other → exclude
-/// - Record deleted on one side, modified on other → keep the modification
-RecordMergeResult<T> mergeRecords<T>({
-  required List<T> local,
-  required List<T> remote,
-  required List<T>? base,
-  required String Function(T) getId,
-  required DateTime Function(T) getModifiedAt,
-  required String Function(T) getDisplayName,
-  T Function(T primary, T secondary, T? base)? mergeUnknownFields,
-  bool autoResolve = false,
-  String Function(T)? serialize,
-}) {
-  final localMap = {for (final r in local) getId(r): r};
-  final remoteMap = {for (final r in remote) getId(r): r};
-  final baseMap = base != null
-      ? {for (final r in base) getId(r): r}
-      : <String, T>{};
-
-  final allIds = {...localMap.keys, ...remoteMap.keys, ...baseMap.keys};
-  final merged = <T>[];
-  final conflicts = <RecordConflict<T>>[];
-  T preserveUnknown(T primary, T secondary, T? base) =>
-      mergeUnknownFields?.call(primary, secondary, base) ?? primary;
-
-  for (final id in allIds) {
-    final l = localMap[id];
-    final r = remoteMap[id];
-    final b = baseMap[id];
-
-    if (l != null && r != null) {
-      // Both sides have the record
-      if (b != null) {
-        // Three-way: check who changed from base
-        final localChanged = getModifiedAt(l).isAfter(getModifiedAt(b));
-        final remoteChanged = getModifiedAt(r).isAfter(getModifiedAt(b));
-
-        if (localChanged && remoteChanged) {
-          if (serialize != null && serialize(l) == serialize(r)) {
-            // Identical content on both sides is not a real conflict.
-            merged.add(preserveUnknown(l, r, b));
-          } else if (autoResolve) {
-            final primary = getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r;
-            final secondary = identical(primary, l) ? r : l;
-            merged.add(preserveUnknown(primary, secondary, b));
-          } else {
-            conflicts.add(
-              RecordConflict(
-                id: id,
-                localRecord: preserveUnknown(l, r, b),
-                remoteRecord: preserveUnknown(r, l, b),
-                displayName: getDisplayName(l),
-              ),
-            );
-          }
-        } else if (localChanged) {
-          merged.add(preserveUnknown(l, r, b));
-        } else if (remoteChanged) {
-          merged.add(preserveUnknown(r, l, b));
-        } else {
-          merged.add(preserveUnknown(l, r, b)); // neither changed
-        }
-      } else {
-        // No base — first sync or both added same ID
-        final primary = getModifiedAt(l).isAfter(getModifiedAt(r)) ? l : r;
-        final secondary = identical(primary, l) ? r : l;
-        merged.add(preserveUnknown(primary, secondary, null));
-      }
-    } else if (l != null && r == null) {
-      if (b != null) {
-        final localChanged = getModifiedAt(l).isAfter(getModifiedAt(b));
-        if (localChanged) {
-          merged.add(l); // modified locally after remote deleted → keep
-        }
-      } else {
-        merged.add(l); // new locally → include
-      }
-    } else if (l == null && r != null) {
-      if (b != null) {
-        final remoteChanged = getModifiedAt(r).isAfter(getModifiedAt(b));
-        if (remoteChanged) {
-          merged.add(r); // modified remotely after local deleted → keep
-        }
-      } else {
-        merged.add(r); // new remotely → include
-      }
-    }
-    // else: both null, was in base → deleted both sides → exclude
-  }
-
-  return RecordMergeResult(merged: merged, conflicts: conflicts);
-}
+//
+// `mergeRecords<T>`, `RecordConflict<T>`, and `RecordMergeResult<T>` used to be
+// defined here. They now live in the shared package and are re-exported so
+// every existing import of this file — call sites, conflict dialogs, and tests
+// — keeps compiling unchanged (I7).
+//
+// MyDevice's signature was the superset the package adopted (it carries the
+// optional `mergeUnknownFields` callback used for model-level `extraJson`
+// preservation), so the shared implementation is behaviorally identical here.
+//
+// `mergeAssignments` below is MyDevice-only (composite key, no timestamps) and
+// deliberately stays app-side.
+export 'package:myapps_data/myapps_data.dart'
+    show RecordConflict, RecordMergeResult, mergeRecords;
 
 // ─── Assignment merge (no modifiedAt) ───────────────────────────────
 

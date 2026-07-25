@@ -1,10 +1,10 @@
 /// Purpose: MyDevice's ZIP and Markdown export/import API. The ZIP half is now
 /// a facade over the shared `ZipTransfer` engine; the Markdown export is
-/// domain-specific and stays here (PLAN.md M14 non-goal).
+/// domain-specific and stays here (deliberately kept app-side).
 /// Inputs: Destination directories and ZIP file paths from the settings pages.
 /// Returns: Written file paths, or import success flags.
 /// Side effects: Reads and writes the app data directory.
-/// Notes: PLAN.md P3.3.3. `exportZip`/`importZip` keep their names, signatures,
+/// Notes: `exportZip`/`importZip` keep their names, signatures,
 /// and archive naming (`mydevice_export_<stamp>.zip`) (I7).
 library;
 
@@ -61,7 +61,7 @@ class ImportExportService {
   /// under `images/`) are extracted, and every entry must resolve inside the
   /// app dir. An archive containing a traversal entry is now rejected outright
   /// (returns false, writes nothing) rather than having the bad entry skipped —
-  /// see PLAN.md's accepted-unification list.
+  /// see the shared package's `doc/en-us/invariants.md`.
   static Future<bool> importZip(String filePath) => _zip.importZip(filePath);
 
   /// Purpose: Export markdown to an external representation.

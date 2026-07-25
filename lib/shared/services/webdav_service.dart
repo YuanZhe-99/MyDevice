@@ -3,7 +3,7 @@
 /// Inputs: `WebDAVConfig` values from the config page and auto-sync service.
 /// Returns: App-typed `SyncResult`/`PendingSync` values.
 /// Side effects: Delegates all local and remote I/O to the shared engine.
-/// Notes: PLAN.md P3.3.3. Every public member kept its name, signature, and
+/// Notes: Every public member kept its name, signature, and
 /// semantics so call sites, the conflict dialogs, and the existing tests
 /// compile and behave unchanged (I7). The four data modules are described in
 /// `lib/app/data_modules.dart`; the hardcoded `_dataFileNames` list is gone.

@@ -4,7 +4,7 @@
 /// wrappers in `sync_merge.dart`, and the feature models for parsing.
 /// Returns: A `StorageAdapter` implementation and the app's `ModuleRegistry`.
 /// Side effects: None at import time; callbacks perform parsing and storage I/O.
-/// Notes: PLAN.md P3.3.2. Registry order is the sync/backup/progress order and
+/// Notes: Registry order is the sync/backup/progress order and
 /// matches the previous `_dataFileNames` list exactly. File names and module
 /// IDs are persisted compatibility contracts (I1/I2) and must never change.
 library;

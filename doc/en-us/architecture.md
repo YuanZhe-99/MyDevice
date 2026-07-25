@@ -127,6 +127,30 @@ lib/
 `lib/features/devices/widgets/device_avatar.dart` also live under those directories —
 see [Map](features/map.md) and [Devices](features/devices.md).)
 
+## Shared package (`myapps_data`)
+
+The WebDAV sync engine, backup engine, ZIP transfer engine, and auto-sync scheduler are **not in this
+repo**. They live in the shared `myapps_data` package, embedded at `packages/myapps_data` as a git
+submodule and consumed as a pub path dependency. MyAnime, MyDay, and MyDevice all use it, which is
+what keeps their wire format, backup format, and lock semantics interoperable.
+
+- **What stays here:** all models, the per-feature storage hubs, the per-module merge wrappers,
+  `mergeAssignments`, the Markdown export, and every page.
+- **What moved:** the transport, lock lifecycle, merge pipeline, `.sync_base` snapshots, image sync,
+  backup bundle and blob store, ZIP allowlist, and sync scheduling.
+- **The seam:** [`functions/app/data_modules.md`](functions/app/data_modules.md) declares the
+  `StorageAdapter` over `DeviceStorage` plus one `DataModule` per data file. It is the single source
+  of truth for data-file names and backup module keys.
+- **The facades:** `WebDAVService`, `BackupService`, `ImportExportService`, and `AutoSyncService`
+  keep their previous public APIs and delegate to the package. Their shapes are deliberately frozen
+  so call sites and tests keep working; behavior changes belong in the package.
+- **MyDevice-specific knob:** the backup engine is built with `syntheticImagesModule: true`, which is
+  what makes `images` a selectable restore module here and not in the other two apps.
+
+`.gitmodules` uses the relative URL `../MyApps-DATA.git`, so it resolves against whichever remote a
+clone tracks — Gitea clones fetch from Gitea, GitHub clones from GitHub, and no host name is ever
+committed. Fresh clones need `git clone --recurse-submodules` or `git submodule update --init`.
+
 ## Core architecture rules
 
 - Navigation uses `go_router` with a `ShellRoute` for the five bottom tabs listed above.

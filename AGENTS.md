@@ -1,243 +1,139 @@
 # AGENTS.md
 
-This file is the operating guide for agents working on **MyDevice!!!!!**. Read it before editing anything, then read the relevant code and the user's request carefully. The user's message is the change request: plan the work, execute it in this workspace, verify it, and keep this document current when the project changes.
+Operating guide for agents working on **MyDevice!!!!!**. This file holds **only** rules about how to
+work here. Everything describing what the code *is* or *does* lives in `doc/en-us/` — see
+[Where to read what](#where-to-read-what).
 
-## Function Explanation Layer
+MyDevice!!!!! is a privacy-first personal device inventory app (Flutter; Windows, Android, iOS,
+macOS) covering hardware specs, services/ports/routes, networks, datasets, map locations, lifecycle
+and finance tracking. Treat the user's message as the change request: plan, implement, verify,
+report.
 
-Handwritten source files across the project now use short English function explanations as the first reading layer for future agents. Before reading a full implementation, read the structured explanation immediately above each function, method, significant callback helper, constructor, getter, setter, or similar declaration.
+## Reading order
 
-Each explanation should stay concise and use this structure:
+When you need to understand code, read in this order and stop as soon as you have what you need:
 
-- `Purpose: <one short sentence describing what the declaration is responsible for>`
-- `Inputs: <important parameters only; omit obvious ones if trivial>`
-- `Returns: <what the caller receives, or None>`
-- `Side effects: <state changes, file/network/database/UI effects, logging, mutation, or None>`
-- `Notes: <important assumptions, edge cases, invariants, or when the declaration should be used; prefer None when there is nothing special to add>`
+1. **`doc/en-us/`** — start here, always. `architecture.md` for shape and rules;
+   `functions/<mirrored path>.md` for a specific file's declarations; `functions/INDEX.md` to find
+   the right page; the concept docs for behavior.
+2. **Comments in the source** — the Function Explanation Layer above each declaration.
+3. **The implementation** — only when the docs and comments are insufficient, or when you must
+   confirm actual behavior before changing it.
 
-Maintenance rules:
+Do not jump straight to reading source bodies. Where docs and code disagree on something you are
+about to change, verify against the code, then fix the docs in the same commit.
 
-- When editing an existing function or method, update its explanation in the same change.
-- When adding a new function, method, significant callback helper, constructor, getter, or setter, add the explanation immediately above the declaration.
-- Prefer the established `///` doc-comment style in Dart and matching line comments/doc comments in other languages when appropriate.
-- Keep generated files editable only when the generated output is intentionally tracked and updated in the same change; otherwise update the source generator/input instead of hand-editing generated output.
-- Use these explanations as the first-pass orientation layer, but still verify important behavior in the implementation before making changes.
+## Where to read what
 
-## Documentation Maintenance
+| Question | Read |
+|---|---|
+| App shell, flavors, repository layout, core rules, shared package | `doc/en-us/architecture.md` |
+| What a file or function does | `doc/en-us/functions/<mirrored path>.md` |
+| Which page covers which source file | `doc/en-us/functions/INDEX.md` |
+| WebDAV sync flow, lock, conflicts | `doc/en-us/sync.md` |
+| Backup, restore, blob store | `doc/en-us/backup-restore.md` |
+| Files on disk, what syncs, `storage_config.json` keys | `doc/en-us/data-formats.md` |
+| Windows/macOS/iOS/Android specifics, `file_picker` pin, Gradle/AGP state | `doc/en-us/platform-notes.md` |
+| CI jobs, build commands, fresh-clone steps | `doc/en-us/ci-cd.md` |
+| Why a behavior exists; past releases | `doc/en-us/version-history.md` |
+| English→Chinese terminology | `doc/en-us/translation-guide.md` |
 
-`doc/en-us/` holds comprehensive project documentation: architecture, data formats, sync/backup
-algorithms, feature docs, and a complete function index under `doc/en-us/functions/` (one page per
-source file, mirroring the `lib/` tree, listing every declaration and giving full Purpose/Inputs/
-Returns/Side effects/Algorithm/Usage/Notes detail for models, services, utils, and other
-non-trivial logic). `doc/en-us/translation-guide.md` is the English-to-Chinese glossary and style
-guide for the planned `doc/zh-cn/` tree, kept byte-identical across this repo and its siblings
-(MyAnime, MyDay, MyApps-DATA).
+The shared sync/backup/ZIP engines are **not in this repo** — they live in `myapps_data`, embedded at
+`packages/myapps_data`. Their documentation is at `packages/myapps_data/doc/en-us/`.
 
-Any change that adds, removes, or changes the behavior/signature of a function, data format, sync
-rule, or feature must update the corresponding page(s) under `doc/en-us/` in the same commit: the
-per-file page under `doc/en-us/functions/` and its area `INDEX.md` row, plus any affected concept
-doc (`architecture.md`, `data-formats.md`, `sync.md`, `backup-restore.md`, `features/*.md`,
-`algorithms/*.md`). Once `doc/zh-cn/` exists, it must mirror `doc/en-us/` exactly (same files, same
-heading structure, same tables, same examples) and gets updated in the same commit too, translated
-per `translation-guide.md`; new terminology goes into the glossary in all four sibling repos, not
-just this one. Never write the real Gitea host in documentation — always `<local_gitea_address>`.
-Documentation-only commits do not bump versions or create tags.
-
-## Project Snapshot
-
-- **Name:** MyDevice!!!!!, with five exclamation marks in user-facing app names, installer metadata, macOS bundle names, and window titles.
-- **Description:** A privacy-first personal device inventory app for detailed hardware specs, service/port/route notes, network management, dataset organization, map locations, WebDAV sync, local backup, ZIP/Markdown export, desktop tray behavior, local API access, and lifecycle/finance tracking.
-- **Author / package id:** `yuanzhe`, `com.yuanzhe.mydevice`.
-- **License:** GPL-3.0.
-- **Current version:** `1.2.3+35` in `pubspec.yaml`, `1.2.3.0` for MSIX, and `1.2.3` in `installer.iss`.
-- **Framework:** Flutter with Dart SDK `^3.11.3`; CI uses Flutter `3.44.2`.
-- **Platforms:** Windows, Android, iOS, macOS, with Linux/web project files present but not primary release targets.
-- **Repository:** Use the current runtime workspace root automatically; do not hardcode a machine-specific absolute path in this file.
-- **Remotes:**
-  - `origin` -> `<local_gitea_address>`
-  - `github` -> `git@github.com:YuanZhe-99/MyDevice.git`
-
-Do not include secrets, credentials, personal device data, WebDAV credentials, signing keys, or generated private configuration in commits or in this file. Remote URLs and public project metadata are OK.
-
-## Required Agent Workflow
+## Required workflow
 
 1. Treat the user's message as the modification request.
-2. Before making any modification, fetch the relevant remote(s) and check whether the local branch is behind. If remote updates exist, sync or ask the user how to proceed before editing.
-3. Read this `AGENTS.md`, then read the function explanations in the relevant source files as the first-pass orientation layer, then inspect the implementation details you need before editing.
-   - When investigating an implementation, read the relevant comments first. Only inspect the detailed code if the comments are insufficient or if reading the code is necessary to understand the actual behavior.
-4. Make a concise plan when the work is non-trivial, then implement the requested changes directly in the workspace.
-5. Keep changes scoped. Do not revert unrelated user work in the tree.
-6. Update `AGENTS.md` in the same change set whenever architecture, behavior, data formats, commands, release process, version locations, remotes, caveats, or project descriptions change. This document replaces the older role of an external summary and must stay current and complete.
-7. Verify with the narrowest meaningful checks for the change, usually `flutter analyze` and relevant `flutter test` targets for Dart changes.
-8. When the work is complete, report briefly in both English and Chinese:
-   - what changed,
-   - what was verified,
-   - the current/pre-change version,
-   - the configured remotes,
-   - whether anything could not be done.
-9. For normal code changes, ask whether the user wants to push to all remotes. The user must provide/confirm the release version before a release push.
+2. Before editing, fetch the relevant remote(s) and check whether the local branch is behind. Resolve
+   any divergence before starting.
+3. Read per [Reading order](#reading-order).
+4. Plan when the work is non-trivial, then implement it in this workspace.
+5. Keep changes scoped. Do not revert unrelated work in the tree.
+6. Update documentation in the same change set — see [Documentation maintenance](#documentation-maintenance).
+7. Verify with the narrowest meaningful checks, usually `flutter analyze` plus the relevant
+   `flutter test` targets.
+8. Report briefly, in English and Chinese: what changed, what was verified, the current/pre-change
+   version, the configured remotes, and anything that could not be done.
+9. For normal code changes, ask whether to push to all remotes. The user must confirm the release
+   version before a release push.
 
-## Release, Version, Commit, Tag, and Push Flow
+## Documentation maintenance
 
-For ordinary feature/fix work, do not bump versions or tag until the user confirms the release version and confirms pushing.
+**Docs are the primary artifact. Update them first, and never let them drift.**
 
-When the user confirms the version and wants to push:
+Any change that adds, removes, or changes the behavior or signature of a function, a data format, a
+sync rule, or a feature must update, in the same commit:
 
-1. Update every version location:
-   - `pubspec.yaml`: `version: X.Y.Z+N` where `N` is the Flutter build number and increments for releases.
-   - `pubspec.yaml`: `msix_config.msix_version: X.Y.Z.0`.
-   - `installer.iss`: `AppVersion=X.Y.Z`.
-   - `installer.iss`: output filenames use `{#SetupSetting("AppVersion")}` for both x64 and ARM64; keep them derived from `AppVersion`.
-   - Do not manually edit in-app version display; `settings_page.dart` reads `PackageInfo.fromPlatform()`.
-2. Re-run appropriate verification.
-3. Commit all intended changes.
-4. Create an annotated tag named `vX.Y.Z`.
-5. Push the commit to both `origin` and `github`.
-6. Push the tag to both `origin` and `github`.
+- the per-file page under `doc/en-us/functions/` and its `INDEX.md` row,
+- every affected concept doc (`architecture.md`, `data-formats.md`, `sync.md`,
+  `backup-restore.md`, `platform-notes.md`, `ci-cd.md`).
 
-GitHub Actions release builds are triggered by tag pushes to `github`. Tags must be pushed explicitly, either with `git push <remote> <tag>` or an intentional `--tags`.
+Once `doc/zh-cn/` exists it must mirror `doc/en-us/` exactly — same files, headings, tables, and
+examples — updated in the same commit and translated per `translation-guide.md`. New terminology goes
+into the glossary in **all four** sibling repos (MyAnime, MyDay, MyDevice, MyApps-DATA).
 
-For documentation-only maintenance that the user explicitly says does not require a release, commit and push the documentation change to the requested remotes without changing versions or creating a tag.
+**Put explanation in the docs, not here.** This file is for agent instructions only. If you are about
+to add a paragraph describing how the code works, it belongs in `doc/en-us/`. Only add to this file
+when the rule is about how an agent should behave.
 
-## Agent Co-Author Attribution
+Add a `doc/en-us/version-history.md` entry for each release. Documentation-only commits do not bump
+versions or create tags.
 
-An Agent that made a real, material contribution to a commit may add its own accurate `Co-authored-by:` trailer. Attribution is per commit: do not add an Agent merely because it reviewed, observed, or continued work produced by another Agent, and never copy a trailer automatically from an earlier commit. When multiple Agents materially contributed, include one accurate trailer for each. Use the Agent's actual documented identity; never invent a provider, model, name, or email. Approved examples are `Co-authored-by: Codex <noreply@openai.com>` and, for Claude Code, `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` with the model name replaced by the actual Claude model that performed the work (for example Claude Opus 4.6 or Claude Fable 5). For OpenCode or another Agent, use its verified documented identity; if none is verified, omit the AI trailer unless the repository owner explicitly approves one.
+## Authoring rules
 
-## Build Flavors
+**Function Explanation Layer.** Every function, method, significant callback helper, constructor,
+getter, and setter carries a structured comment immediately above it:
 
-Flavor logic lives in `lib/app/flavor.dart`.
+- `Purpose:` one short sentence on what the declaration is responsible for
+- `Inputs:` important parameters only; omit trivial ones
+- `Returns:` what the caller receives, or None
+- `Side effects:` state, file/network/DB/UI effects, logging, mutation, or None
+- `Notes:` assumptions, edge cases, invariants, or when to use it; prefer None when there is nothing
+  to add
 
-| Flavor | Dart define | Online search | Distribution |
-| --- | --- | --- | --- |
-| `full` | `--dart-define=FLAVOR=full` | Enabled | GitHub Releases, sideload, APK, desktop installers |
-| `store` | `--dart-define=FLAVOR=store` | Disabled | Google Play and App Store builds |
+Add it for new declarations and update it in the same change when editing an existing one. Use `///`
+doc comments in Dart.
 
-Online device/chip search must be fully gated for store builds. Check both service and UI paths:
+Other conventions:
 
-- `lib/features/devices/services/device_search_service.dart`: `search()` and `fetchDetail()` return early for store.
-- `lib/features/devices/services/chip_search_service.dart`: online CPU/GPU search is gated behind `AppFlavor.isFull`.
-- `lib/features/devices/views/device_edit_page.dart`: three online search buttons are hidden for store.
-- `lib/features/devices/views/device_list_page.dart`: online search FAB is hidden for store.
+- **UTC timestamps** for anything compared across devices (`modifiedAt`). Local-time values break
+  sync conflict detection.
+- **Pretty-printed JSON** via `JsonEncoder.withIndent('  ')` for anything written to disk — sync
+  relies on it so an unchanged file hits the raw-equality fast path.
+- **Preserve unknown JSON fields** with the `extraJson` pattern, so an older build never deletes a
+  newer build's data.
+- **File I/O goes through the storage hubs** (`DeviceStorage.getAppDir()` and friends) so custom
+  storage paths keep working.
 
-Any ungated online search path is an App Store rejection risk.
+## Behavior contract
 
-## Repository Structure
+Do not change these without the user explicitly deciding to:
 
-```text
-lib/
-  main.dart
-  app/
-    app.dart
-    flavor.dart
-    router.dart
-    theme.dart
-  features/
-    devices/
-      models/device.dart
-      services/chip_search_service.dart
-      services/device_search_service.dart
-      services/device_storage.dart
-      services/exchange_rate_service.dart
-      services/preset_service.dart
-      views/
-      widgets/device_category_icon.dart
-    network/
-      models/network.dart
-      services/network_storage.dart
-      views/
-    datasets/
-      models/dataset.dart
-      services/dataset_storage.dart
-      views/
-    services/
-      models/service.dart
-      services/service_storage.dart
-      services/service_template_service.dart
-      views/
-    settings/views/
-  shared/
-    providers/app_settings.dart
-    services/
-      auto_sync_service.dart
-      backup_service.dart
-      image_service.dart
-      import_export_service.dart
-      local_api_server.dart
-      sync_merge.dart
-      sync_progress.dart
-      sync_wake_lock.dart
-      tray_service.dart
-      webdav_service.dart
-    utils/json_preservation.dart
-    views/device_map_page.dart
-    views/webdav_config_page.dart
-    widgets/
-  l10n/
-packages/
-  myapps_data/            # git submodule: shared sync/backup/ZIP engines
-```
+- The **WebDAV wire format**, remote layout, and `.lock` semantics are a compatibility contract with
+  builds already in the field.
+- Local formats — `webdav_config.json`, `.sync_base/`, `backups/` bundles and blobs — likewise.
+- Conflicts are **never** silently auto-resolved; `autoResolve` stays false at every call site.
+- Restore disables WebDAV auto-sync before the first write and re-enables it only if nothing was
+  written.
+- **The shared-service facades keep their public shape.** `WebDAVService`, `BackupService`,
+  `ImportExportService`, and `AutoSyncService` are thin wrappers over `myapps_data`. If a change
+  seems to require editing a facade's public API, stop — the facade exists so call sites and tests
+  keep working, and behavior changes belong in the package.
+- `lib/app/data_modules.dart` is the single source of truth for data-file names and backup module
+  keys. Never hardcode them elsewhere.
+- `sync_progress.dart`, `sync_wake_lock.dart`, `utils/json_preservation.dart`, and the generic half
+  of `sync_merge.dart` are re-export shims. Do not reintroduce implementations in them.
 
-`lib/app/data_modules.dart` holds the `StorageAdapter` and `DataModule` registry that connect this
-app to `packages/myapps_data`. The services listed under `shared/services/` above are facades over
-that package — see "Shared Package (`myapps_data`)".
+MyDevice-specific behavior that deliberately stayed app-side, and should not be "unified" away:
+`mergeAssignments` (composite key, no timestamps, both-changed resolves to local) and the synthetic
+`images` backup module, which is enabled by the `syntheticImagesModule: true` engine knob.
 
-Primary tests currently include:
+## Working with the shared package
 
-- `test/audit_fixes_test.dart` (identical-content conflict suppression, UTC timestamps)
-- `test/backup_service_test.dart` (backup format v2 blob dedup, reference-counted blob GC, legacy inline-image restore, image-name sanitization, images module gating, corrupt-bundle detection)
-- `test/device_finance_test.dart`
-- `test/service_module_test.dart`
-- `test/service_topology_layout_test.dart`
-- `test/sync_unknown_fields_test.dart`
-- `test/widget_test.dart`
+The submodule uses the **relative** URL `../MyApps-DATA.git`, so it resolves against whichever remote
+this clone tracks. Never write a host name into `.gitmodules`.
 
-The `tool/` directory contains ad hoc validation and source-testing scripts, especially around CPU/GPU scraping and preset data. Prefer focused tests for production behavior and keep tool scripts out of release-critical paths unless the user asks for them. Standard `flutter analyze` excludes `tool/**`; analyze individual tool scripts explicitly only when changing them.
-
-## Shared Package (`myapps_data`)
-
-The WebDAV sync engine, backup engine, ZIP transfer engine, and auto-sync scheduler are **not in
-this repo**. They live in the shared `myapps_data` package, embedded at `packages/myapps_data` as a
-git submodule and consumed as a pub path dependency. MyAnime, MyDay, and MyDevice all use it.
-
-What stays here: all models, the per-feature storage hubs, the per-module merge wrappers
-(`mergeDeviceData`, `mergeNetworkData` + `mergeAssignments`, `mergeDataSetData`, `mergeServiceData`),
-the Markdown export, and every page. What moved: the transport, lock lifecycle, merge pipeline, base
-snapshots, image sync, backup bundle/blob store, ZIP allowlist, and sync scheduling.
-
-`lib/app/data_modules.dart` is the seam and **the single source of truth** for MyDevice's four data
-files. It declares the `StorageAdapter` over `DeviceStorage` plus one `DataModule` per file — name,
-backup module id, validator, merge callback, and (for devices only) referenced images. Registry
-order is the sync/backup/progress order. Never hardcode a data-file name or backup module key
-anywhere else; read it from the registry.
-
-`lib/shared/services/` still holds `WebDAVService`, `BackupService`, `ImportExportService`, and
-`AutoSyncService`, but they are now thin facades that delegate to the package. Their public APIs are
-deliberately unchanged. **If a change seems to require editing a facade's public shape, stop** — the
-facade exists so call sites and tests keep working. Behavior changes belong in the package.
-
-`sync_progress.dart`, `sync_wake_lock.dart`, `utils/json_preservation.dart`, and the generic half of
-`sync_merge.dart` are re-export shims over the package. Do not reintroduce implementations in them.
-MyDevice-specific merge logic that deliberately stayed app-side: `mergeAssignments` (composite key,
-no timestamps) and the synthetic `images` backup module (an engine constructor knob).
-
-### Working with the submodule
-
-Fresh clone:
-
-```bash
-git clone --recurse-submodules <app-url>
-```
-
-After a plain clone, or when the pointer moves:
-
-```bash
-git submodule update --init
-```
-
-`.gitmodules` uses the **relative** URL `../MyApps-DATA.git`, so it resolves against whichever remote
-this clone tracks: a Gitea clone fetches from Gitea, a GitHub clone from GitHub. Never write a host
-name into `.gitmodules` — the real Gitea address must not appear in any committed file.
-
-Consuming a newer shared version:
+Consume a newer shared version:
 
 ```bash
 cd packages/myapps_data
@@ -247,305 +143,59 @@ flutter analyze && flutter test
 git add packages/myapps_data && git commit -m "Bump myapps_data to vX.Y.Z"
 ```
 
-Changing shared code: the submodule checks out detached, so `git switch main` inside it first, then
-commit and **push to both remotes before** committing the pointer bump here. A pointer to an
-unpushed commit breaks every other clone and CI.
+To change shared code: the submodule checks out detached, so `git switch main` inside it first, then
+commit and **push to both remotes before** committing the pointer bump here. A pointer to an unpushed
+commit breaks every other clone and CI.
 
-## Core Architecture
+## Release, version, commit, tag, push
 
-- State management uses `flutter_riverpod`; do not introduce Provider or Bloc for normal changes.
-- Navigation uses `go_router` with a `ShellRoute` for five bottom tabs: Devices, Services, Network, Datasets, Settings.
-- The visual system uses Material 3 via `flex_color_scheme`.
-- L10n supports English, Japanese, Simplified Chinese, and Traditional Chinese. The ARB template is `lib/l10n/app_en.arb`; generated localization files live under `lib/l10n/`.
-- File I/O should go through `DeviceStorage.getAppDir()` so custom storage paths work.
-- JSON output is pretty-printed with `JsonEncoder.withIndent('  ')`.
-- Optional null/empty fields are usually omitted from JSON using conditional map entries.
-- Model `modifiedAt` timestamps use `DateTime.now().toUtc()`. Local-time `modifiedAt` values break sync conflict detection across timezones; old data written in local time stays parse-compatible but new writes must be UTC.
-- Preserve unknown JSON fields with the existing `extraJson` pattern so older versions do not delete newer fields during normal saves or sync merges.
+For ordinary feature/fix work, do not bump versions or tag until the user confirms the release
+version and confirms pushing.
 
-## Feature Areas
+When the user confirms:
 
-### Devices
+1. Update every version location:
+   - `pubspec.yaml`: `version: X.Y.Z+N` (`N` increments for releases)
+   - `pubspec.yaml`: `msix_config.msix_version: X.Y.Z.0`
+   - `installer.iss`: `AppVersion=X.Y.Z`
+   - `installer.iss` output filenames stay derived from `{#SetupSetting("AppVersion")}` for both x64
+     and ARM64
+   - Never hand-edit the settings-page version display; it reads `PackageInfo.fromPlatform()`
+2. Re-run verification.
+3. Commit all intended changes, and add the `doc/en-us/version-history.md` entry.
+4. Create an annotated tag `vX.Y.Z`.
+5. Push **the commit first**, then the tag, to both `origin` and `github`.
 
-The main device model is in `lib/features/devices/models/device.dart`. It tracks identity, category, emoji/image, brand/model/serial number, CPU, GPU, RAM, storage, display, battery, OS, location, purchase/release dates, lifecycle status, retirement/sale state, purchase price, sold price, recurring costs, notes, `modifiedAt`, and unknown JSON fields.
+This repo's branch is `master` (MyDay uses `main` — do not assume). Push `HEAD` or check
+`git branch --show-current` first, and verify with `git ls-remote`.
 
-Important nested models and enums include `CpuInfo`, `GpuInfo`, `StorageInfo`, `StorageType`, `StorageInterface`, `RamType`, and `DeviceCategory`. Device categories include desktop, laptop, phone, tablet, headphone, watch, router, game console, VPS, dev board, and other.
+GitHub Actions release builds trigger on tag pushes to `github`. Tags must be pushed explicitly.
 
-Device lifecycle and finance were added in v0.4.0. Retired or sold devices must be removed from network assignments and dataset storage links, and excluded from network/storage pickers. Device detail and Markdown export should include lifecycle and finance information when relevant.
+Documentation-only maintenance the user says needs no release: commit and push without changing
+versions or creating a tag.
 
-The device list financial overview card opens a financial analysis page. It shows total-cost asset distribution by device category and a combined historical/future daily-cost trend chart rendered with `fl_chart`; the future segment is dashed, uses the selected range as the forward projection window, and the daily-cost chart always uses a log-style axis transform.
+## Agent co-author attribution
 
-Device icons should use the shared circular avatar renderer in `lib/features/devices/widgets/device_avatar.dart`. User images are center-cropped over a light circular background with a subtle border so transparent PNGs remain visible; failed or missing images fall back to consistent outline category icons.
+An agent that made a real, material contribution to a commit may add its own accurate
+`Co-authored-by:` trailer. Attribution is per commit: do not add an agent merely because it reviewed,
+observed, or continued another agent's work, and never copy a trailer automatically from an earlier
+commit. When multiple agents materially contributed, include one accurate trailer each. Use the
+agent's actual documented identity; never invent a provider, model, name, or email. Approved
+examples are `Co-authored-by: Codex <noreply@openai.com>` and, for Claude Code,
+`Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>` with the model name replaced by the actual
+model that did the work. For another agent, use its verified documented identity; if none is
+verified, omit the AI trailer unless the repository owner approves one.
 
-### Networks
+## Remotes and secrets
 
-Network data is in `lib/features/network/models/network.dart`.
+- `origin` → `<local_gitea_address>` (private Gitea)
+- `github` → `git@github.com:YuanZhe-99/MyDevice.git`
 
-- `Network`: `id`, `name`, `type`, `subnet`, `gateway`, `dnsServers`, `notes`, `modifiedAt`, plus unknown JSON fields.
-- `NetworkType`: LAN, Tailscale, ZeroTier, EasyTier, WireGuard, other.
-- `NetworkDevice`: assignment between a network and a device, with `networkId`, `deviceId`, address mode, IP address, hostname, `isExitNode`, and unknown JSON fields.
+Determine the repository path from the runtime workspace; do not hardcode a machine-specific absolute
+path here.
 
-`NetworkDevice` intentionally has no `id` or `modifiedAt`. Its identity is the composite key `(networkId, deviceId)`, and sync compares serialized content against the base snapshot.
+**Masking rule:** keep the `origin` URL written as `<local_gitea_address>` in every committed file.
+Never write the underlying Tailscale host or port anywhere in the repo, including `.gitmodules`.
 
-### Datasets
-
-Dataset data is in `lib/features/datasets/models/dataset.dart`.
-
-- `DataSet`: `id`, `name`, default emoji, storage links, `modifiedAt`, and unknown JSON fields.
-- `DataSetStorageLink`: `deviceId` plus storage slot indices on that device.
-
-Datasets link to device storage slots by index, so be careful when changing storage list behavior. The device editor tracks each storage row's original slot index and calls `DataSetStorage.remapDeviceStorageLinks()` on save, shifting linked indices when slots are removed/compacted and dropping links whose slots disappeared (changed datasets get a bumped `modifiedAt` so the fix syncs). Any new code path that reorders or removes device storage slots must do the same.
-
-### Services
-
-Service management is a manual inventory/notes module, not an operations or monitoring system. It must not connect to servers, scan ports, inspect Docker, start/stop services, or store secrets. Users hand-enter service, port, route, and Docker Compose notes for personal reference.
-
-Service data is stored in `service_data.json` and syncs/backups/imports like the other primary modules. The model lives in `lib/features/services/models/service.dart`:
-
-- `ServiceNode`: a service instance on a device, with `deviceId`, name, template/icon/kind/runtime/state, endpoints, notes, optional `dockerCompose`, `modifiedAt`, and unknown JSON fields.
-- `ServiceEndpoint`: a manually recorded local/listening endpoint with protocol, transport, bind address, port or port range, optional path/network, scope, primary flag, notes, and unknown JSON fields.
-- `ServiceRoute`: a manually recorded access path from a source service endpoint through ordered hops to a final URL/address. `finalUrl` stores the first target for compatibility; additional grouped URLs/domains for the same access path are stored in `extraJson.publicTargets`.
-- `ServiceRouteHop`: one route hop such as origin, reverse proxy, tunnel, port forward, public endpoint, internal endpoint, DNS, or manual note. Hops can reference existing services/endpoints or remain free-form.
-
-The Services tab has overview, by-device, route, and port views. The overview generates a manual service topology graph from saved services/routes, grouped by local devices while allowing shared remote devices/VPS nodes across multiple local devices. The graph distinguishes local service endpoints, LAN/WiFi access, VPN/Tailscale access, relay/proxy/tunnel hops, FRP/router-style remote port entries, and final domains/URLs. The overview card uses responsive header/actions layout so titles such as service topology do not collapse vertically on narrow screens, and it uses an open-topology button instead of a scaled preview because real graphs are too dense for a small embedded view. The full-screen topology provides selectable node details, a separate move/zoom mode, internal 90-degree rotation without changing system orientation, and PNG export/share.
-
-Topology layout is semantic and compact rather than fixed-column: the UI uses dynamic graph ranks derived from actual edges, compressed per graph so unused role columns do not waste canvas space. The full-screen topology defers expensive layout until after the first frame and caches layouts by graph, routes, width, and rotation-derived viewport so mode changes do not rerun routing. Edges are precomputed by a fast clear-path orthogonal router with A* fallback, inflated node obstacles, turn costs, congestion costs, explicit exit/entry stubs, and outside-obstacle routing tracks so arrows avoid element interiors and enter/leave cards perpendicularly. Quick access-route creation is the default simple flow for adding direct, reverse-proxy, tunnel, FRP, and router port-forward access paths; the advanced route editor remains available for manual multi-hop chains. Route names are generated internally, while user-facing route descriptions should go in notes. Direct/LAN/VPN access nodes and remote VPS devices should appear as parallel branches after the source endpoint rather than a single chain.
-
-For FRP-style access, model the path as VPS/remote device -> FRP service on VPS/remote device with sibling FRP port chips: an ingress/listening endpoint such as 57000 and a separate public remote-entry port such as 443. The source endpoint connects to the FRP ingress port, while the FRP public port connects to one or more domains; do not model ingress and public FRP ports as a chain. It includes service templates for common self-hosted tools such as Caddy, Gitea, Jellyfin, Pangolin, FRP, Cloudflare Tunnel, File Browser, Vaultwarden, Nextcloud, WordPress, Code Server, OpenCode, AdGuard Home, LuCI, Minecraft Server, and related homelab services. Templates only prefill names/icons/types/default ports/Compose examples; they do not perform discovery.
-
-Topology endpoints and remote public entries are rendered as small rounded-square port chips with an icon and port number so ports stay visible without competing with primary device/service/domain nodes. Same-device public reverse proxy services such as Caddy stay local but can be placed later in routed paths so arrows keep moving left-to-right.
-
-Docker Compose text is stored as plain service notes and can be copied from the service editor. Do not add credential/token management to this field.
-
-Port conflict detection is advisory only. It warns about multiple manually entered services using the same device/transport/port but must not block saves because bind addresses and user intent may vary.
-
-### Online Search and Presets
-
-Full flavor can fetch device specs from GSMArena and Notebookcheck through `device_search_service.dart`, and chip specs from TechPowerUp, AMD, and Intel through `chip_search_service.dart`. Store flavor must not expose or execute online search.
-
-Bundled presets are loaded by `preset_service.dart` from `assets/presets/`:
-
-- `cpus.json`
-- `gpus.json`
-- `brands.json`
-- `device_templates.json`
-
-These are lazy-loaded and cached.
-
-### Map
-
-`device_map_page.dart` provides a read-only OpenStreetMap view of devices with coordinates. `map_picker_page.dart` provides the full-screen location picker and Nominatim search. The default center is Tokyo.
-
-### Backup, Export, Import, and Images
-
-- `backup_service.dart`: local auto-backup once per day, manual backups, retention, selective restore by module (including a synthetic `images` module).
-- Backup format v2: each `backups/backup_*.json` bundle stores data-module JSON strings plus an `_imageRefs` map pointing at content-addressed image blobs in `backups/blobs/<sha256><ext>`. Identical images are stored once and shared by every backup; a blob is physically deleted only when no remaining backup references it (GC runs after create/delete/retention, aborts if any remaining bundle is unparseable, and never deletes blobs younger than a 10-minute grace window). Legacy v1 bundles with inline base64 `_images` (bare basenames) remain restorable.
-- Bundle writes are atomic (tmp-then-rename). Corrupt (unparseable) bundles are flagged in the backup history with restore disabled and do not count as "already backed up today", so an interrupted auto-backup is retried. `runAutoBackupIfNeeded()` is re-entrancy guarded; auto-backup triggers are app launch, app resume, and the auto-sync 15-minute periodic timer (covers desktop instances running across midnight).
-- Restore validates each selected module payload via its model parser (`DeviceData`/`NetworkData`/`DataSetData`/`ServiceData.fromJson`) before writing anything, writes atomically, and sanitizes image names (flat basenames only; traversal/absolute paths rejected). Images restore only when the `images` module is selected.
-- When WebDAV auto-sync is enabled, restoring a backup disables auto-sync in `webdav_config.json` *before* the first file is written (no `mounted` gate), so a crash or page disposal mid-restore can never leave restored-old data with auto-sync still on. `BackupService.restoreBackup` returns a `RestoreResult` (`ok`, `wroteAnything`, `missingImages`); auto-sync is re-enabled only when the restore failed with `wroteAnything == false` (local data guaranteed untouched). After a successful restore the backup page reloads open pages (`AutoSyncService.notifyLocalDataChangedNow()`), warns when v2 image blobs were missing from the blob store (`backupRestoreMissingImages`), and — only when WebDAV sync is configured — asks whether to force-upload the restored data (wake lock held, result recorded in sync status). Without this, the next sync would treat restored-old data as local edits/deletions and propagate them to the remote and other devices.
-- `import_export_service.dart`: ZIP export/import for data JSON files plus `images/`; Markdown export for LLM-friendly device/network/dataset/service summaries including service endpoints, routes, hops, Docker Compose notes, and grouped public targets.
-- ZIP import must keep path traversal protection. Only allowlisted entries (the registry's data files and flat files under `images/`) are extracted, and every entry must resolve inside the app dir. Every entry is classified before any is written, so an archive containing a traversal entry is **rejected outright** (`importZip` returns false and writes nothing) rather than having the bad entry skipped. Unknown entries are still skipped, so an archive from a newer build still imports.
-- `image_service.dart`: file picking, URL download, UUID filenames in `images/`, relative path resolution, deletion.
-
-### Desktop API, Tray, and Startup
-
-- `local_api_server.dart`: desktop-only Shelf server, default port `7789`.
-- Endpoints include `GET /ping`, `GET /device/list(?category=)`, `GET /device/search?q=`, `POST /device/add`, `GET /device/stats`, `GET /network/list`, `GET /network/search?q=`, `GET /dataset/list`, `GET /dataset/search?q=`, `GET /service/list(?deviceId=&kind=&state=)`, `GET /service/search?q=`, `GET /service/routes`, and `GET /service/stats`.
-- Device API JSON includes current lifecycle, location, image, screen resolution, purchase/sold price, recurring cost, and computed finance summary fields. The add endpoint accepts these optional fields while preserving the minimal name/category flow.
-- Network, dataset, and service API endpoints are read-only. They expose manually saved inventory data, enriched with linked device/network names where useful, and must not perform discovery, scanning, or operations.
-- CORS is permissive. When credentials are configured, Basic Auth is required for every request including loopback (permissive CORS would otherwise let any local web page read the API). Without credentials, loopback requests are allowed and the server refuses unsafe non-localhost startup.
-- `tray_service.dart`: system tray, Show/Hide, Quit, minimize-to-tray, close-to-tray, and macOS dock icon visibility through `com.yuanzhe.my_device/dock`.
-- `launch_at_startup` handles desktop auto-start. macOS uses LaunchAtLogin-Modern via Swift Package Manager.
-
-## WebDAV Sync Rules
-
-WebDAV sync is per-record three-way merge, not whole-file replacement.
-
-Flow:
-
-1. Acquire remote `.lock` before data downloads with the stable local client id, one upload token, UTC timestamp, and 60-second TTL. Active locks from another client block uploads; expired locks are treated as failed uploads and may be replaced. Local `.sync_base/upload_lock.json` lets the next launch detect interrupted uploads and re-download/re-merge before uploading again.
-2. Download remote JSON with a discriminated result: only HTTP 404 counts as "missing on remote"; any other failure (auth/server/network) records a per-file error and skips that file, so local data is never uploaded over an unreadable remote file.
-3. Load local JSON and `.sync_base/` base snapshots.
-4. Merge per record using `modifiedAt` where available. Records whose serialized content is identical on both sides merge without a conflict.
-5. Auto-resolve when only one side changed.
-6. Detect conflict when the same record changed on both sides after the last sync.
-7. If there are no record conflicts, force-upload the complete merged JSON while the `.lock` is valid. Data JSON PUTs do not use data-file `If-Match` or `If-None-Match`; `.lock` is the concurrency guard.
-8. If there are record conflicts, return them to the user. After the user resolves them, `finalizePendingSync` reacquires `.lock` and force-uploads each complete resolved JSON.
-9. Save the new base snapshot only after the upload succeeds, then clear the matching remote/local upload lock.
-
-Manual sync uses `autoResolve: false` and shows conflict dialogs. Auto-sync also leaves `autoResolve` disabled: it records failures and true two-sided conflicts as visible status in Settings/WebDAV instead of silently applying last-writer-wins. Users must open the WebDAV page and resolve conflicts manually. Dismissing any conflict dialog (system back) aborts the whole resolution: nothing is uploaded, the conflict stays pending in the visible sync status, and no record is silently resolved to the local version. `finalizePendingSync` reacquires `.lock` and force-uploads resolved complete JSON without data-file preconditions; it returns false when any file's remote read or upload fails, and failed files keep their base snapshots untouched.
-
-Foreground sync operations on the WebDAV page (manual sync, conflict finalize upload, force upload, force download) hold a screen wake lock through `shared/services/sync_wake_lock.dart` (`wakelock_plus`). The lock is reference-counted, only enabled if no other feature already holds one, acquired only after force-action confirmation, released in `finally` on completion/failure/cancel/exception, and never used by background auto-sync.
-
-Important sync constraints:
-
-- `device_data.json`: merge `Device` records by `id` and `modifiedAt`.
-- `network_data.json`: merge `Network` records by `id` and `modifiedAt`; merge `NetworkDevice` assignments by composite key and content comparison.
-- `dataset_data.json`: merge `DataSet` records by `id` and `modifiedAt`.
-- `service_data.json`: merge `ServiceNode` and `ServiceRoute` records by `id` and `modifiedAt`; endpoints and route hops follow their parent records.
-- Images sync additively, referenced-only, based on the union of `imagePath` basenames from local and remote device records. Orphan images should not be repeatedly uploaded/downloaded.
-- `_syncing` prevents concurrent syncs.
-- `_atomicWrite()` uses tmp-then-rename to avoid corrupting local files.
-- Each data file merge has per-file error handling so one malformed file does not block other files.
-- Local files are re-read after network I/O to detect concurrent user edits during sync.
-- Data JSON uploads are complete-file force PUTs under `.lock`; only `.lock` writes/deletes use ETag preconditions, and weak ETags are never used for those lock preconditions.
-- Sync errors and image warnings should be visible in dialogs, not only snackbars.
-- Remote image directory listings return null on any failure; `_syncImages` then skips the image phase with a visible warning instead of treating the unknown remote state as empty, which previously re-uploaded every referenced image after a transient PROPFIND failure.
-- Downloaded images set the local-data-changed flag so UI pages reload even when the data JSON itself did not change.
-- Transient network failures (socket/timeout/client errors and HTTP 5xx) are retried up to 2 extra times with 1s/2s backoff on data GET/PUT, byte GET/PUT, and PROPFIND listings. `.lock` writes are never retried so a retried create-only PUT cannot misreport lock contention; 4xx responses are never retried.
-- While a data or image PUT is in flight, the held `.lock` is heartbeat-refreshed every 20 seconds (`_withLockHeartbeat`), so a transfer slower than the 60-second lock TTL cannot let another client treat the lock as expired and upload concurrently. Heartbeat failures are swallowed and never abort the in-flight transfer.
-- `WebDAVService.progress` is a `ValueNotifier<SyncProgress>` (see `sync_progress.dart`) publishing connecting/downloading/merging/uploading phases with per-file and per-image counts. The service emits raw phases and file names only; the WebDAV page maps phases to localized text and renders a `LinearProgressIndicator`.
-- `WebDAVService.forceUpload()` overwrites remote data files and uploads referenced images without any merge or conflict check, under the remote `.lock`, then saves base snapshots. `WebDAVService.forceDownload()` replaces local data files (JSON-validated first, atomic writes) and downloads referenced images without merging, saves base snapshots, and sets the local-data-changed flag; it is download-only and takes no remote lock. Both share the `_syncing` guard and require a destructive-action confirmation dialog in the WebDAV page.
-- After manual sync or force operations the WebDAV page calls `AutoSyncService.notifyLocalDataChangedIfNeeded()` so open pages reload without waiting for the next background sync.
-- The conflict dialog shows each side's `modifiedAt` (falling back to the record ID for `NetworkDevice` assignments, which have no timestamp) instead of a bare ID on both sides.
-
-Auto-sync triggers include app launch, app resume, a 30-second debounce after storage saves, a 15-minute timer while the app process is alive, and saving/enabling a fully configured auto-sync WebDAV setup (immediate sync via `requestSyncNow()`, aligned with MyAnime/MyDay). `_trySync` holds an instance-level `_syncing` guard so overlapping triggers are silently skipped instead of surfacing a spurious "Sync already in progress" failure banner. Mobile OS suspension may delay timers until resume. Storage-layer `save()` methods should notify auto-sync so non-UI writes are covered. Auto-sync records latest success, failure, and pending-conflict state in memory so Settings and the WebDAV page can surface sync health.
-
-## Persisted Data Inventory
-
-Default app data directory is `Documents/MyDevice` on desktop or the platform app documents directory on mobile. Custom storage paths are stored in `storage_config.json`; path changes migrate data files, backups, and images.
-
-| Data | File | Synced | Merge strategy |
-| --- | --- | --- | --- |
-| Devices | `device_data.json` | Yes | Per-record by `id` and `modifiedAt` |
-| Networks | `network_data.json` | Yes | Per-record by `id` and `modifiedAt` |
-| Network assignments | `network_data.json` | Yes | Composite key plus content comparison |
-| Datasets | `dataset_data.json` | Yes | Per-record by `id` and `modifiedAt` |
-| Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
-| Images | `images/` | Yes | Referenced-only filename comparison |
-| Theme, locale, backup settings, sort preferences, default currency, exchange-rate settings | `storage_config.json` | No | Local preference |
-| WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
-| Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
-| Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
-| Backup image blobs | `backups/blobs/` | No | Content-addressed (`sha256`), shared across backups, reference-counted GC |
-| Exchange-rate cache | `exchange_rates.json` | No | Local cache/fallback data |
-
-Cross-reference rules:
-
-- Deleting a device must remove related network assignments, dataset storage links, service records, and service route references.
-- Retiring or selling a device should also remove it from assignments/links and pickers.
-- Deleting a network filters assignments in `NetworkStorage.deleteNetwork()`.
-- Deleting a dataset deletes its contained storage links.
-- Sync merge does not currently run full cross-reference validation after merging; this is a known limitation.
-
-## Platform Caveats
-
-### Windows
-
-- Inno Setup installer is defined in `installer.iss`; output goes to `build/installer/`.
-- The installer creates Start Menu shortcuts. Do not create shortcuts programmatically.
-- App icon: `windows/runner/resources/app_icon.ico`.
-- MSIX configuration is in `pubspec.yaml` under `msix_config` with `internetClient`.
-- GitHub Actions Windows x64 and ARM64 jobs set `CL=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` as a temporary VS/MSVC 18 compatibility workaround for dependency chains that still reach deprecated WinRT `<experimental/coroutine>` headers. Remove it once the Windows plugin/WinRT dependency stack no longer needs the suppression.
-
-### macOS
-
-- App name is `MyDevice!!!!!` in `macos/Runner/Configs/AppInfo.xcconfig`.
-- Deployment target is `13.0`, required for LaunchAtLogin-Modern.
-- LaunchAtLogin-Modern is added via Swift Package Manager in `project.pbxproj`.
-- `MainFlutterWindow.swift` has a `launch_at_startup` method channel for startup enablement.
-- `AppDelegate.swift` keeps the app alive when the last window closes and exposes the dock visibility method channel.
-- Both `DebugProfile.entitlements` and `Release.entitlements` must include `com.apple.security.network.client` and `com.apple.security.network.server`; without them, sandboxed network requests and the local API server break.
-- App icons are generated with `flutter_launcher_icons`; keep the macOS section in `flutter_launcher_icons.yaml`.
-
-### iOS
-
-- `CFBundleDisplayName` is `MyDevice!!!!!` in `Info.plist`.
-- HTTPS network access needs no special entitlement.
-- iOS AppIcon assets are generated from `assets/icon/app_icon_ios.png`, `assets/icon/app_icon_ios_dark.png`, and `assets/icon/app_icon_ios_tinted.png`; run `dart run tool/generate_ios_icons.dart`, then `dart run flutter_launcher_icons`, then `dart run tool/validate_ios_icons.dart --clean` when updating them.
-- The iOS default icon source uses an opaque white background, while dark and tinted sources use transparent backgrounds. The tinted source must stay grayscale so iOS can apply the user's selected tint.
-- Do not add native Icon Composer or Liquid Glass Clear-specific assets; rely on the default/dark/tinted fallback set in `flutter_launcher_icons.yaml`.
-- App Store IPA requires signing/provisioning and is not built by CI.
-
-### Android
-
-- `android/app/build.gradle.kts` should use `import java.util.Properties`.
-- Built-in Kotlin migration state (app side migrated): Gradle wrapper `9.3.1`, AGP `9.1.1`, and the app no longer applies `kotlin-android`. The Kotlin jvmTarget is set by a top-level `kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }` block (not `jvmToolchain`, which required a real JDK 17 install; not `kotlinOptions`, which is removed). `android/gradle.properties` keeps the Flutter-migrator compat flags `android.builtInKotlin=false` and `android.newDsl=false` because several plugins still apply KGP — setting `builtInKotlin=true` breaks every KGP-applying plugin (verified). Keep `org.jetbrains.kotlin.android` declared (apply false) in `settings.gradle.kts`; KGP-applying plugins resolve it from there.
-- `file_picker` is pinned to exactly `10.3.7`: it is the last release that both applies KGP itself (required while `builtInKotlin=false`) and compiles against `flutter.compileSdkVersion` (required by AGP 9 AAR metadata checks). 10.3.9+ and 11.x rely on AGP built-in Kotlin and fail to compile in compat mode; 10.3.2 and older pin compileSdk 34 and fail the metadata check. Do not use a caret constraint. Its Dart API is `FilePicker.platform.*`.
-- Keystore properties should use nullable casts such as `as String?`.
-- Core library desugaring is not enabled; MyDevice schedules no notifications and currently has no dependency that requires it.
-- Signing is optional locally via `key.properties`; CI uses GitHub Secrets.
-- Topology PNG export uses `share_plus` on iOS, a `com.yuanzhe.my_device/share` Android method channel plus `FileProvider`, and a desktop preview with copy/save actions.
-
-## CI/CD
-
-`.github/workflows/build.yml` runs on `v*` tag pushes and `workflow_dispatch`.
-
-Every checkout step passes `submodules: recursive`. Without it `flutter pub get` fails on the
-missing `packages/myapps_data` path dependency. The relative submodule URL resolves to the public
-GitHub copy in CI, so the default `GITHUB_TOKEN` is sufficient.
-
-Jobs:
-
-- Android APK full flavor and AAB store flavor.
-- Windows x64 full installer on `windows-latest`.
-- Windows ARM64 full installer on `windows-11-arm`; this uses Flutter master because stable did not have an ARM64 engine for the noted workflow.
-- iOS full sideload IPA without codesign.
-- macOS full DMG via `create-dmg`.
-- GitHub Release artifact upload on tag push.
-
-Important workflow caveats:
-
-- Keep workflow Flutter version aligned with the Dart SDK constraint.
-- GitHub `secrets` cannot be used directly in step `if` expressions; route through job-level `env`.
-- Windows ARM64 Inno output is controlled by `iscc /DARM64 installer.iss`.
-- Action versions: `actions/checkout@v7`, `actions/setup-java@v5`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `softprops/action-gh-release@v3` (bumped from the Node 20-based majors that GitHub deprecated). Validate workflow changes with a `workflow_dispatch` run before the next tag release.
-- Known remaining warning: the Android job still prints Flutter's "plugins that apply KGP" warning for package_info_plus, share_plus, shared_preferences_android, wakelock_plus, and file_picker. The app side is already migrated (AGP 9.1.1, no app-level `kotlin-android`); the remaining warning is plugin-side only and, as of 2026-07, even the latest releases of those plugins still apply KGP. Full elimination requires flipping `android.builtInKotlin=true` once every plugin ships Built-in Kotlin support; verify with real APK/AAB builds when attempting it.
-
-## Useful Commands
-
-```powershell
-flutter pub get
-flutter analyze
-flutter test
-flutter gen-l10n
-dart run tool/generate_ios_icons.dart
-dart run flutter_launcher_icons
-dart run tool/validate_ios_icons.dart --clean
-flutter build apk --release --no-tree-shake-icons --dart-define=FLAVOR=full
-flutter build appbundle --release --no-tree-shake-icons --dart-define=FLAVOR=store
-flutter build windows --release --dart-define=FLAVOR=full
-iscc installer.iss
-iscc /DARM64 installer.iss
-```
-
-Use the narrowest relevant command set for verification. For model/sync changes, include targeted tests such as `flutter test test/sync_unknown_fields_test.dart` or `flutter test test/device_finance_test.dart`.
-
-## Version History Reference
-
-- `v0.1.0`: Initial device inventory, networks, datasets, map, online search, presets, original WebDAV sync, backup, ZIP import/export, four-language localization, custom storage path.
-- `v0.1.1`: Store/full flavors, CI/CD, platform naming/icons, macOS network client entitlement, privacy/README updates.
-- `v0.1.2`: Per-record three-way WebDAV merge with base snapshots and conflict dialogs.
-- `v0.1.3`: Sync audit, cascade delete for device references, network notes l10n/UI improvements, version-location documentation.
-- `v0.1.4`: Atomic sync writes, per-file errors, concurrent save detection, auto-sync UI callbacks, safer base saves.
-- `v0.2.0`: Broad i18n cleanup for hardcoded UI strings and locale-aware date formatting.
-- `v0.2.1`: Markdown export for LLM personalization.
-- `v0.3.0`: Local API server, system tray, launch at startup, desktop settings, macOS platform changes.
-- `v0.3.1`: Windows ARM64 CI fix, no app version bump.
-- `v0.3.2`: Referenced-only image sync and improved sync error/warning reporting.
-- `v0.3.3`: Periodic auto-sync, storage-layer save notifications, auto-sync UI refresh, unknown-field preservation.
-- `v0.4.0`: Device lifecycle and finance tracking, exchange-rate support, financial overview, retired/sold cleanup, Markdown/detail finance output.
-- `v0.4.1`: Financial overview analysis page with asset distribution and log daily-cost history/future trend chart; unified circular device avatar rendering for custom images and category fallbacks.
-- `v0.5.0`: Manual Services tab for service/endpoint/port/route notes, multi-hop access paths, Docker Compose notes/copy, advisory port conflicts, service templates, service sync/backup/ZIP import-export, and local API service stats.
-- `v0.5.1`: Services topology overview, grouped access routes, quick access-route creation, and FRP/port-forward remote-entry visualization for shared VPS/domain mappings.
-- `v0.5.2`: Interactive Services topology nodes, right-side public/VPS layout, real topology icons, LAN/VPN/Public access lanes, and explicit FRP service-on-VPS relationships.
-- `v0.5.3`: Services topology full-screen select/move modes, passive overview preview, grouped multi-target routes through `extraJson.publicTargets`, hidden/generated route names, and corrected FRP path semantics so control ports stay out of public access paths.
-- `v0.5.4`: Services topology removes the tiny home preview, makes direct/VPN and VPS branches parallel after the source endpoint, adds in-page 90-degree topology rotation without changing system orientation, and adds PNG export/share.
-- `v0.5.5`: Services topology switches to semantic layered layout with route/source lanes, fixed local/remote/public columns, and orthogonal bundled edges so dense graphs keep local services separate from remote VPS exposure paths.
-- `v0.5.6`: Markdown export now includes service data with service endpoints, routes, hops, Docker Compose notes, and grouped public targets; Services topology keeps same-device public proxy services local and uses semantic row grouping to reduce route-family mixing.
-- `v0.5.7`: Services topology gives endpoint and remote-entry ports compact secondary cards, shifts same-device public reverse-proxy paths such as Caddy to forward/public columns for clearer left-to-right flow, and updates edge anchoring so same-column and backward routes place arrows more naturally.
-- `v0.5.8`: Services overview cards and topology actions now reflow by screen width so narrow devices do not squeeze titles vertically; topology edges add corridor offsets for same-column and adjacent-column orthogonal routes to reduce overlapping arrows.
-- `v0.5.9`: Services topology replaces fixed role columns with compressed graph-rank placement, renders endpoints/remote entries as square port chips, and precomputes obstacle-avoiding A* orthogonal edge paths before painting.
-- `v0.5.10`: Services topology shows FRP ingress and public ports as sibling FRP port chips, connects source endpoints to the FRP ingress port, and hardens orthogonal routing so arrows leave and enter nodes perpendicularly while avoiding element interiors.
-- `v0.5.11`: Services topology compacts sparse route rows, improves edge routing track choices and congestion costs, and narrows duplicate public target warnings to cross-device or overlapping-source-port cases.
-- `v0.5.12`: Services topology opens faster by deferring and caching full-screen layout work, trying fast clear orthogonal routes before A* routing, and reusing obstacle-derived routing tracks.
-- `v0.6.0`: Local API refresh adds lifecycle/finance/device detail fields, read-only network/dataset/service endpoints, richer cross-module stats, service route export over the API, and updated AstrBot integration coverage.
-- `v1.0.0`: Pre-release audit hardening — WebDAV downloads distinguish 404 from errors so transient failures can never overwrite the remote or cascade into cross-device deletions, upload failures (including ETag `If-Match` 412 conflicts) surface as per-file sync errors instead of silent success, conflict-resolution finalize reports failures, identical-content concurrent edits no longer raise conflicts, all `modifiedAt` timestamps are written in UTC, dataset storage links are re-mapped when device storage slots are removed, Basic Auth is enforced on loopback when API credentials are configured, and versions are unified to `1.0.0+27` / MSIX `1.0.0.0` / installer `1.0.0`.
-- `v1.0.1`: Device home cards now show per-device daily cost when finance data and service dates allow it, remove CPU/storage from card subtitles, and versions are unified to `1.0.1+28` / MSIX `1.0.1.0` / installer `1.0.1`.
-- `v1.1.0`: WebDAV auto-sync failures and true sync conflicts are surfaced in Settings/WebDAV, background sync no longer silently resolves conflicts with LWW, manual conflict resolution clears the visible status on success, and versions are unified to `1.1.0+29` / MSIX `1.1.0.0` / installer `1.1.0`.
-- `v1.1.1`: WebDAV uploads now use a remote `.lock` with a stable local client id and 150-second TTL, interrupted local uploads are detected on the next sync, and HTTP 412 upload races re-download remote data and re-run per-record merge before surfacing only true record conflicts; versions are unified to `1.1.1+30` / MSIX `1.1.1.0` / installer `1.1.1`.
-- `v1.1.2`: WebDAV now acquires `.lock` before downloading and merging remote data, lowers the lock TTL to 60 seconds, and force-uploads complete merged/resolved JSON under the valid lock without data-file `If-Match`/`If-None-Match` retry loops; versions are unified to `1.1.2+31` / MSIX `1.1.2.0` / installer `1.1.2`.
-- `v1.2.0`: WebDAV sync hardening and force transfers — remote image listing failures no longer masquerade as an empty directory (fixing repeated re-uploads of already-uploaded images), transient network errors and HTTP 5xx are retried with backoff, sync progress is published through `WebDAVService.progress` and shown as a progress bar with localized phase text, Force Upload / Force Download actions with confirmation dialogs were added to the WebDAV page, auto-sync gained a re-entrancy guard plus `requestSyncNow()` on enabling auto-sync, the conflict dialog shows per-side modified timestamps instead of bare IDs, downloaded images trigger UI reloads, manual sync notifies reload listeners, WebDAV terminology was standardized across MyAnime/MyDay/MyDevice, installer filenames derive from `AppVersion`, and versions are unified to `1.2.0+32` / MSIX `1.2.0.0` / installer `1.2.0`.
-- `v1.2.1`: Foreground sync operations (manual sync, conflict finalize, force upload/download) hold a screen wake lock via the new `sync_wake_lock.dart` and `wakelock_plus`, released in `finally` on completion/failure/cancel/exception; dismissing a sync conflict dialog now aborts the resolution instead of silently uploading keep-local; backup retention gains a 3-day option; settings/backup terminology was aligned with MyAnime/MyDay ("Auto-sync", "Storage location updated/reset to default", ja `backupKeepForever`, zh/zh_TW `backupRetention`/`backupHistory`); remaining ASCII `...` in localization strings was converted to `…`; and versions are unified to `1.2.1+33` / MSIX `1.2.1.0` / installer `1.2.1`.
-- `v1.2.3`: Sync/backup safety hardening and Android build modernization — restoring a backup now disables WebDAV auto-sync *before* the first file is written and re-enables it only when the restore failed without writing anything (`RestoreResult` with `ok`/`wroteAnything`/`missingImages`), missing v2 backup image blobs surface a localized `backupRestoreMissingImages` warning instead of being silently dropped, WebDAV data/image PUTs heartbeat-refresh the remote `.lock` every 20 seconds so transfers slower than the 60-second TTL can no longer race a second client into a lost update, the false "core library desugaring" AGENTS claim was corrected, GitHub Actions were bumped to checkout v7 / setup-java v5 / upload-artifact v7 / download-artifact v8 / gh-release v3 (removing the Node 20 deprecation warnings), Android moved to Gradle 9.3.1 + AGP 9.1.1 with the app-side Built-in Kotlin migration done under the `builtInKotlin=false` compat flags, `file_picker` is pinned to exactly `10.3.7`, and versions are unified to `1.2.3+35` / MSIX `1.2.3.0` / installer `1.2.3`.
-- `v1.2.2`: Backup overhaul — backup format v2 stores images once in a content-addressed `backups/blobs/` store shared by all backups with reference-counted GC (a blob is deleted only when no remaining backup references it; legacy inline-image bundles stay restorable), bundle writes are atomic and corrupt bundles are flagged in the history (restore disabled) without suppressing the daily auto-backup retry, restore now validates module JSON via the model parsers and sanitizes image names before writing, restoring a backup reloads open pages, disables WebDAV auto-sync when sync is configured and offers an explicit force upload of the restored data (preventing restored-old data from propagating deletions to other devices), auto-backup also runs from the 15-minute periodic timer with a re-entrancy guard, backup failures show a snackbar, the ZIP import "flat files under images/" allowlist check was fixed (the old basename comparison was always true and admitted nested entries), backup UI text/CJK terminology was standardized across MyAnime/MyDay/MyDevice, and versions are unified to `1.2.2+34` / MSIX `1.2.2.0` / installer `1.2.2`.
+**Never commit:** secrets, credentials, personal device data, WebDAV credentials, signing keys, or
+generated private configuration.

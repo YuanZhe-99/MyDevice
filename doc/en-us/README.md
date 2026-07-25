@@ -16,9 +16,15 @@ feature-level explanations of how the app works. It complements the per-function
 reference pages under [`functions/`](functions/) (a separate, exhaustive per-source-file
 index) and the [translation guide](translation-guide.md).
 
-The authoritative, actively maintained source of truth for the whole project is the
-repository's own `AGENTS.md`. Everything in this tree is derived from it and from the
-current Dart source; if something here ever looks stale, `AGENTS.md` and the source win.
+**These docs are the authoritative description of the code.** The repository's `AGENTS.md`
+is deliberately limited to instructions for agents — workflow, authoring rules, the
+behavior contract, and the release process — and points here for everything else. When
+code changes, these pages are updated first; when docs and code disagree, verify against
+the code and then fix the page.
+
+The shared WebDAV sync, backup, and ZIP engines are not in this repository. They live in
+the `myapps_data` package embedded at `packages/myapps_data`, documented at
+`packages/myapps_data/doc/en-us/`.
 
 ## Contents
 
@@ -34,6 +40,11 @@ current Dart source; if something here ever looks stale, `AGENTS.md` and the sou
   safety rules, ZIP export/import, Markdown export.
 - [Platform Notes](platform-notes.md) — Windows/macOS/iOS/Android caveats, the desktop
   local API server, system tray, launch-at-startup.
+- [CI/CD](ci-cd.md) — CI jobs and workflow caveats, the build/verify command set, and
+  fresh-clone (submodule) steps.
+- [Version History](version-history.md) — release-by-release summary. Worth checking
+  before changing a behavior that looks odd; several entries record deliberate safety
+  fixes.
 
 ### Feature areas
 

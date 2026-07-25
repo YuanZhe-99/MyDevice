@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:myapps_data/myapps_data.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -95,13 +96,26 @@ class DeviceStorage {
     return appDir.path;
   }
 
-  /// Purpose: Update storage path with the provided value.
-  /// Inputs: `newPath`.
-  /// Returns: `Future<bool>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  /// Change storage location. Migrates data if new location is empty,
-  /// otherwise switches to existing data.
+  /// Purpose: Update the custom storage directory and migrate the app's data to it.
+  /// Inputs: `newPath`; pass `null` or empty to reset to the default location.
+  /// Returns: `Future<bool>` — false only when the path could not be recorded.
+  /// Side effects: Rewrites `storage_config.json` and moves the old storage
+  /// folder's contents to the new location.
+  /// Notes: Migrates **everything** in the folder — all four data files,
+  /// `images/`, `.sync_base/`, `backups/` (blobs included), and
+  /// `webdav_config.json` — not an enumerated list, so a data file added later
+  /// moves automatically. `storage_config.json` deliberately stays put: it lives
+  /// in the platform default directory and holds the custom path itself.
+  ///
+  /// This replaced hand-rolled per-directory copies that only walked top-level
+  /// files, so `backups/blobs/` was left behind and every restored backup lost
+  /// its images, and that only ran when the destination directory did not exist
+  /// at all. `.sync_base/` was missed entirely — the dangerous case, since
+  /// without a base snapshot the next sync treats records other devices deleted
+  /// as new local records and re-uploads them, resurrecting deletions.
+  ///
+  /// Existing destination files win and their source copies are left in place,
+  /// so nothing is discarded on a guess about which copy is newer.
   static Future<bool> setStoragePath(String? newPath) async {
     try {
       final oldDir = await getAppDir();
@@ -119,57 +133,10 @@ class DeviceStorage {
       final newDir = await getAppDir();
       if (oldDir.path == newDir.path) return true;
 
-      // Migrate data files
-      final dataFileNames = [
-        _dataFileName,
-        'network_data.json',
-        'dataset_data.json',
-        'service_data.json',
-      ];
-
-      for (final name in dataFileNames) {
-        final oldFile = File(p.join(oldDir.path, name));
-        final newFile = File(p.join(newDir.path, name));
-
-        if (await newFile.exists()) {
-          // New location has data — switch to it (keep old data intact)
-          continue;
-        }
-        if (await oldFile.exists()) {
-          // Move data to new location
-          await oldFile.copy(newFile.path);
-          await oldFile.delete();
-        }
-      }
-
-      // Also migrate backups directory
-      final oldBackups = Directory(p.join(oldDir.path, 'backups'));
-      final newBackups = Directory(p.join(newDir.path, 'backups'));
-      if (await oldBackups.exists() && !await newBackups.exists()) {
-        await newBackups.create(recursive: true);
-        await for (final entity in oldBackups.list()) {
-          if (entity is File) {
-            await entity.copy(p.join(newBackups.path, p.basename(entity.path)));
-            await entity.delete();
-          }
-        }
-        await oldBackups.delete();
-      }
-
-      // Also migrate images directory
-      final oldImages = Directory(p.join(oldDir.path, 'images'));
-      final newImages = Directory(p.join(newDir.path, 'images'));
-      if (await oldImages.exists() && !await newImages.exists()) {
-        await newImages.create(recursive: true);
-        await for (final entity in oldImages.list()) {
-          if (entity is File) {
-            await entity.copy(p.join(newImages.path, p.basename(entity.path)));
-            await entity.delete();
-          }
-        }
-        await oldImages.delete();
-      }
-
+      // Per-entry failures are reported rather than thrown; the path change
+      // itself has already been persisted, so the move is best-effort and any
+      // unmoved file remains readable at the old location.
+      await migrateStorageContents(from: oldDir, to: newDir);
       return true;
     } catch (_) {
       return false;

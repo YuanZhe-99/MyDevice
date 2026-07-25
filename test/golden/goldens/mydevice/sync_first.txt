@@ -1,0 +1,154 @@
+=== [0] MKCOL /dav/files/u/MyDevice/ -> 201
+  authorization: <basic-auth>
+=== [1] GET /dav/files/u/MyDevice/.lock -> 404
+  authorization: <basic-auth>
+=== [2] PUT /dav/files/u/MyDevice/.lock -> 201
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  if-none-match: *
+  body:
+    {
+      "clientId": "<uuid>",
+      "token": "<uuid>",
+      "startedAt": "<timestamp>",
+      "updatedAt": "<timestamp>",
+      "ttlSeconds": 60
+    }
+=== [3] GET /dav/files/u/MyDevice/device_data.json -> 404
+  authorization: <basic-auth>
+=== [4] GET /dav/files/u/MyDevice/.lock -> 200
+  authorization: <basic-auth>
+=== [5] PUT /dav/files/u/MyDevice/.lock -> 204
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  if-match: "<etag>"
+  body:
+    {
+      "clientId": "<uuid>",
+      "token": "<uuid>",
+      "startedAt": "<timestamp>",
+      "updatedAt": "<timestamp>",
+      "ttlSeconds": 60
+    }
+=== [6] PUT /dav/files/u/MyDevice/device_data.json -> 201
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  body:
+    {
+      "devices": [
+        {
+          "id": "dev-1",
+          "name": "Test Device",
+          "category": "other",
+          "modifiedAt": "<timestamp>"
+        }
+      ]
+    }
+=== [7] GET /dav/files/u/MyDevice/network_data.json -> 404
+  authorization: <basic-auth>
+=== [8] GET /dav/files/u/MyDevice/.lock -> 200
+  authorization: <basic-auth>
+=== [9] PUT /dav/files/u/MyDevice/.lock -> 204
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  if-match: "<etag>"
+  body:
+    {
+      "clientId": "<uuid>",
+      "token": "<uuid>",
+      "startedAt": "<timestamp>",
+      "updatedAt": "<timestamp>",
+      "ttlSeconds": 60
+    }
+=== [10] PUT /dav/files/u/MyDevice/network_data.json -> 201
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  body:
+    {
+      "networks": [
+        {
+          "id": "net-1",
+          "name": "LAN",
+          "type": "lan",
+          "modifiedAt": "<timestamp>"
+        }
+      ],
+      "assignments": [
+        {
+          "networkId": "net-1",
+          "deviceId": "dev-1"
+        }
+      ]
+    }
+=== [11] GET /dav/files/u/MyDevice/dataset_data.json -> 404
+  authorization: <basic-auth>
+=== [12] GET /dav/files/u/MyDevice/.lock -> 200
+  authorization: <basic-auth>
+=== [13] PUT /dav/files/u/MyDevice/.lock -> 204
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  if-match: "<etag>"
+  body:
+    {
+      "clientId": "<uuid>",
+      "token": "<uuid>",
+      "startedAt": "<timestamp>",
+      "updatedAt": "<timestamp>",
+      "ttlSeconds": 60
+    }
+=== [14] PUT /dav/files/u/MyDevice/dataset_data.json -> 201
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  body:
+    {
+      "datasets": [
+        {
+          "id": "ds-1",
+          "name": "Dataset",
+          "modifiedAt": "<timestamp>"
+        }
+      ]
+    }
+=== [15] GET /dav/files/u/MyDevice/service_data.json -> 404
+  authorization: <basic-auth>
+=== [16] GET /dav/files/u/MyDevice/.lock -> 200
+  authorization: <basic-auth>
+=== [17] PUT /dav/files/u/MyDevice/.lock -> 204
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  if-match: "<etag>"
+  body:
+    {
+      "clientId": "<uuid>",
+      "token": "<uuid>",
+      "startedAt": "<timestamp>",
+      "updatedAt": "<timestamp>",
+      "ttlSeconds": 60
+    }
+=== [18] PUT /dav/files/u/MyDevice/service_data.json -> 201
+  authorization: <basic-auth>
+  content-type: application/octet-stream
+  body:
+    {
+      "services": [
+        {
+          "id": "svc-1",
+          "deviceId": "dev-1",
+          "name": "Service",
+          "modifiedAt": "<timestamp>"
+        }
+      ],
+      "routes": [
+        {
+          "id": "route-1",
+          "name": "Route",
+          "sourceServiceId": "svc-1",
+          "modifiedAt": "<timestamp>"
+        }
+      ]
+    }
+=== [19] GET /dav/files/u/MyDevice/.lock -> 200
+  authorization: <basic-auth>
+=== [20] DELETE /dav/files/u/MyDevice/.lock -> 204
+  authorization: <basic-auth>
+  if-match: "<etag>"

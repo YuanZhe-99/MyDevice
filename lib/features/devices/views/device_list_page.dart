@@ -321,16 +321,20 @@ class _DeviceListPageState extends State<DeviceListPage> {
   Future<void> _addFromTemplate() async {
     final templates = await PresetService.loadTemplates();
     if (!mounted) return;
-    final template = await showModalBottomSheet<DeviceTemplate>(
+    final choice = await showModalBottomSheet<_TemplateChoice>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => _TemplatePicker(templates: templates),
     );
-    if (template != null && mounted) {
+    if (choice != null && mounted) {
       final cpus = await PresetService.loadCpus();
       final gpus = await PresetService.loadGpus();
       if (!mounted) return;
-      final device = template.toDevice(cpuPresets: cpus, gpuPresets: gpus);
+      final device = choice.template.toDevice(
+        cpuPresets: cpus,
+        gpuPresets: gpus,
+        storageIndex: choice.storageIndex,
+      );
       await Navigator.of(
         context,
         rootNavigator: true,
@@ -1010,6 +1014,22 @@ class _DeviceCard extends StatelessWidget {
   }
 }
 
+/// A template plus the storage capacity the user picked for it.
+///
+/// Templates may list several capacities; the picker resolves the choice so
+/// `toDevice` receives a concrete index rather than silently taking the first.
+class _TemplateChoice {
+  final DeviceTemplate template;
+  final int storageIndex;
+
+  /// Purpose: Pair a chosen template with the capacity selected for it.
+  /// Inputs: `template`, `storageIndex`.
+  /// Returns: A new `_TemplateChoice` instance.
+  /// Side effects: None.
+  /// Notes: None.
+  const _TemplateChoice(this.template, this.storageIndex);
+}
+
 class _TemplatePicker extends StatefulWidget {
   final List<DeviceTemplate> templates;
 
@@ -1036,13 +1056,56 @@ class _TemplatePickerState extends State<_TemplatePicker> {
   /// Inputs: None.
   /// Returns: `List<DeviceTemplate>`.
   /// Side effects: None.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Matches every field the tile actually displays — name, brand,
+  /// model, CPU and RAM. Filtering on `name` alone meant typing a chip the
+  /// subtitle was showing, such as "Snapdragon" or "Apple M4", returned
+  /// nothing. Internal helper used within this file only.
   List<DeviceTemplate> get _filtered {
     if (_query.isEmpty) return widget.templates;
     final q = _query.toLowerCase();
-    return widget.templates
-        .where((t) => t.name.toLowerCase().contains(q))
-        .toList();
+    return widget.templates.where((t) {
+      final haystack = [
+        t.name,
+        t.brand,
+        t.model,
+        t.cpu,
+        t.gpu,
+        t.ram,
+      ].whereType<String>().join(' ').toLowerCase();
+      return haystack.contains(q);
+    }).toList();
+  }
+
+  /// Purpose: Resolve which storage capacity a chosen template should use.
+  /// Inputs: `t` — the tapped template.
+  /// Returns: `Future<void>`; pops the sheet with a `_TemplateChoice`.
+  /// Side effects: May open a capacity dialog; pops the enclosing sheet.
+  /// Notes: Templates with one capacity (or none) skip the dialog entirely, so
+  /// the common case is still a single tap. Dismissing the dialog cancels the
+  /// selection rather than defaulting to the smallest capacity.
+  /// Internal helper used within this file only.
+  Future<void> _choose(DeviceTemplate t) async {
+    if (t.storage.length <= 1) {
+      Navigator.pop(context, _TemplateChoice(t, 0));
+      return;
+    }
+    final l10n = AppLocalizations.of(context)!;
+    final index = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(l10n.storage),
+        children: [
+          for (var i = 0; i < t.storage.length; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, i),
+              child: Text(t.storage[i].displayString),
+            ),
+        ],
+      ),
+    );
+    if (index != null && mounted) {
+      Navigator.pop(context, _TemplateChoice(t, index));
+    }
   }
 
   /// Purpose: Build the current widget subtree for the active UI state.
@@ -1094,7 +1157,7 @@ class _TemplatePickerState extends State<_TemplatePicker> {
                     [t.brand, t.cpu, t.ram].where((s) => s != null).join(' · '),
                   ),
                   dense: true,
-                  onTap: () => Navigator.pop(context, t),
+                  onTap: () => _choose(t),
                 );
               },
             ),

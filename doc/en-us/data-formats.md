@@ -156,6 +156,64 @@ own `mergeUnknownFieldsFrom(other, {base})` method (e.g. `Device.mergeUnknownFie
 [Three-Way Merge](algorithms/three-way-merge.md) for how this plugs into full-record
 merge.
 
+## Bundled device templates (`assets/presets/device_templates.json`)
+
+A read-only asset shipped inside the app, loaded by `PresetService.loadTemplates()` and
+parsed by `DeviceTemplate.fromJson`. Unlike the persisted formats above it never syncs
+and users cannot edit it; changing the catalog requires an app update.
+
+Note the shape asymmetry: `cpus.json`, `gpus.json` and `brands.json` wrap their array in
+an object (`{"cpus": [...]}`), while this file is a **bare array**.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | Yes | Display name; must be unique, and the file is sorted by its lowercased value. |
+| `category` | string | Yes | One of the `DeviceCategory` values. An unknown value degrades silently to `other`. |
+| `brand` | string | No | |
+| `model` | string | No | |
+| `cpu` | string **or** object | No | See both forms below. |
+| `gpu` | string | No | Only the string form is read. |
+| `ram` | string | No | e.g. `"12 GB"`. |
+| `storage` | array | No | One or more capacities; each a string or an object with `capacity`. |
+| `screenSize` | string | No | e.g. `"16.2\""`. |
+| `screenResolutionW` / `screenResolutionH` | integer | No | |
+| `battery` | string | No | e.g. `"100 Wh"` or `"4800 mAh"`. |
+| `os` | string | No | |
+| `releaseDate` | string | No | ISO-8601; parsed with `DateTime.parse`. |
+
+The plain form, used by most entries:
+
+```json
+{
+  "name": "MacBook Pro 16\" (M4 Pro)",
+  "category": "laptop",
+  "brand": "Apple",
+  "cpu": "Apple M4 Pro",
+  "storage": ["512 GB", "1 TB", "2 TB", "4 TB"]
+}
+```
+
+The object form, used by the VPS entries, which carry detail for chips deliberately
+absent from `cpus.json`:
+
+```json
+{
+  "name": "Hetzner CX22",
+  "category": "vps",
+  "cpu": { "model": "Intel Xeon", "architecture": "x86_64", "performanceCores": 2 },
+  "storage": [{ "capacity": "40 GB", "type": "ssd" }]
+}
+```
+
+`DeviceTemplate` keeps both: `cpu` holds the model string, and `cpuDetail` holds the full
+`CpuInfo` when the object form was used. `toDevice()` prefers `cpuDetail`, then an exact
+match in `cpuPresets`, then the bare model string.
+
+**Adding a device:** append the entry, run `dart run tool/sort_templates.dart` to restore
+the sort order, then `dart run tool/validate_json.dart`. The validator checks required
+fields, types, the category enum, duplicate names and the sort order — an unsorted or
+malformed file fails there rather than in the app.
+
 ## UTC `modifiedAt`
 
 Every model with a `modifiedAt` field defaults it to `DateTime.now().toUtc()` in its

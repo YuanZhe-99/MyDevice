@@ -75,6 +75,60 @@ Map<String, dynamic> mergeUnknownJsonFields({
 
 对 `primary`/`secondary`/`base` 间每个键：只有 `secondary` 相对 `base` 改变键时其值胜出；否则 `primary` 胜出（包括都变时——primary 是调用方对该合并当作"获胜"记录的那侧）。`jsonValueEquals()` 经规范化（递归键排序）JSON 编码比较值，使映射键顺序绝不造成虚假"已变"检测。每个模型自己的 `mergeUnknownFieldsFrom(other, {base})` 方法（如 `Device.mergeUnknownFieldsFrom`、`ServiceNode.mergeUnknownFieldsFrom`）调用此辅助并递归进嵌套模型（如 `Device` 合并 `cpu`、`gpu`、每个 `storage` 槽按索引、`purchasePrice`、`soldPrice` 和每个 `recurringCosts` 条目）。这如何插入完整记录合并见 [三方合并](algorithms/three-way-merge.md)。
 
+## 捆绑设备模板（`assets/presets/device_templates.json`）
+
+随应用打包的只读资源，由 `PresetService.loadTemplates()` 加载，并交由 `DeviceTemplate.fromJson` 解析。
+与上面各持久化格式不同，它从不参与同步，用户也无法编辑；要改动目录内容必须更新应用。
+
+注意形态上的不对称：`cpus.json`、`gpus.json` 和 `brands.json` 都把数组包在一个对象里（`{"cpus": [...]}`），
+而本文件是一个**裸数组**。
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | Yes | 显示名称；必须唯一，文件按其小写形式排序。 |
+| `category` | string | Yes | `DeviceCategory` 取值之一。未知取值会静默退化为 `other`。 |
+| `brand` | string | No | |
+| `model` | string | No | |
+| `cpu` | string **或** object | No | 两种形态见下。 |
+| `gpu` | string | No | 只读取字符串形态。 |
+| `ram` | string | No | 例如 `"12 GB"`。 |
+| `storage` | array | No | 一个或多个容量；每项为字符串，或带 `capacity` 的对象。 |
+| `screenSize` | string | No | 例如 `"16.2\""`。 |
+| `screenResolutionW` / `screenResolutionH` | integer | No | |
+| `battery` | string | No | 例如 `"100 Wh"` 或 `"4800 mAh"`。 |
+| `os` | string | No | |
+| `releaseDate` | string | No | ISO-8601；用 `DateTime.parse` 解析。 |
+
+多数条目使用的普通形态：
+
+```json
+{
+  "name": "MacBook Pro 16\" (M4 Pro)",
+  "category": "laptop",
+  "brand": "Apple",
+  "cpu": "Apple M4 Pro",
+  "storage": ["512 GB", "1 TB", "2 TB", "4 TB"]
+}
+```
+
+VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 的芯片的详细信息：
+
+```json
+{
+  "name": "Hetzner CX22",
+  "category": "vps",
+  "cpu": { "model": "Intel Xeon", "architecture": "x86_64", "performanceCores": 2 },
+  "storage": [{ "capacity": "40 GB", "type": "ssd" }]
+}
+```
+
+`DeviceTemplate` 两者都会保留：`cpu` 存放型号字符串，而使用对象形态时 `cpuDetail` 存放完整的 `CpuInfo`。
+`toDevice()` 的优先顺序是：先 `cpuDetail`，再 `cpuPresets` 中的精确匹配，最后才是裸型号字符串。
+
+**新增设备：** 追加条目，运行 `dart run tool/sort_templates.dart` 恢复排序，再运行
+`dart run tool/validate_json.dart`。校验器会检查必填字段、类型、类别枚举、重名以及排序顺序——未排序或格式错误
+的文件会在这里失败，而不是到应用里才出问题。
+
 ## UTC `modifiedAt`
 
 每个带 `modifiedAt` 字段的模型在其构造函数和 `copyWith()` 中默认 `DateTime.now().toUtc()`，并经 `.toIso8601String()` 序列化。不同时区设备间同步冲突检测正确工作需要（见 [架构 — 核心架构规则](architecture.md#core-architecture-rules)）。`NetworkDevice` 是唯一完全无 `modifiedAt` 的模型，按设计（见上面）。

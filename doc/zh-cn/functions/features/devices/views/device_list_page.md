@@ -43,9 +43,11 @@
 | `_buildDismissibleCard` | 方法（组件辅助） | B | 把设备卡片包进带滑动编辑/滑动删除的 `Dismissible`。 |
 | `_DeviceCard`（构造函数） | 构造函数 | B | 存储设备、类别标签、货币、点击处理器和可选尾部组件。 |
 | `_DeviceCard.build` | 方法（组件） | B | 渲染一个设备列表块（头像、名、类别/品牌/每日成本副标题）。 |
+| `_TemplateChoice`（构造函数） | 构造函数 | B | 把选中的模板与为其选定的容量配对。 |
 | `_TemplatePicker`（构造函数） | 构造函数 | B | 为选择器面板存储捆绑模板列表。 |
 | `_TemplatePicker.createState` | 方法（`_TemplatePicker`） | B | 创建选择器可变状态对象。 |
 | [`_filtered`](#_filtered) | getter（`_TemplatePickerState`） | A | 按当前搜索查询过滤模板。 |
+| [`_choose`](#_choose) | 方法（`_TemplatePickerState`） | A | 确定选中模板应使用哪一个存储容量。 |
 | `_TemplatePickerState.build` | 方法（组件） | B | 渲染可拖拽模板选择器面板（搜索字段 + 过滤列表）。 |
 
 ## 文档
@@ -229,8 +231,18 @@
 - **来源：** `lib/features/devices/views/device_list_page.dart`（第 1040 行）
 - **用途：** 按当前搜索查询过滤捆绑设备模板列表。
 - **输入：** 无（读取 `_query`、`widget.templates`）。
-- **返回：** `List<DeviceTemplate>` — 查询为空时所有模板，否则 `name` 含（不区分大小写）查询的。
+- **返回：** `List<DeviceTemplate>` — 查询为空时所有模板，否则名称、品牌、型号、CPU、GPU 或内存中含（不区分大小写）查询的模板。
 - **副作用：** 无。
-- **算法：** `_query` 为空时返回未过滤 `widget.templates`；否则小写查询和每个模板名并保留名 `contains` 查询的模板。
+- **算法：** `_query` 为空时返回未过滤 `widget.templates`；否则把每个模板的 `name`、`brand`、`model`、`cpu`、`gpu` 和 `ram` 拼成一个小写字符串，并保留其中 `contains` 查询的模板。
 - **用法：** `_TemplatePickerState.build` 中的 `final items = _filtered;`（`lib/features/devices/views/device_list_page.dart`，第 1056 行），驱动选择器 `ListView`。
-- **备注：** 无。
+- **备注：** 参与匹配的字段有意与列表项所显示的内容一致。仅按 `name` 过滤意味着输入副标题里正在显示的芯片名——「Snapdragon」「Apple M4」——却什么都搜不到。
+
+### `Future<void> _choose(DeviceTemplate t)` <a id="_choose"></a>
+- **种类：** `_TemplatePickerState` 的方法
+- **来源：** `lib/features/devices/views/device_list_page.dart`
+- **用途：** 确定选中模板应使用哪一个存储容量，然后关闭面板。
+- **输入：** `t` —— 被点击的模板。
+- **返回：** `Future<void>`；以 `_TemplateChoice` 弹出面板。
+- **副作用：** 可能打开容量选择对话框；弹出所在的底部面板。
+- **算法：** 只有一个容量或没有容量时，立即以索引 0 弹出。否则显示 `SimpleDialog` 列出各容量的 `displayString`，并以所选索引弹出。
+- **备注：** 单一容量的模板会跳过对话框，因此常见情形仍是一次点击。关闭对话框表示取消选择，而不是静默退回最小容量——那正是 `toDevice` 过去对每个多容量模板所做的事。

@@ -21,10 +21,11 @@ for the bundled-preset concept overview this page verifies against source.
 | [`BrandEntry.fromJson`](#brandentry-fromjson) | factory constructor | A | Parse a `BrandEntry` from JSON. |
 | [`DeviceTemplate`](#devicetemplate-new) | constructor | A | Create a `DeviceTemplate` instance. |
 | [`DeviceTemplate._asString`](#_asstring) | private static method | A | Coerce a template's `cpu`/`gpu` JSON value (string or object) to a plain string. |
+| [`DeviceTemplate._asCpuInfo`](#_ascpuinfo) | private static method | A | Keep the detail an object-form `cpu` carries beyond its model. |
 | [`DeviceTemplate.fromJson`](#devicetemplate-fromjson) | factory constructor | A | Parse a `DeviceTemplate` from JSON. |
 | [`DeviceTemplate.toDevice`](#todevice) | method (`DeviceTemplate`) | A | Convert this template into a new `Device`, optionally filling full CPU/GPU detail from presets. |
 
-Row count (11) does not match `grep -c 'Purpose:' preset_service.dart` (10): `DeviceTemplate.fromJson`
+Row count (12) does not match `grep -c 'Purpose:' preset_service.dart` (11): `DeviceTemplate.fromJson`
 (line 156) has no `/// Purpose:` doc-comment block at all — it is a plain one-line `factory`
 declaration with no preceding doc comment — while every other declaration in the file has one. It
 is still indexed here per the tiering rule that every declaration appears in the table regardless
@@ -178,32 +179,53 @@ of whether it carries the auto-generated comment.
   above the Declarations table) — its behavior here was confirmed by reading the implementation
   directly, not by paraphrasing a doc comment.
 
-### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets})` <a id="todevice"></a>
+### `static CpuInfo? DeviceTemplate._asCpuInfo(dynamic value)` <a id="_ascpuinfo"></a>
+- **Kind:** private static method of `DeviceTemplate`.
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 165).
+- **Purpose:** Keep the detail an object-form `cpu` carries beyond its model name.
+- **Inputs:** `value` — the raw `cpu` JSON value.
+- **Returns:** A `CpuInfo` when the template authored an object, otherwise null.
+- **Side effects:** None.
+- **Notes:** The 14 VPS templates author `architecture` and `performanceCores` inside `cpu`.
+  [`_asString`](#_asstring) keeps only `['model']`, so before this existed the rest was discarded at
+  parse time — and `toDevice`'s exact-match preset lookup could not recover it either, because names
+  like `Intel Xeon` and `Ampere Altra` are deliberately not in `cpus.json`. The authored data never
+  reached the UI at all.
+
+### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets, int storageIndex = 0})` <a id="todevice"></a>
 - **Kind:** method of `DeviceTemplate`.
 - **Source:** `lib/features/devices/services/preset_service.dart` (line 187).
 - **Purpose:** Convert this template into a new `Device`, pre-filling all template fields and
   optionally upgrading the plain `cpu`/`gpu` model-name strings to full `CpuInfo`/`GpuInfo` detail
   by matching them against loaded presets.
 - **Inputs:** Optional `cpuPresets`/`gpuPresets` — typically the lists from
-  [`loadCpus`](#loadcpus)/[`loadGpus`](#loadgpus).
+  [`loadCpus`](#loadcpus)/[`loadGpus`](#loadgpus) — and `storageIndex`, which selects among the
+  capacities the template offers.
 - **Returns:** A new `Device` (a fresh `id`/`modifiedAt` via the `Device` constructor — see
-  [`../../models/device.md#device-new`](../models/device.md)); only the template's `storage`
-  list's *first* entry is carried over (`storage.isNotEmpty ? [storage.first] : []`).
+  [`../../models/device.md#device-new`](../models/device.md)) carrying the single capacity named
+  by `storageIndex`, clamped into range.
 - **Side effects:** None.
 - **Algorithm:** 1. Start with `CpuInfo(model: cpu)`/`GpuInfo(model: gpu)` as a fallback. 2. If
   `cpu`/`cpuPresets` are both present, look for a preset whose `model` exactly equals `cpu` and use
-  it if found. 3. For GPU, try an exact `model` match first; if none, fall back to a *prefix* match
+  it if found; then, if the template carried a non-empty `cpuDetail`, that wins outright. 3. For
+  GPU, try an exact `model` match first; if none, fall back to a *prefix* match
   (`model!.startsWith(gpu!)`) — this handles GPU presets with a core-count suffix like "(10-core)"
   that wouldn't exact-match the template's bare model string. 4. Construct and return the `Device`
   with all template fields plus the resolved `cpuInfo`/`gpuInfo`.
 - **Usage:**
   ```dart
-  final device = template.toDevice(cpuPresets: cpus, gpuPresets: gpus);
-  await Navigator.of(context, rootNavigator: true) /* ... push edit page with device ... */;
+  final device = choice.template.toDevice(
+    cpuPresets: cpus,
+    gpuPresets: gpus,
+    storageIndex: choice.storageIndex,
+  );
   ```
-  (from `device_list_page.dart`'s `_addFromTemplate()`, after the user picks a template from the
-  bottom sheet)
-- **Notes:** Only the first `storage` entry from the template is used even if the template lists
-  multiple; this matches `Device.storage`'s general usage in this app (see
-  [`../../models/device.md`](../models/device.md)) where most devices have a single primary
-  storage entry.
+  (from `device_list_page.dart`'s `_addFromTemplate()`, after the user picks a template — and, for
+  a multi-capacity template, a capacity — from the bottom sheet)
+- **Notes:** `storageIndex` exists because this method previously hardcoded `storage.first`, which
+  made every multi-capacity template collapse to its smallest option with no way to choose — a
+  MacBook Pro template listing 512 GB through 4 TB always produced 512 GB. The index is clamped
+  rather than range-checked, so an out-of-date caller cannot throw. `cpuDetail` takes priority over
+  the preset lookup because the VPS templates author `architecture` and core counts for chips such
+  as `Intel Xeon` and `Ampere Altra` that are deliberately absent from `cpus.json`, so the preset
+  lookup could never have recovered them.

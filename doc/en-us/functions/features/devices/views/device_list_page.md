@@ -53,9 +53,11 @@ gating requirements this satisfies (call site 4 of 4).
 | `_buildDismissibleCard` | method (widget helper) | B | Wrap a device card in a `Dismissible` with swipe-to-edit/swipe-to-delete. |
 | `_DeviceCard` (constructor) | constructor | B | Store the device, category label, currency, tap handler, and optional trailing widget. |
 | `_DeviceCard.build` | method (widget) | B | Render one device's list tile (avatar, name, category/brand/daily-cost subtitle). |
+| `_TemplateChoice` (constructor) | constructor | B | Pair a chosen template with the capacity selected for it. |
 | `_TemplatePicker` (constructor) | constructor | B | Store the bundled template list for the picker sheet. |
 | `_TemplatePicker.createState` | method (`_TemplatePicker`) | B | Create the picker's mutable state object. |
 | [`_filtered`](#_filtered) | getter (`_TemplatePickerState`) | A | Filter templates by the current search query. |
+| [`_choose`](#_choose) | method (`_TemplatePickerState`) | A | Resolve which storage capacity a chosen template should use. |
 | `_TemplatePickerState.build` | method (widget) | B | Render the draggable template-picker sheet (search field + filtered list). |
 
 ## Documentation
@@ -321,10 +323,25 @@ gating requirements this satisfies (call site 4 of 4).
 - **Purpose:** Filter the bundled device template list by the current search query.
 - **Inputs:** None (reads `_query`, `widget.templates`).
 - **Returns:** `List<DeviceTemplate>` — all templates if the query is empty, otherwise those whose
-  `name` contains the (case-insensitive) query.
+  name, brand, model, CPU, GPU or RAM contains the (case-insensitive) query.
 - **Side effects:** None.
-- **Algorithm:** Returns `widget.templates` unfiltered if `_query` is empty; otherwise lowercases
-  both the query and each template's name and keeps templates whose name `contains` the query.
+- **Algorithm:** Returns `widget.templates` unfiltered if `_query` is empty; otherwise joins each
+  template's `name`, `brand`, `model`, `cpu`, `gpu` and `ram` into one lowercased haystack and keeps
+  templates whose haystack `contains` the query.
 - **Usage:** `final items = _filtered;` in `_TemplatePickerState.build`
   (`lib/features/devices/views/device_list_page.dart`, line 1056), driving the picker's `ListView`.
-- **Notes:** None.
+- **Notes:** The field set deliberately matches what the tile displays. Filtering on `name` alone
+  meant typing a chip the subtitle was showing — "Snapdragon", "Apple M4" — returned nothing.
+
+### `Future<void> _choose(DeviceTemplate t)` <a id="_choose"></a>
+- **Kind:** method of `_TemplatePickerState`
+- **Source:** `lib/features/devices/views/device_list_page.dart`
+- **Purpose:** Resolve which storage capacity a chosen template should use, then close the sheet.
+- **Inputs:** `t` — the tapped template.
+- **Returns:** `Future<void>`; pops the sheet with a `_TemplateChoice`.
+- **Side effects:** May open a capacity dialog; pops the enclosing bottom sheet.
+- **Algorithm:** With one capacity or none, pop immediately with index 0. Otherwise show a
+  `SimpleDialog` listing each capacity's `displayString` and pop with the chosen index.
+- **Notes:** Templates with a single capacity skip the dialog, so the common case is still one tap.
+  Dismissing the dialog cancels the selection rather than silently defaulting to the smallest
+  capacity — which is what `toDevice` used to do for every multi-capacity template.

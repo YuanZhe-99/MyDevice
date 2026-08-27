@@ -109,7 +109,6 @@
     { "model": "Samsung Xclipse 530", "architecture": "AMD RDNA 2 (Xclipse)" },
     { "model": "Samsung Xclipse 920", "architecture": "AMD RDNA 2 (Xclipse)" },
 
-    { "model": "Mali-G720 MC12", "architecture": "Arm 5th Gen" },
     { "model": "Mali-G715 MC11", "architecture": "Arm 4th Gen" },
     { "model": "Mali-G715 MC10", "architecture": "Arm 4th Gen" },
     { "model": "Mali-G715 MC7", "architecture": "Arm 4th Gen" },

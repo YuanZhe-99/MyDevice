@@ -6,7 +6,7 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 
 **Totals:** the repo's `/// Purpose:` comment count is **943** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1129** declarations — 186 more than
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1132** declarations — 189 more than
 943 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus tail
 sections of `device.dart` and `service_list_page.dart`) have no `/// Purpose:` doc comment in
@@ -18,18 +18,18 @@ number.
 The `/// Purpose:` figure is verified against source with
 `grep -r '/// Purpose:' lib --include=*.dart`. The declaration total is hand-maintained and is
 currently **known to be drifted** in two ways. First, a row-level sweep of the per-file pages
-counts roughly 1023 declaration rows, not 1129. Second, the Tier A/B split in this table and the
-split summed from the Area totals table below disagree by 15 (667/461 summed versus 683/446
-stated), even though both agree on the 1129 grand total. Both gaps predate the
+counts roughly 1023 declaration rows, not 1132. Second, the Tier A/B split in this table and the
+split summed from the Area totals table below disagree by 15 (670/462 summed versus 685/447
+stated), even though both agree on the 1132 grand total. Both gaps predate the
 `device_search_parsers.dart` entry and were carried forward unchanged rather than papered over,
 because reconciling them means re-auditing every page rather than editing these tables. Treat the
 per-file rows as authoritative and both totals as approximate until that sweep happens.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 683 |
-| Tier B (index row only) | 446 |
-| **Total** | **1129** |
+| Tier A (full entry) | 685 |
+| Tier B (index row only) | 447 |
+| **Total** | **1132** |
 
 ## Root (`lib/`)
 
@@ -66,12 +66,12 @@ per-file rows as authoritative and both totals as approximate until that sweep h
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
 | `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 20 | 20 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
-| `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 11 | 10 |
+| `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 12 | 11 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 4 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 17 | 6 |
 | `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 55 | 14 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 34 | 16 |
-| `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 41 | 15 |
+| `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 43 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
 | `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 7 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 1 | 1 |
@@ -111,7 +111,7 @@ per-file rows as authoritative and both totals as approximate until that sweep h
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 943/1129 hand-documented declarations above).
+the 943/1132 hand-documented declarations above).
 
 ## shared/
 
@@ -142,9 +142,9 @@ the 943/1129 hand-documented declarations above).
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 4 | 9 | 4 | 5 |
 | `features/datasets/` | 4 | 44 | 30 | 14 |
-| `features/devices/` | 15 | 358 | 197 | 161 |
+| `features/devices/` | 15 | 361 | 199 | 162 |
 | `features/network/` | 5 | 72 | 41 | 31 |
 | `features/services/` | 8 | 319 | 153 | 166 |
 | `features/settings/` | 4 | 42 | 21 | 21 |
 | `shared/` | 17 | 284 | 221 | 63 |
-| **Total** | **58** | **1129** | **683** | **446** |
+| **Total** | **58** | **1132** | **685** | **447** |

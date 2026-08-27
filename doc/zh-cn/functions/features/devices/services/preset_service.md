@@ -15,10 +15,11 @@
 | [`BrandEntry.fromJson`](#brandentry-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `BrandEntry`。 |
 | [`DeviceTemplate`](#devicetemplate-new) | 构造函数 | A | 创建 `DeviceTemplate` 实例。 |
 | [`DeviceTemplate._asString`](#_asstring) | 私有静态方法 | A | 把模板 `cpu`/`gpu` JSON 值（字符串或对象）强制为普通字符串。 |
+| [`DeviceTemplate._asCpuInfo`](#_ascpuinfo) | 私有静态方法 | A | 保留对象形态 `cpu` 中型号以外的详细信息。 |
 | [`DeviceTemplate.fromJson`](#devicetemplate-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `DeviceTemplate`。 |
 | [`DeviceTemplate.toDevice`](#todevice) | 方法（`DeviceTemplate`） | A | 把此模板转换为新 `Device`，可选从预设填充完整 CPU/GPU 详情。 |
 
-行数（11）不匹配 `grep -c 'Purpose:' preset_service.dart`（10）：`DeviceTemplate.fromJson`（第 156 行）完全无 `/// Purpose:` 文档注释块——它是无前置文档注释的普通单行 `factory` 声明——而文件每个其他声明都有。它仍按每个声明无论是否带自动生成注释都出现在表格中的分层规则在此索引。
+行数（12）不匹配 `grep -c 'Purpose:' preset_service.dart`（11）：`DeviceTemplate.fromJson`（第 156 行）完全无 `/// Purpose:` 文档注释块——它是无前置文档注释的普通单行 `factory` 声明——而文件每个其他声明都有。它仍按每个声明无论是否带自动生成注释都出现在表格中的分层规则在此索引。
 
 ## 文档
 
@@ -133,18 +134,30 @@
 - **用法：** 被 [`loadTemplates`](#loadtemplates) 为顶层 JSON 数组每个元素调用。
 - **备注：** 此声明源码无 `/// Purpose:` 文档注释（见声明表上方行数说明）——其行为这里由直接读实现确认，非转述文档注释。
 
-### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets})` <a id="todevice"></a>
+### `static CpuInfo? DeviceTemplate._asCpuInfo(dynamic value)` <a id="_ascpuinfo"></a>
+- **种类：** `DeviceTemplate` 的私有静态方法。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 165 行）。
+- **用途：** 保留对象形态 `cpu` 中型号名以外的详细信息。
+- **输入：** `value` —— 原始的 `cpu` JSON 值。
+- **返回：** 模板写成对象时返回 `CpuInfo`，否则返回 null。
+- **副作用：** 无。
+- **备注：** 14 个 VPS 模板在 `cpu` 内写有 `architecture` 和 `performanceCores`。[`_asString`](#_asstring) 只保留 `['model']`，因此在本方法出现之前，其余信息在解析阶段就被丢弃——而 `toDevice` 的精确匹配预设查找同样无法找回它们，因为 `Intel Xeon`、`Ampere Altra` 这类名称有意不收入 `cpus.json`。这些已写入的数据根本没有到达界面。
+
+### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets, int storageIndex = 0})` <a id="todevice"></a>
 - **种类：** `DeviceTemplate` 的方法。
 - **来源：** `lib/features/devices/services/preset_service.dart`（第 187 行）。
 - **用途：** 把此模板转换为新 `Device`，预填所有模板字段并可选对照加载预设匹配把普通 `cpu`/`gpu` 型号名字符串升级为完整 `CpuInfo`/`GpuInfo` 详情。
-- **输入：** 可选 `cpuPresets`/`gpuPresets` — 典型为 [`loadCpus`](#loadcpus)/[`loadGpus`](#loadgpus) 的列表。
-- **返回：** 新 `Device`（经 `Device` 构造函数的新鲜 `id`/`modifiedAt`——见 [`device.md#device-new`](../models/device.md)）；只带过模板 `storage` 列表的*第一*条目（`storage.isNotEmpty ? [storage.first] : []`）。
+- **输入：** 可选 `cpuPresets`/`gpuPresets` —— 典型为 [`loadCpus`](#loadcpus)/[`loadGpus`](#loadgpus) 的列表；以及 `storageIndex`，用于在模板提供的多个容量中作出选择。
+- **返回：** 新 `Device`（经 `Device` 构造函数的新鲜 `id`/`modifiedAt`——见 [`device.md#device-new`](../models/device.md)），携带由 `storageIndex` 指定并被夹取到合法范围内的那一个容量。
 - **副作用：** 无。
-- **算法：** 1. 以 `CpuInfo(model: cpu)`/`GpuInfo(model: gpu)` 作为回退开始。2. `cpu`/`cpuPresets` 都存在时找 `model` 精确等于 `cpu` 的预设，找到则用。3. 对 GPU，先试精确 `model` 匹配；无则回退*前缀*匹配（`model!.startsWith(gpu!)`）——这处理带核心数后缀如 "(10-core)"、不会精确匹配模板裸型号字符串的 GPU 预设。4. 用所有模板字段加解析 `cpuInfo`/`gpuInfo` 构造并返回 `Device`。
+- **算法：** 1. 以 `CpuInfo(model: cpu)`/`GpuInfo(model: gpu)` 作为回退开始。2. `cpu`/`cpuPresets` 都存在时找 `model` 精确等于 `cpu` 的预设，找到则用；随后若模板带有非空的 `cpuDetail`，则以它为准。3. 对 GPU，先试精确 `model` 匹配；无则回退*前缀*匹配（`model!.startsWith(gpu!)`）——这处理带核心数后缀如 "(10-core)"、不会精确匹配模板裸型号字符串的 GPU 预设。4. 用所有模板字段加解析 `cpuInfo`/`gpuInfo` 构造并返回 `Device`。
 - **用法：**
   ```dart
-  final device = template.toDevice(cpuPresets: cpus, gpuPresets: gpus);
-  await Navigator.of(context, rootNavigator: true) /* ... push edit page with device ... */;
+  final device = choice.template.toDevice(
+    cpuPresets: cpus,
+    gpuPresets: gpus,
+    storageIndex: choice.storageIndex,
+  );
   ```
-  （来自 `device_list_page.dart` 的 `_addFromTemplate()`，用户从底部面板挑模板后）
-- **备注：** 即使模板列出多个也只用 `storage` 第一条目；这匹配 `Device.storage` 在本应用的通用用法（见 [`device.md`](../models/device.md)），那里大多数设备有单个主存储条目。
+  （来自 `device_list_page.dart` 的 `_addFromTemplate()`，用户从底部面板挑选模板后——若是多容量模板，还要再挑一个容量）
+- **备注：** `storageIndex` 之所以存在，是因为本方法此前硬编码 `storage.first`，导致每个多容量模板都塌缩为其最小容量且无从选择——列出 512 GB 到 4 TB 的 MacBook Pro 模板永远只产出 512 GB。索引采用夹取而非范围校验，因此过时的调用方也不会抛异常。`cpuDetail` 优先于预设查找，是因为 VPS 模板为 `Intel Xeon`、`Ampere Altra` 这类有意不收入 `cpus.json` 的芯片写入了 `architecture` 与核心数，预设查找根本无从找回。

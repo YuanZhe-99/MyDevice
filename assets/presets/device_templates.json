@@ -7,6 +7,24 @@
     "battery": "20 hours"
   },
   {
+    "name": "Akamai (Linode) Nanode 1 GB",
+    "category": "vps",
+    "brand": "Akamai",
+    "model": "Nanode 1 GB",
+    "cpu": {
+      "model": "AMD EPYC",
+      "performanceCores": 1
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "25 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Ubuntu"
+  },
+  {
     "name": "Apple AirPods 4",
     "category": "headphone",
     "brand": "Apple",
@@ -184,6 +202,213 @@
     "os": "Android 15"
   },
   {
+    "name": "ASUS ROG Rapture GT-AXE16000",
+    "category": "router",
+    "brand": "ASUS",
+    "model": "ROG Rapture GT-AXE16000",
+    "cpu": "Broadcom BCM4916 (4 cores, 2.0 GHz)",
+    "ram": "2 GB",
+    "storage": [
+      "256 MB"
+    ],
+    "os": "ASUS OS"
+  },
+  {
+    "name": "ASUS RT-AX86U Pro",
+    "category": "router",
+    "brand": "ASUS",
+    "model": "RT-AX86U Pro",
+    "cpu": "Broadcom BCM4912 (4 cores, 2.0 GHz)",
+    "ram": "1 GB",
+    "storage": [
+      "256 MB"
+    ],
+    "os": "ASUS Merlin / ASUS OS"
+  },
+  {
+    "name": "AWS EC2 t3.micro",
+    "category": "vps",
+    "brand": "AWS",
+    "model": "t3.micro",
+    "cpu": {
+      "model": "Intel Xeon Platinum 8259CL",
+      "architecture": "x86_64",
+      "performanceCores": 2
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "30 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Amazon Linux 2"
+  },
+  {
+    "name": "AWS EC2 t4g.micro (ARM)",
+    "category": "vps",
+    "brand": "AWS",
+    "model": "t4g.micro",
+    "cpu": {
+      "model": "AWS Graviton2",
+      "architecture": "ARM64",
+      "performanceCores": 2
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "30 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Amazon Linux 2"
+  },
+  {
+    "name": "BandwagonHost THE PLAN (KVM)",
+    "category": "vps",
+    "brand": "BandwagonHost",
+    "model": "THE PLAN",
+    "cpu": {
+      "model": "Intel Xeon",
+      "performanceCores": 2
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "20 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Linux"
+  },
+  {
+    "name": "Cloudcone VPS 1C1G",
+    "category": "vps",
+    "brand": "Cloudcone",
+    "model": "VPS SC2",
+    "cpu": {
+      "model": "Intel Xeon",
+      "performanceCores": 1
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "20 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Linux"
+  },
+  {
+    "name": "Cloudcone VPS 2C2G",
+    "category": "vps",
+    "brand": "Cloudcone",
+    "model": "VPS SC2",
+    "cpu": {
+      "model": "Intel Xeon",
+      "performanceCores": 2
+    },
+    "ram": "2 GB",
+    "storage": [
+      {
+        "capacity": "40 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Linux"
+  },
+  {
+    "name": "Cloudflare Workers VPS",
+    "category": "vps",
+    "brand": "Cloudflare",
+    "model": "Workers",
+    "os": "Cloudflare Workers Runtime"
+  },
+  {
+    "name": "Cudy TR3000",
+    "category": "router",
+    "brand": "Cudy",
+    "model": "TR3000",
+    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
+    "ram": "512 MB",
+    "storage": [
+      "128 MB"
+    ],
+    "os": "OpenWrt / Cudy OS"
+  },
+  {
+    "name": "Cudy WR3000",
+    "category": "router",
+    "brand": "Cudy",
+    "model": "WR3000",
+    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
+    "ram": "256 MB",
+    "storage": [
+      "128 MB"
+    ],
+    "os": "OpenWrt / Cudy OS"
+  },
+  {
+    "name": "DigitalOcean Basic Droplet 1C1G",
+    "category": "vps",
+    "brand": "DigitalOcean",
+    "model": "Basic Droplet",
+    "cpu": {
+      "model": "Intel / AMD shared",
+      "performanceCores": 1
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "25 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "GL.iNet GL-MT3000 (Beryl AX)",
+    "category": "router",
+    "brand": "GL.iNet",
+    "model": "GL-MT3000",
+    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
+    "ram": "512 MB",
+    "storage": [
+      "256 MB"
+    ],
+    "os": "OpenWrt"
+  },
+  {
+    "name": "GL.iNet GL-MT6000 (Flint 2)",
+    "category": "router",
+    "brand": "GL.iNet",
+    "model": "GL-MT6000",
+    "cpu": "MediaTek MT7986A (4 cores, 2.0 GHz)",
+    "ram": "1 GB",
+    "storage": [
+      "8 GB"
+    ],
+    "os": "OpenWrt"
+  },
+  {
+    "name": "Google Cloud e2-micro (Free Tier)",
+    "category": "vps",
+    "brand": "Google Cloud",
+    "model": "e2-micro",
+    "cpu": {
+      "model": "Intel / AMD shared-core",
+      "performanceCores": 1
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "30 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Debian / Ubuntu"
+  },
+  {
     "name": "Google Pixel 10",
     "category": "phone",
     "brand": "Google",
@@ -353,6 +578,44 @@
     "screenResolutionH": 2992,
     "battery": "5060 mAh",
     "os": "Android 15"
+  },
+  {
+    "name": "Hetzner CAX11 (ARM)",
+    "category": "vps",
+    "brand": "Hetzner",
+    "model": "CAX11",
+    "cpu": {
+      "model": "Ampere Altra",
+      "architecture": "ARM64",
+      "performanceCores": 2
+    },
+    "ram": "4 GB",
+    "storage": [
+      {
+        "capacity": "40 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Hetzner CX22",
+    "category": "vps",
+    "brand": "Hetzner",
+    "model": "CX22",
+    "cpu": {
+      "model": "Intel Xeon",
+      "architecture": "x86_64",
+      "performanceCores": 2
+    },
+    "ram": "4 GB",
+    "storage": [
+      {
+        "capacity": "40 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Ubuntu"
   },
   {
     "name": "Huawei Mate 60 Pro",
@@ -932,26 +1195,6 @@
     "releaseDate": "2024-09-20"
   },
   {
-    "name": "iPhone 16e",
-    "category": "phone",
-    "brand": "Apple",
-    "model": "iPhone 16e",
-    "cpu": "Apple A16 Bionic",
-    "gpu": "Apple A16 GPU (5-core)",
-    "ram": "8 GB",
-    "storage": [
-      "128 GB",
-      "256 GB",
-      "512 GB"
-    ],
-    "screenSize": "6.1\"",
-    "screenResolutionW": 1170,
-    "screenResolutionH": 2532,
-    "battery": "3279 mAh",
-    "os": "iOS 18",
-    "releaseDate": "2025-02-28"
-  },
-  {
     "name": "iPhone 16 Pro",
     "category": "phone",
     "brand": "Apple",
@@ -991,6 +1234,68 @@
     "battery": "4685 mAh",
     "os": "iOS 18",
     "releaseDate": "2024-09-20"
+  },
+  {
+    "name": "iPhone 16e",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 16e",
+    "cpu": "Apple A16 Bionic",
+    "gpu": "Apple A16 GPU (5-core)",
+    "ram": "8 GB",
+    "storage": [
+      "128 GB",
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "3279 mAh",
+    "os": "iOS 18",
+    "releaseDate": "2025-02-28"
+  },
+  {
+    "name": "Lenovo Legion Go",
+    "category": "gameConsole",
+    "brand": "Lenovo",
+    "model": "Legion Go",
+    "cpu": "AMD Ryzen Z1 Extreme",
+    "gpu": "AMD RDNA 3 (12 CU)",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "8.8\"",
+    "screenResolutionW": 2560,
+    "screenResolutionH": 1600,
+    "battery": "49.2 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "Linksys MX8500 (Atlas Max 6E)",
+    "category": "router",
+    "brand": "Linksys",
+    "model": "MX8500",
+    "cpu": "Qualcomm IPQ8074A (4 cores, 2.2 GHz)",
+    "ram": "1 GB",
+    "storage": [
+      "4 GB"
+    ],
+    "os": "Linksys OS"
+  },
+  {
+    "name": "Linksys WRT3200ACM",
+    "category": "router",
+    "brand": "Linksys",
+    "model": "WRT3200ACM",
+    "cpu": "Marvell Armada 385 (2 cores, 1.8 GHz)",
+    "ram": "512 MB",
+    "storage": [
+      "256 MB"
+    ],
+    "os": "OpenWrt / Linksys OS"
   },
   {
     "name": "Mac Mini (M4 Pro)",
@@ -1162,6 +1467,30 @@
     "os": "Windows 11"
   },
   {
+    "name": "NETGEAR Nighthawk RAXE500",
+    "category": "router",
+    "brand": "NETGEAR",
+    "model": "Nighthawk RAXE500",
+    "cpu": "Broadcom BCM4916 (4 cores, 2.0 GHz)",
+    "ram": "1 GB",
+    "storage": [
+      "512 MB"
+    ],
+    "os": "NETGEAR OS"
+  },
+  {
+    "name": "NETGEAR Orbi 970 (RBE973)",
+    "category": "router",
+    "brand": "NETGEAR",
+    "model": "Orbi 970 (RBE973)",
+    "cpu": "Qualcomm IPQ9574 (4 cores, 2.2 GHz)",
+    "ram": "2 GB",
+    "storage": [
+      "4 GB"
+    ],
+    "os": "NETGEAR OS"
+  },
+  {
     "name": "Nintendo Switch (OLED Model)",
     "category": "gameConsole",
     "brand": "Nintendo",
@@ -1230,6 +1559,88 @@
     "os": "Android 15"
   },
   {
+    "name": "Oracle Cloud A1 Flex (4C24G)",
+    "category": "vps",
+    "brand": "Oracle",
+    "model": "VM.Standard.A1.Flex",
+    "cpu": {
+      "model": "Ampere Altra",
+      "architecture": "ARM64",
+      "performanceCores": 4
+    },
+    "ram": "24 GB",
+    "storage": [
+      {
+        "capacity": "200 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Oracle Linux"
+  },
+  {
+    "name": "Oracle Cloud E2.1.Micro (Free Tier)",
+    "category": "vps",
+    "brand": "Oracle",
+    "model": "VM.Standard.E2.1.Micro",
+    "cpu": {
+      "model": "AMD EPYC 7551",
+      "architecture": "x86_64",
+      "performanceCores": 1
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "50 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Oracle Linux"
+  },
+  {
+    "name": "OVH VPS Starter",
+    "category": "vps",
+    "brand": "OVH",
+    "model": "VPS Starter",
+    "cpu": {
+      "model": "Intel / AMD",
+      "performanceCores": 1
+    },
+    "ram": "2 GB",
+    "storage": [
+      {
+        "capacity": "20 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "PlayStation 5",
+    "category": "gameConsole",
+    "brand": "Sony",
+    "model": "PlayStation 5",
+    "cpu": "AMD Zen 2 (8 cores, 3.5 GHz)",
+    "gpu": "AMD RDNA 2 (36 CU, 10.28 TFLOPS)",
+    "ram": "16 GB",
+    "storage": [
+      "825 GB"
+    ],
+    "os": "PlayStation OS"
+  },
+  {
+    "name": "PlayStation 5 Pro",
+    "category": "gameConsole",
+    "brand": "Sony",
+    "model": "PlayStation 5 Pro",
+    "cpu": "AMD Zen 2 (8 cores, 3.85 GHz)",
+    "gpu": "AMD RDNA (60 CU, 16.7 TFLOPS)",
+    "ram": "16 GB",
+    "storage": [
+      "2 TB"
+    ],
+    "os": "PlayStation OS"
+  },
+  {
     "name": "Raspberry Pi 5",
     "category": "devBoard",
     "brand": "Raspberry Pi",
@@ -1255,6 +1666,23 @@
     "screenResolutionW": 2560,
     "screenResolutionH": 1600,
     "battery": "68 Wh",
+    "os": "Windows 11"
+  },
+  {
+    "name": "ROG Ally X",
+    "category": "gameConsole",
+    "brand": "ASUS",
+    "model": "ROG Ally X",
+    "cpu": "AMD Ryzen Z1 Extreme",
+    "gpu": "AMD RDNA 3 (12 CU)",
+    "ram": "24 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "screenSize": "7\"",
+    "screenResolutionW": 1920,
+    "screenResolutionH": 1080,
+    "battery": "80 Wh",
     "os": "Windows 11"
   },
   {
@@ -1584,6 +2012,86 @@
     "os": "SteamOS 3"
   },
   {
+    "name": "TP-Link Archer AX6000",
+    "category": "router",
+    "brand": "TP-Link",
+    "model": "Archer AX6000",
+    "cpu": "Broadcom BCM4908 (4 cores, 1.8 GHz)",
+    "ram": "1 GB",
+    "storage": [
+      "128 MB"
+    ],
+    "os": "TP-Link OS"
+  },
+  {
+    "name": "TP-Link Deco BE85",
+    "category": "router",
+    "brand": "TP-Link",
+    "model": "Deco BE85",
+    "cpu": "Qualcomm IPQ9574 (4 cores, 2.2 GHz)",
+    "ram": "2 GB",
+    "storage": [
+      "4 GB"
+    ],
+    "os": "TP-Link OS"
+  },
+  {
+    "name": "Ubiquiti UniFi Dream Machine Pro",
+    "category": "router",
+    "brand": "Ubiquiti",
+    "model": "UniFi Dream Machine Pro",
+    "cpu": "Annapurna Labs AL-324 (4 cores, 1.7 GHz)",
+    "ram": "4 GB",
+    "storage": [
+      "16 GB"
+    ],
+    "os": "UniFi OS"
+  },
+  {
+    "name": "Vultr Cloud Compute 1C1G",
+    "category": "vps",
+    "brand": "Vultr",
+    "model": "Cloud Compute - Regular",
+    "cpu": {
+      "model": "Intel / AMD",
+      "performanceCores": 1
+    },
+    "ram": "1 GB",
+    "storage": [
+      {
+        "capacity": "25 GB",
+        "type": "ssd"
+      }
+    ],
+    "os": "Ubuntu"
+  },
+  {
+    "name": "Xbox Series S",
+    "category": "gameConsole",
+    "brand": "Microsoft",
+    "model": "Xbox Series S",
+    "cpu": "AMD Zen 2 (8 cores, 3.6 GHz)",
+    "gpu": "AMD RDNA 2 (20 CU, 4 TFLOPS)",
+    "ram": "10 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Xbox OS"
+  },
+  {
+    "name": "Xbox Series X",
+    "category": "gameConsole",
+    "brand": "Microsoft",
+    "model": "Xbox Series X",
+    "cpu": "AMD Zen 2 (8 cores, 3.8 GHz)",
+    "gpu": "AMD RDNA 2 (52 CU, 12.15 TFLOPS)",
+    "ram": "16 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "os": "Xbox OS"
+  },
+  {
     "name": "Xiaomi 14",
     "category": "phone",
     "brand": "Xiaomi",
@@ -1659,365 +2167,15 @@
     "os": "Android 15"
   },
   {
-    "name": "PlayStation 5",
-    "category": "gameConsole",
-    "brand": "Sony",
-    "model": "PlayStation 5",
-    "cpu": "AMD Zen 2 (8 cores, 3.5 GHz)",
-    "gpu": "AMD RDNA 2 (36 CU, 10.28 TFLOPS)",
-    "ram": "16 GB",
-    "storage": ["825 GB"],
-    "os": "PlayStation OS"
-  },
-  {
-    "name": "PlayStation 5 Pro",
-    "category": "gameConsole",
-    "brand": "Sony",
-    "model": "PlayStation 5 Pro",
-    "cpu": "AMD Zen 2 (8 cores, 3.85 GHz)",
-    "gpu": "AMD RDNA (60 CU, 16.7 TFLOPS)",
-    "ram": "16 GB",
-    "storage": ["2 TB"],
-    "os": "PlayStation OS"
-  },
-  {
-    "name": "Xbox Series X",
-    "category": "gameConsole",
-    "brand": "Microsoft",
-    "model": "Xbox Series X",
-    "cpu": "AMD Zen 2 (8 cores, 3.8 GHz)",
-    "gpu": "AMD RDNA 2 (52 CU, 12.15 TFLOPS)",
-    "ram": "16 GB",
-    "storage": ["1 TB"],
-    "os": "Xbox OS"
-  },
-  {
-    "name": "Xbox Series S",
-    "category": "gameConsole",
-    "brand": "Microsoft",
-    "model": "Xbox Series S",
-    "cpu": "AMD Zen 2 (8 cores, 3.6 GHz)",
-    "gpu": "AMD RDNA 2 (20 CU, 4 TFLOPS)",
-    "ram": "10 GB",
-    "storage": ["512 GB"],
-    "os": "Xbox OS"
-  },
-  {
-    "name": "ROG Ally X",
-    "category": "gameConsole",
-    "brand": "ASUS",
-    "model": "ROG Ally X",
-    "cpu": "AMD Ryzen Z1 Extreme",
-    "gpu": "AMD RDNA 3 (12 CU)",
-    "ram": "24 GB",
-    "storage": ["1 TB"],
-    "screenSize": "7\"",
-    "screenResolutionW": 1920,
-    "screenResolutionH": 1080,
-    "battery": "80 Wh",
-    "os": "Windows 11"
-  },
-  {
-    "name": "Lenovo Legion Go",
-    "category": "gameConsole",
-    "brand": "Lenovo",
-    "model": "Legion Go",
-    "cpu": "AMD Ryzen Z1 Extreme",
-    "gpu": "AMD RDNA 3 (12 CU)",
-    "ram": "16 GB",
-    "storage": ["512 GB", "1 TB"],
-    "screenSize": "8.8\"",
-    "screenResolutionW": 2560,
-    "screenResolutionH": 1600,
-    "battery": "49.2 Wh",
-    "os": "Windows 11"
-  },
-  {
-    "name": "Linksys MX8500 (Atlas Max 6E)",
-    "category": "router",
-    "brand": "Linksys",
-    "model": "MX8500",
-    "cpu": "Qualcomm IPQ8074A (4 cores, 2.2 GHz)",
-    "ram": "1 GB",
-    "storage": ["4 GB"],
-    "os": "Linksys OS"
-  },
-  {
-    "name": "Linksys WRT3200ACM",
-    "category": "router",
-    "brand": "Linksys",
-    "model": "WRT3200ACM",
-    "cpu": "Marvell Armada 385 (2 cores, 1.8 GHz)",
-    "ram": "512 MB",
-    "storage": ["256 MB"],
-    "os": "OpenWrt / Linksys OS"
-  },
-  {
-    "name": "Cudy TR3000",
-    "category": "router",
-    "brand": "Cudy",
-    "model": "TR3000",
-    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
-    "ram": "512 MB",
-    "storage": ["128 MB"],
-    "os": "OpenWrt / Cudy OS"
-  },
-  {
-    "name": "Cudy WR3000",
-    "category": "router",
-    "brand": "Cudy",
-    "model": "WR3000",
-    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
-    "ram": "256 MB",
-    "storage": ["128 MB"],
-    "os": "OpenWrt / Cudy OS"
-  },
-  {
-    "name": "GL.iNet GL-MT6000 (Flint 2)",
-    "category": "router",
-    "brand": "GL.iNet",
-    "model": "GL-MT6000",
-    "cpu": "MediaTek MT7986A (4 cores, 2.0 GHz)",
-    "ram": "1 GB",
-    "storage": ["8 GB"],
-    "os": "OpenWrt"
-  },
-  {
-    "name": "GL.iNet GL-MT3000 (Beryl AX)",
-    "category": "router",
-    "brand": "GL.iNet",
-    "model": "GL-MT3000",
-    "cpu": "MediaTek MT7981B (2 cores, 1.3 GHz)",
-    "ram": "512 MB",
-    "storage": ["256 MB"],
-    "os": "OpenWrt"
-  },
-  {
-    "name": "TP-Link Archer AX6000",
-    "category": "router",
-    "brand": "TP-Link",
-    "model": "Archer AX6000",
-    "cpu": "Broadcom BCM4908 (4 cores, 1.8 GHz)",
-    "ram": "1 GB",
-    "storage": ["128 MB"],
-    "os": "TP-Link OS"
-  },
-  {
-    "name": "TP-Link Deco BE85",
-    "category": "router",
-    "brand": "TP-Link",
-    "model": "Deco BE85",
-    "cpu": "Qualcomm IPQ9574 (4 cores, 2.2 GHz)",
-    "ram": "2 GB",
-    "storage": ["4 GB"],
-    "os": "TP-Link OS"
-  },
-  {
-    "name": "NETGEAR Nighthawk RAXE500",
-    "category": "router",
-    "brand": "NETGEAR",
-    "model": "Nighthawk RAXE500",
-    "cpu": "Broadcom BCM4916 (4 cores, 2.0 GHz)",
-    "ram": "1 GB",
-    "storage": ["512 MB"],
-    "os": "NETGEAR OS"
-  },
-  {
-    "name": "NETGEAR Orbi 970 (RBE973)",
-    "category": "router",
-    "brand": "NETGEAR",
-    "model": "Orbi 970 (RBE973)",
-    "cpu": "Qualcomm IPQ9574 (4 cores, 2.2 GHz)",
-    "ram": "2 GB",
-    "storage": ["4 GB"],
-    "os": "NETGEAR OS"
-  },
-  {
-    "name": "ASUS RT-AX86U Pro",
-    "category": "router",
-    "brand": "ASUS",
-    "model": "RT-AX86U Pro",
-    "cpu": "Broadcom BCM4912 (4 cores, 2.0 GHz)",
-    "ram": "1 GB",
-    "storage": ["256 MB"],
-    "os": "ASUS Merlin / ASUS OS"
-  },
-  {
-    "name": "ASUS ROG Rapture GT-AXE16000",
-    "category": "router",
-    "brand": "ASUS",
-    "model": "ROG Rapture GT-AXE16000",
-    "cpu": "Broadcom BCM4916 (4 cores, 2.0 GHz)",
-    "ram": "2 GB",
-    "storage": ["256 MB"],
-    "os": "ASUS OS"
-  },
-  {
-    "name": "Ubiquiti UniFi Dream Machine Pro",
-    "category": "router",
-    "brand": "Ubiquiti",
-    "model": "UniFi Dream Machine Pro",
-    "cpu": "Annapurna Labs AL-324 (4 cores, 1.7 GHz)",
-    "ram": "4 GB",
-    "storage": ["16 GB"],
-    "os": "UniFi OS"
-  },
-  {
     "name": "Xiaomi AX9000",
     "category": "router",
     "brand": "Xiaomi",
     "model": "AX9000",
     "cpu": "Qualcomm IPQ8072A (4 cores, 2.2 GHz)",
     "ram": "1 GB",
-    "storage": ["256 MB"],
+    "storage": [
+      "256 MB"
+    ],
     "os": "MiWiFi OS"
-  },
-
-  {
-    "name": "Cloudcone VPS 1C1G",
-    "category": "vps",
-    "brand": "Cloudcone",
-    "model": "VPS SC2",
-    "cpu": { "model": "Intel Xeon", "performanceCores": 1 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "20 GB", "type": "ssd" }],
-    "os": "Linux"
-  },
-  {
-    "name": "Cloudcone VPS 2C2G",
-    "category": "vps",
-    "brand": "Cloudcone",
-    "model": "VPS SC2",
-    "cpu": { "model": "Intel Xeon", "performanceCores": 2 },
-    "ram": "2 GB",
-    "storage": [{ "capacity": "40 GB", "type": "ssd" }],
-    "os": "Linux"
-  },
-  {
-    "name": "Oracle Cloud A1 Flex (4C24G)",
-    "category": "vps",
-    "brand": "Oracle",
-    "model": "VM.Standard.A1.Flex",
-    "cpu": { "model": "Ampere Altra", "architecture": "ARM64", "performanceCores": 4 },
-    "ram": "24 GB",
-    "storage": [{ "capacity": "200 GB", "type": "ssd" }],
-    "os": "Oracle Linux"
-  },
-  {
-    "name": "Oracle Cloud E2.1.Micro (Free Tier)",
-    "category": "vps",
-    "brand": "Oracle",
-    "model": "VM.Standard.E2.1.Micro",
-    "cpu": { "model": "AMD EPYC 7551", "architecture": "x86_64", "performanceCores": 1 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "50 GB", "type": "ssd" }],
-    "os": "Oracle Linux"
-  },
-  {
-    "name": "Google Cloud e2-micro (Free Tier)",
-    "category": "vps",
-    "brand": "Google Cloud",
-    "model": "e2-micro",
-    "cpu": { "model": "Intel / AMD shared-core", "performanceCores": 1 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "30 GB", "type": "ssd" }],
-    "os": "Debian / Ubuntu"
-  },
-  {
-    "name": "AWS EC2 t3.micro",
-    "category": "vps",
-    "brand": "AWS",
-    "model": "t3.micro",
-    "cpu": { "model": "Intel Xeon Platinum 8259CL", "architecture": "x86_64", "performanceCores": 2 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "30 GB", "type": "ssd" }],
-    "os": "Amazon Linux 2"
-  },
-  {
-    "name": "AWS EC2 t4g.micro (ARM)",
-    "category": "vps",
-    "brand": "AWS",
-    "model": "t4g.micro",
-    "cpu": { "model": "AWS Graviton2", "architecture": "ARM64", "performanceCores": 2 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "30 GB", "type": "ssd" }],
-    "os": "Amazon Linux 2"
-  },
-  {
-    "name": "BandwagonHost THE PLAN (KVM)",
-    "category": "vps",
-    "brand": "BandwagonHost",
-    "model": "THE PLAN",
-    "cpu": { "model": "Intel Xeon", "performanceCores": 2 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "20 GB", "type": "ssd" }],
-    "os": "Linux"
-  },
-  {
-    "name": "DigitalOcean Basic Droplet 1C1G",
-    "category": "vps",
-    "brand": "DigitalOcean",
-    "model": "Basic Droplet",
-    "cpu": { "model": "Intel / AMD shared", "performanceCores": 1 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "25 GB", "type": "ssd" }],
-    "os": "Ubuntu"
-  },
-  {
-    "name": "Vultr Cloud Compute 1C1G",
-    "category": "vps",
-    "brand": "Vultr",
-    "model": "Cloud Compute - Regular",
-    "cpu": { "model": "Intel / AMD", "performanceCores": 1 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "25 GB", "type": "ssd" }],
-    "os": "Ubuntu"
-  },
-  {
-    "name": "Hetzner CX22",
-    "category": "vps",
-    "brand": "Hetzner",
-    "model": "CX22",
-    "cpu": { "model": "Intel Xeon", "architecture": "x86_64", "performanceCores": 2 },
-    "ram": "4 GB",
-    "storage": [{ "capacity": "40 GB", "type": "ssd" }],
-    "os": "Ubuntu"
-  },
-  {
-    "name": "Hetzner CAX11 (ARM)",
-    "category": "vps",
-    "brand": "Hetzner",
-    "model": "CAX11",
-    "cpu": { "model": "Ampere Altra", "architecture": "ARM64", "performanceCores": 2 },
-    "ram": "4 GB",
-    "storage": [{ "capacity": "40 GB", "type": "ssd" }],
-    "os": "Ubuntu"
-  },
-  {
-    "name": "Cloudflare Workers VPS",
-    "category": "vps",
-    "brand": "Cloudflare",
-    "model": "Workers",
-    "os": "Cloudflare Workers Runtime"
-  },
-  {
-    "name": "OVH VPS Starter",
-    "category": "vps",
-    "brand": "OVH",
-    "model": "VPS Starter",
-    "cpu": { "model": "Intel / AMD", "performanceCores": 1 },
-    "ram": "2 GB",
-    "storage": [{ "capacity": "20 GB", "type": "ssd" }],
-    "os": "Ubuntu"
-  },
-  {
-    "name": "Akamai (Linode) Nanode 1 GB",
-    "category": "vps",
-    "brand": "Akamai",
-    "model": "Nanode 1 GB",
-    "cpu": { "model": "AMD EPYC", "performanceCores": 1 },
-    "ram": "1 GB",
-    "storage": [{ "capacity": "25 GB", "type": "ssd" }],
-    "os": "Ubuntu"
   }
 ]

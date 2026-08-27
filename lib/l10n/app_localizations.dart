@@ -1481,6 +1481,36 @@ abstract class AppLocalizations {
   /// **'No results found'**
   String get searchNoResults;
 
+  /// No description provided for @searchSourceBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} blocked automated access'**
+  String searchSourceBlocked(String source);
+
+  /// No description provided for @searchSourceUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} could not be reached'**
+  String searchSourceUnreachable(String source);
+
+  /// No description provided for @searchSourceMarkupChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{source} changed its page layout; the app needs an update'**
+  String searchSourceMarkupChanged(String source);
+
+  /// No description provided for @searchAllSourcesFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'No source could be reached'**
+  String get searchAllSourcesFailed;
+
+  /// No description provided for @searchPartialFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Some sources did not respond'**
+  String get searchPartialFailure;
+
   /// No description provided for @searchApply.
   ///
   /// In en, this message translates to:

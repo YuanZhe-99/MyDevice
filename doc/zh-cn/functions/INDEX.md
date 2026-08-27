@@ -2,15 +2,15 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **943**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1120** 个声明——比 943 多 177——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，加 `device.dart` 和 `service_list_page.dart` 的尾部小节）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **943**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1129** 个声明——比 943 多 186——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，加 `device.dart` 和 `service_list_page.dart` 的尾部小节）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。
 
-`/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart` 对源码核验。声明总数是手工维护的，目前**已知存在两处偏差**。其一，对各文件页做行级统计约得到 1023 个声明行，而非 1120。其二，本表的 Tier A/B 拆分与下方「区域总计」表逐行相加得到的拆分相差 15（相加为 667/453，本表标称 682/438），尽管两者的 1120 总数一致。两处偏差都早于 `device_search_parsers.dart` 条目就已存在，此处原样保留而非掩盖，因为要对账它们需要重新审计每一页，而不是改动这两张表。在完成那次审计之前，请以各文件页的行为准，并把两个总数都视为近似值。
+`/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart` 对源码核验。声明总数是手工维护的，目前**已知存在两处偏差**。其一，对各文件页做行级统计约得到 1023 个声明行，而非 1129。其二，本表的 Tier A/B 拆分与下方「区域总计」表逐行相加得到的拆分相差 15（相加为 667/461，本表标称 683/446），尽管两者的 1129 总数一致。两处偏差都早于 `device_search_parsers.dart` 条目就已存在，此处原样保留而非掩盖，因为要对账它们需要重新审计每一页，而不是改动这两张表。在完成那次审计之前，请以各文件页的行为准，并把两个总数都视为近似值。
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 682 |
-| Tier B（仅索引行） | 438 |
-| **总计** | **1120** |
+| Tier A（完整条目） | 683 |
+| Tier B（仅索引行） | 446 |
+| **总计** | **1129** |
 
 ## 根（`lib/`）
 
@@ -43,8 +43,8 @@
 |---|---|---|---|
 | `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 58 | 46 |
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
-| `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 23 | 22 |
-| `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 18 | 18 |
+| `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 25 | 24 |
+| `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
 | `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 20 | 20 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 11 | 10 |
@@ -53,7 +53,7 @@
 | `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 55 | 14 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 34 | 16 |
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 41 | 15 |
-| `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 19 | 6 |
+| `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
 | `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 7 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 1 | 1 |
 
@@ -91,7 +91,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 943/1120 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 943/1129 手写声明）。
 
 ## shared/
 
@@ -122,9 +122,9 @@
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 4 | 9 | 4 | 5 |
 | `features/datasets/` | 4 | 44 | 30 | 14 |
-| `features/devices/` | 15 | 349 | 196 | 153 |
+| `features/devices/` | 15 | 358 | 197 | 161 |
 | `features/network/` | 5 | 72 | 41 | 31 |
 | `features/services/` | 8 | 319 | 153 | 166 |
 | `features/settings/` | 4 | 42 | 21 | 21 |
 | `shared/` | 17 | 284 | 221 | 63 |
-| **总计** | **58** | **1120** | **682** | **438** |
+| **总计** | **58** | **1129** | **683** | **446** |

@@ -433,6 +433,30 @@ bool isLikelyDeviceImage(String url) {
   return RegExp(r'\.(jpe?g|png|webp|avif)(\?|$)').hasMatch(lower);
 }
 
+// ──── Source-specific page recognition ────
+
+/// Purpose: Confirm a response really is Notebookcheck's device search page.
+/// Inputs: `html` — the full response body.
+/// Returns: `true` when the search page rendered, with or without matches.
+/// Side effects: None.
+/// Notes: A query with no matches renders the search page **without** a
+/// results table. Without this check the caller cannot tell that apart from a
+/// layout change, and would cry wolf on every unknown device — the same
+/// conflation of "no results" with "broken" that hid the GSMArena breakage.
+bool isNotebookcheckSearchPage(String html) {
+  return html.contains('Laptop-Search');
+}
+
+/// Purpose: Confirm a response really is phonedb's search-results page.
+/// Inputs: `html` — the full response body.
+/// Returns: `true` when the results page rendered, with or without matches.
+/// Side effects: None.
+/// Notes: phonedb states its match count even when that count is zero, so the
+/// phrase is a reliable marker that the page itself is intact.
+bool isPhonedbResultsPage(String html) {
+  return RegExp(r'\d+\s+results?\s+match', caseSensitive: false).hasMatch(html);
+}
+
 // ──── Source-specific spec blocks ────
 
 /// Purpose: Read the label/value spec table from a Notebookcheck device page.

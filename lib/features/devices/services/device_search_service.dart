@@ -1,8 +1,88 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import '../../../app/flavor.dart';
+import 'device_search_parsers.dart';
+
+/// Why a source returned what it did.
+///
+/// The previous design collapsed every failure into an empty result list, so a
+/// blocked source, a changed page layout and a genuinely unknown device all
+/// surfaced as "No results found". That is how GSMArena stayed broken without
+/// anyone noticing. Each source now reports which of these happened.
+enum DeviceSearchStatus {
+  /// The source answered and its markup parsed. `resultCount` may still be 0
+  /// when the device is genuinely not in that database.
+  ok,
+
+  /// The source served a bot-wall or challenge page instead of content.
+  blocked,
+
+  /// The source could not be reached at all: DNS, socket, timeout or 5xx.
+  unreachable,
+
+  /// The source answered, but none of the structures the parser anchors on
+  /// were present — the page layout changed and the scraper needs updating.
+  markupChanged,
+}
+
+/// The outcome of querying one source.
+class DeviceSourceOutcome {
+  final String source;
+  final DeviceSearchStatus status;
+  final int resultCount;
+
+  /// Purpose: Record how one source responded to a query.
+  /// Inputs: `source` name, `status`, and `resultCount`.
+  /// Returns: A new `DeviceSourceOutcome` instance.
+  /// Side effects: None.
+  /// Notes: None.
+  const DeviceSourceOutcome({
+    required this.source,
+    required this.status,
+    this.resultCount = 0,
+  });
+
+  /// Purpose: Report whether this source failed rather than simply found nothing.
+  /// Inputs: None.
+  /// Returns: `true` for every status other than `ok`.
+  /// Side effects: None.
+  /// Notes: An `ok` outcome with `resultCount == 0` is not a failure.
+  bool get failed => status != DeviceSearchStatus.ok;
+}
+
+/// The combined result of a search across every enabled source.
+class DeviceSearchResponse {
+  final List<DeviceSearchResult> results;
+  final List<DeviceSourceOutcome> outcomes;
+
+  /// Purpose: Hold the merged results and the per-source outcomes.
+  /// Inputs: `results` and `outcomes`.
+  /// Returns: A new `DeviceSearchResponse` instance.
+  /// Side effects: None.
+  /// Notes: None.
+  const DeviceSearchResponse({required this.results, required this.outcomes});
+
+  /// Purpose: List the sources that failed.
+  /// Inputs: None.
+  /// Returns: The outcomes whose status is not `ok`.
+  /// Side effects: None.
+  /// Notes: Used by the dialog to explain an empty result list.
+  List<DeviceSourceOutcome> get failures =>
+      outcomes.where((o) => o.failed).toList();
+
+  /// Purpose: Report whether every queried source failed.
+  /// Inputs: None.
+  /// Returns: `true` when at least one source was queried and none succeeded.
+  /// Side effects: None.
+  /// Notes: Distinguishes "everything is broken" from "nothing matched", which
+  /// the user needs to tell apart to know whether retrying is worthwhile.
+  bool get allSourcesFailed =>
+      outcomes.isNotEmpty && outcomes.every((o) => o.failed);
+}
 
 /// A single search result from an online device database.
 class DeviceSearchResult {
@@ -46,6 +126,12 @@ class DeviceSearchResult {
     this.detailFetched = false,
   });
 
+  /// Purpose: Merge freshly scraped detail fields onto this result.
+  /// Inputs: Any detail field; omitted fields keep their existing value.
+  /// Returns: A new `DeviceSearchResult` with `detailFetched` set.
+  /// Side effects: None.
+  /// Notes: Null-coalescing means a detail page that omits a field never wipes
+  /// a value already parsed from the search row.
   DeviceSearchResult withDetail({
     String? imageUrl,
     String? chipset,
@@ -80,486 +166,231 @@ class DeviceSearchResult {
   );
 }
 
+/// One source's contribution to a search, before merging.
+class _SourceResponse {
+  final List<DeviceSearchResult> results;
+  final DeviceSearchStatus status;
+
+  const _SourceResponse(this.results, this.status);
+
+  const _SourceResponse.failed(this.status) : results = const [];
+}
+
 /// Service to search for device specs from online databases.
+///
+/// Sources, and why these:
+/// - **Notebookcheck** covers laptops, tablets, phones and smartwatches, and
+///   its device pages carry a complete spec table.
+/// - **phonedb** covers phones in more depth, including SKU-level variants,
+///   but answers a model it does not carry with a loose full-text match, so
+///   its results go through a relevance gate.
+///
+/// GSMArena was removed: it serves a Cloudflare Turnstile challenge with HTTP
+/// 200 to every request, which no HTTP-only client can pass.
 class DeviceSearchService {
-  static const _userAgent =
+  static const userAgent =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-  /// Purpose: Search for the requested result using the current query or filters.
-  /// Inputs: `query`.
-  /// Returns: `Future<List<DeviceSearchResult>>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  /// Search for devices by name. Returns quick results (name + thumbnail).
-  static Future<List<DeviceSearchResult>> search(String query) async {
-    if (AppFlavor.isStore) return [];
-    final results = await Future.wait([
-      _searchGSMArena(query).catchError((_) => <DeviceSearchResult>[]),
-      _searchNotebookcheck(query).catchError((_) => <DeviceSearchResult>[]),
-    ]);
-    return results.expand((r) => r).toList();
+  static const _timeout = Duration(seconds: 15);
+  static const _maxResultsPerSource = 8;
+
+  /// Purpose: Build the headers every scraped request sends.
+  /// Inputs: `accept` — the Accept header value.
+  /// Returns: A header map.
+  /// Side effects: None.
+  /// Notes: Kept in one place so the user agent cannot drift between the page
+  /// fetch and the image download that follows it.
+  static Map<String, String> headers({String accept = 'text/html'}) => {
+    'User-Agent': userAgent,
+    'Accept': accept,
+    'Accept-Language': 'en-US,en;q=0.9',
+  };
+
+  /// Purpose: Search every enabled source for devices matching a query.
+  /// Inputs: `query` — the user's search text.
+  /// Returns: `Future<DeviceSearchResponse>` with merged results and per-source outcomes.
+  /// Side effects: Issues HTTP requests to the configured sources.
+  /// Notes: Returns an empty response in store builds. Sources are queried
+  /// concurrently over one shared client; one failing source never prevents
+  /// another from returning results.
+  static Future<DeviceSearchResponse> search(String query) async {
+    if (AppFlavor.isStore) {
+      return const DeviceSearchResponse(results: [], outcomes: []);
+    }
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return const DeviceSearchResponse(results: [], outcomes: []);
+    }
+
+    final client = http.Client();
+    try {
+      final responses = await Future.wait([
+        _searchNotebookcheck(client, trimmed),
+        _searchPhonedb(client, trimmed),
+      ]);
+      const names = ['Notebookcheck', 'PhoneDB'];
+
+      final results = <DeviceSearchResult>[];
+      final outcomes = <DeviceSourceOutcome>[];
+      for (var i = 0; i < responses.length; i++) {
+        results.addAll(responses[i].results);
+        outcomes.add(
+          DeviceSourceOutcome(
+            source: names[i],
+            status: responses[i].status,
+            resultCount: responses[i].results.length,
+          ),
+        );
+      }
+      return DeviceSearchResponse(results: results, outcomes: outcomes);
+    } finally {
+      client.close();
+    }
   }
 
-  /// Purpose: Fetch detail from the relevant source.
-  /// Inputs: `result`.
-  /// Returns: `Future<DeviceSearchResult>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  /// Fetch full detail for a search result (scrapes the detail page).
+  /// Purpose: Fetch the full detail page for a chosen search result.
+  /// Inputs: `result` — a result returned by [search].
+  /// Returns: `Future<DeviceSearchResult>`, enriched when the fetch succeeded.
+  /// Side effects: Issues an HTTP request to the result's source.
+  /// Notes: Returns the input unchanged in store builds, when the result has
+  /// no source URL, or when the source is unknown. Adding a source without a
+  /// case here silently skips detail fetching for it.
   static Future<DeviceSearchResult> fetchDetail(
     DeviceSearchResult result,
   ) async {
     if (AppFlavor.isStore) return result;
     if (result.sourceUrl == null) return result;
-    switch (result.source) {
-      case 'GSMArena':
-        return _fetchGSMArenaDetail(result);
-      case 'Notebookcheck':
-        return _fetchNotebookcheckDetail(result);
-      default:
-        return result;
-    }
-  }
 
-  // ──── GSMArena ────
-
-  /// Purpose: Search for gsmarena using the current query or filters.
-  /// Inputs: `query`.
-  /// Returns: `Future<List<DeviceSearchResult>>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static Future<List<DeviceSearchResult>> _searchGSMArena(String query) async {
-    final url = Uri.parse(
-      'https://www.gsmarena.com/results.php3'
-      '?sQuickSearch=yes&sName=${Uri.encodeComponent(query)}',
-    );
-    final resp = await http
-        .get(
-          url,
-          headers: {
-            'User-Agent': _userAgent,
-            'Accept': 'text/html,application/xhtml+xml',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
-    if (resp.statusCode != 200) return [];
-
-    final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
-
-    // Find the <div class="makers"> section
-    final makersMatch = RegExp(
-      r'<div\s+class="makers">(.*?)</div>',
-      dotAll: true,
-    ).firstMatch(html);
-    if (makersMatch == null) return [];
-    final makersHtml = makersMatch.group(1)!;
-
-    final results = <DeviceSearchResult>[];
-    final liPattern = RegExp(r'<li>(.*?)</li>', dotAll: true);
-
-    for (final liMatch in liPattern.allMatches(makersHtml)) {
-      if (results.length >= 10) break;
-      final li = liMatch.group(1)!;
-
-      final hrefMatch = RegExp(r'href="([^"]+)"').firstMatch(li);
-      final imgMatch = RegExp(r'<img[^>]*src="([^"]*)"').firstMatch(li);
-      // Device name is inside <span>...</span>, may contain <br> between
-      // brand and model, e.g. <span>Apple<br>iPhone 15 Pro</span>
-      final spanMatch = RegExp(
-        r'<span>(.*?)</span>',
-        dotAll: true,
-      ).firstMatch(li);
-      final name = spanMatch
-          ?.group(1)
-          ?.replaceAll(RegExp(r'<[^>]+>'), ' ')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim();
-
-      final href = hrefMatch?.group(1);
-      final thumbnail = imgMatch?.group(1);
-
-      if (href != null && name != null && name.isNotEmpty) {
-        final (brand, model) = _splitBrandModel(name);
-        results.add(
-          DeviceSearchResult(
-            source: 'GSMArena',
-            sourceUrl: 'https://www.gsmarena.com/$href',
-            name: name,
-            brand: brand,
-            model: model,
-            thumbnailUrl: thumbnail,
-          ),
-        );
+    final client = http.Client();
+    try {
+      switch (result.source) {
+        case 'Notebookcheck':
+          return await _fetchNotebookcheckDetail(client, result);
+        case 'PhoneDB':
+          return await _fetchPhonedbDetail(client, result);
+        default:
+          return result;
       }
+    } catch (_) {
+      return result;
+    } finally {
+      client.close();
     }
-
-    return results;
   }
 
-  /// Purpose: Fetch gsmarena detail from the relevant source.
-  /// Inputs: `result`.
-  /// Returns: `Future<DeviceSearchResult>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static Future<DeviceSearchResult> _fetchGSMArenaDetail(
-    DeviceSearchResult result,
-  ) async {
-    final url = Uri.parse(result.sourceUrl!);
-    final resp = await http
-        .get(
-          url,
-          headers: {
-            'User-Agent': _userAgent,
-            'Accept': 'text/html,application/xhtml+xml',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
-    if (resp.statusCode != 200) return result;
-
-    final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
-
-    // Main device image — prefer GSMArena-hosted images only
-    String? deviceImageUrl;
-    final imgMatches = RegExp(
-      r'class="specs-photo-main"[^>]*>.*?<img[^>]*src="([^"]*)"',
-      dotAll: true,
-    ).allMatches(html);
-    for (final m in imgMatches) {
-      final imgUrl = m.group(1);
-      if (imgUrl != null && _isDeviceImage(imgUrl)) {
-        deviceImageUrl = imgUrl;
-        break;
-      }
+  /// Purpose: Classify a transport-level failure.
+  /// Inputs: `error` — the thrown object.
+  /// Returns: The matching `DeviceSearchStatus`.
+  /// Side effects: None.
+  /// Notes: Everything that is not a recognised network fault is reported as
+  /// `unreachable` rather than swallowed.
+  static DeviceSearchStatus _classifyError(Object error) {
+    if (error is TimeoutException ||
+        error is SocketException ||
+        error is http.ClientException ||
+        error is HandshakeException) {
+      return DeviceSearchStatus.unreachable;
     }
-
-    final chipset = _spec(html, 'chipset');
-    final gpu = _spec(html, 'gpu');
-    final memRaw = _spec(html, 'internalmemory');
-    final (ram, storage) = _parseMemory(memRaw);
-    final screenSize = _parseScreenSize(_spec(html, 'displaysize'));
-    final (resW, resH) = _parseResolution(_spec(html, 'displayresolution'));
-    final battery = _parseBattery(_spec(html, 'batdescription1'));
-    final os = _spec(html, 'os');
-    final releaseDate = _parseReleaseDate(
-      _spec(html, 'released-hl') ?? _spec(html, 'status'),
-    );
-
-    return result.withDetail(
-      imageUrl: deviceImageUrl,
-      chipset: chipset,
-      gpuName: gpu,
-      ram: ram,
-      storage: storage,
-      screenSize: screenSize,
-      screenResolutionW: resW,
-      screenResolutionH: resH,
-      battery: battery,
-      os: os,
-      releaseDate: releaseDate,
-    );
-  }
-
-  /// Purpose: Provide the internal spec helper for this file.
-  /// Inputs: `html`.
-  /// Returns: `String?`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  /// Extract a data-spec value from GSMArena HTML.
-  static String? _spec(String html, String key) {
-    final match = RegExp(
-      'data-spec="$key"[^>]*>\\s*(.+?)\\s*</(?:td|span|div|li)>',
-      dotAll: true,
-    ).firstMatch(html);
-    if (match == null) return null;
-    // Strip inner HTML tags
-    final raw = match
-        .group(1)!
-        .replaceAll(RegExp(r'<[^>]+>'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-    return raw.isEmpty ? null : raw;
-  }
-
-  // ──── Parsers ────
-
-  /// Purpose: Implement the static behavior for this file.
-  /// Inputs: `name`.
-  /// Returns: `dynamic`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  static (String?, String?) _splitBrandModel(String name) {
-    final idx = name.indexOf(' ');
-    if (idx == -1) return (name, null);
-    return (name.substring(0, idx), name.substring(idx + 1));
-  }
-
-  /// Purpose: Implement the static behavior for this file.
-  /// Inputs: `ram`, `raw`.
-  /// Returns: `dynamic`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  static (String? ram, String? storage) _parseMemory(String? raw) {
-    if (raw == null) return (null, null);
-    final segment = raw.split(',').first.trim();
-
-    // "128GB 8GB RAM" or "128 GB 8 GB RAM"
-    final full = RegExp(
-      r'(\d+)\s*GB\s+(\d+)\s*GB\s*RAM',
-      caseSensitive: false,
-    ).firstMatch(segment);
-    if (full != null) {
-      return ('${full.group(2)} GB', '${full.group(1)} GB');
-    }
-
-    // "1TB 16GB RAM"
-    final tbFull = RegExp(
-      r'(\d+)\s*TB\s+(\d+)\s*GB\s*RAM',
-      caseSensitive: false,
-    ).firstMatch(segment);
-    if (tbFull != null) {
-      return ('${tbFull.group(2)} GB', '${tbFull.group(1)} TB');
-    }
-
-    // RAM only: "8GB RAM"
-    final ramOnly = RegExp(
-      r'(\d+)\s*(GB|MB)\s*RAM',
-      caseSensitive: false,
-    ).firstMatch(raw);
-    if (ramOnly != null) {
-      return ('${ramOnly.group(1)} ${ramOnly.group(2)!.toUpperCase()}', null);
-    }
-
-    return (null, null);
-  }
-
-  /// Purpose: Provide the internal parse screen size helper for this file.
-  /// Inputs: `raw`.
-  /// Returns: `String?`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static String? _parseScreenSize(String? raw) {
-    if (raw == null) return null;
-    final match = RegExp(r'([\d.]+)\s*inches').firstMatch(raw);
-    return match != null ? '${match.group(1)}"' : null;
-  }
-
-  /// Purpose: Implement the static behavior for this file.
-  /// Inputs: `raw`.
-  /// Returns: `dynamic`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  static (int?, int?) _parseResolution(String? raw) {
-    if (raw == null) return (null, null);
-    final match = RegExp(r'(\d+)\s*x\s*(\d+)').firstMatch(raw);
-    if (match == null) return (null, null);
-    return (int.parse(match.group(1)!), int.parse(match.group(2)!));
-  }
-
-  /// Purpose: Provide the internal parse battery helper for this file.
-  /// Inputs: `raw`.
-  /// Returns: `String?`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static String? _parseBattery(String? raw) {
-    if (raw == null) return null;
-    final match = RegExp(r'(\d+)\s*mAh').firstMatch(raw);
-    return match != null ? '${match.group(1)} mAh' : null;
-  }
-
-  /// Purpose: Provide the internal parse release date helper for this file.
-  /// Inputs: `raw`.
-  /// Returns: `DateTime?`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static DateTime? _parseReleaseDate(String? raw) {
-    if (raw == null) return null;
-    // "Released 2024, September 20" or "2024, September"
-    final fullMatch = RegExp(r'(\d{4}),?\s+(\w+)\s+(\d{1,2})').firstMatch(raw);
-    if (fullMatch != null) {
-      final year = int.parse(fullMatch.group(1)!);
-      final month = _parseMonth(fullMatch.group(2)!);
-      final day = int.parse(fullMatch.group(3)!);
-      if (month != null) return DateTime(year, month, day);
-    }
-    final monthMatch = RegExp(r'(\d{4}),?\s+(\w+)').firstMatch(raw);
-    if (monthMatch != null) {
-      final year = int.parse(monthMatch.group(1)!);
-      final month = _parseMonth(monthMatch.group(2)!);
-      if (month != null) return DateTime(year, month);
-    }
-    return null;
-  }
-
-  /// Purpose: Provide the internal parse month helper for this file.
-  /// Inputs: `m`.
-  /// Returns: `int?`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static int? _parseMonth(String m) {
-    const months = {
-      'january': 1,
-      'february': 2,
-      'march': 3,
-      'april': 4,
-      'may': 5,
-      'june': 6,
-      'july': 7,
-      'august': 8,
-      'september': 9,
-      'october': 10,
-      'november': 11,
-      'december': 12,
-    };
-    return months[m.toLowerCase()];
-  }
-
-  /// Purpose: Provide the internal is device image helper for this file.
-  /// Inputs: `url`.
-  /// Returns: `bool`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  /// Check if an image URL is a genuine device photo (not an ad/affiliate).
-  static bool _isDeviceImage(String url) {
-    final lower = url.toLowerCase();
-    // Reject Amazon, affiliate, ad, and tracking images
-    if (lower.contains('amazon') ||
-        lower.contains('amzn') ||
-        lower.contains('affiliate') ||
-        lower.contains('banner') ||
-        lower.contains('advert') ||
-        lower.contains('tracking') ||
-        lower.contains('click.') ||
-        lower.contains('/ad/') ||
-        lower.contains('doubleclick') ||
-        lower.contains('googlesyndication')) {
-      return false;
-    }
-    // Accept GSMArena CDN images
-    if (lower.contains('gsmarena.com') || lower.contains('fdn.gsmarena.com')) {
-      return true;
-    }
-    // Accept common image extensions from any host
-    if (lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        lower.endsWith('.png') ||
-        lower.endsWith('.webp')) {
-      return true;
-    }
-    return false;
-  }
-
-  /// Purpose: Provide the internal strip html helper for this file.
-  /// Inputs: `html`.
-  /// Returns: `String`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static String _stripHtml(String html) {
-    return html
-        .replaceAll(RegExp(r'<[^>]+>'), ' ')
-        .replaceAll(RegExp(r'&[a-zA-Z]+;'), '')
-        .replaceAll(RegExp(r'&#\d+;'), '')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+    return DeviceSearchStatus.unreachable;
   }
 
   // ──── Notebookcheck ────
-  // Covers laptops, tablets, phones, smartwatches via their Laptop Search tool.
-  // Search results include inline specs (GPU, CPU, screen, resolution, weight).
 
-  /// Purpose: Search for notebookcheck using the current query or filters.
-  /// Inputs: `query`.
-  /// Returns: `Future<List<DeviceSearchResult>>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static Future<List<DeviceSearchResult>> _searchNotebookcheck(
+  /// Purpose: Search Notebookcheck's device database.
+  /// Inputs: `client` and the `query` text.
+  /// Returns: `Future<_SourceResponse>` with results and a status.
+  /// Side effects: Issues one HTTP GET.
+  /// Notes: Uses the hyphenated `Laptop-Search` path; the underscored form
+  /// 301-redirects. Internal helper used within this file only.
+  static Future<_SourceResponse> _searchNotebookcheck(
+    http.Client client,
     String query,
   ) async {
     final url = Uri.parse(
-      'https://www.notebookcheck.net/Laptop_Search.8223.0.html'
+      'https://www.notebookcheck.net/Laptop-Search.8223.0.html'
       '?model=${Uri.encodeComponent(query)}',
     );
-    final resp = await http
-        .get(
-          url,
-          headers: {
-            'User-Agent': _userAgent,
-            'Accept': 'text/html',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
-    if (resp.statusCode != 200) return [];
 
-    final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
-    final results = <DeviceSearchResult>[];
+    final String html;
+    try {
+      final resp = await client.get(url, headers: headers()).timeout(_timeout);
+      if (resp.statusCode != 200) {
+        return _SourceResponse.failed(
+          resp.statusCode == 403
+              ? DeviceSearchStatus.blocked
+              : DeviceSearchStatus.unreachable,
+        );
+      }
+      html = utf8.decode(resp.bodyBytes, allowMalformed: true);
+    } catch (e) {
+      return _SourceResponse.failed(_classifyError(e));
+    }
 
-    // Table rows with class "odd" or "even" contain the results.
-    // Structure per row:
-    //   <td>date</td><td>rating</td>
-    //   <td><a href="URL">Name</a> | ... <br/>
-    //       GPU, CPU, screen" resolution, weight</td>
+    if (looksBlocked(html)) {
+      return _SourceResponse.failed(DeviceSearchStatus.blocked);
+    }
+
     final rowPattern = RegExp(
       r'<tr[^>]*class="[^"]*(?:odd|even)[^"]*"[^>]*>(.*?)</tr>',
       dotAll: true,
     );
+    final rows = rowPattern.allMatches(html).toList();
+    if (rows.isEmpty) {
+      // Zero matches renders the search page with no results table. Only a
+      // missing search page means the markup actually changed.
+      return _SourceResponse(
+        const [],
+        isNotebookcheckSearchPage(html)
+            ? DeviceSearchStatus.ok
+            : DeviceSearchStatus.markupChanged,
+      );
+    }
 
-    for (final rowMatch in rowPattern.allMatches(html)) {
-      if (results.length >= 8) break;
+    final linkPattern = RegExp(
+      r'<a[^>]*href="(https?://www\.notebookcheck\.net/[^"]+)"[^>]*>([^<]+)</a>',
+    );
+
+    final results = <DeviceSearchResult>[];
+    final seen = <String>{};
+
+    for (final rowMatch in rows) {
+      if (results.length >= _maxResultsPerSource) break;
       final row = rowMatch.group(1)!;
 
-      // Skip empty separator rows
-      if (row.contains('nb_model') && row.contains('colspan')) continue;
-
-      // Extract link and name
-      final linkMatch = RegExp(
-        r'<a[^>]*href="(https?://www\.notebookcheck\.net/[^"]+)"[^>]*>([^<]+)</a>',
-      ).firstMatch(row);
+      final linkMatch = linkPattern.firstMatch(row);
       if (linkMatch == null) continue;
 
       final href = linkMatch.group(1)!;
-      final name = linkMatch.group(2)!.trim();
-      if (name.isEmpty || name.length < 3) continue;
+      final name = cleanDeviceName(linkMatch.group(2)!);
+      if (name.isEmpty) continue;
+      if (isReviewArticle(name)) continue;
+      if (!isRelevant(query, name)) continue;
+      if (!seen.add(name.toLowerCase())) continue;
 
-      // Skip review articles — device entries are short names,
-      // review titles are long or contain keywords like "review".
-      if (name.length > 80 ||
-          RegExp(
-            r'review|comparison|versus|benchmark|test[:\s]',
-            caseSensitive: false,
-          ).hasMatch(name)) {
-        continue;
-      }
-
-      // Extract inline specs after <br/>
+      // Inline specs follow the <br/> as "GPU, CPU, screen" resolution, weight".
       String? gpuName, chipset, screenSize;
       int? resW, resH;
       final brIdx = row.indexOf('<br/>');
       if (brIdx > 0) {
-        final specsText = _stripHtml(row.substring(brIdx + 5));
-        // Format: "GPU, CPU, screen" resolution, weight"
-        // e.g. "Qualcomm Adreno 750, Qualcomm Snapdragon 8 Gen 3, 6.80" 3120x1440, 0.232 kg"
-        // e.g. "Intel Arc Graphics 140V, Intel Core Ultra 7 258V, 14.00" 2880x1800, 0.98 kg"
-        final parts = specsText.split(',').map((s) => s.trim()).toList();
+        final parts = stripHtml(
+          row.substring(brIdx + 5),
+        ).split(',').map((s) => s.trim()).toList();
         if (parts.isNotEmpty) gpuName = parts[0];
         if (parts.length > 1) chipset = parts[1];
-        // Screen + resolution is in the part containing " (inches) and x
-        for (final p in parts) {
-          final screenMatch = RegExp(
-            r'([\d.]+)"\s*(\d+)\s*x\s*(\d+)',
-          ).firstMatch(p);
-          if (screenMatch != null) {
-            screenSize = '${screenMatch.group(1)}"';
-            resW = int.parse(screenMatch.group(2)!);
-            resH = int.parse(screenMatch.group(3)!);
+        for (final part in parts) {
+          final size = parseScreenSize(part);
+          final (w, h) = parseResolution(part);
+          if (size != null && w != null) {
+            screenSize = size;
+            resW = w;
+            resH = h;
             break;
           }
         }
       }
 
-      final (brand, model) = _splitBrandModel(name);
+      final (brand, model) = splitBrandModel(name);
       results.add(
         DeviceSearchResult(
           source: 'Notebookcheck',
@@ -576,64 +407,210 @@ class DeviceSearchService {
       );
     }
 
-    return results;
+    return _SourceResponse(results, DeviceSearchStatus.ok);
   }
 
-  /// Purpose: Fetch notebookcheck detail from the relevant source.
-  /// Inputs: `result`.
+  /// Purpose: Read a Notebookcheck device page for full specs and an image.
+  /// Inputs: `client` and the `result` to enrich.
   /// Returns: `Future<DeviceSearchResult>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: Issues one HTTP GET.
+  /// Notes: The spec table is the whole point of this fetch — the previous
+  /// implementation read only the JSON-LD image and threw the table away, so
+  /// RAM, storage, battery, OS and release date never arrived. Internal
+  /// helper used within this file only.
   static Future<DeviceSearchResult> _fetchNotebookcheckDetail(
+    http.Client client,
     DeviceSearchResult result,
   ) async {
-    final resp = await http
-        .get(
-          Uri.parse(result.sourceUrl!),
-          headers: {
-            'User-Agent': _userAgent,
-            'Accept': 'text/html',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+    final resp = await client
+        .get(Uri.parse(result.sourceUrl!), headers: headers())
+        .timeout(_timeout);
     if (resp.statusCode != 200) return result;
 
     final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
+    if (looksBlocked(html)) return result;
 
-    // Extract image and brand from JSON-LD Product data:
-    // {"@type": "Product", "name": "...", "brand": {"name": "..."},
-    //  "image": {"url": "https://...jpg"}}
-    String? imageUrl;
-    final jsonLdBlocks = RegExp(
+    final specs = parseNotebookcheckSpecs(html);
+    final display = specs['Display'];
+    final (resW, resH) = parseResolution(display);
+
+    return result.withDetail(
+      imageUrl: _jsonLdImage(html),
+      chipset: parseChipName(specs['Processor']),
+      gpuName: parseChipName(specs['Graphics adapter']),
+      ram: parseCapacity(specs['Memory']),
+      storage: parseCapacity(specs['Storage']),
+      screenSize: parseScreenSize(display),
+      screenResolutionW: resW,
+      screenResolutionH: resH,
+      battery: parseBattery(specs['Battery']),
+      os: specs['Operating System'],
+      releaseDate: parseUsDate(specs['Released']),
+    );
+  }
+
+  /// Purpose: Pull a product image URL out of a page's JSON-LD blocks.
+  /// Inputs: `html` — the full page markup.
+  /// Returns: The image URL, or null.
+  /// Side effects: None.
+  /// Notes: Accepts both the object and bare-string forms of `image`, and
+  /// filters the result through `isLikelyDeviceImage`. Internal helper used
+  /// within this file only.
+  static String? _jsonLdImage(String html) {
+    final blocks = RegExp(
       r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
       dotAll: true,
     ).allMatches(html);
-    for (final block in jsonLdBlocks) {
+
+    for (final block in blocks) {
       try {
-        final data = jsonDecode(block.group(1)!) as Map<String, dynamic>;
-        if (data['@type'] == 'Product') {
-          final img = data['image'];
-          if (img is Map<String, dynamic>) {
-            imageUrl = img['url'] as String?;
-          } else if (img is String) {
-            imageUrl = img;
-          }
-          break;
-        }
+        final data = jsonDecode(block.group(1)!);
+        if (data is! Map<String, dynamic>) continue;
+        if (data['@type'] != 'Product') continue;
+        final img = data['image'];
+        final url = img is Map<String, dynamic>
+            ? img['url'] as String?
+            : (img is String ? img : null);
+        if (url != null && isLikelyDeviceImage(url)) return url;
       } catch (_) {
-        // Not valid JSON or not a Product — skip
+        // Not valid JSON, or not a Product block — try the next one.
       }
     }
+    return null;
+  }
+
+  // ──── phonedb ────
+
+  /// Purpose: Search phonedb's device database.
+  /// Inputs: `client` and the `query` text.
+  /// Returns: `Future<_SourceResponse>` with results and a status.
+  /// Side effects: Issues one HTTP POST.
+  /// Notes: phonedb's only working text search is the `search_exp` POST; its
+  /// `filter=` and `model=` query parameters are ignored and return the
+  /// site's "latest devices" list instead. Results run through the relevance
+  /// gate and are deduplicated by cleaned name, which collapses the many
+  /// region and capacity SKUs of one phone into a single entry. Internal
+  /// helper used within this file only.
+  static Future<_SourceResponse> _searchPhonedb(
+    http.Client client,
+    String query,
+  ) async {
+    final url = Uri.parse('https://phonedb.net/index.php?m=device&s=list');
+
+    final String html;
+    try {
+      final resp = await client
+          .post(
+            url,
+            headers: {
+              ...headers(),
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: {'search_exp': query, 'search_header': ''},
+          )
+          .timeout(_timeout);
+      if (resp.statusCode != 200) {
+        return _SourceResponse.failed(
+          resp.statusCode == 403
+              ? DeviceSearchStatus.blocked
+              : DeviceSearchStatus.unreachable,
+        );
+      }
+      html = utf8.decode(resp.bodyBytes, allowMalformed: true);
+    } catch (e) {
+      return _SourceResponse.failed(_classifyError(e));
+    }
+
+    if (looksBlocked(html)) {
+      return _SourceResponse.failed(DeviceSearchStatus.blocked);
+    }
+
+    final blocks = html.split('<div class="content_block">');
+    if (blocks.length < 2) {
+      // phonedb states "0 results match" on a perfectly healthy page.
+      return _SourceResponse(
+        const [],
+        isPhonedbResultsPage(html)
+            ? DeviceSearchStatus.ok
+            : DeviceSearchStatus.markupChanged,
+      );
+    }
+
+    final titlePattern = RegExp(
+      r'<a[^>]*title="([^"]+)"[^>]*href="(index\.php\?m=device&(?:amp;)?id=\d+[^"]*)"',
+    );
+    final thumbPattern = RegExp(r'<img[^>]*src="(img/[^"]+)"');
+
+    final results = <DeviceSearchResult>[];
+    final seen = <String>{};
+
+    for (final block in blocks.skip(1)) {
+      if (results.length >= _maxResultsPerSource) break;
+
+      final titleMatch = titlePattern.firstMatch(block);
+      if (titleMatch == null) continue;
+
+      final name = cleanDeviceName(titleMatch.group(1)!);
+      if (name.isEmpty) continue;
+      if (isReviewArticle(name)) continue;
+      if (!isRelevant(query, name)) continue;
+      if (!seen.add(name.toLowerCase())) continue;
+
+      final href = titleMatch.group(2)!.replaceAll('&amp;', '&');
+      final thumb = thumbPattern.firstMatch(block)?.group(1);
+      final (brand, model) = splitBrandModel(name);
+
+      results.add(
+        DeviceSearchResult(
+          source: 'PhoneDB',
+          sourceUrl: 'https://phonedb.net/$href',
+          name: name,
+          brand: brand,
+          model: model,
+          thumbnailUrl: thumb != null ? 'https://phonedb.net/$thumb' : null,
+        ),
+      );
+    }
+
+    return _SourceResponse(results, DeviceSearchStatus.ok);
+  }
+
+  /// Purpose: Read a phonedb datasheet page for full specs.
+  /// Inputs: `client` and the `result` to enrich.
+  /// Returns: `Future<DeviceSearchResult>`.
+  /// Side effects: Issues one HTTP GET.
+  /// Notes: phonedb gives the screen diagonal in millimetres and capacities in
+  /// binary units, so both go through converting parsers. Internal helper used
+  /// within this file only.
+  static Future<DeviceSearchResult> _fetchPhonedbDetail(
+    http.Client client,
+    DeviceSearchResult result,
+  ) async {
+    final resp = await client
+        .get(Uri.parse(result.sourceUrl!), headers: headers())
+        .timeout(_timeout);
+    if (resp.statusCode != 200) return result;
+
+    final html = utf8.decode(resp.bodyBytes, allowMalformed: true);
+    if (looksBlocked(html)) return result;
+
+    final specs = parsePhonedbSpecs(html);
+    final (resW, resH) = parseResolution(specs['Resolution']);
 
     return result.withDetail(
-      imageUrl: imageUrl,
-      // Keep the inline specs already parsed from search results
-      chipset: result.chipset,
-      gpuName: result.gpuName,
-      screenSize: result.screenSize,
-      screenResolutionW: result.screenResolutionW,
-      screenResolutionH: result.screenResolutionH,
+      imageUrl: result.thumbnailUrl,
+      chipset: parseChipName(specs['CPU']),
+      gpuName: parseChipName(specs['Graphical Controller']),
+      ram: parseCapacity(specs['RAM Capacity (converted)']),
+      storage: parseCapacity(
+        specs['Non-volatile Memory Capacity (converted)'],
+      ),
+      screenSize: parseScreenSizeMm(specs['Display Diagonal']),
+      screenResolutionW: resW,
+      screenResolutionH: resH,
+      battery: parseBattery(specs['Nominal Battery Capacity']),
+      os: specs['Operating System'],
+      releaseDate: parseReleaseDate(specs['Released']),
     );
   }
 }

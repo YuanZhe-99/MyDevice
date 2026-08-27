@@ -1,6 +1,6 @@
 # lib/features/devices/views/device_search_dialog.dart
 
-两阶段模态对话框，用于在线找设备并把所选字段导入编辑表单。由 `lib/features/devices/services/device_search_service.dart`（GSMArena / Notebookcheck 抓取，门控于 `AppFlavor.isStore`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `lib/shared/services/image_service.dart` 支撑下载匹配设备照片。从 `device_edit_page.dart`（用表单当前值预填，使预览能逐字段显示"当前 vs 获取"）和 `device_list_page.dart` 的搜索 FAB（无当前值打开，供给全新 `DeviceEditPage`）两者打开。
+两阶段模态对话框，用于在线找设备并把所选字段导入编辑表单。由 `lib/features/devices/services/device_search_service.dart`（Notebookcheck / PhoneDB 抓取，门控于 `AppFlavor.isStore`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `lib/shared/services/image_service.dart` 支撑下载匹配设备照片。从 `device_edit_page.dart`（用表单当前值预填，使预览能逐字段显示"当前 vs 获取"）和 `device_list_page.dart` 的搜索 FAB（无当前值打开，供给全新 `DeviceEditPage`）两者打开。
 
 ## 声明
 
@@ -12,6 +12,7 @@
 | `initState` | 方法（组件生命周期） | B | 用初始查询播种查询控制器。 |
 | `dispose` | 方法（组件生命周期） | B | 释放查询文本控制器。 |
 | [`_search`](#_search) | 方法（`_SearchDialogState`） | A | 对 `DeviceSearchService` 运行设备搜索并更新对话框状态。 |
+| [`_describeFailures`](#_describefailures) | 方法（`_SearchDialogState`） | A | 把逐数据源的失败汇成一条可读消息。 |
 | [`_selectResult`](#_selectresult) | 方法（`_SearchDialogState`） | A | 为所选搜索结果获取完整详情并进入预览阶段。 |
 | [`_initToggles`](#_inittoggles) | 方法（`_SearchDialogState`） | A | 基于结果有什么为每个可导入字段设置默认复选框状态。 |
 | [`_fetchImage`](#_fetchimage) | 方法（`_SearchDialogState`） | A | 下载匹配设备照片并暂存为获取图像。 |
@@ -29,6 +30,14 @@
 行数说明：对此文件 `grep -c 'Purpose:'` 返回 18，比上面 19 行少一个。差异是 `showDeviceSearchDialog` 本身——其文档注释（第 10–11 行）是不带本文件每个其他声明使用的 `Purpose:` 标签的普通 `/// Shows the device search dialog. ...` 注释，因此不匹配 grep 模式，虽然它是真实、已文档化顶层函数并按"每个声明得一行"规则包含于此。
 
 ## 文档
+
+### `String _describeFailures(List<DeviceSourceOutcome> failures, {required bool everySource})` <a id="_describefailures"></a>
+- **Kind:** `_SearchDialogState` 的方法。
+- **Purpose:** 把逐数据源的失败汇成一条可读消息。
+- **Inputs:** `failures` —— 状态不为 `ok` 的结果状态；`everySource` —— 是否所有数据源都没有成功。
+- **Returns:** 以换行分隔的说明，每个失败的数据源一行。
+- **Side effects:** 从当前 context 读取本地化字符串。
+- **Notes:** 每种状态各自映射到专属字符串（`searchSourceBlocked`、`searchSourceUnreachable`、`searchSourceMarkupChanged`），使用户能区分机器人验证墙、服务中断与需要更新的抓取逻辑——其中只有一种情况重试有意义。标题会依 `everySource` 而不同，因此与真实结果一同展示的部分失败不会被表述成整体中断。
 
 ### `Future<Map<String, dynamic>?> showDeviceSearchDialog(BuildContext context, {String? initialQuery, String? currentBrand, String? currentModel, String? currentChipset, String? currentGpu, String? currentRam, String? currentStorage, String? currentScreenSize, int? currentScreenResW, int? currentScreenResH, String? currentBattery, String? currentOs, DateTime? currentReleaseDate, String? currentImagePath})` <a id="showdevicesearchdialog"></a>
 - **种类：** 顶层函数
@@ -62,7 +71,7 @@
 - **用途：** 对 `DeviceSearchService.search` 运行当前查询并把结果加载进对话框状态。
 - **输入：** 无（读取 `_queryController.text`）。
 - **返回：** `Future<void>`。
-- **副作用：** 三个 `setState` 调用（开始、成功、失败）；跨 GSMArena 和 Notebookcheck 执行网络支撑搜索。
+- **副作用：** 三个 `setState` 调用（开始、成功、失败）；跨 Notebookcheck 和 PhoneDB 执行网络支撑搜索，并记录逐数据源的结果状态，使被拦截或结构变化的数据源如实上报，而不是显示为「无结果」。
 - **算法：**
   1. 修剪查询；为空立即返回。
   2. 设 `_searching = true`、清除 `_error` 和 `_results`。

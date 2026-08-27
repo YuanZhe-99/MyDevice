@@ -728,6 +728,27 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchNoResults => '結果が見つかりません';
 
   @override
+  String searchSourceBlocked(String source) {
+    return '$source が自動アクセスをブロックしました';
+  }
+
+  @override
+  String searchSourceUnreachable(String source) {
+    return '$source に接続できませんでした';
+  }
+
+  @override
+  String searchSourceMarkupChanged(String source) {
+    return '$source のページ構成が変更されました。アプリの更新が必要です';
+  }
+
+  @override
+  String get searchAllSourcesFailed => 'どのソースにも接続できませんでした';
+
+  @override
+  String get searchPartialFailure => '一部のソースが応答しませんでした';
+
+  @override
   String get searchApply => '適用';
 
   @override

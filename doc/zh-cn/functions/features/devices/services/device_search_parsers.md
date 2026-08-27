@@ -35,10 +35,12 @@
 | [`parseUsDate`](#parseusdate) | 函数 | A | 读取美式数字日期 `MM/DD/YYYY`。 |
 | [`parseChipName`](#parsechipname) | 函数 | A | 取芯片规格字符串的首个组成部分。 |
 | [`isLikelyDeviceImage`](#islikelydeviceimage) | 函数 | A | 判断图片 URL 是否为设备照片。 |
+| [`isNotebookcheckSearchPage`](#isnotebookchecksearchpage) | 函数 | A | 确认响应确实是 Notebookcheck 的搜索页。 |
+| [`isPhonedbResultsPage`](#isphonedbresultspage) | 函数 | A | 确认响应确实是 phonedb 的结果页。 |
 | [`parseNotebookcheckSpecs`](#parsenotebookcheckspecs) | 函数 | A | 读取 Notebookcheck 设备页的规格表。 |
 | [`parsePhonedbSpecs`](#parsephonedbspecs) | 函数 | A | 读取 phonedb 设备页的参数表行。 |
 
-行数（23）比 `grep -c 'Purpose:' device_search_parsers.dart`（22）多一行：私有的 `_namedEntities` const
+行数（25）比 `grep -c 'Purpose:' device_search_parsers.dart`（24）多一行：私有的 `_namedEntities` const
 带的是普通 `///` 描述而非完整的 `Purpose:` 块，因为它是数据而不是行为。按照「每个声明都要出现在表中」的
 分级规则，它仍然在此列出。
 
@@ -257,6 +259,27 @@
 - **Side effects:** 无。
 - **Algorithm:** 先排除已知的广告/推广/追踪特征串，再要求具备真实的图片扩展名。
 - **Notes:** 排除规则有意优先于接受规则，因此以 `banner.png` 形式提供的广告仍会被过滤掉。
+
+### `bool isNotebookcheckSearchPage(String html)` <a id="isnotebookchecksearchpage"></a>
+- **Kind:** 顶层函数。
+- **Source:** 第 450 行。
+- **Purpose:** 确认响应确实是 Notebookcheck 的设备搜索页。
+- **Inputs:** `html` —— 完整的响应体。
+- **Returns:** 搜索页正常渲染时返回 `true`，无论是否有匹配结果。
+- **Side effects:** 无。
+- **Notes:** 零匹配的查询会渲染出**没有**结果表格的搜索页。缺少这项检查，调用方就无法把它与页面结构变化区分开，
+  于是对每一台未收录的设备都会报告 `markupChanged`——这正是把「无结果」与「已损坏」混为一谈的老问题，也是
+  GSMArena 故障被长期掩盖的原因。`test/fixtures/notebookcheck_no_results.html` 固定了这一情形。
+
+### `bool isPhonedbResultsPage(String html)` <a id="isphonedbresultspage"></a>
+- **Kind:** 顶层函数。
+- **Source:** 第 464 行。
+- **Purpose:** 确认响应确实是 phonedb 的搜索结果页。
+- **Inputs:** `html` —— 完整的响应体。
+- **Returns:** 结果页正常渲染时返回 `true`，无论是否有匹配结果。
+- **Side effects:** 无。
+- **Notes:** 即使匹配数为零，phonedb 也会写出匹配计数（`0 results match`），因此该短语是页面本身完好的可靠标志。
+  `test/fixtures/phonedb_no_results.html` 固定了这一情形。
 
 ### `Map<String, String> parseNotebookcheckSpecs(String html)` <a id="parsenotebookcheckspecs"></a>
 - **Kind:** 顶层函数。

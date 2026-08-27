@@ -48,6 +48,35 @@ void main() {
     });
   });
 
+  group('page recognition', () {
+    test('a zero-match search page is still a valid search page', () {
+      // The distinction that matters: "no results" must not be reported as
+      // "the scraper is broken", or the honest-failure signal cries wolf on
+      // every unknown device.
+      expect(
+        isNotebookcheckSearchPage(fixture('notebookcheck_no_results.html')),
+        isTrue,
+      );
+      expect(
+        isPhonedbResultsPage(fixture('phonedb_no_results.html')),
+        isTrue,
+      );
+    });
+
+    test('a page with results is also recognised', () {
+      expect(
+        isNotebookcheckSearchPage(fixture('notebookcheck_search.html')),
+        isTrue,
+      );
+      expect(isPhonedbResultsPage(fixture('phonedb_search.html')), isFalse);
+    });
+
+    test('an unrelated page is not mistaken for a search page', () {
+      expect(isNotebookcheckSearchPage('<html>nothing</html>'), isFalse);
+      expect(isPhonedbResultsPage('<html>nothing</html>'), isFalse);
+    });
+  });
+
   group('cleanDeviceName', () {
     test('strips the Notebookcheck "Reviews and Specs" suffix', () {
       expect(

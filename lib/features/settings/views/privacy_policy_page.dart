@@ -68,7 +68,8 @@ Network Access
 
 MyDevice!!!!! accesses the internet only in the following situations:
 
-• CPU/GPU chip search (full flavor only): When you actively search for chip specifications, the app sends requests to TechPowerUp (techpowerup.com), AMD (amd.com), and Intel (intel.com) to retrieve publicly available hardware information such as model names, architectures, core counts, and frequencies. This feature is not included in versions distributed through the App Store or Google Play.
+• CPU/GPU chip search (full flavor only): When you actively search for chip specifications, the app sends requests to TechPowerUp (techpowerup.com), AMD (amd.com), and Intel (intel.com) to retrieve publicly available hardware information such as model names, architectures, core counts, and frequencies. Locating those pages also sends your search term to Startpage (startpage.com), which the app uses purely to resolve a product URL. This feature is not included in versions distributed through the App Store or Google Play.
+• Device spec search (full flavor only): When you actively search for a device, the app sends the text you typed to Notebookcheck (notebookcheck.net) and PhoneDB (phonedb.net) to retrieve publicly available specifications such as chipset, memory, display, battery, operating system, and release date. If you then choose to download a device image, the app fetches that image from the same site. This feature is not included in versions distributed through the App Store or Google Play.
 
 • Map tiles: When you use the map view to set or display device locations, the app loads map tile images from OpenStreetMap (tile.openstreetmap.org).
 
@@ -83,6 +84,9 @@ Third-Party Services
 The full-featured version of the app uses the following third-party data sources for chip search:
 
 • TechPowerUp (techpowerup.com) — CPU/GPU specification database
+• Startpage (startpage.com) — used only to locate the chip pages above
+• Notebookcheck (notebookcheck.net) — device specification database
+• PhoneDB (phonedb.net) — device specification database
 • AMD (amd.com) — CPU/GPU specification database
 • Intel (intel.com) — CPU/GPU specification database
 
@@ -93,7 +97,7 @@ The app also uses the following service regardless of flavor:
 
 These services have their own privacy policies, which we encourage you to review. MyDevice!!!!! only retrieves publicly available hardware information, map tiles, and currency rates, and does not send any of your personal data to these services.
 
-Note: Versions distributed through the App Store and Google Play (store flavor) do not include the online chip search feature and do not connect to TechPowerUp, AMD, or Intel.
+Note: Versions distributed through the App Store and Google Play (store flavor) do not include the online chip or device search features, and do not connect to TechPowerUp, AMD, Intel, Startpage, Notebookcheck, or PhoneDB.
 
 Data Backup
 
@@ -119,7 +123,8 @@ MyDevice!!!!! 不收集、上传或共享任何个人信息。应用不包含任
 
 MyDevice!!!!! 仅在以下情况下访问互联网：
 
-• CPU/GPU芯片搜索（仅完整版）：当您主动搜索芯片规格时，应用会向 TechPowerUp（techpowerup.com）、AMD（amd.com）和 Intel（intel.com）发送请求，以获取公开的硬件信息，如型号、架构、核心数和频率。通过 App Store 或 Google Play 分发的版本不包含此功能。
+• CPU/GPU芯片搜索（仅完整版）：当您主动搜索芯片规格时，应用会向 TechPowerUp（techpowerup.com）、AMD（amd.com）和 Intel（intel.com）发送请求，以获取公开的硬件信息，如型号、架构、核心数和频率。定位这些页面时还会将搜索词发送至 Startpage（startpage.com），应用仅用它解析产品页地址。通过 App Store 或 Google Play 分发的版本不包含此功能。
+• 设备规格搜索（仅完整版）：当您主动搜索设备时，应用会将您输入的文本发送至 Notebookcheck（notebookcheck.net）和 PhoneDB（phonedb.net），以获取公开的规格信息，如芯片、内存、屏幕、电池、操作系统和发布日期。若您随后选择下载设备图片，应用会从同一站点获取该图片。通过 App Store 或 Google Play 分发的版本不包含此功能。
 
 • 地图瓦片：当您使用地图视图设置或显示设备位置时，应用会从 OpenStreetMap（tile.openstreetmap.org）加载地图瓦片图片。
 
@@ -134,6 +139,9 @@ MyDevice!!!!! 仅在以下情况下访问互联网：
 完整版应用使用以下第三方数据源进行芯片搜索：
 
 • TechPowerUp（techpowerup.com）—— CPU/GPU 规格数据库
+• Startpage（startpage.com）—— 仅用于定位上述芯片页面
+• Notebookcheck（notebookcheck.net）—— 设备规格数据库
+• PhoneDB（phonedb.net）—— 设备规格数据库
 • AMD（amd.com）—— CPU/GPU 规格数据库
 • Intel（intel.com）—— CPU/GPU 规格数据库
 
@@ -144,7 +152,7 @@ MyDevice!!!!! 仅在以下情况下访问互联网：
 
 这些服务有各自的隐私政策，建议您查阅。MyDevice!!!!! 仅获取公开的硬件信息、地图瓦片和货币汇率，不会向这些服务发送任何个人数据。
 
-注意：通过 App Store 和 Google Play 分发的版本（商店版）不包含在线芯片搜索功能，不会连接 TechPowerUp、AMD 或 Intel。
+注意：通过 App Store 和 Google Play 分发的版本（商店版）不包含在线芯片搜索和设备搜索功能，不会连接 TechPowerUp、AMD、Intel、Startpage、Notebookcheck 或 PhoneDB。
 
 数据备份
 
@@ -170,7 +178,8 @@ MyDevice!!!!! 不收集、上傳或分享任何個人資訊。應用程式不包
 
 MyDevice!!!!! 僅在以下情況下存取網際網路：
 
-• CPU/GPU 晶片搜尋（僅完整版）：當您主動搜尋晶片規格時，應用程式會向 TechPowerUp（techpowerup.com）、AMD（amd.com）和 Intel（intel.com）傳送請求，以取得公開的硬體資訊，如型號、架構、核心數和頻率。透過 App Store 或 Google Play 分發的版本不包含此功能。
+• CPU/GPU 晶片搜尋（僅完整版）：當您主動搜尋晶片規格時，應用程式會向 TechPowerUp（techpowerup.com）、AMD（amd.com）和 Intel（intel.com）傳送請求，以取得公開的硬體資訊，如型號、架構、核心數和頻率。定位這些頁面時還會將搜尋詞傳送至 Startpage（startpage.com），應用程式僅用它解析產品頁網址。透過 App Store 或 Google Play 分發的版本不包含此功能。
+• 裝置規格搜尋（僅完整版）：當您主動搜尋裝置時，應用程式會將您輸入的文字傳送至 Notebookcheck（notebookcheck.net）和 PhoneDB（phonedb.net），以取得公開的規格資訊，如晶片、記憶體、螢幕、電池、作業系統和發表日期。若您隨後選擇下載裝置圖片，應用程式會從同一網站取得該圖片。透過 App Store 或 Google Play 分發的版本不包含此功能。
 
 • 地圖圖磚：當您使用地圖視圖設定或顯示裝置位置時，應用程式會從 OpenStreetMap（tile.openstreetmap.org）載入地圖圖磚圖片。
 
@@ -185,6 +194,9 @@ MyDevice!!!!! 僅在以下情況下存取網際網路：
 完整版應用程式使用以下第三方資料來源進行晶片搜尋：
 
 • TechPowerUp（techpowerup.com）—— CPU/GPU 規格資料庫
+• Startpage（startpage.com）—— 僅用於定位上述晶片頁面
+• Notebookcheck（notebookcheck.net）—— 裝置規格資料庫
+• PhoneDB（phonedb.net）—— 裝置規格資料庫
 • AMD（amd.com）—— CPU/GPU 規格資料庫
 • Intel（intel.com）—— CPU/GPU 規格資料庫
 
@@ -195,7 +207,7 @@ MyDevice!!!!! 僅在以下情況下存取網際網路：
 
 這些服務有各自的隱私政策，建議您查閱。MyDevice!!!!! 僅取得公開的硬體資訊、地圖圖磚和貨幣匯率，不會向這些服務傳送任何個人資料。
 
-注意：透過 App Store 和 Google Play 分發的版本（商店版）不包含線上晶片搜尋功能，不會連線 TechPowerUp、AMD 或 Intel。
+注意：透過 App Store 和 Google Play 分發的版本（商店版）不包含線上晶片搜尋和裝置搜尋功能，不會連線 TechPowerUp、AMD、Intel、Startpage、Notebookcheck 或 PhoneDB。
 
 資料備份
 
@@ -221,7 +233,8 @@ MyDevice!!!!! は個人情報の収集、アップロード、共有を一切行
 
 MyDevice!!!!! は以下の場合にのみインターネットにアクセスします：
 
-• CPU/GPUチップ検索（完全版のみ）：お客様がチップのスペックを検索した際、アプリは TechPowerUp（techpowerup.com）、AMD（amd.com）、Intel（intel.com）にリクエストを送信し、モデル名、アーキテクチャ、コア数、周波数などの公開ハードウェア情報を取得します。App Store または Google Play で配信されるバージョンにはこの機能は含まれていません。
+• CPU/GPUチップ検索（完全版のみ）：お客様がチップのスペックを検索した際、アプリは TechPowerUp（techpowerup.com）、AMD（amd.com）、Intel（intel.com）にリクエストを送信し、モデル名、アーキテクチャ、コア数、周波数などの公開ハードウェア情報を取得します。これらのページを特定する際、検索語は Startpage（startpage.com）にも送信されます。アプリは製品ページの URL を解決する目的でのみ使用します。App Store または Google Play で配信されるバージョンにはこの機能は含まれていません。
+• デバイススペック検索（完全版のみ）：お客様がデバイスを検索した際、アプリは入力されたテキストを Notebookcheck（notebookcheck.net）および PhoneDB（phonedb.net）に送信し、チップセット、メモリ、ディスプレイ、バッテリー、オペレーティングシステム、発売日などの公開スペック情報を取得します。その後デバイス画像のダウンロードを選択した場合、アプリは同じサイトから画像を取得します。App Store または Google Play で配信されるバージョンにはこの機能は含まれていません。
 
 • 地図タイル：デバイスの位置を設定または表示するために地図ビューを使用した際、アプリは OpenStreetMap（tile.openstreetmap.org）から地図タイル画像を読み込みます。
 
@@ -236,6 +249,9 @@ MyDevice!!!!! は以下の場合にのみインターネットにアクセスし
 完全版アプリはチップ検索のために以下のサードパーティデータソースを使用しています：
 
 • TechPowerUp（techpowerup.com）—— CPU/GPU仕様データベース
+• Startpage（startpage.com）—— 上記チップページの特定にのみ使用
+• Notebookcheck（notebookcheck.net）—— デバイス仕様データベース
+• PhoneDB（phonedb.net）—— デバイス仕様データベース
 • AMD（amd.com）—— CPU/GPU仕様データベース
 • Intel（intel.com）—— CPU/GPU仕様データベース
 
@@ -246,7 +262,7 @@ MyDevice!!!!! は以下の場合にのみインターネットにアクセスし
 
 これらのサービスには独自のプライバシーポリシーがあります。ご確認をお勧めします。MyDevice!!!!! は公開されているハードウェア情報、地図タイル、通貨レートのみを取得し、お客様の個人データをこれらのサービスに送信することはありません。
 
-注意：App Store および Google Play で配信されるバージョン（ストア版）にはオンラインチップ検索機能は含まれておらず、TechPowerUp、AMD、Intel には接続しません。
+注意：App Store および Google Play で配信されるバージョン（ストア版）にはオンラインのチップ検索およびデバイス検索機能は含まれておらず、TechPowerUp、AMD、Intel、Startpage、Notebookcheck、PhoneDB には接続しません。
 
 データバックアップ
 

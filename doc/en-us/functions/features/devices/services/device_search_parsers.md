@@ -37,10 +37,12 @@ for the concept overview this page verifies against source, and
 | [`parseUsDate`](#parseusdate) | function | A | Read a US numeric `MM/DD/YYYY` date. |
 | [`parseChipName`](#parsechipname) | function | A | Take the leading component of a chip spec string. |
 | [`isLikelyDeviceImage`](#islikelydeviceimage) | function | A | Decide whether an image URL is a device photo. |
+| [`isNotebookcheckSearchPage`](#isnotebookchecksearchpage) | function | A | Confirm a response really is Notebookcheck's search page. |
+| [`isPhonedbResultsPage`](#isphonedbresultspage) | function | A | Confirm a response really is phonedb's results page. |
 | [`parseNotebookcheckSpecs`](#parsenotebookcheckspecs) | function | A | Read the spec table from a Notebookcheck device page. |
 | [`parsePhonedbSpecs`](#parsephonedbspecs) | function | A | Read the datasheet rows from a phonedb device page. |
 
-Row count (23) is one more than `grep -c 'Purpose:' device_search_parsers.dart` (22): the private
+Row count (25) is one more than `grep -c 'Purpose:' device_search_parsers.dart` (24): the private
 `_namedEntities` const carries a plain `///` description rather than a full `Purpose:` block,
 because it is data rather than behaviour. It is still indexed here per the tiering rule that every
 declaration appears in the table.
@@ -274,6 +276,29 @@ declaration appears in the table.
   extension.
 - **Notes:** Rejection deliberately wins over acceptance, so an advert served as `banner.png` is
   still filtered out.
+
+### `bool isNotebookcheckSearchPage(String html)` <a id="isnotebookchecksearchpage"></a>
+- **Kind:** top-level function.
+- **Source:** line 450.
+- **Purpose:** Confirm a response really is Notebookcheck's device search page.
+- **Inputs:** `html` — the full response body.
+- **Returns:** `true` when the search page rendered, with or without matches.
+- **Side effects:** None.
+- **Notes:** A query with no matches renders the search page **without** a results table. Without
+  this check the caller cannot tell that apart from a layout change and would report
+  `markupChanged` for every unknown device — the same conflation of "no results" with "broken"
+  that hid the GSMArena breakage. `test/fixtures/notebookcheck_no_results.html` pins the case.
+
+### `bool isPhonedbResultsPage(String html)` <a id="isphonedbresultspage"></a>
+- **Kind:** top-level function.
+- **Source:** line 464.
+- **Purpose:** Confirm a response really is phonedb's search-results page.
+- **Inputs:** `html` — the full response body.
+- **Returns:** `true` when the results page rendered, with or without matches.
+- **Side effects:** None.
+- **Notes:** phonedb states its match count even when that count is zero (`0 results match`), so
+  the phrase is a reliable marker that the page itself is intact.
+  `test/fixtures/phonedb_no_results.html` pins the case.
 
 ### `Map<String, String> parseNotebookcheckSpecs(String html)` <a id="parsenotebookcheckspecs"></a>
 - **Kind:** top-level function.

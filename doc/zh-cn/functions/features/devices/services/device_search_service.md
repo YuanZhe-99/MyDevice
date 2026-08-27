@@ -1,246 +1,274 @@
 # lib/features/devices/services/device_search_service.dart
 
-`DeviceSearchService` 从两个公共站——GSMArena 和 Notebookcheck——抓取设备规格（手机、笔记本、平板），并发运行、各单独吞错。它无捆绑 API 密钥；每个结果都来自直接解析站点 HTML。概念总览见 [在线搜索与预设 — 设备规格搜索](../../../../features/online-search-and-presets.md#device-spec-search---device_search_servicedart)，`DeviceSearchResult` 最终经设备编辑页（不在此文件）填充进 `Device` 的 `CpuInfo`/`GpuInfo`/`StorageInfo` 形态见 [`device.md`](../models/device.md)。
+`DeviceSearchService` 从在线数据库获取设备规格，并逐数据源报告该次获取是否真的成功。它只负责 HTTP 管道与
+数据源分发；所有页面解析都放在 [`device_search_parsers.md`](device_search_parsers.md) 中，以便脱离网络测试。
+结果经由 [`../views/device_search_dialog.md`](../views/device_search_dialog.md) 呈现给用户，由用户勾选要
+应用哪些字段。
 
-**商店风格门控**：两个公共入口点 [`search`](#search) 和 [`fetchDetail`](#fetchdetail) 在 `AppFlavor.isFull` 为 false（即 `AppFlavor.isStore` 为 true）时都提前返回——分别空列表和未修改输入结果——源码直接确认。这是 `AGENTS.md` Build Flavors 小节要求的四个门控检查之一（`AppFlavor` 见 [架构](../../../../architecture.md#appflavor)）；其他三个是 [`chip_search_service.md`](chip_search_service.md) 的 `AppFlavor.isFull` 检查和不在此文件、不在此批重新验证的两个 UI 调用点（`device_edit_page.dart` 的三个在线搜索按钮、`device_list_page.dart` 的在线搜索 FAB）。
+本页据以核对源码的概念性介绍见
+[在线搜索与预设](../../../../features/online-search-and-presets.md#device-spec-search--device_search_servicedart)。
 
-## 声明
+## Sources
 
-| 声明 | 种类 | Tier | 用途 |
+| Source | Covers | Search endpoint | Notes |
 |---|---|---|---|
-| [`DeviceSearchResult`](#devicesearchresult-new) | 构造函数 | A | 创建 `DeviceSearchResult` 实例。 |
-| [`withDetail`](#withdetail) | 方法（`DeviceSearchResult`） | A | 创建带详情页字段填充、标记 `detailFetched: true` 的副本。 |
-| [`search`](#search) | 静态方法 | A | 并发搜索 GSMArena 和 Notebookcheck 获取快速结果。 |
-| [`fetchDetail`](#fetchdetail) | 静态方法 | A | 抓取其详情页为搜索结果获取完整详情。 |
-| [`_searchGSMArena`](#_searchgsmarena) | 静态方法（私有） | A | 抓取 GSMArena 的快速搜索结果页。 |
-| [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) | 静态方法（私有） | A | 抓取 GSMArena 设备详情页获取完整规格。 |
-| [`_spec`](#_spec) | 静态方法（私有） | A | 从 GSMArena 详情 HTML 提取一个 `data-spec="key"` 值。 |
-| [`_splitBrandModel`](#_splitbrandmodel) | 静态方法（私有） | A | 在第一个空格把设备名拆分为品牌和型号。 |
-| [`_parseMemory`](#_parsememory) | 静态方法（私有） | A | 把组合存储+RAM 字符串解析为单独 RAM/存储值。 |
-| [`_parseScreenSize`](#_parsescreensize) | 静态方法（私有） | A | 从自由文本提取英寸屏幕尺寸。 |
-| [`_parseResolution`](#_parseresolution) | 静态方法（私有） | A | 从自由文本提取 `W x H` 分辨率对。 |
-| [`_parseBattery`](#_parsebattery) | 静态方法（私有） | A | 从自由文本提取毫安时电池容量。 |
-| [`_parseReleaseDate`](#_parsereleasedate) | 静态方法（私有） | A | 把 GSMArena 发布日期字符串解析为 `DateTime`。 |
-| [`_parseMonth`](#_parsemonth) | 静态方法（私有） | A | 把英文月份名映射到其基于 1 的数字。 |
-| [`_isDeviceImage`](#_isdeviceimage) | 静态方法（私有） | A | 拒绝广告/联盟/跟踪图像 URL，接受真实设备照片。 |
-| [`_stripHtml`](#_striphtml) | 静态方法（私有） | A | 从片段剥离 HTML 标签和实体，折叠空白。 |
-| [`_searchNotebookcheck`](#_searchnotebookcheck) | 静态方法（私有） | A | 抓取 Notebookcheck 的笔记本搜索结果表。 |
-| [`_fetchNotebookcheckDetail`](#_fetchnotebookcheckdetail) | 静态方法（私有） | A | 从 Notebookcheck 详情页 JSON-LD 提取设备图像。 |
+| Notebookcheck | 笔记本、平板、手机、智能手表 | `GET Laptop-Search.8223.0.html?model=` | 设备页带有完整规格表。 |
+| PhoneDB | 手机，细到 SKU 级别 | `POST index.php?m=device&s=list`，参数 `search_exp` | 全文匹配较宽松，需要相关性闸门。 |
 
-行数（18）不匹配 `grep -c 'Purpose:' device_search_service.dart`（16）：`DeviceSearchResult` 构造函数和其 `withDetail` 方法（前两行）无 `/// Purpose:` 文档注释块——`DeviceSearchService` 自己的每个方法都有。
+**GSMArena 已被移除。** 它对每个请求都返回以 HTTP 200 承载的 Cloudflare Turnstile 验证页，纯 HTTP 客户端
+无法通过。由于旧代码只检查状态码，随后其行匹配模式失配，于是返回空列表——这与「该设备不存在」无法区分。
+正是这种静默失败，才有了下面的结果状态上报机制。
 
-## 文档
+PhoneDB 有两个关键且不显然的端点细节：它的 `filter=` 和 `model=` 查询参数会被**忽略**，无论查询内容如何都
+返回站点的「最新设备」列表，因此唯一可用的文本搜索是 `search_exp` 的 POST。而当它没有收录某个型号时，它会
+退化为宽松匹配而不是返回空——搜索 `Galaxy Z Fold8` 会得到约 120 条不相关的 Galaxy 手机——这正是每条结果都
+要经过 `isRelevant` 的原因。
 
-### `const DeviceSearchResult({required this.source, this.sourceUrl, ..., this.detailFetched = false})` <a id="devicesearchresult-new"></a>
-- **种类：** `DeviceSearchResult` 的构造函数。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 28 行）。
-- **用途：** 持有一个来自在线设备数据库的搜索结果——来源名/URL、缩略图，和（已获取时）完整详情字段。
-- **输入：** `source` 必填；每个规格字段可选；`detailFetched` 默认 `false`。
-- **返回：** 新 `DeviceSearchResult`。
-- **副作用：** 无。
-- **算法：** 平凡字段赋值。
-- **用法：** 由 [`_searchGSMArena`](#_searchgsmarena) 和 [`_searchNotebookcheck`](#_searchnotebookcheck) 为每个快速结果构造；被用户挑一个时调用 [`fetchDetail`](#fetchdetail) 的设备搜索对话框 UI 消费。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释（见声明表上方行数说明）。
+## Declarations
 
-### `DeviceSearchResult withDetail({String? imageUrl, ..., DateTime? releaseDate})` <a id="withdetail"></a>
-- **种类：** `DeviceSearchResult` 的方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 49 行）。
-- **用途：** 创建带详情页字段填充、标记 `detailFetched: true` 使 UI 知道完整详情已加载的副本。
-- **输入：** 所有详情字段可选；未提供时各经 `?? this.xxx` 回退既有值。
-- **返回：** 新 `DeviceSearchResult`——`source`/`sourceUrl`/`name`/`brand`/`model`/`thumbnailUrl` 总是从 `this` 原样带过（不可经此方法替换）；结果上 `detailFetched` 无条件 `true`。
-- **副作用：** 无。
-- **算法：** 构造新 `DeviceSearchResult`，逐字复制身份/快速搜索字段并对每个详情字段应用 `field ?? this.field`。
-- **用法：**
+| Declaration | Kind | Tier | Purpose |
+|---|---|---|---|
+| `DeviceSearchStatus` | enum | A | 说明数据源为何返回了这样的结果。 |
+| `DeviceSourceOutcome` | class | B | 查询单个数据源的结果状态。 |
+| [`DeviceSourceOutcome`](#devicesourceoutcome-new) | 构造函数 | A | 记录单个数据源的响应情况。 |
+| [`DeviceSourceOutcome.failed`](#outcome-failed) | getter | A | 把「失败」与「什么也没找到」区分开。 |
+| `DeviceSearchResponse` | class | B | 合并后的结果加逐数据源状态。 |
+| [`DeviceSearchResponse`](#devicesearchresponse-new) | 构造函数 | A | 保存结果与状态。 |
+| [`DeviceSearchResponse.failures`](#failures) | getter | A | 列出失败的数据源。 |
+| [`DeviceSearchResponse.allSourcesFailed`](#allsourcesfailed) | getter | A | 报告没有任何数据源成功。 |
+| `DeviceSearchResult` | class | B | 来自在线数据库的一条结果。 |
+| `DeviceSearchResult` | 构造函数 | B | 创建结果实例。 |
+| [`withDetail`](#withdetail) | 方法 | A | 把抓取到的详情字段合并到结果上。 |
+| `_SourceResponse` | 私有 class | B | 合并前单个数据源的产出。 |
+| `_SourceResponse` / `.failed` | 私有构造函数 | B | 构建单个数据源的产出。 |
+| `DeviceSearchService` | class | B | 服务本体，仅含静态成员。 |
+| `userAgent` / `_timeout` / `_maxResultsPerSource` | 静态 const | B | 共享的请求配置。 |
+| [`headers`](#headers) | 静态方法 | A | 构建每个抓取请求发送的请求头。 |
+| [`search`](#search) | 静态方法 | A | 搜索所有启用的数据源。 |
+| [`fetchDetail`](#fetchdetail) | 静态方法 | A | 为某条结果获取完整详情页。 |
+| [`_classifyError`](#_classifyerror) | 私有静态方法 | A | 归类传输层失败。 |
+| [`_searchNotebookcheck`](#_searchnotebookcheck) | 私有静态方法 | A | 搜索 Notebookcheck。 |
+| [`_fetchNotebookcheckDetail`](#_fetchnotebookcheckdetail) | 私有静态方法 | A | 读取 Notebookcheck 设备页。 |
+| [`_jsonLdImage`](#_jsonldimage) | 私有静态方法 | A | 从 JSON-LD 中提取产品图片 URL。 |
+| [`_searchPhonedb`](#_searchphonedb) | 私有静态方法 | A | 搜索 PhoneDB。 |
+| [`_fetchPhonedbDetail`](#_fetchphonedbdetail) | 私有静态方法 | A | 读取 PhoneDB 参数表页。 |
+
+行数（24）多于 `grep -c 'Purpose:' device_search_service.dart`（15）：枚举、四个类声明、三个普通构造函数
+以及三个静态 const 带的是普通 `///` 描述或没有注释，而非完整的 `Purpose:` 块。按照「每个声明都要出现在表中」
+的分级规则，它们仍在此列出。
+
+## Documentation
+
+### `enum DeviceSearchStatus`
+- **Kind:** 顶层枚举。
+- **Source:** `lib/features/devices/services/device_search_service.dart`（第 16 行）。
+- **Purpose:** 说明数据源为何返回了这样的结果。
+- **Values:**
+  - `ok` —— 数据源作出了响应且页面解析成功。当设备确实不在该数据库中时，`resultCount` 仍可能为 0。
+  - `blocked` —— 返回的是机器人验证墙或验证页，而不是内容。
+  - `unreachable` —— DNS、套接字、超时，或非 200 且非 403 的状态码。
+  - `markupChanged` —— 数据源作出了响应，但解析器所依赖的结构一个都不存在，说明抓取逻辑需要更新。
+- **Notes:** 关键在于这四者不再可以互相混淆。`unreachable` 时重试有意义，`blocked` 和 `markupChanged` 时
+  重试永远没用，而 `ok` 且无结果时重试也没有意义。注意 `ok` 且 `resultCount == 0` 有意**不**算失败——零匹配
+  的搜索页通过 `isNotebookcheckSearchPage` / `isPhonedbResultsPage` 识别。
+
+### `const DeviceSourceOutcome({...})` <a id="devicesourceoutcome-new"></a>
+- **Kind:** `DeviceSourceOutcome` 的构造函数。
+- **Source:** 第 43 行。
+- **Purpose:** 记录单个数据源对一次查询的响应情况。
+- **Inputs:** `source` 名称、`status` 和 `resultCount`。
+- **Returns:** 新的 `DeviceSourceOutcome`。
+- **Side effects:** 无。
+- **Notes:** 无。
+
+### `bool get failed` <a id="outcome-failed"></a>
+- **Kind:** `DeviceSourceOutcome` 的 getter。
+- **Source:** 第 54 行。
+- **Purpose:** 报告该数据源是失败了，还是仅仅什么都没找到。
+- **Returns:** 除 `ok` 以外的所有状态都返回 `true`。
+- **Side effects:** 无。
+- **Notes:** `ok` 且 `resultCount == 0` 不算失败。
+
+### `const DeviceSearchResponse({...})` <a id="devicesearchresponse-new"></a>
+- **Kind:** `DeviceSearchResponse` 的构造函数。
+- **Source:** 第 67 行。
+- **Purpose:** 保存合并后的结果与逐数据源状态。
+- **Inputs:** `results`、`outcomes`。
+- **Side effects:** 无。
+- **Notes:** 无。
+
+### `List<DeviceSourceOutcome> get failures` <a id="failures"></a>
+- **Kind:** `DeviceSearchResponse` 的 getter。
+- **Source:** 第 74 行。
+- **Purpose:** 列出失败的数据源。
+- **Returns:** 状态不为 `ok` 的那些结果状态。
+- **Side effects:** 无。
+- **Notes:** 对话框用它来解释空结果或部分结果。
+
+### `bool get allSourcesFailed` <a id="allsourcesfailed"></a>
+- **Kind:** `DeviceSearchResponse` 的 getter。
+- **Source:** 第 83 行。
+- **Purpose:** 报告是否所有被查询的数据源都失败了。
+- **Returns:** 至少查询过一个数据源且无一成功时返回 `true`。
+- **Side effects:** 无。
+- **Notes:** 正是它让对话框能说「所有数据源都无法访问」而不是「未找到结果」——用户需要靠这个区分来判断重试
+  是否有意义。
+
+### `DeviceSearchResult withDetail({...})` <a id="withdetail"></a>
+- **Kind:** `DeviceSearchResult` 的方法。
+- **Source:** 第 135 行。
+- **Purpose:** 把新抓取到的详情字段合并到本结果上。
+- **Inputs:** 任意详情字段；省略的字段保持原值。
+- **Returns:** `detailFetched` 置为 `true` 的新 `DeviceSearchResult`。
+- **Side effects:** 无。
+- **Notes:** 每个字段都做了空值合并，因此详情页缺失某字段时，绝不会抹掉已从搜索结果行解析到的值。
+  Notebookcheck 的结果行内联携带 GPU、CPU 和屏幕信息；详情页有时完全没有 `Released`（Apple 的页面就是如此），
+  这不应清空任何内容。
+
+### `static Map<String, String> headers({String accept = 'text/html'})` <a id="headers"></a>
+- **Kind:** `DeviceSearchService` 的静态方法。
+- **Source:** 第 204 行。
+- **Purpose:** 构建每个抓取请求发送的请求头。
+- **Inputs:** `accept` —— `Accept` 头的取值。
+- **Returns:** 含 user agent、accept 与 accept-language 的请求头映射。
+- **Side effects:** 无。
+- **Notes:** 集中管理，使 user agent 不会在页面抓取与后续请求该页面所发现资源之间发生漂移。
+
+### `static Future<DeviceSearchResponse> search(String query)` <a id="search"></a>
+- **Kind:** `DeviceSearchService` 的静态方法。
+- **Source:** 第 217 行。
+- **Purpose:** 在所有启用的数据源中搜索匹配查询的设备。
+- **Inputs:** `query` —— 用户输入的搜索文本。
+- **Returns:** `Future<DeviceSearchResponse>`，含合并结果与每个数据源各一条状态。
+- **Side effects:** 向 Notebookcheck 和 PhoneDB 发起 HTTP 请求。
+- **Algorithm:** 1. 当 `AppFlavor.isStore` 或去空白后的查询为空时立即返回空响应。2. 打开一个 `http.Client`。
+  3. 用 `Future.wait` 并发查询两个数据源。4. 拼接结果，并为每个数据源配一条 `DeviceSourceOutcome`。
+  5. 在 `finally` 中关闭客户端。
+- **Usage:**
   ```dart
-  return result.withDetail(
-    imageUrl: deviceImageUrl,
-    chipset: chipset,
-    gpuName: gpu,
-    ram: ram,
-    storage: storage,
-    screenSize: screenSize,
-    screenResolutionW: resW,
-    screenResolutionH: resH,
-    battery: battery,
-    os: os,
-    releaseDate: releaseDate,
-  );
+  final response = await DeviceSearchService.search('Galaxy Z Fold8');
+  if (response.allSourcesFailed) { /* show why, per source */ }
   ```
-  （来自 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail)；[`_fetchNotebookcheckDetail`](#_fetchnotebookcheckdetail) 也调用它，重新传已解析内联规格使它们不丢失）
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。与典型 `copyWith` 不同，身份字段（`source`、`name`、`brand`、`model`、`thumbnailUrl`）这里根本不是参数——按设计只能经此方法设置详情字段，因为详情获取绝不应改变结果所指的设备。
-
-### `static Future<List<DeviceSearchResult>> search(String query)` <a id="search"></a>
-- **种类：** 静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 95 行）。
-- **用途：** 跨 GSMArena 和 Notebookcheck 并发按名搜索设备，返回快速结果（名、品牌/型号、缩略图——尚无完整规格详情）。
-- **输入：** `query`。
-- **返回：** `Future<List<DeviceSearchResult>>` — 两个源结果的连接；商店风格构建立即 `[]`。
-- **副作用：** 非商店风格时两个并发 HTTP 请求（每源一个）。
-- **算法：** 1. `AppFlavor.isStore` 时立即返回 `[]`——完全无网络调用。2. 否则经 `Future.wait` 并发运行 `_searchGSMArena`/`_searchNotebookcheck`，各包在 `.catchError((_) => <DeviceSearchResult>[])` 使一个源失败不使另一个失败。3. 展平（`expand`）两个结果列表为一个。
-- **用法：** 用户提交查询时从设备搜索对话框调用（见 [在线搜索与预设 — 设备规格搜索](../../../../features/online-search-and-presets.md#device-spec-search---device_search_servicedart)）。
-- **备注：** 商店风格检查在*任何*网络调用尝试*前*发生——商店构建甚至不构造请求，不只丢弃响应。
+- **Notes:** 整个扇出共用一个客户端，而不是像以前那样每次调用都用裸的静态 `http.get`。某个数据源失败绝不会
+  妨碍另一个返回结果，因为每个数据源函数都自行捕获传输错误并以状态形式上报，而不是抛出异常。
 
 ### `static Future<DeviceSearchResult> fetchDetail(DeviceSearchResult result)` <a id="fetchdetail"></a>
-- **种类：** 静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 110 行）。
-- **用途：** 抓取其详情页为先前找到的搜索结果获取完整规格详情，基于 `result.source` 分发到正确抓取器。
-- **输入：** `result` — 典型为 [`search`](#search) 返回的一个。
-- **返回：** `Future<DeviceSearchResult>` — 商店风格构建、`sourceUrl` 缺失或 `source` 无法识别时为未修改 `result`；否则详情富化结果。
-- **副作用：** 对结果详情页一次 HTTP 请求，可识别非商店 case。
-- **算法：** 1. `AppFlavor.isStore` 或 `result.sourceUrl == null` 时原样返回 `result`。2. `switch (result.source)`：`'GSMArena'` → `_fetchGSMArenaDetail`；`'Notebookcheck'` → `_fetchNotebookcheckDetail`；任何其他 → 原样返回 `result`。
-- **用法：** 用户挑快速结果后、预填设备编辑表单前由设备搜索对话框调用。
-- **备注：** 无法识别 `source` 字符串降级为空操作（而非抛）意味着未来在 `search()` 添加无匹配 `fetchDetail` case 的第三源会静默永不获取详情，而非崩溃。
+- **Kind:** `DeviceSearchService` 的静态方法。
+- **Source:** 第 259 行。
+- **Purpose:** 为用户选中的结果获取完整详情页。
+- **Inputs:** `result` —— 先前由 [`search`](#search) 返回的一条结果。
+- **Returns:** `Future<DeviceSearchResult>`，获取成功时带有补充信息。
+- **Side effects:** 向该结果的数据源发起一次 HTTP 请求。
+- **Notes:** 对商店版构建、没有 `sourceUrl` 的结果、未知数据源，以及任何抛出的错误，都原样返回输入。
+  **新增数据源却不在此处添加 `case`，会静默跳过该源的详情获取**——这处分发是唯一必须与 `search` 保持同步的地方。
 
-### `static Future<List<DeviceSearchResult>> _searchGSMArena(String query)` <a id="_searchgsmarena"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 132 行）。
-- **用途：** 查询 GSMArena 快速搜索端点并把 `<div class="makers">` 结果列表解析为至多 10 个 `DeviceSearchResult`。
-- **输入：** `query`。
-- **返回：** `Future<List<DeviceSearchResult>>` — 非 200 响应或无 `makers` div 找到时 `[]`。
-- **副作用：** 一次到 `gsmarena.com/results.php3` 的 HTTP GET，带伪造桌面 `User-Agent` 和 15s 超时。
-- **算法：** 1. GET 快速搜索 URL。2. 正则提取 `<div class="makers">...</div>` 块。3. 迭代其中 `<li>` 条目（上限 10）。4. 每条目正则提取 `href`、`<img src>` 和 `<span>` 名（品牌/型号间可含 `<br>`——去标签并折叠空白）。5. 经 [`_splitBrandModel`](#_splitbrandmodel) 把清洗名拆分为品牌/型号并构建 `source: 'GSMArena'` 的 `DeviceSearchResult`。
-- **用法：** 被 [`search`](#search) 经 `Future.wait` 调用。
-- **备注：** 解析是基于正则的 HTML 抓取，非真实 HTML 解析器——它依赖 GSMArena 当前标记结构（`class="makers"`、`<li>`/`<span>`/`<img>` 形态），该标记变化时会静默开始返回 `[]` 而非抛错。
+### `static DeviceSearchStatus _classifyError(Object error)` <a id="_classifyerror"></a>
+- **Kind:** 私有静态方法。
+- **Source:** 第 288 行。
+- **Purpose:** 归类传输层失败。
+- **Inputs:** `error` —— 抛出的对象。
+- **Returns:** 对应的 `DeviceSearchStatus`。
+- **Side effects:** 无。
+- **Notes:** 目前所有已识别的网络故障与所有未识别错误一律映射为 `unreachable`。分支保持显式书写，是为了将来
+  若要作出更细的区分（例如对握手失败区别对待）有一处明确的落点。
 
-### `static Future<DeviceSearchResult> _fetchGSMArenaDetail(DeviceSearchResult result)` <a id="_fetchgsmarenadetail"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 206 行）。
-- **用途：** 获取 GSMArena 设备详情页并提取其主照片加芯片组、GPU、内存、屏幕、电池、操作系统和发布日期规格。
-- **输入：** `result` — `result.sourceUrl!` 必须已设。
-- **返回：** `Future<DeviceSearchResult>` — 非 200 响应时 `result` 不变，否则带每个解析字段的 [`withDetail`](#withdetail) 结果。
-- **副作用：** 一次到详情 URL 的 HTTP GET，15s 超时。
-- **算法：** 1. GET 页面。2. 找 [`_isDeviceImage`](#_isdeviceimage) 接受的第一个 `specs-photo-main` 图像 URL（跳过广告/联盟图像）。3. 经 [`_spec`](#_spec) 提取 `chipset`/`gpu`/`internalmemory`/`displaysize`/`displayresolution`/`batdescription1`/`os`。4. 经 [`_parseMemory`](#_parsememory) 解析内存、[`_parseScreenSize`](#_parsescreensize) 屏幕尺寸、[`_parseResolution`](#_parseresolution) 分辨率、[`_parseBattery`](#_parsebattery) 电池。5. 经 [`_parseReleaseDate`](#_parsereleasedate) 从 `released-hl`（缺席回退 `status`）解析发布日期。6. 用收集的一切调用 `result.withDetail(...)`。
-- **用法：** 被 [`fetchDetail`](#fetchdetail) 为 `result.source == 'GSMArena'` 调用。
-- **备注：** 主图像搜索迭代*所有* `specs-photo-main` 图像匹配并挑 [`_isDeviceImage`](#_isdeviceimage) 接受的第一个，而非盲目取第一个匹配——这正是过滤掉有时出现在该标记区域真实设备照片前的广告/跟踪图像的东西。
+### `static Future<_SourceResponse> _searchNotebookcheck(...)` <a id="_searchnotebookcheck"></a>
+- **Kind:** 私有静态方法。
+- **Source:** 第 306 行。
+- **Purpose:** 搜索 Notebookcheck 的设备数据库。
+- **Inputs:** `client`、`query`。
+- **Returns:** `Future<_SourceResponse>`，含结果与状态。
+- **Side effects:** 发起一次 HTTP GET。
+- **Algorithm:** 1. GET `Laptop-Search.8223.0.html?model=<query>`。2. 把 403 映射为 `blocked`，其他非 200
+  映射为 `unreachable`。3. 对响应体运行 `looksBlocked`。4. 匹配结果行（`<tr class="odd|even">`）；若一行都
+  没有，则在 `isNotebookcheckSearchPage` 判定页面正常渲染时返回 `ok`，否则返回 `markupChanged`。5. 对每一行
+  取出链接与标题，把标题交给 `cleanDeviceName`，若 `isReviewArticle` 或不满足 `isRelevant` 则丢弃，按小写名称
+  去重，并解析 `<br/>` 之后的内联规格。6. 结果上限为 8 条。
+- **Notes:** 使用带连字符的 `Laptop-Search` 路径是有意为之；带下划线的 `Laptop_Search` 会 301 重定向。
+  先 `cleanDeviceName` 再 `isReviewArticle` 的顺序，正是那个丢弃全部当代设备的缺陷的修复：Notebookcheck 把
+  标准设备页命名为 `<name> - Reviews and Specs`，因此按原始标题过滤会丢掉 `Samsung Galaxy Z Fold8`，却保留了
+  标题较短的旧款 `Samsung Galaxy Z Fold7`。
 
-### `static String? _spec(String html, String key)` <a id="_spec"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 271 行）。
-- **用途：** 从 GSMArena 详情页 HTML 提取一个 `data-spec="key"` 值。
-- **输入：** `html`、`key` — 规格属性名（如 `'chipset'`）。
-- **返回：** `String?` — 未找到或清洗值为空时 `null`。
-- **副作用：** 无。
-- **算法：** 正则匹配 `data-spec="$key"[^>]*>\s*(.+?)\s*</(?:td|span|div|li)>`（非贪婪、点全部），然后对捕获组剥离内部标签并折叠空白。
-- **用法：** 被 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 重复调用，每个规格键一次。
-- **备注：** 匹配先闭合值的 `td`/`span`/`div`/`li` 任一——GSMArena 对不同规格行用不同包装元素。
+### `static Future<DeviceSearchResult> _fetchNotebookcheckDetail(...)` <a id="_fetchnotebookcheckdetail"></a>
+- **Kind:** 私有静态方法。
+- **Source:** 第 421 行。
+- **Purpose:** 读取 Notebookcheck 设备页，获取完整规格与图片。
+- **Inputs:** `client`、`result`。
+- **Returns:** `Future<DeviceSearchResult>`。
+- **Side effects:** 发起一次 HTTP GET。
+- **Algorithm:** 用 `parseNotebookcheckSpecs` 解析页面，再映射其标签：
 
-### `static (String?, String?) _splitBrandModel(String name)` <a id="_splitbrandmodel"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 293 行）。
-- **用途：** 在第一个空格把设备完整显示名拆分为品牌和型号。
-- **输入：** `name`。
-- **返回：** `(String?, String?)` 记录 — 完全无空格时 `(name, null)`。
-- **副作用：** 无。
-- **算法：** 找第一个空格；在那里拆分。
-- **用法：** 被 [`_searchGSMArena`](#_searchgsmarena) 和 [`_searchNotebookcheck`](#_searchnotebookcheck) 两者调用。
-- **备注：** 朴素首空格拆分——多词品牌（此域罕见）会被错误拆分，但这匹配 GSMArena/Notebookcheck 名称惯用格式（`"Brand Model..."`）。
+  | Block label | Field | Parser |
+  |---|---|---|
+  | `Processor` | `chipset` | `parseChipName` |
+  | `Graphics adapter` | `gpuName` | `parseChipName` |
+  | `Memory` | `ram` | `parseCapacity` |
+  | `Storage` | `storage` | `parseCapacity` |
+  | `Display` | `screenSize`、`screenResolutionW/H` | `parseScreenSize`、`parseResolution` |
+  | `Battery` | `battery` | `parseBattery` |
+  | `Operating System` | `os` | 原样 |
+  | `Released` | `releaseDate` | `parseUsDate` |
 
-### `static (String? ram, String? storage) _parseMemory(String? raw)` <a id="_parsememory"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 304 行）。
-- **用途：** 把 GSMArena 组合 `internalmemory` 规格文本（如 `"128GB 8GB RAM, ..."`）解析为单独存储和 RAM 值。
-- **输入：** `raw` — 可空自由文本；只考虑第一个逗号分隔段。
-- **返回：** `(String? ram, String? storage)` 记录 — 无模式匹配时都 `null`。
-- **副作用：** 无。
-- **算法：** 对第一逗号段依次试三个正则模式：1. `"<N>GB <M>GB RAM"` → `(ram: M GB, storage: N GB)`。2. `"<N>TB <M>GB RAM"` → `(ram: M GB, storage: N TB)`。3. 仅 RAM `"<N>(GB|MB) RAM"`（对照完整 `raw` 而非只第一段匹配）→ `(ram: N <unit>, storage: null)`。都不匹配返回 `(null, null)`。
-- **用法：** 被 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 调用。
-- **备注：** 前两模式存储在前排序（`storage GB/TB` 在 `RAM GB` 前）匹配 GSMArena 在该字段先列存储容量后 RAM 的自身约定。
+- **Notes:** 读取规格表正是这次获取的全部意义。旧实现只提取 JSON-LD 图片而丢弃了这张表，因此 RAM、存储、
+  电池、操作系统和发布日期从该数据源根本没有到达用户。并非每个页面都有全部区块——Apple 的页面就没有
+  `Released`——缺失的区块只会让对应字段保持为空。
 
-### `static String? _parseScreenSize(String? raw)` <a id="_parsescreensize"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 343 行）。
-- **用途：** 从 GSMArena 的 `displaysize` 规格文本提取英寸屏幕尺寸。
-- **输入：** `raw` — 可空。
-- **返回：** `String?` — 如 `'6.7"'`，无 `"<number> inches"` 模式找到时 `null`。
-- **副作用：** 无。
-- **算法：** 正则 `([\d.]+)\s*inches`；把捕获数字包进尾随 `"`。
-- **用法：** 被 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 调用。
-- **备注：** 产生 [`device.md`](../models/device.md#_parsescreendiagonal) 期望为 `Device.ppi` 解析回的相同 `N"` 形态——该往返两侧住在不同文件但依赖相同尾引号约定。
+### `static String? _jsonLdImage(String html)` <a id="_jsonldimage"></a>
+- **Kind:** 私有静态方法。
+- **Source:** 第 459 行。
+- **Purpose:** 从页面的 JSON-LD 区块中提取产品图片 URL。
+- **Inputs:** `html` —— 页面完整标记。
+- **Returns:** 图片 URL，或 `null`。
+- **Side effects:** 无。
+- **Algorithm:** 遍历 `<script type="application/ld+json">` 区块，在 `try` 中逐个解码，取第一个 `@type` 为
+  `Product` 的区块，`image` 既接受带 `url` 的对象也接受裸字符串，最后用 `isLikelyDeviceImage` 过滤。
+- **Notes:** 一个页面带有多个 JSON-LD 区块，其中包括 `Article` 区块；只有 `Product` 才含设备照片。格式错误的
+  区块会被跳过，而不会中断整个扫描。
 
-### `static (int?, int?) _parseResolution(String? raw)` <a id="_parseresolution"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 354 行）。
-- **用途：** 从 GSMArena 的 `displayresolution` 规格文本提取 `width x height` 分辨率对。
-- **输入：** `raw` — 可空。
-- **返回：** `(int?, int?)` 记录 — 无 `"<N> x <M>"` 模式匹配时 `(null, null)`。
-- **副作用：** 无。
-- **算法：** 正则 `(\d+)\s*x\s*(\d+)`；把两个捕获组解析为 `int`。
-- **用法：** 被 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 调用。
-- **备注：** 无。
+### `static Future<_SourceResponse> _searchPhonedb(...)` <a id="_searchphonedb"></a>
+- **Kind:** 私有静态方法。
+- **Source:** 第 494 行。
+- **Purpose:** 搜索 PhoneDB 的设备数据库。
+- **Inputs:** `client`、`query`。
+- **Returns:** `Future<_SourceResponse>`，含结果与状态。
+- **Side effects:** 发起一次 HTTP POST。
+- **Algorithm:** 1. 向 `index.php?m=device&s=list` POST `search_exp=<query>`。2. 把 403 映射为 `blocked`，
+  其他非 200 映射为 `unreachable`，并运行 `looksBlocked`。3. 按 `<div class="content_block">` 切分；若没有
+  任何区块，则在 `isPhonedbResultsPage` 判定页面正常渲染时返回 `ok`，否则返回 `markupChanged`。4. 对每个
+  区块读取锚点的 `title`（其中是**完整**名称；可见链接文本被 `..` 截断），做清洗，应用评测过滤与相关性闸门，
+  按清洗后的名称去重，并取出缩略图。5. 上限 8 条。
+- **Notes:** 按清洗后的名称去重，正是把同一款手机的众多地区与容量 SKU 合并的手段——PhoneDB 会把
+  `Galaxy Z Fold7` 的 256GB、512GB 和 1TB 版本在多个地区分别列出——最终收敛为一行。这里的相关性闸门不是可选项：
+  没有它，一个未收录的型号会用不相关的手机填满全部 8 个位置。
 
-### `static String? _parseBattery(String? raw)` <a id="_parsebattery"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 366 行）。
-- **用途：** 从 GSMArena 的 `batdescription1` 规格文本提取毫安时电池容量。
-- **输入：** `raw` — 可空。
-- **返回：** `String?` — 如 `'5000 mAh'`，无 `"<N> mAh"` 模式匹配时 `null`。
-- **副作用：** 无。
-- **算法：** 正则 `(\d+)\s*mAh`。
-- **用法：** 被 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 调用。
-- **备注：** 无。
+### `static Future<DeviceSearchResult> _fetchPhonedbDetail(...)` <a id="_fetchphonedbdetail"></a>
+- **Kind:** 私有静态方法。
+- **Source:** 第 585 行。
+- **Purpose:** 读取 PhoneDB 参数表页，获取完整规格。
+- **Inputs:** `client`、`result`。
+- **Returns:** `Future<DeviceSearchResult>`。
+- **Side effects:** 发起一次 HTTP GET。
+- **Algorithm:** 用 `parsePhonedbSpecs` 解析，再映射：
 
-### `static DateTime? _parseReleaseDate(String? raw)` <a id="_parsereleasedate"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 377 行）。
-- **用途：** 把 GSMArena 自由文本发布日期规格（如 `"Released 2024, September 20"` 或 `"2024, September"`）解析为 `DateTime`。
-- **输入：** `raw` — 可空。
-- **返回：** `DateTime?` — 两模式都不匹配或月份名无法识别时 `null`。
-- **副作用：** 无。
-- **算法：** 1. 试完整模式 `(\d{4}),?\s+(\w+)\s+(\d{1,2})`（年、月名、日）；匹配且经 [`_parseMonth`](#_parsemonth) 解析月份时返回 `DateTime(year, month, day)`。2. 否则试仅年月模式 `(\d{4}),?\s+(\w+)`；匹配且解析月份时返回 `DateTime(year, month)`（日默认 1 号）。3. 否则 `null`。
-- **用法：** 被 [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 调用。
-- **备注：** 可解析年+月但不可解析日模式仍落到对*原始* `raw` 字符串的仅年月尝试，非部分匹配剩余——两个正则都对照相同输入独立试。
+  | Datasheet label | Field | Parser |
+  |---|---|---|
+  | `CPU` | `chipset` | `parseChipName` |
+  | `Graphical Controller` | `gpuName` | `parseChipName` |
+  | `RAM Capacity (converted)` | `ram` | `parseCapacity` |
+  | `Non-volatile Memory Capacity (converted)` | `storage` | `parseCapacity` |
+  | `Display Diagonal` | `screenSize` | `parseScreenSizeMm` |
+  | `Resolution` | `screenResolutionW/H` | `parseResolution` |
+  | `Nominal Battery Capacity` | `battery` | `parseBattery` |
+  | `Operating System` | `os` | 原样 |
+  | `Released` | `releaseDate` | `parseReleaseDate` |
 
-### `static int? _parseMonth(String m)` <a id="_parsemonth"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 401 行）。
-- **用途：** 把完整英文月份名映射到其基于 1 的日历数字。
-- **输入：** `m` — 不区分大小写。
-- **返回：** `int?` — 不是 12 个识别英文月份名之一时 `null`。
-- **副作用：** 无。
-- **算法：** 以小写月份名键控、按 `m.toLowerCase()` 索引的固定 `const` 查找映射。
-- **用法：** 被 [`_parseReleaseDate`](#_parsereleasedate) 调用两次。
-- **备注：** 只识别英文月份名——GSMArena 站点是英语，因此实践中这不是本地化缺口，但将来添加非英语源时会是。
+- **Notes:** PhoneDB 以**毫米**给出对角线尺寸，容量则使用**二进制**单位，因此两者都走做单位换算的解析函数，
+  而不是 Notebookcheck 所用的英寸/十进制版本。搜索结果的缩略图被复用为图片，因为参数表页没有更大的产品照片。
 
-### `static bool _isDeviceImage(String url)` <a id="_isdeviceimage"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 425 行）。
-- **用途：** 决定 GSMArena 详情页图像 URL 是否为真实设备照片，拒绝广告/联盟/跟踪图像。
-- **输入：** `url`。
-- **返回：** `bool`。
-- **副作用：** 无。
-- **算法：** 1. 小写 URL 含固定黑名单任一则拒绝（`false`）：`amazon`、`amzn`、`affiliate`、`banner`、`advert`、`tracking`、`click.`、`/ad/`、`doubleclick`、`googlesyndication`。2. 含 `gsmarena.com`/`fdn.gsmarena.com`（GSMArena 自己 CDN）则接受（`true`）。3. 以 `.jpg`/`.jpeg`/`.png`/`.webp` 结尾（任何主机）则接受（`true`）。4. 否则拒绝（`false`）。
-- **用法：** [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) 扫描候选 `specs-photo-main` 图像 URL 时调用。
-- **备注：** 黑名单检查在 GSMArena-CDN 白名单检查*前*运行，因此碰巧两者都匹配的 URL（如含 `gsmarena.com` 也含 `tracking`）仍被拒绝——黑名单优先。
+## Related
 
-### `static String _stripHtml(String html)` <a id="_striphtml"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 459 行）。
-- **用途：** 从 HTML 片段剥离 HTML 标签和常见实体，把空白折叠为单空格。
-- **输入：** `html`。
-- **返回：** `String` — 修剪纯文本。
-- **副作用：** 无。
-- **算法：** 链式 `replaceAll`：剥离 `<...>` 标签、剥离命名实体（`&[a-zA-Z]+;`）、剥离数字实体（`&#\d+;`）、把空白运行折叠为一个空格、修剪。
-- **用法：** [`_searchNotebookcheck`](#_searchnotebookcheck) 清洗结果行 `<br/>` 后内联规格文本时调用。
-- **备注：** 命名/数字 HTML 实体完全剥离（非解码为其字符）——如 `&amp;` 变成空，非 `&`。对此函数实践中用于的数字规格文本可接受，但会损坏含真实标点实体的文本。
-
-### `static Future<List<DeviceSearchResult>> _searchNotebookcheck(String query)` <a id="_searchnotebookcheck"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 477 行）。
-- **用途：** 查询 Notebookcheck 的 Laptop Search 工具（也覆盖平板、手机和智能手表）并把其结果表解析为至多 8 个带内联规格的 `DeviceSearchResult`。
-- **输入：** `query`。
-- **返回：** `Future<List<DeviceSearchResult>>` — 非 200 响应时 `[]`。
-- **副作用：** 一次到 `notebookcheck.net/Laptop_Search.8223.0.html` 的 HTTP GET，15s 超时。
-- **算法：** 1. GET 搜索 URL。2. 正则迭代类含 `odd`/`even` 的 `<tr>` 行（上限 8 结果）。3. 跳过分隔行（同时含 `nb_model` 和 `colspan`）。4. 经正则提取结果链接/名；名称为空、太短（`< 3` 字符）、太长（`> 80` 字符）或匹配评论文章关键词正则（`review|comparison|versus|benchmark|test[:\s]`，不区分大小写）时跳过——过滤掉也匹配行模式的评论文章。5. 行含 `<br/>` 时经 [`_stripHtml`](#_striphtml) 剥离其后文本的 HTML 并按逗号拆分：部分 0 → `gpuName`、部分 1 → `chipset`；扫描剩余部分找 `"<size>\" <W>x<H>"` 模式填充 `screenSize`/`screenResolutionW`/`screenResolutionH`，在第一个匹配停止。6. 经 [`_splitBrandModel`](#_splitbrandmodel) 拆分名称并构建 `source: 'Notebookcheck'` 的结果。
-- **用法：** 被 [`search`](#search) 经 `Future.wait` 调用。
-- **备注：** 评论文章过滤器（名称长度/关键词检查）存在因为 Notebookcheck 搜索结果表可含评论文章行与真实设备条目并排，那些否则仅按行结构无法与设备区分。
-
-### `static Future<DeviceSearchResult> _fetchNotebookcheckDetail(DeviceSearchResult result)` <a id="_fetchnotebookcheckdetail"></a>
-- **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_search_service.dart`（第 587 行）。
-- **用途：** 获取 Notebookcheck 详情页并从嵌入 JSON-LD `Product` 结构化数据提取其设备图像，保留搜索期间已解析的内联规格。
-- **输入：** `result` — `result.sourceUrl!` 必须已设。
-- **返回：** `Future<DeviceSearchResult>` — 非 200 响应时 `result` 不变，否则只新设 `imageUrl`（规格原样重传）的 [`withDetail`](#withdetail) 结果。
-- **副作用：** 一次到详情 URL 的 HTTP GET，15s 超时。
-- **算法：** 1. GET 页面。2. 正则找每个 `<script type="application/ld+json">` 块。3. 对每个，在 `try`/`catch` 内尝试 `jsonDecode` 它（静默跳过非 JSON 或解析失败块）；解码且 `data['@type'] == 'Product'` 时提取 `image`——直接字符串或 `{"url": ...}` 对象——并停止扫描更多块。4. 调用 `result.withDetail(imageUrl: imageUrl, chipset: result.chipset, gpuName: result.gpuName, screenSize: result.screenSize, screenResolutionW: result.screenResolutionW, screenResolutionH: result.screenResolutionH)`——显式重新传已知内联规格，使它们甚至不需要 `withDetail` 的 `?? this.xxx` 回退。
-- **用法：** 被 [`fetchDetail`](#fetchdetail) 为 `result.source == 'Notebookcheck'` 调用。
-- **备注：** 与 GSMArena 正则抓取详情页不同，这用页面自己的结构化 JSON-LD 数据获取图像——对该单字段对标记变化更稳健，但 Notebookcheck 详情页否则除搜索已解析的外不贡献额外规格字段（芯片组/GPU/屏幕只来自搜索结果行）。
+- [`device_search_parsers.md`](device_search_parsers.md) —— 全部页面解析，针对固定样本做单元测试。
+- [`../views/device_search_dialog.md`](../views/device_search_dialog.md) —— 两阶段界面与字段勾选。
+- [`chip_search_service.md`](chip_search_service.md) —— CPU/GPU 的同类功能。
+- [`preset_service.md`](preset_service.md) —— 离线捆绑模板的对应物。
+- [在线搜索与预设](../../../../features/online-search-and-presets.md)

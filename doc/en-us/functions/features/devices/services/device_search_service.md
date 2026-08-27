@@ -1,370 +1,295 @@
 # lib/features/devices/services/device_search_service.dart
 
-`DeviceSearchService` scrapes device specs (phones, laptops, tablets) from two public sites —
-GSMArena and Notebookcheck — run concurrently, each individually error-swallowed. It has no bundled
-API key; every result comes from parsing the sites' HTML directly. See
-[Online Search and Presets](../../../../features/online-search-and-presets.md#device-spec-search---device_search_servicedart)
-for the concept overview, and [`../../models/device.md`](../models/device.md) for the
-`CpuInfo`/`GpuInfo`/`StorageInfo` shapes a `DeviceSearchResult` ultimately fills into a `Device` via
-the device edit page (not in this file).
+`DeviceSearchService` fetches device specifications from online databases and reports, per source,
+whether that fetch actually worked. It owns the HTTP plumbing and source dispatch only; all markup
+parsing lives in [`device_search_parsers.md`](device_search_parsers.md) so it can be tested without
+a network. Results flow to the user through
+[`../views/device_search_dialog.md`](../views/device_search_dialog.md), which lets the user tick
+which fields to apply.
 
-**Store-flavor gating**: both public entry points, [`search`](#search) and
-[`fetchDetail`](#fetchdetail), return early — an empty list and the unmodified input result,
-respectively — when `AppFlavor.isFull` is false (i.e. `AppFlavor.isStore` is true), confirmed
-directly in source. This is one of the four gating checks required by `AGENTS.md`'s Build Flavors
-section (see [Architecture](../../../../architecture.md#appflavor) for `AppFlavor`); the other
-three are [`chip_search_service.md`](chip_search_service.md)'s `AppFlavor.isFull` check and two UI
-call sites (`device_edit_page.dart`'s three online-search buttons, `device_list_page.dart`'s online
-search FAB) that are outside this file and were not re-verified as part of this batch.
+See [Online Search and Presets](../../../../features/online-search-and-presets.md#device-spec-search--device_search_servicedart)
+for the concept overview this page verifies against source.
+
+## Sources
+
+| Source | Covers | Search endpoint | Notes |
+|---|---|---|---|
+| Notebookcheck | Laptops, tablets, phones, smartwatches | `GET Laptop-Search.8223.0.html?model=` | Device pages carry a full spec table. |
+| PhoneDB | Phones, at SKU level | `POST index.php?m=device&s=list` with `search_exp` | Loose full-text matching; needs a relevance gate. |
+
+**GSMArena was removed.** It answers every request with a Cloudflare Turnstile challenge served as
+HTTP 200, which no HTTP-only client can pass. Because the old code checked only the status code and
+then failed to match its row pattern, it returned an empty list — indistinguishable from "this
+device does not exist". That silent failure is the reason the outcome reporting below exists.
+
+Two PhoneDB endpoint details are load-bearing and non-obvious: its `filter=` and `model=` query
+parameters are **ignored** and return the site's "latest devices" list regardless of the query, so
+the only working text search is the `search_exp` POST. And when it does not carry a model, it falls
+back to a loose match rather than returning nothing — a search for `Galaxy Z Fold8` yields roughly
+120 unrelated Galaxy phones — which is why every result passes through `isRelevant`.
 
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| [`DeviceSearchResult`](#devicesearchresult-new) | constructor | A | Create a `DeviceSearchResult` instance. |
-| [`withDetail`](#withdetail) | method (`DeviceSearchResult`) | A | Create a copy with detail-page fields filled in, marking `detailFetched: true`. |
-| [`search`](#search) | static method | A | Search GSMArena and Notebookcheck concurrently for quick results. |
-| [`fetchDetail`](#fetchdetail) | static method | A | Fetch full detail for a search result by scraping its detail page. |
-| [`_searchGSMArena`](#_searchgsmarena) | static method (private) | A | Scrape GSMArena's quick-search results page. |
-| [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) | static method (private) | A | Scrape a GSMArena device detail page for full specs. |
-| [`_spec`](#_spec) | static method (private) | A | Extract one `data-spec="key"` value from GSMArena detail HTML. |
-| [`_splitBrandModel`](#_splitbrandmodel) | static method (private) | A | Split a device name into brand and model at the first space. |
-| [`_parseMemory`](#_parsememory) | static method (private) | A | Parse a combined storage+RAM string into separate RAM/storage values. |
-| [`_parseScreenSize`](#_parsescreensize) | static method (private) | A | Extract a screen size in inches from free text. |
-| [`_parseResolution`](#_parseresolution) | static method (private) | A | Extract a `W x H` resolution pair from free text. |
-| [`_parseBattery`](#_parsebattery) | static method (private) | A | Extract a battery capacity in mAh from free text. |
-| [`_parseReleaseDate`](#_parsereleasedate) | static method (private) | A | Parse a GSMArena release-date string into a `DateTime`. |
-| [`_parseMonth`](#_parsemonth) | static method (private) | A | Map an English month name to its 1-based number. |
-| [`_isDeviceImage`](#_isdeviceimage) | static method (private) | A | Reject ad/affiliate/tracking image URLs, accept genuine device photos. |
-| [`_stripHtml`](#_striphtml) | static method (private) | A | Strip HTML tags and entities from a fragment, collapsing whitespace. |
-| [`_searchNotebookcheck`](#_searchnotebookcheck) | static method (private) | A | Scrape Notebookcheck's laptop-search results table. |
-| [`_fetchNotebookcheckDetail`](#_fetchnotebookcheckdetail) | static method (private) | A | Extract the device image from a Notebookcheck detail page's JSON-LD. |
+| `DeviceSearchStatus` | enum | A | Why a source returned what it did. |
+| `DeviceSourceOutcome` | class | B | The outcome of querying one source. |
+| [`DeviceSourceOutcome`](#devicesourceoutcome-new) | constructor | A | Record how one source responded. |
+| [`DeviceSourceOutcome.failed`](#outcome-failed) | getter | A | Report failure as distinct from finding nothing. |
+| `DeviceSearchResponse` | class | B | Merged results plus per-source outcomes. |
+| [`DeviceSearchResponse`](#devicesearchresponse-new) | constructor | A | Hold results and outcomes. |
+| [`DeviceSearchResponse.failures`](#failures) | getter | A | List the sources that failed. |
+| [`DeviceSearchResponse.allSourcesFailed`](#allsourcesfailed) | getter | A | Report that no source succeeded. |
+| `DeviceSearchResult` | class | B | One result from an online database. |
+| `DeviceSearchResult` | constructor | B | Create a result instance. |
+| [`withDetail`](#withdetail) | method | A | Merge scraped detail fields onto a result. |
+| `_SourceResponse` | private class | B | One source's contribution before merging. |
+| `_SourceResponse` / `.failed` | private constructors | B | Build a source contribution. |
+| `DeviceSearchService` | class | B | The service itself; static-only. |
+| `userAgent` / `_timeout` / `_maxResultsPerSource` | static consts | B | Shared request configuration. |
+| [`headers`](#headers) | static method | A | Build the headers every scraped request sends. |
+| [`search`](#search) | static method | A | Search every enabled source. |
+| [`fetchDetail`](#fetchdetail) | static method | A | Fetch the full detail page for a result. |
+| [`_classifyError`](#_classifyerror) | private static method | A | Classify a transport-level failure. |
+| [`_searchNotebookcheck`](#_searchnotebookcheck) | private static method | A | Search Notebookcheck. |
+| [`_fetchNotebookcheckDetail`](#_fetchnotebookcheckdetail) | private static method | A | Read a Notebookcheck device page. |
+| [`_jsonLdImage`](#_jsonldimage) | private static method | A | Pull a product image URL from JSON-LD. |
+| [`_searchPhonedb`](#_searchphonedb) | private static method | A | Search PhoneDB. |
+| [`_fetchPhonedbDetail`](#_fetchphonedbdetail) | private static method | A | Read a PhoneDB datasheet page. |
 
-Row count (18) does not match `grep -c 'Purpose:' device_search_service.dart` (16): the
-`DeviceSearchResult` constructor and its `withDetail` method (the first two rows) have no
-`/// Purpose:` doc-comment block — every method of `DeviceSearchService` itself does.
+Row count (24) exceeds `grep -c 'Purpose:' device_search_service.dart` (15): the enum, the four
+class declarations, the three plain constructors and the three static consts carry ordinary `///`
+descriptions or none, rather than full `Purpose:` blocks. They are indexed here per the tiering
+rule that every declaration appears in the table.
 
 ## Documentation
 
-### `const DeviceSearchResult({required this.source, this.sourceUrl, ..., this.detailFetched = false})` <a id="devicesearchresult-new"></a>
-- **Kind:** constructor of `DeviceSearchResult`.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 28).
-- **Purpose:** Hold one search result from an online device database — source name/URL, thumbnail,
-  and (once fetched) full detail fields.
-- **Inputs:** `source` required; every spec field optional; `detailFetched` defaults to `false`.
-- **Returns:** A new `DeviceSearchResult`.
-- **Side effects:** None.
-- **Algorithm:** Trivial field assignment.
-- **Usage:** Constructed by [`_searchGSMArena`](#_searchgsmarena) and
-  [`_searchNotebookcheck`](#_searchnotebookcheck) for each quick result; consumed by the device
-  search dialog UI, which calls [`fetchDetail`](#fetchdetail) when the user picks one.
-- **Notes:** This declaration has no `/// Purpose:` doc comment in source (see the row-count note
-  above the Declarations table).
+### `enum DeviceSearchStatus`
+- **Kind:** top-level enum.
+- **Source:** `lib/features/devices/services/device_search_service.dart` (line 16).
+- **Purpose:** Say why a source returned what it did.
+- **Values:**
+  - `ok` — the source answered and its markup parsed. `resultCount` may still be 0 when the device
+    genuinely is not in that database.
+  - `blocked` — a bot-wall or challenge page was served instead of content.
+  - `unreachable` — DNS, socket, timeout or a non-200, non-403 status.
+  - `markupChanged` — the source answered, but none of the structures the parser anchors on were
+    present, so the scraper needs updating.
+- **Notes:** The whole point is that these four are no longer interchangeable. Retrying helps for
+  `unreachable`, never for `blocked` or `markupChanged`, and is pointless for an `ok` with no
+  results. Note that `ok` with `resultCount == 0` is deliberately **not** a failure — a zero-match
+  search page is recognised via `isNotebookcheckSearchPage` / `isPhonedbResultsPage`.
 
-### `DeviceSearchResult withDetail({String? imageUrl, ..., DateTime? releaseDate})` <a id="withdetail"></a>
-- **Kind:** method of `DeviceSearchResult`.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 49).
-- **Purpose:** Create a copy of this result with detail-page fields filled in, marking
-  `detailFetched: true` so the UI knows full detail has been loaded.
-- **Inputs:** All detail fields optional; each falls back to the existing value via `?? this.xxx`
-  if not provided.
-- **Returns:** A new `DeviceSearchResult` — `source`/`sourceUrl`/`name`/`brand`/`model`/
-  `thumbnailUrl` are always carried over unchanged from `this` (not replaceable through this
-  method); `detailFetched` is unconditionally `true` on the result.
+### `const DeviceSourceOutcome({...})` <a id="devicesourceoutcome-new"></a>
+- **Kind:** constructor of `DeviceSourceOutcome`.
+- **Source:** line 43.
+- **Purpose:** Record how one source responded to a query.
+- **Inputs:** `source` name, `status`, and `resultCount`.
+- **Returns:** A new `DeviceSourceOutcome`.
 - **Side effects:** None.
-- **Algorithm:** Construct a new `DeviceSearchResult`, copying identity/quick-search fields
-  verbatim and applying `field ?? this.field` for every detail field.
+- **Notes:** None.
+
+### `bool get failed` <a id="outcome-failed"></a>
+- **Kind:** getter of `DeviceSourceOutcome`.
+- **Source:** line 54.
+- **Purpose:** Report whether this source failed rather than simply found nothing.
+- **Returns:** `true` for every status other than `ok`.
+- **Side effects:** None.
+- **Notes:** An `ok` outcome with `resultCount == 0` is not a failure.
+
+### `const DeviceSearchResponse({...})` <a id="devicesearchresponse-new"></a>
+- **Kind:** constructor of `DeviceSearchResponse`.
+- **Source:** line 67.
+- **Purpose:** Hold the merged results and the per-source outcomes.
+- **Inputs:** `results`, `outcomes`.
+- **Side effects:** None.
+- **Notes:** None.
+
+### `List<DeviceSourceOutcome> get failures` <a id="failures"></a>
+- **Kind:** getter of `DeviceSearchResponse`.
+- **Source:** line 74.
+- **Purpose:** List the sources that failed.
+- **Returns:** The outcomes whose status is not `ok`.
+- **Side effects:** None.
+- **Notes:** Used by the dialog to explain an empty or partial result list.
+
+### `bool get allSourcesFailed` <a id="allsourcesfailed"></a>
+- **Kind:** getter of `DeviceSearchResponse`.
+- **Source:** line 83.
+- **Purpose:** Report whether every queried source failed.
+- **Returns:** `true` when at least one source was queried and none succeeded.
+- **Side effects:** None.
+- **Notes:** This is what lets the dialog say "no source could be reached" instead of "no results
+  found" — the distinction the user needs to know whether retrying is worthwhile.
+
+### `DeviceSearchResult withDetail({...})` <a id="withdetail"></a>
+- **Kind:** method of `DeviceSearchResult`.
+- **Source:** line 135.
+- **Purpose:** Merge freshly scraped detail fields onto this result.
+- **Inputs:** Any detail field; omitted fields keep their existing value.
+- **Returns:** A new `DeviceSearchResult` with `detailFetched` set to `true`.
+- **Side effects:** None.
+- **Notes:** Every field is null-coalesced, so a detail page that omits a field never wipes a value
+  already parsed from the search row. Notebookcheck rows carry GPU, CPU and screen inline; the
+  detail page sometimes omits `Released` entirely (Apple pages do), and that must not clear
+  anything.
+
+### `static Map<String, String> headers({String accept = 'text/html'})` <a id="headers"></a>
+- **Kind:** static method of `DeviceSearchService`.
+- **Source:** line 204.
+- **Purpose:** Build the headers every scraped request sends.
+- **Inputs:** `accept` — the `Accept` header value.
+- **Returns:** A header map with the user agent, accept and accept-language.
+- **Side effects:** None.
+- **Notes:** Centralised so the user agent cannot drift between the page fetch and any follow-up
+  request for a resource discovered on that page.
+
+### `static Future<DeviceSearchResponse> search(String query)` <a id="search"></a>
+- **Kind:** static method of `DeviceSearchService`.
+- **Source:** line 217.
+- **Purpose:** Search every enabled source for devices matching a query.
+- **Inputs:** `query` — the user's search text.
+- **Returns:** `Future<DeviceSearchResponse>` with merged results and one outcome per source.
+- **Side effects:** Issues HTTP requests to Notebookcheck and PhoneDB.
+- **Algorithm:** 1. Return an empty response immediately when `AppFlavor.isStore`, or when the
+  trimmed query is empty. 2. Open one `http.Client`. 3. Query both sources concurrently with
+  `Future.wait`. 4. Concatenate their results and pair each with a `DeviceSourceOutcome`.
+  5. Close the client in a `finally`.
 - **Usage:**
   ```dart
-  return result.withDetail(
-    imageUrl: deviceImageUrl,
-    chipset: chipset,
-    gpuName: gpu,
-    ram: ram,
-    storage: storage,
-    screenSize: screenSize,
-    screenResolutionW: resW,
-    screenResolutionH: resH,
-    battery: battery,
-    os: os,
-    releaseDate: releaseDate,
-  );
+  final response = await DeviceSearchService.search('Galaxy Z Fold8');
+  if (response.allSourcesFailed) { /* show why, per source */ }
   ```
-  (from [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail); [`_fetchNotebookcheckDetail`](#_fetchnotebookcheckdetail)
-  calls it too, re-passing the already-parsed inline specs so they aren't lost)
-- **Notes:** This declaration has no `/// Purpose:` doc comment in source. Unlike a typical
-  `copyWith`, the identity fields (`source`, `name`, `brand`, `model`, `thumbnailUrl`) are not
-  parameters at all here — only detail fields can be set through this method, by design, since
-  detail fetching should never change which device the result refers to.
-
-### `static Future<List<DeviceSearchResult>> search(String query)` <a id="search"></a>
-- **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 95).
-- **Purpose:** Search for devices by name across GSMArena and Notebookcheck concurrently, returning
-  quick results (name, brand/model, thumbnail — no full spec detail yet).
-- **Inputs:** `query`.
-- **Returns:** `Future<List<DeviceSearchResult>>` — the concatenation of both sources' results;
-  `[]` immediately for store-flavor builds.
-- **Side effects:** Two concurrent HTTP requests (one per source) when not store-flavor.
-- **Algorithm:** 1. If `AppFlavor.isStore`, return `[]` immediately — no network call at all. 2.
-  Otherwise run `_searchGSMArena`/`_searchNotebookcheck` concurrently via `Future.wait`, each
-  wrapped in `.catchError((_) => <DeviceSearchResult>[])` so one source failing doesn't fail the
-  other. 3. Flatten (`expand`) both result lists into one.
-- **Usage:** Called from the device search dialog when the user submits a query (see
-  [Online Search and Presets](../../../../features/online-search-and-presets.md#device-spec-search---device_search_servicedart)).
-- **Notes:** The store-flavor check happens *before* either network call is attempted — a store
-  build never even constructs the request, not merely discards the response.
+- **Notes:** One shared client for the fan-out, rather than a bare static `http.get` per call as
+  before. A failing source never prevents the other from returning results, because each source
+  function catches its own transport errors and reports them as a status instead of throwing.
 
 ### `static Future<DeviceSearchResult> fetchDetail(DeviceSearchResult result)` <a id="fetchdetail"></a>
-- **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 110).
-- **Purpose:** Fetch full spec detail for a previously found search result by scraping its detail
-  page, dispatching to the right scraper based on `result.source`.
-- **Inputs:** `result` — typically one returned by [`search`](#search).
-- **Returns:** `Future<DeviceSearchResult>` — the unmodified `result` for store-flavor builds, a
-  missing `sourceUrl`, or an unrecognized `source`; otherwise the detail-enriched result.
-- **Side effects:** One HTTP request to the result's detail page, for a recognized non-store case.
-- **Algorithm:** 1. If `AppFlavor.isStore` or `result.sourceUrl == null`, return `result` unchanged.
-  2. `switch (result.source)`: `'GSMArena'` → `_fetchGSMArenaDetail`; `'Notebookcheck'` →
-  `_fetchNotebookcheckDetail`; anything else → return `result` unchanged.
-- **Usage:** Called by the device search dialog after the user picks a quick result, before
-  prefilling the device edit form.
-- **Notes:** An unrecognized `source` string degrading to a no-op (rather than throwing) means a
-  future third source added to `search()` without a matching `fetchDetail` case would silently
-  never fetch detail, not crash.
+- **Kind:** static method of `DeviceSearchService`.
+- **Source:** line 259.
+- **Purpose:** Fetch the full detail page for a result the user selected.
+- **Inputs:** `result` — a result previously returned by [`search`](#search).
+- **Returns:** `Future<DeviceSearchResult>`, enriched when the fetch succeeded.
+- **Side effects:** Issues one HTTP request to the result's source.
+- **Notes:** Returns the input unchanged for store builds, a result with no `sourceUrl`, an unknown
+  source, or any thrown error. **Adding a source without adding a `case` here silently skips detail
+  fetching for it** — the dispatch is the one place that has to be kept in step with `search`.
 
-### `static Future<List<DeviceSearchResult>> _searchGSMArena(String query)` <a id="_searchgsmarena"></a>
+### `static DeviceSearchStatus _classifyError(Object error)` <a id="_classifyerror"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 132).
-- **Purpose:** Query GSMArena's quick-search endpoint and parse the `<div class="makers">` results
-  list into up to 10 `DeviceSearchResult`s.
-- **Inputs:** `query`.
-- **Returns:** `Future<List<DeviceSearchResult>>` — `[]` on a non-200 response or no `makers` div
-  found.
-- **Side effects:** One HTTP GET to `gsmarena.com/results.php3` with a spoofed desktop
-  `User-Agent` and a 15s timeout.
-- **Algorithm:** 1. GET the quick-search URL. 2. Regex-extract the `<div class="makers">...</div>`
-  block. 3. Iterate `<li>` entries inside it (capped at 10). 4. Per entry, regex-extract `href`,
-  `<img src>`, and the `<span>` name (which may contain a `<br>` between brand/model — tags
-  stripped and whitespace collapsed). 5. Split the cleaned name into brand/model via
-  [`_splitBrandModel`](#_splitbrandmodel) and build a `DeviceSearchResult` with `source:
-  'GSMArena'`.
-- **Usage:** Called by [`search`](#search) via `Future.wait`.
-- **Notes:** Parsing is regex-based HTML scraping, not a real HTML parser — it depends on
-  GSMArena's current markup structure (`class="makers"`, `<li>`/`<span>`/`<img>` shape) and would
-  silently start returning `[]` if that markup changes, rather than raising an error.
-
-### `static Future<DeviceSearchResult> _fetchGSMArenaDetail(DeviceSearchResult result)` <a id="_fetchgsmarenadetail"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 206).
-- **Purpose:** Fetch a GSMArena device's detail page and extract its main photo plus chipset,
-  GPU, memory, screen, battery, OS, and release-date specs.
-- **Inputs:** `result` — `result.sourceUrl!` must be set.
-- **Returns:** `Future<DeviceSearchResult>` — `result` unchanged on a non-200 response, else the
-  result of [`withDetail`](#withdetail) with every parsed field.
-- **Side effects:** One HTTP GET to the detail URL, 15s timeout.
-- **Algorithm:** 1. GET the page. 2. Find the first `specs-photo-main` image URL that
-  [`_isDeviceImage`](#_isdeviceimage) accepts (skipping ad/affiliate images). 3. Extract
-  `chipset`/`gpu`/`internalmemory`/`displaysize`/`displayresolution`/`batdescription1`/`os` via
-  [`_spec`](#_spec). 4. Parse memory via [`_parseMemory`](#_parsememory), screen size via
-  [`_parseScreenSize`](#_parsescreensize), resolution via [`_parseResolution`](#_parseresolution),
-  battery via [`_parseBattery`](#_parsebattery). 5. Parse the release date from `released-hl`
-  (falling back to `status` if absent) via [`_parseReleaseDate`](#_parsereleasedate). 6. Call
-  `result.withDetail(...)` with everything gathered.
-- **Usage:** Called by [`fetchDetail`](#fetchdetail) for `result.source == 'GSMArena'`.
-- **Notes:** The main-image search iterates *all* `specs-photo-main` image matches and picks the
-  first one [`_isDeviceImage`](#_isdeviceimage) accepts, rather than blindly taking the first
-  match — this is what filters out ad/tracking images that sometimes appear before the real device
-  photo in that markup region.
-
-### `static String? _spec(String html, String key)` <a id="_spec"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 271).
-- **Purpose:** Extract one `data-spec="key"` value from GSMArena detail-page HTML.
-- **Inputs:** `html`, `key` — the spec attribute name (e.g. `'chipset'`).
-- **Returns:** `String?` — `null` if not found or the cleaned value is empty.
+- **Source:** line 288.
+- **Purpose:** Classify a transport-level failure.
+- **Inputs:** `error` — the thrown object.
+- **Returns:** The matching `DeviceSearchStatus`.
 - **Side effects:** None.
-- **Algorithm:** Regex-match `data-spec="$key"[^>]*>\s*(.+?)\s*</(?:td|span|div|li)>` (non-greedy,
-  dot-all), then strip inner tags and collapse whitespace on the captured group.
-- **Usage:** Called repeatedly by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail), once per spec
-  key.
-- **Notes:** Matches whichever of `td`/`span`/`div`/`li` closes the value first — GSMArena uses
-  different wrapper elements for different spec rows.
+- **Notes:** Currently every recognised network fault and every unrecognised error alike map to
+  `unreachable`. The branch is kept explicit so a future distinction (for example, treating a
+  handshake failure differently) has an obvious home.
 
-### `static (String?, String?) _splitBrandModel(String name)` <a id="_splitbrandmodel"></a>
+### `static Future<_SourceResponse> _searchNotebookcheck(...)` <a id="_searchnotebookcheck"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 293).
-- **Purpose:** Split a device's full display name into brand and model at the first space.
-- **Inputs:** `name`.
-- **Returns:** `(String?, String?)` record — `(name, null)` if there's no space at all.
+- **Source:** line 306.
+- **Purpose:** Search Notebookcheck's device database.
+- **Inputs:** `client`, `query`.
+- **Returns:** `Future<_SourceResponse>` with results and a status.
+- **Side effects:** Issues one HTTP GET.
+- **Algorithm:** 1. GET `Laptop-Search.8223.0.html?model=<query>`. 2. Map 403 to `blocked` and any
+  other non-200 to `unreachable`. 3. Run `looksBlocked` on the body. 4. Match result rows
+  (`<tr class="odd|even">`); if there are none, return `ok` when `isNotebookcheckSearchPage` says
+  the page rendered, otherwise `markupChanged`. 5. For each row, take the link and title, run the
+  title through `cleanDeviceName`, drop it if `isReviewArticle` or not `isRelevant`, deduplicate on
+  the lowercased name, and parse the inline specs after the `<br/>`. 6. Cap at 8 results.
+- **Notes:** The hyphenated `Laptop-Search` path is deliberate; the underscored `Laptop_Search`
+  form 301-redirects. The `cleanDeviceName`-before-`isReviewArticle` order is the fix for the bug
+  that discarded every current device: Notebookcheck titles its canonical pages
+  `<name> - Reviews and Specs`, so filtering on the raw title dropped `Samsung Galaxy Z Fold8` while
+  keeping the older, bare-titled `Samsung Galaxy Z Fold7`.
+
+### `static Future<DeviceSearchResult> _fetchNotebookcheckDetail(...)` <a id="_fetchnotebookcheckdetail"></a>
+- **Kind:** private static method.
+- **Source:** line 421.
+- **Purpose:** Read a Notebookcheck device page for full specs and an image.
+- **Inputs:** `client`, `result`.
+- **Returns:** `Future<DeviceSearchResult>`.
+- **Side effects:** Issues one HTTP GET.
+- **Algorithm:** Parse the page with `parseNotebookcheckSpecs`, then map its labels:
+
+  | Block label | Field | Parser |
+  |---|---|---|
+  | `Processor` | `chipset` | `parseChipName` |
+  | `Graphics adapter` | `gpuName` | `parseChipName` |
+  | `Memory` | `ram` | `parseCapacity` |
+  | `Storage` | `storage` | `parseCapacity` |
+  | `Display` | `screenSize`, `screenResolutionW/H` | `parseScreenSize`, `parseResolution` |
+  | `Battery` | `battery` | `parseBattery` |
+  | `Operating System` | `os` | verbatim |
+  | `Released` | `releaseDate` | `parseUsDate` |
+
+- **Notes:** Reading the spec table is the entire point of this fetch. The previous implementation
+  extracted only the JSON-LD image and discarded the table, so RAM, storage, battery, OS and release
+  date never reached the user from this source at all. Not every page has every block — Apple pages
+  omit `Released` — and a missing block simply leaves the field null.
+
+### `static String? _jsonLdImage(String html)` <a id="_jsonldimage"></a>
+- **Kind:** private static method.
+- **Source:** line 459.
+- **Purpose:** Pull a product image URL out of a page's JSON-LD blocks.
+- **Inputs:** `html` — the full page markup.
+- **Returns:** The image URL, or null.
 - **Side effects:** None.
-- **Algorithm:** Find the first space; split there.
-- **Usage:** Called by both [`_searchGSMArena`](#_searchgsmarena) and
-  [`_searchNotebookcheck`](#_searchnotebookcheck).
-- **Notes:** A naive first-space split — multi-word brands (rare in this domain) would be split
-  incorrectly, but this matches how GSMArena/Notebookcheck names are conventionally formatted
-  (`"Brand Model..."`).
+- **Algorithm:** Iterate `<script type="application/ld+json">` blocks, decode each in a `try`, take
+  the first whose `@type` is `Product`, accept `image` as either an object with a `url` or a bare
+  string, and filter the result through `isLikelyDeviceImage`.
+- **Notes:** A page carries several JSON-LD blocks, including an `Article` one; only `Product`
+  holds the device photo. Malformed blocks are skipped rather than aborting the scan.
 
-### `static (String? ram, String? storage) _parseMemory(String? raw)` <a id="_parsememory"></a>
+### `static Future<_SourceResponse> _searchPhonedb(...)` <a id="_searchphonedb"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 304).
-- **Purpose:** Parse GSMArena's combined `internalmemory` spec text (e.g. `"128GB 8GB RAM, ..."`)
-  into separate storage and RAM values.
-- **Inputs:** `raw` — nullable free text; only the first comma-separated segment is considered.
-- **Returns:** `(String? ram, String? storage)` record — both `null` if no pattern matches.
-- **Side effects:** None.
-- **Algorithm:** Try three regex patterns in order against the first comma segment: 1. `"<N>GB
-  <M>GB RAM"` → `(ram: M GB, storage: N GB)`. 2. `"<N>TB <M>GB RAM"` → `(ram: M GB, storage: N
-  TB)`. 3. RAM-only `"<N>(GB|MB) RAM"` (matched against the full `raw`, not just the first segment)
-  → `(ram: N <unit>, storage: null)`. Returns `(null, null)` if none match.
-- **Usage:** Called by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail).
-- **Notes:** The storage-first ordering in the first two patterns (`storage GB/TB` before `RAM
-  GB`) matches GSMArena's own convention of listing storage capacity before RAM in that field.
+- **Source:** line 494.
+- **Purpose:** Search PhoneDB's device database.
+- **Inputs:** `client`, `query`.
+- **Returns:** `Future<_SourceResponse>` with results and a status.
+- **Side effects:** Issues one HTTP POST.
+- **Algorithm:** 1. POST `search_exp=<query>` to `index.php?m=device&s=list`. 2. Map 403 to
+  `blocked`, other non-200 to `unreachable`, and run `looksBlocked`. 3. Split on
+  `<div class="content_block">`; with no blocks, return `ok` when `isPhonedbResultsPage` says the
+  page rendered, otherwise `markupChanged`. 4. Per block, read the anchor's `title` (which holds the
+  **full** name; the visible link text is truncated with `..`), clean it, apply the review and
+  relevance gates, deduplicate on the cleaned name, and pick up the thumbnail. 5. Cap at 8.
+- **Notes:** Deduplicating on the cleaned name is what collapses the many region and capacity SKUs
+  of one phone — PhoneDB lists `Galaxy Z Fold7` separately for 256GB, 512GB and 1TB in several
+  regions — into a single row. The relevance gate is not optional here: without it an unknown model
+  fills all 8 slots with unrelated phones.
 
-### `static String? _parseScreenSize(String? raw)` <a id="_parsescreensize"></a>
+### `static Future<DeviceSearchResult> _fetchPhonedbDetail(...)` <a id="_fetchphonedbdetail"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 343).
-- **Purpose:** Extract a screen size in inches from GSMArena's `displaysize` spec text.
-- **Inputs:** `raw` — nullable.
-- **Returns:** `String?` — e.g. `'6.7"'`, or `null` if no `"<number> inches"` pattern is found.
-- **Side effects:** None.
-- **Algorithm:** Regex `([\d.]+)\s*inches`; wrap the captured number in a trailing `"`.
-- **Usage:** Called by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail).
-- **Notes:** Produces the same `N"` shape [`../../models/device.md#_parsescreendiagonal`](../models/device.md)
-  expects to parse back out for `Device.ppi` — both sides of that round trip live in different
-  files but depend on the same trailing-quote convention.
+- **Source:** line 585.
+- **Purpose:** Read a PhoneDB datasheet page for full specs.
+- **Inputs:** `client`, `result`.
+- **Returns:** `Future<DeviceSearchResult>`.
+- **Side effects:** Issues one HTTP GET.
+- **Algorithm:** Parse with `parsePhonedbSpecs`, then map:
 
-### `static (int?, int?) _parseResolution(String? raw)` <a id="_parseresolution"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 354).
-- **Purpose:** Extract a `width x height` resolution pair from GSMArena's `displayresolution` spec
-  text.
-- **Inputs:** `raw` — nullable.
-- **Returns:** `(int?, int?)` record — `(null, null)` if no `"<N> x <M>"` pattern matches.
-- **Side effects:** None.
-- **Algorithm:** Regex `(\d+)\s*x\s*(\d+)`; parse both captured groups as `int`.
-- **Usage:** Called by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail).
-- **Notes:** None.
+  | Datasheet label | Field | Parser |
+  |---|---|---|
+  | `CPU` | `chipset` | `parseChipName` |
+  | `Graphical Controller` | `gpuName` | `parseChipName` |
+  | `RAM Capacity (converted)` | `ram` | `parseCapacity` |
+  | `Non-volatile Memory Capacity (converted)` | `storage` | `parseCapacity` |
+  | `Display Diagonal` | `screenSize` | `parseScreenSizeMm` |
+  | `Resolution` | `screenResolutionW/H` | `parseResolution` |
+  | `Nominal Battery Capacity` | `battery` | `parseBattery` |
+  | `Operating System` | `os` | verbatim |
+  | `Released` | `releaseDate` | `parseReleaseDate` |
 
-### `static String? _parseBattery(String? raw)` <a id="_parsebattery"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 366).
-- **Purpose:** Extract a battery capacity in mAh from GSMArena's `batdescription1` spec text.
-- **Inputs:** `raw` — nullable.
-- **Returns:** `String?` — e.g. `'5000 mAh'`, or `null` if no `"<N> mAh"` pattern matches.
-- **Side effects:** None.
-- **Algorithm:** Regex `(\d+)\s*mAh`.
-- **Usage:** Called by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail).
-- **Notes:** None.
+- **Notes:** PhoneDB gives the diagonal in **millimetres** and capacities in **binary** units, so
+  both go through converting parsers rather than the inch/decimal ones used for Notebookcheck. The
+  search thumbnail is reused as the image, since the datasheet has no larger product photo.
 
-### `static DateTime? _parseReleaseDate(String? raw)` <a id="_parsereleasedate"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 377).
-- **Purpose:** Parse GSMArena's free-text release-date spec (e.g. `"Released 2024, September 20"`
-  or `"2024, September"`) into a `DateTime`.
-- **Inputs:** `raw` — nullable.
-- **Returns:** `DateTime?` — `null` if neither pattern matches or the month name isn't recognized.
-- **Side effects:** None.
-- **Algorithm:** 1. Try the full pattern `(\d{4}),?\s+(\w+)\s+(\d{1,2})` (year, month name, day);
-  if matched and the month resolves via [`_parseMonth`](#_parsemonth), return `DateTime(year,
-  month, day)`. 2. Otherwise try the year-month-only pattern `(\d{4}),?\s+(\w+)`; if matched and
-  the month resolves, return `DateTime(year, month)` (day defaults to the 1st). 3. Otherwise
-  `null`.
-- **Usage:** Called by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail).
-- **Notes:** A resolvable year+month but unresolvable day pattern still falls through to the
-  year-month-only attempt on the *original* `raw` string, not on a partially-matched remainder —
-  both regexes are tried independently against the same input.
+## Related
 
-### `static int? _parseMonth(String m)` <a id="_parsemonth"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 401).
-- **Purpose:** Map a full English month name to its 1-based calendar number.
-- **Inputs:** `m` — case-insensitive.
-- **Returns:** `int?` — `null` if not one of the 12 recognized English month names.
-- **Side effects:** None.
-- **Algorithm:** Fixed `const` lookup map keyed by lowercase month name, indexed by
-  `m.toLowerCase()`.
-- **Usage:** Called twice by [`_parseReleaseDate`](#_parsereleasedate).
-- **Notes:** Only recognizes English month names — GSMArena's site is English-language, so this is
-  not a localization gap in practice, but it would be if a non-English source were ever added.
-
-### `static bool _isDeviceImage(String url)` <a id="_isdeviceimage"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 425).
-- **Purpose:** Decide whether an image URL from a GSMArena detail page is a genuine device photo,
-  rejecting ad/affiliate/tracking images.
-- **Inputs:** `url`.
-- **Returns:** `bool`.
-- **Side effects:** None.
-- **Algorithm:** 1. Reject (`false`) if the lowercased URL contains any of a fixed blocklist:
-  `amazon`, `amzn`, `affiliate`, `banner`, `advert`, `tracking`, `click.`, `/ad/`, `doubleclick`,
-  `googlesyndication`. 2. Accept (`true`) if it contains `gsmarena.com`/`fdn.gsmarena.com`
-  (GSMArena's own CDN). 3. Accept (`true`) if it ends in `.jpg`/`.jpeg`/`.png`/`.webp` (any host).
-  4. Otherwise reject (`false`).
-- **Usage:** Called by [`_fetchGSMArenaDetail`](#_fetchgsmarenadetail) while scanning candidate
-  `specs-photo-main` image URLs.
-- **Notes:** The blocklist check runs *before* the GSMArena-CDN allowlist check, so a URL that
-  somehow matched both (e.g. contained `gsmarena.com` and also `tracking`) would still be rejected
-  — blocklist takes priority.
-
-### `static String _stripHtml(String html)` <a id="_striphtml"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 459).
-- **Purpose:** Strip HTML tags and common entities from an HTML fragment, collapsing whitespace
-  down to single spaces.
-- **Inputs:** `html`.
-- **Returns:** `String` — trimmed plain text.
-- **Side effects:** None.
-- **Algorithm:** Chained `replaceAll`: strip `<...>` tags, strip named entities (`&[a-zA-Z]+;`),
-  strip numeric entities (`&#\d+;`), collapse runs of whitespace to one space, trim.
-- **Usage:** Called by [`_searchNotebookcheck`](#_searchnotebookcheck) to clean the inline-specs
-  text following a result row's `<br/>`.
-- **Notes:** Named/numeric HTML entities are stripped entirely (not decoded to their character) —
-  e.g. `&amp;` becomes empty, not `&`. This is acceptable for the numeric spec text this function
-  is used on in practice, but would corrupt text containing real punctuation entities.
-
-### `static Future<List<DeviceSearchResult>> _searchNotebookcheck(String query)` <a id="_searchnotebookcheck"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 477).
-- **Purpose:** Query Notebookcheck's Laptop Search tool (which also covers tablets, phones, and
-  smartwatches) and parse its results table into up to 8 `DeviceSearchResult`s with inline specs.
-- **Inputs:** `query`.
-- **Returns:** `Future<List<DeviceSearchResult>>` — `[]` on a non-200 response.
-- **Side effects:** One HTTP GET to `notebookcheck.net/Laptop_Search.8223.0.html`, 15s timeout.
-- **Algorithm:** 1. GET the search URL. 2. Regex-iterate `<tr>` rows whose class contains
-  `odd`/`even` (capped at 8 results). 3. Skip separator rows (containing both `nb_model` and
-  `colspan`). 4. Extract the result link/name via regex; skip if the name is empty, too short
-  (`< 3` chars), too long (`> 80` chars), or matches a review-article keyword regex
-  (`review|comparison|versus|benchmark|test[:\s]`, case-insensitive) — filtering out review
-  articles that also match the row pattern. 5. If the row contains `<br/>`, strip HTML from the
-  text after it via [`_stripHtml`](#_striphtml) and split on commas: part 0 → `gpuName`, part 1 →
-  `chipset`; scan remaining parts for a `"<size>\" <W>x<H>"` pattern to fill `screenSize`/
-  `screenResolutionW`/`screenResolutionH`, stopping at the first match. 6. Split the name via
-  [`_splitBrandModel`](#_splitbrandmodel) and build the result with `source: 'Notebookcheck'`.
-- **Usage:** Called by [`search`](#search) via `Future.wait`.
-- **Notes:** The review-article filter (name length/keyword checks) exists because
-  Notebookcheck's search results table can include review article rows alongside genuine device
-  entries, and those would otherwise be indistinguishable from a device by row structure alone.
-
-### `static Future<DeviceSearchResult> _fetchNotebookcheckDetail(DeviceSearchResult result)` <a id="_fetchnotebookcheckdetail"></a>
-- **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_search_service.dart` (line 587).
-- **Purpose:** Fetch a Notebookcheck detail page and extract its device image from embedded
-  JSON-LD `Product` structured data, keeping the inline specs already parsed during search.
-- **Inputs:** `result` — `result.sourceUrl!` must be set.
-- **Returns:** `Future<DeviceSearchResult>` — `result` unchanged on a non-200 response, else the
-  result of [`withDetail`](#withdetail) with just `imageUrl` newly set (specs re-passed unchanged).
-- **Side effects:** One HTTP GET to the detail URL, 15s timeout.
-- **Algorithm:** 1. GET the page. 2. Regex-find every `<script type="application/ld+json">` block.
-  3. For each, try to `jsonDecode` it inside a `try`/`catch` (skipping non-JSON or parse-failed
-  blocks silently); if it decodes and `data['@type'] == 'Product'`, extract `image` — either a
-  string directly or a `{"url": ...}` object — and stop scanning further blocks. 4. Call
-  `result.withDetail(imageUrl: imageUrl, chipset: result.chipset, gpuName: result.gpuName,
-  screenSize: result.screenSize, screenResolutionW: result.screenResolutionW,
-  screenResolutionH: result.screenResolutionH)` — explicitly re-passing the already-known inline
-  specs so `withDetail`'s `?? this.xxx` fallback isn't even needed for them.
-- **Usage:** Called by [`fetchDetail`](#fetchdetail) for `result.source == 'Notebookcheck'`.
-- **Notes:** Unlike GSMArena's regex-scraped detail page, this uses the page's own structured
-  JSON-LD data for the image — more robust to markup changes for that one field, but Notebookcheck
-  detail pages otherwise contribute no additional spec fields beyond what search already parsed
-  (chipset/GPU/screen come only from the search results row).
+- [`device_search_parsers.md`](device_search_parsers.md) — all markup parsing, unit-tested against fixtures.
+- [`../views/device_search_dialog.md`](../views/device_search_dialog.md) — the two-phase UI and field toggles.
+- [`chip_search_service.md`](chip_search_service.md) — the CPU/GPU sibling feature.
+- [`preset_service.md`](preset_service.md) — the offline bundled-template counterpart.
+- [Online Search and Presets](../../../../features/online-search-and-presets.md)

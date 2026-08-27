@@ -1,7 +1,7 @@
 # lib/features/devices/views/device_search_dialog.dart
 
 Modal, two-phase dialog for finding a device online and importing selected fields into the
-edit form. Backed by `lib/features/devices/services/device_search_service.dart` (GSMArena /
+edit form. Backed by `lib/features/devices/services/device_search_service.dart` (Notebookcheck /
 Notebookcheck scraping, gated by `AppFlavor.isStore` — see
 [Online Search and Presets](../../../../features/online-search-and-presets.md)) and
 `lib/shared/services/image_service.dart` for downloading a matched device photo. It is opened
@@ -19,6 +19,7 @@ no current values, feeding a brand-new `DeviceEditPage`).
 | `initState` | method (widget lifecycle) | B | Seed the query controller with the initial query. |
 | `dispose` | method (widget lifecycle) | B | Dispose the query text controller. |
 | [`_search`](#_search) | method (`_SearchDialogState`) | A | Run a device search against `DeviceSearchService` and update dialog state. |
+| [`_describeFailures`](#_describefailures) | method (`_SearchDialogState`) | A | Turn per-source failures into one human-readable message. |
 | [`_selectResult`](#_selectresult) | method (`_SearchDialogState`) | A | Fetch full detail for a chosen search result and enter preview phase. |
 | [`_initToggles`](#_inittoggles) | method (`_SearchDialogState`) | A | Set default checkbox state for each importable field based on what the result has. |
 | [`_fetchImage`](#_fetchimage) | method (`_SearchDialogState`) | A | Download the matched device's photo and stage it as a fetched image. |
@@ -40,6 +41,14 @@ declaration in this file, so it doesn't match the grep pattern even though it is
 top-level function and is included here per the "every declaration gets a row" rule.
 
 ## Documentation
+
+### `String _describeFailures(List<DeviceSourceOutcome> failures, {required bool everySource})` <a id="_describefailures"></a>
+- **Kind:** method of `_SearchDialogState`.
+- **Purpose:** Turn per-source failures into one human-readable message.
+- **Inputs:** `failures` — outcomes whose status is not `ok`; `everySource` — whether no source at all succeeded.
+- **Returns:** A newline-separated explanation, one line per failed source.
+- **Side effects:** Reads localized strings from the current context.
+- **Notes:** Each status maps to its own string (`searchSourceBlocked`, `searchSourceUnreachable`, `searchSourceMarkupChanged`) so the user can tell a bot-wall from an outage from a scraper that needs updating — retrying helps for one of those and not the others. The heading differs by `everySource` so a partial failure shown alongside real results is not phrased as a total outage.
 
 ### `Future<Map<String, dynamic>?> showDeviceSearchDialog(BuildContext context, {String? initialQuery, String? currentBrand, String? currentModel, String? currentChipset, String? currentGpu, String? currentRam, String? currentStorage, String? currentScreenSize, int? currentScreenResW, int? currentScreenResH, String? currentBattery, String? currentOs, DateTime? currentReleaseDate, String? currentImagePath})` <a id="showdevicesearchdialog"></a>
 - **Kind:** top-level function
@@ -90,7 +99,8 @@ top-level function and is included here per the "every declaration gets a row" r
 - **Inputs:** None (reads `_queryController.text`).
 - **Returns:** `Future<void>`.
 - **Side effects:** Three `setState` calls (start, success, failure); performs a network-backed
-  search across GSMArena and Notebookcheck.
+  search across Notebookcheck and PhoneDB, and records a per-source outcome so a blocked or
+  changed source is reported as such instead of as "no results".
 - **Algorithm:**
   1. Trims the query; returns immediately if empty.
   2. Sets `_searching = true`, clears `_error` and `_results`.

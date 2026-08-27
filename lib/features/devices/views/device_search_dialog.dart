@@ -103,6 +103,7 @@ class _SearchDialogState extends State<_SearchDialog> {
 
   // Search phase
   List<DeviceSearchResult> _results = [];
+  List<DeviceSourceOutcome> _outcomes = const [];
   bool _searching = false;
   String? _error;
 
@@ -149,16 +150,23 @@ class _SearchDialogState extends State<_SearchDialog> {
       _searching = true;
       _error = null;
       _results = [];
+      _outcomes = const [];
     });
 
     try {
-      final results = await DeviceSearchService.search(query);
+      final response = await DeviceSearchService.search(query);
       if (!mounted) return;
       setState(() {
-        _results = results;
+        _results = response.results;
+        _outcomes = response.outcomes;
         _searching = false;
-        if (results.isEmpty) {
-          _error = AppLocalizations.of(context)!.searchNoResults;
+        if (response.results.isEmpty) {
+          // Distinguish "every source is broken" from "nothing matched".
+          // Collapsing both into "no results" is what hid the GSMArena
+          // breakage, so an all-source failure names each reason instead.
+          _error = response.allSourcesFailed
+              ? _describeFailures(response.failures, everySource: true)
+              : AppLocalizations.of(context)!.searchNoResults;
         }
       });
     } catch (e) {
@@ -168,6 +176,36 @@ class _SearchDialogState extends State<_SearchDialog> {
         _error = e.toString();
       });
     }
+  }
+
+  /// Purpose: Turn per-source failures into one human-readable message.
+  /// Inputs: `failures` — the outcomes whose status is not `ok`; `everySource`
+  /// — whether no source at all succeeded.
+  /// Returns: A newline-separated explanation, one line per source.
+  /// Side effects: Reads localized strings from the current context.
+  /// Notes: Each status maps to its own string so the user can tell a bot-wall
+  /// apart from an outage apart from a scraper that needs updating — retrying
+  /// helps for one of those and not the others. The heading differs by
+  /// `everySource` so a partial failure alongside real results is not phrased
+  /// as a total outage. Internal helper used within this file only.
+  String _describeFailures(
+    List<DeviceSourceOutcome> failures, {
+    required bool everySource,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final heading = everySource
+        ? l10n.searchAllSourcesFailed
+        : l10n.searchPartialFailure;
+    if (failures.isEmpty) return heading;
+    final lines = failures.map((f) => switch (f.status) {
+      DeviceSearchStatus.blocked => l10n.searchSourceBlocked(f.source),
+      DeviceSearchStatus.unreachable => l10n.searchSourceUnreachable(f.source),
+      DeviceSearchStatus.markupChanged => l10n.searchSourceMarkupChanged(
+        f.source,
+      ),
+      DeviceSearchStatus.ok => '',
+    });
+    return [heading, ...lines.where((l) => l.isNotEmpty)].join('\n');
   }
 
   /// Purpose: Provide the internal select result helper for this file.
@@ -394,10 +432,24 @@ class _SearchDialogState extends State<_SearchDialog> {
     if (_results.isEmpty) {
       return const SizedBox.shrink();
     }
+    // Some results came back, but not from every source. Say so rather than
+    // letting a partial answer look complete.
+    final failures = _outcomes.where((o) => o.failed).toList();
     return ListView.builder(
-      itemCount: _results.length,
+      itemCount: _results.length + (failures.isEmpty ? 0 : 1),
       padding: const EdgeInsets.only(bottom: 8),
       itemBuilder: (_, i) {
+        if (i == _results.length) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              _describeFailures(failures, everySource: false),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        }
         final r = _results[i];
         return ListTile(
           leading: r.thumbnailUrl != null

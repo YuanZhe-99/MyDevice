@@ -726,6 +726,27 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchNoResults => '未找到结果';
 
   @override
+  String searchSourceBlocked(String source) {
+    return '$source 拦截了自动访问';
+  }
+
+  @override
+  String searchSourceUnreachable(String source) {
+    return '无法连接到 $source';
+  }
+
+  @override
+  String searchSourceMarkupChanged(String source) {
+    return '$source 的页面结构已变化，应用需要更新';
+  }
+
+  @override
+  String get searchAllSourcesFailed => '所有数据源都无法访问';
+
+  @override
+  String get searchPartialFailure => '部分数据源未响应';
+
+  @override
   String get searchApply => '应用';
 
   @override
@@ -2132,6 +2153,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get searchNoResults => '找不到結果';
+
+  @override
+  String searchSourceBlocked(String source) {
+    return '$source 攔截了自動存取';
+  }
+
+  @override
+  String searchSourceUnreachable(String source) {
+    return '無法連線到 $source';
+  }
+
+  @override
+  String searchSourceMarkupChanged(String source) {
+    return '$source 的頁面結構已變更，應用程式需要更新';
+  }
+
+  @override
+  String get searchAllSourcesFailed => '所有資料來源都無法存取';
+
+  @override
+  String get searchPartialFailure => '部分資料來源未回應';
 
   @override
   String get searchApply => '套用';

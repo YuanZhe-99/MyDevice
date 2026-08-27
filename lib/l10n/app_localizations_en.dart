@@ -737,6 +737,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchNoResults => 'No results found';
 
   @override
+  String searchSourceBlocked(String source) {
+    return '$source blocked automated access';
+  }
+
+  @override
+  String searchSourceUnreachable(String source) {
+    return '$source could not be reached';
+  }
+
+  @override
+  String searchSourceMarkupChanged(String source) {
+    return '$source changed its page layout; the app needs an update';
+  }
+
+  @override
+  String get searchAllSourcesFailed => 'No source could be reached';
+
+  @override
+  String get searchPartialFailure => 'Some sources did not respond';
+
+  @override
   String get searchApply => 'Apply';
 
   @override

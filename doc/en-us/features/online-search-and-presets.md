@@ -8,21 +8,53 @@ Sources: `lib/features/devices/services/device_search_service.dart`,
 
 ## Device spec search — `device_search_service.dart`
 
-`DeviceSearchService` fetches device specs from two sources, run concurrently and each
-individually error-swallowed:
+`DeviceSearchService` fetches device specs from two sources, run concurrently over one
+shared client, each reporting its own outcome rather than swallowing failures:
 
-- **GSMArena** (`_searchGSMArena` / `_fetchGSMArenaDetail`).
-- **Notebookcheck** (`_searchNotebookcheck` / `_fetchNotebookcheckDetail`).
+- **Notebookcheck** (`_searchNotebookcheck` / `_fetchNotebookcheckDetail`) — laptops,
+  tablets, phones and smartwatches; the detail page carries a full spec table.
+- **PhoneDB** (`_searchPhonedb` / `_fetchPhonedbDetail`) — phones at SKU level, behind a
+  relevance gate because it answers an unknown model with a loose full-text match.
+
+All markup parsing lives in `device_search_parsers.dart`, which is network-free and unit
+tested against saved fixtures in `test/fixtures/`.
 
 ```dart
-static Future<List<DeviceSearchResult>> search(String query) async {
-  if (AppFlavor.isStore) return [];
+static Future<DeviceSearchResponse> search(String query) async {
+  if (AppFlavor.isStore) {
+    return const DeviceSearchResponse(results: [], outcomes: []);
+  }
   ...
 }
 ```
 
-Both `search()` and `fetchDetail()` return early (empty list / the unmodified input
-result) when `AppFlavor.isStore` is true — confirmed directly in source.
+Both `search()` and `fetchDetail()` return early (an empty response / the unmodified
+input result) when `AppFlavor.isStore` is true — confirmed directly in source.
+
+**GSMArena was removed.** It answers every request with a Cloudflare Turnstile challenge
+served as HTTP 200. The old code checked only the status code, then failed to match its
+row pattern and returned an empty list — indistinguishable from "no such device". No
+HTTP-only client can pass that challenge, so the source is unrecoverable by scraping.
+
+### Reporting failure honestly
+
+That silent breakage is why `search()` now returns a `DeviceSearchResponse` carrying one
+`DeviceSourceOutcome` per source, with a `DeviceSearchStatus` of:
+
+| Status | Meaning | Retry helps? |
+|---|---|---|
+| `ok` | Source answered and parsed; `resultCount` may still be 0 | n/a |
+| `blocked` | Bot-wall or challenge page served instead of content | No |
+| `unreachable` | DNS, socket, timeout, or a non-200 status | Yes |
+| `markupChanged` | Answered, but no parser anchor was present | No — needs a code fix |
+
+A zero-match search is deliberately **`ok`, not a failure**: `isNotebookcheckSearchPage`
+and `isPhonedbResultsPage` recognise a healthy page that simply has no rows. Without that
+distinction the new signal would cry wolf on every device a source does not carry.
+
+`tool/check_sources.dart` probes every source and prints the same classification, so
+scraper rot can be checked with one command instead of being noticed by a user. It is
+deliberately **not** wired into CI, because it makes real third-party network requests.
 
 ## Chip spec search — `chip_search_service.dart`
 

@@ -2,3 +2,7 @@
 # and the recorder always writes '\n'. Without this, a checkout on a machine with
 # core.autocrlf=true rewrites them to CRLF and every fixture fails.
 test/golden/goldens/**/*.txt text eol=lf
+
+# Source fixtures for the online device search parsers must stay LF so a
+# checkout with core.autocrlf=true does not change what the parsers see.
+test/fixtures/**/*.html text eol=lf

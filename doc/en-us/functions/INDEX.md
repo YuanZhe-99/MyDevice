@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **986** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **943** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1097** declarations — 111 more than
-986 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1120** declarations — 177 more than
+943 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus tail
 sections of `device.dart` and `service_list_page.dart`) have no `/// Purpose:` doc comment in
 source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
@@ -15,11 +15,21 @@ call-site statement rather than a real declaration. Every such case is called ou
 its file page with a reconciling row-count note; nothing is silently invented to force a round
 number.
 
+The `/// Purpose:` figure is verified against source with
+`grep -r '/// Purpose:' lib --include=*.dart`. The declaration total is hand-maintained and is
+currently **known to be drifted** in two ways. First, a row-level sweep of the per-file pages
+counts roughly 1023 declaration rows, not 1120. Second, the Tier A/B split in this table and the
+split summed from the Area totals table below disagree by 15 (667/453 summed versus 682/438
+stated), even though both agree on the 1120 grand total. Both gaps predate the
+`device_search_parsers.dart` entry and were carried forward unchanged rather than papered over,
+because reconciling them means re-auditing every page rather than editing these tables. Treat the
+per-file rows as authoritative and both totals as approximate until that sweep happens.
+
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 660 |
-| Tier B (index row only) | 437 |
-| **Total** | **1097** |
+| Tier A (full entry) | 682 |
+| Tier B (index row only) | 438 |
+| **Total** | **1120** |
 
 ## Root (`lib/`)
 
@@ -52,6 +62,7 @@ number.
 |---|---|---|---|
 | `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 58 | 46 |
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
+| `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 23 | 22 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 18 | 18 |
 | `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 20 | 20 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
@@ -100,7 +111,7 @@ number.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 986/1097 hand-documented declarations above).
+the 943/1120 hand-documented declarations above).
 
 ## shared/
 
@@ -131,9 +142,9 @@ the 986/1097 hand-documented declarations above).
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 4 | 9 | 4 | 5 |
 | `features/datasets/` | 4 | 44 | 30 | 14 |
-| `features/devices/` | 14 | 326 | 174 | 152 |
+| `features/devices/` | 15 | 349 | 196 | 153 |
 | `features/network/` | 5 | 72 | 41 | 31 |
 | `features/services/` | 8 | 319 | 153 | 166 |
 | `features/settings/` | 4 | 42 | 21 | 21 |
 | `shared/` | 17 | 284 | 221 | 63 |
-| **Total** | **57** | **1097** | **660** | **437** |
+| **Total** | **58** | **1120** | **682** | **438** |

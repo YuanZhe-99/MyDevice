@@ -56,7 +56,7 @@ Future<void> pumpUntil(
     await tester.runAsync(() => Future<void>.delayed(Duration.zero));
     await tester.pump(const Duration(milliseconds: 50));
   }
-  fail('timed out waiting for: ${finder.description}');
+  fail('timed out waiting for: $finder');
 }
 
 /// Purpose: Type a query into the template picker's search field.

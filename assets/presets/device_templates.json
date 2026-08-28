@@ -446,6 +446,25 @@
     "os": "Android 16"
   },
   {
+    "name": "Google Pixel 10 Pro Fold",
+    "category": "phone",
+    "brand": "Google",
+    "model": "Pixel 10 Pro Fold",
+    "cpu": "Google Tensor G5",
+    "gpu": "IMG DXT-48-1536",
+    "ram": "16 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "8.0\"",
+    "screenResolutionW": 2076,
+    "screenResolutionH": 2152,
+    "battery": "5015 mAh",
+    "os": "Android 16"
+  },
+  {
     "name": "Google Pixel 10 Pro XL",
     "category": "phone",
     "brand": "Google",
@@ -1256,6 +1275,98 @@
     "releaseDate": "2025-02-28"
   },
   {
+    "name": "iPhone 17",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 17",
+    "cpu": "Apple A19",
+    "gpu": "Apple A19 GPU",
+    "ram": "8 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1206,
+    "screenResolutionH": 2622,
+    "battery": "3692 mAh",
+    "os": "iOS 26"
+  },
+  {
+    "name": "iPhone 17 Pro",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 17 Pro",
+    "cpu": "Apple A19 Pro",
+    "gpu": "Apple A19 Pro 6-Core GPU",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1206,
+    "screenResolutionH": 2622,
+    "battery": "3988 mAh",
+    "os": "iOS 26"
+  },
+  {
+    "name": "iPhone 17 Pro Max",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 17 Pro Max",
+    "cpu": "Apple A19 Pro",
+    "gpu": "Apple A19 Pro 6-Core GPU",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB",
+      "2 TB"
+    ],
+    "screenSize": "6.9\"",
+    "screenResolutionW": 1320,
+    "screenResolutionH": 2868,
+    "battery": "4823 mAh",
+    "os": "iOS 26"
+  },
+  {
+    "name": "iPhone 17e",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone 17e",
+    "cpu": "Apple A19",
+    "gpu": "Apple A19 4-Core GPU",
+    "ram": "8 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "6.1\"",
+    "screenResolutionW": 1170,
+    "screenResolutionH": 2532,
+    "battery": "4005 mAh",
+    "os": "iOS 26"
+  },
+  {
+    "name": "iPhone Air",
+    "category": "phone",
+    "brand": "Apple",
+    "model": "iPhone Air",
+    "cpu": "Apple A19 Pro",
+    "gpu": "Apple A19 Pro 5-Core GPU",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.5\"",
+    "screenResolutionW": 1260,
+    "screenResolutionH": 2736,
+    "battery": "3149 mAh",
+    "os": "iOS 26"
+  },
+  {
     "name": "Lenovo Legion Go",
     "category": "gameConsole",
     "brand": "Lenovo",
@@ -1350,6 +1461,23 @@
     "os": "macOS Sequoia"
   },
   {
+    "name": "MacBook Air 13\" (M5)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Air 13-inch (M5)",
+    "cpu": "Apple M5",
+    "gpu": "Apple M5 8-Core GPU",
+    "ram": "16 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "screenSize": "13.6\"",
+    "screenResolutionW": 2560,
+    "screenResolutionH": 1664,
+    "battery": "53.8 Wh",
+    "os": "macOS 26 Tahoe"
+  },
+  {
     "name": "MacBook Air 15\" (M4)",
     "category": "laptop",
     "brand": "Apple",
@@ -1368,6 +1496,23 @@
     "screenResolutionH": 1864,
     "battery": "66.5 Wh",
     "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Air 15\" (M5)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Air 15-inch (M5)",
+    "cpu": "Apple M5",
+    "gpu": "Apple M5 10-Core GPU",
+    "ram": "32 GB",
+    "storage": [
+      "2 TB"
+    ],
+    "screenSize": "15.3\"",
+    "screenResolutionW": 2880,
+    "screenResolutionH": 1864,
+    "battery": "66.5 Wh",
+    "os": "macOS 26 Tahoe"
   },
   {
     "name": "MacBook Pro 14\" (M4 Pro)",
@@ -1407,6 +1552,23 @@
     "screenResolutionH": 1964,
     "battery": "72.4 Wh",
     "os": "macOS Sequoia"
+  },
+  {
+    "name": "MacBook Pro 14\" (M5)",
+    "category": "laptop",
+    "brand": "Apple",
+    "model": "MacBook Pro 14-inch (M5)",
+    "cpu": "Apple M5",
+    "gpu": "Apple M5 10-Core GPU",
+    "ram": "32 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "screenSize": "14.2\"",
+    "screenResolutionW": 3024,
+    "screenResolutionH": 1964,
+    "battery": "72.4 Wh",
+    "os": "macOS 26 Tahoe"
   },
   {
     "name": "MacBook Pro 16\" (M4 Pro)",
@@ -1863,6 +2025,63 @@
     "os": "Android 15"
   },
   {
+    "name": "Samsung Galaxy S26",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S26",
+    "cpu": "Samsung Exynos 2600",
+    "gpu": "Samsung Xclipse 960",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2340,
+    "battery": "4300 mAh",
+    "os": "Android 16",
+    "releaseDate": "2026-02-25"
+  },
+  {
+    "name": "Samsung Galaxy S26 Ultra",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S26 Ultra",
+    "cpu": "Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy",
+    "gpu": "Qualcomm Adreno 840",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "6.9\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3120,
+    "battery": "5000 mAh",
+    "os": "Android 16",
+    "releaseDate": "2026-02-25"
+  },
+  {
+    "name": "Samsung Galaxy S26+",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy S26+",
+    "cpu": "Samsung Exynos 2600",
+    "gpu": "Samsung Xclipse 960",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "6.7\"",
+    "screenResolutionW": 1440,
+    "screenResolutionH": 3120,
+    "battery": "4900 mAh",
+    "os": "Android 16",
+    "releaseDate": "2026-02-25"
+  },
+  {
     "name": "Samsung Galaxy Tab S10 Ultra",
     "category": "tablet",
     "brand": "Samsung",
@@ -1898,6 +2117,23 @@
     "screenResolutionH": 2800,
     "battery": "10090 mAh",
     "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy Tab S11 Ultra",
+    "category": "tablet",
+    "brand": "Samsung",
+    "model": "Galaxy Tab S11 Ultra",
+    "cpu": "MediaTek Dimensity 9400+",
+    "gpu": "ARM Immortalis-G925 MC12",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "14.6\"",
+    "screenResolutionW": 1848,
+    "screenResolutionH": 2960,
+    "battery": "11600 mAh",
+    "os": "Android 16"
   },
   {
     "name": "Samsung Galaxy Watch 7",
@@ -1950,6 +2186,24 @@
     "os": "Android 14"
   },
   {
+    "name": "Samsung Galaxy Z Flip7",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy Z Flip7",
+    "cpu": "Samsung Exynos 2500",
+    "gpu": "Samsung Xclipse 950",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB"
+    ],
+    "screenSize": "6.9\"",
+    "screenResolutionW": 1080,
+    "screenResolutionH": 2520,
+    "battery": "4300 mAh",
+    "os": "Android 16"
+  },
+  {
     "name": "Samsung Galaxy Z Fold 6",
     "category": "phone",
     "brand": "Samsung",
@@ -1967,6 +2221,61 @@
     "screenResolutionH": 2160,
     "battery": "4400 mAh",
     "os": "Android 14"
+  },
+  {
+    "name": "Samsung Galaxy Z Fold7",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy Z Fold7",
+    "cpu": "Qualcomm Snapdragon 8 Elite for Galaxy",
+    "gpu": "Qualcomm Adreno 830",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB",
+      "512 GB",
+      "1 TB"
+    ],
+    "screenSize": "8.0\"",
+    "screenResolutionW": 1968,
+    "screenResolutionH": 2184,
+    "battery": "4400 mAh",
+    "os": "Android 16"
+  },
+  {
+    "name": "Samsung Galaxy Z Fold8",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy Z Fold8",
+    "cpu": "Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy",
+    "gpu": "Qualcomm Adreno 840",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "7.6\"",
+    "screenResolutionW": 1848,
+    "screenResolutionH": 2448,
+    "battery": "4800 mAh",
+    "os": "Android 17",
+    "releaseDate": "2026-07-22"
+  },
+  {
+    "name": "Samsung Galaxy Z Fold8 Ultra",
+    "category": "phone",
+    "brand": "Samsung",
+    "model": "Galaxy Z Fold8 Ultra",
+    "cpu": "Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy",
+    "gpu": "Qualcomm Adreno 840",
+    "ram": "12 GB",
+    "storage": [
+      "256 GB"
+    ],
+    "screenSize": "8.0\"",
+    "screenResolutionW": 2256,
+    "screenResolutionH": 2504,
+    "battery": "5000 mAh",
+    "os": "Android 17",
+    "releaseDate": "2026-07-22"
   },
   {
     "name": "Sony WH-1000XM5",
@@ -2165,6 +2474,40 @@
     "screenResolutionH": 3200,
     "battery": "6100 mAh",
     "os": "Android 15"
+  },
+  {
+    "name": "Xiaomi 17 Pro",
+    "category": "phone",
+    "brand": "Xiaomi",
+    "model": "17 Pro",
+    "cpu": "Qualcomm Snapdragon 8 Elite Gen 5",
+    "gpu": "Qualcomm Adreno 840",
+    "ram": "16 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "screenSize": "6.3\"",
+    "screenResolutionW": 1220,
+    "screenResolutionH": 2656,
+    "battery": "6300 mAh",
+    "os": "Android 16"
+  },
+  {
+    "name": "Xiaomi 17 Pro Max",
+    "category": "phone",
+    "brand": "Xiaomi",
+    "model": "17 Pro Max",
+    "cpu": "Qualcomm Snapdragon 8 Elite Gen 5",
+    "gpu": "Qualcomm Adreno 840",
+    "ram": "16 GB",
+    "storage": [
+      "1 TB"
+    ],
+    "screenSize": "6.9\"",
+    "screenResolutionW": 1200,
+    "screenResolutionH": 2608,
+    "battery": "7500 mAh",
+    "os": "Android 16"
   },
   {
     "name": "Xiaomi AX9000",

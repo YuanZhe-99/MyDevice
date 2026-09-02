@@ -24,7 +24,10 @@
 | [`_editAssignment`](#editassignment) | 方法（`_NetworkDetailPageState`） | A | 为既有赋值重新打开赋值配置对话框并持久化变更。 |
 | [`_removeAssignment`](#removeassignment) | 方法（`_NetworkDetailPageState`） | A | 确认并接受时从此网络移除设备赋值。 |
 | [`_showAssignmentDialog`](#showassignmentdialog) | 方法（`_NetworkDetailPageState`） | A | 为一个赋值显示地址模式/IP/主机名/退出节点配置对话框。 |
-| `build` | 方法（组件） | B | 构建脚手架：应用栏（地图/编辑/删除操作）、网络信息卡片、可排序设备列表。 |
+| `build` | 方法（组件） | B | 围绕 `_buildBody` 构建脚手架：应用栏（地图/编辑/删除操作）。 |
+| `_buildBody` | 方法（组件辅助） | B | 选择布局：单个 `ListView`（信息卡，然后设备页头与列表），除非 `useDetailTwoPane` 通过——此时是一个 `Row`：`detailLeftPaneWidth` 宽的可滚动信息卡加右侧设备 children 的 `ListView`。 |
+| `_buildInfoCard` | 方法（组件辅助） | B | 网络信息卡片（类型 logo、类型、子网、网关、DNS、备注），从 `build` 原样抽出。 |
+| `_buildDevicesChildren` | 方法（组件辅助） | B | 设备页头行加分配列表或其空态卡片，从 `build` 原样抽出。 |
 | `_buildDeviceList` | 方法（组件辅助） | B | 构建设备卡片列表，分组开启时插入类别页头。 |
 | `_buildDeviceCard` | 方法（组件辅助） | B | 渲染一个赋值的卡片（设备名、模式/IP/主机名/退出节点副标题、编辑/移除菜单）。 |
 | `_infoRow` | 方法（组件辅助） | B | 在网络信息卡片渲染一个标签/值行。 |

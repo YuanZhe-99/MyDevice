@@ -111,6 +111,65 @@ tile **先从左到右、再从上到下**排列，每行是一个由 `Expanded`
 
 **手势随列数变化。** 一列时设备与数据集 tile 保留滑动操作（右滑编辑、左滑删除；数据集仅删除）。多列时在一个窄格子内水平拖动含义不明，所以去掉 `Dismissible`，尾部 chevron 变成携带同样操作的菜单——服务 tile 早已使用的那种尾部菜单。两页的删除都没有其他入口，所以菜单是保住删除的关键。重排模式始终渲染单列，因为 `ReorderableListView` 要求一项一个子组件。
 
+## 详情页双栏
+
+设备详情页和网络详情页在同一规则下分栏，经由 [`detail_layout.dart`](functions/shared/utils/detail_layout.md) 里一行的页面命名委托：
+
+```dart
+bool useDetailTwoPane(double width, double height) => canSplitLayout(width, height);
+double detailLeftPaneWidth(double totalWidth) => (totalWidth * 0.36).clamp(260.0, 420.0);
+```
+
+委托的存在是让页面保留自己的词汇；`test/detail_layout_test.dart` 断言它在每个命名视口上仍与 `canSplitLayout` 一致，委托不会漂移。窗格按比例而非固定，因为一代折叠屏展开后跨越约 672 到 954 dp；钳制让它在窄端仍可用（600 dp 下限时 260，右侧留 339），在桌面上不至于铺张。
+
+| 页面 | 左窗格（固定，迫不得已才滚动） | 右窗格（滚动） | 额外门控 |
+|---|---|---|---|
+| 设备详情 | 页头卡（头像、名称、品牌 / 型号、日期），然后是位置地图和备注 | 规格卡：财务、CPU、GPU、内存与存储、显示、其他 | **至少一个规格小节。** 每个小节都是条件的，没有规格的设备会面对空白右半，所以它保持单列。 |
+| 网络详情 | 信息卡（类型 logo、类型、子网、网关、DNS、备注） | 设备页头与分配列表 | 无：空的分配列表渲染空态卡片，从不为空。 |
+
+单列顺序原样不动——设备页是页头、规格、地图、备注；网络页是信息卡、然后设备。两页都推到壳之上，所以 `constraints.maxWidth` 就是整个窗口，不扣导航栏。规格行里 100 dp 的标签槽保留：600 dp 下限时右窗格卡片内边距内仍有 275 dp，网络页 260 dp 信息卡上长 DNS 列表会折行，可以接受。
+
+| 视口 | 分栏 | 左窗格 | 右窗格 |
+|---|---|---|---|
+| Z Fold 8 横屏 933 × 704 | 是 | 336 | 596 |
+| Z Fold 8 竖屏 704 × 933 | 否 | — | — |
+| Z Fold 7 832 × 750 / 750 × 832 | 是 | 300 / 270 | 531 / 479 |
+| Fold 8 Ultra 954 × 859 / Pixel 10 Pro Fold 791 × 820 | 是 | 343 / 285 | 610 / 505 |
+| 平板 1024 × 768 / 768 × 1024 | 是 / 否 | 369 / — | 654 / — |
+| 手机 412 × 915 / 915 × 412 | 否 | — | — |
+| 桌面 1600 × 900 | 是 | 420 | 1179 |
+
+## 两块并排：分栏规则之上的宽度下限
+
+有些布局需要同时回答两个问题。财务总览就是：三个摘要指标叠在 220 dp 饼图之上，在趋势图出现之前就花掉 Z Fold 8 约 640 dp body 的大部分。把指标放进饼图旁的窄列能收回这些——但只在图表仍有空间绘制的地方。
+
+```dart
+canSplitLayout(screenWidth, screenHeight)   // 窗口有分栏的形状吗？
+  && useFinanceSideBySide(contentWidth)     // 两块都放得下吗？
+  && hasDistribution                        // 到底有没有图表？
+```
+
+`useFinanceSideBySide` 是 `contentWidth >= 240 + 340 + 12`。两个最小值分别是摘要窗格（约 150 的 `titleLarge` 金额加卡片内边距，再加最长日文标签的余量）和图表（232 dp 的饼图加标签，以及其下的分布行）。内容宽度是原始窗口减页面 32 dp 内边距，因为页面推到壳之上。
+
+`financeSummaryPaneWidth` 是 `(contentWidth * 0.34).clamp(240, 360)`，**没有右侧上限**。没有任何上限能生效：门控之上窗格以宽度的 0.34 增长而图表以 0.66 增长，所以图表下限恰在边界处满足、其上只会更宽裕。该不变量在 `test/detail_layout_test.dart` 中跨整个范围断言，而不是用第二个钳制来防守。行放在 `IntrinsicHeight` 里，让两张卡都拉伸到图表的高度，而不是摘要悬在顶部。
+
+第三个条件不是防御性的填充。空图表渲染一行「暂无数据」占位，没有它指标会坐在 240 dp 窗格里陪着几乎空白的另一半，而不是退回全宽行。
+
+与 MyAnime 的统计页不同，**每台展开的折叠屏都超过宽度下限**——Z Fold 5 竖屏留 627 对所需 592——因为 MyDevice 的两块更小。这是规则在起作用，不是它松了；下限在 600 dp 分栏最小值处（568）仍然生效。
+
+| 视口 | 分栏 | 内容 | 并排 | 窗格 | 图表 |
+|---|---|---|---|---|---|
+| Z Fold 8 横屏 933 × 704 | 是 | 901 | **是** | 306 | 583 |
+| Z Fold 8 竖屏 704 × 933 | 否 | — | 否 | — | — |
+| Z Fold 7 750 × 832 | 是 | 718 | **是** | 244 | 462 |
+| Z Fold 6 675 · Z Fold 5 659 | 是 | 643 / 627 | **是** / **是** | 240 / 240 | 391 / 375 |
+| 平板 1024 × 768 / 768 × 1024 | 是 / 否 | 992 / — | **是** / 否 | 337 / — | 643 / — |
+| 手机横屏 915 × 412 | 否 | — | 否 | — | — |
+| 分栏下限 600 × 480 | 是 | 568 | 否 | — | — |
+| 桌面 1600 × 900 | 是 | 1568 | **是** | 360 | 1196 |
+
+**以 `canSplitLayout` 门控的代价：** 横持手机 915 × 412 保持堆叠布局，尽管它是所有视口中高度最少、最能受益的那个。仅宽度的规则——`useNavigationRail` 用的那种——本可以帮到它。这里刻意选择了全应用的分栏规则，与详情页和列表保持一致。
+
 ## 导航放在哪里
 
 **第二条规则，且刻意更窄**：
@@ -138,7 +197,7 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 
 ## 推入页测量原始窗口
 
-只有五个标签页住在 `ShellRoute` 里。其他每一页——设备与网络详情、每个编辑页、财务总览、地图、设置子页——都用 `Navigator.of(context, rootNavigator: true)` 推到**根**导航器上，在壳之上。它旁边没有导航栏、底下没有底栏，所以 `constraints.maxWidth` *就是*整个宽度。把这类页面的宽度经过 `shellContentWidth` 会悄悄丢掉 81 dp。财务总览的摘要卡是第一个带规则的此类页面；它只读自己的 `LayoutBuilder`。
+只有五个标签页住在 `ShellRoute` 里。其他每一页——设备与网络详情、每个编辑页、财务总览、地图、设置子页——都用 `Navigator.of(context, rootNavigator: true)` 推到**根**导航器上，在壳之上。它旁边没有导航栏、底下没有底栏，所以 `constraints.maxWidth` *就是*整个宽度。把这类页面的宽度经过 `shellContentWidth` 会悄悄丢掉 81 dp。详情页和财务总览都只读自己的 `LayoutBuilder`。
 
 ## 对话框从窗口推导高度
 
@@ -167,12 +226,15 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `service_list_page.dart`（概览指标网格） | `serviceMetricColumns` | 仅宽度，来自概览列表的 `LayoutBuilder`。 |
 | `service_list_page.dart`（拓扑卡片头部） | `useTopologyActionsRow` | 仅宽度。值就是卡片在 1.5.0 之前内联使用的 680；卡片现在拿到的是扣除导航栏后的宽度，所以 Pixel 10 Pro Fold 竖屏把动作堆叠到标题下，而以前是并排。 |
 | `service_list_page.dart`（快捷访问路由对话框） | `dialogMaxWidth` | 常量，不是规则。 |
-| `device_finance_overview_page.dart`（摘要卡） | `financeSummaryColumns` | 仅宽度，下限 2。推到壳外：测量自己的 `LayoutBuilder`。 |
+| `device_detail_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth` | 外加第三道门控：至少一个规格小节。推到壳外：测量原始窗口。 |
+| `network_detail_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth` | 推到壳外。 |
+| `device_finance_overview_page.dart`（摘要与图表并排） | `canSplitLayout`、`useFinanceSideBySide`、`financeSummaryPaneWidth` | 双重门控，外加非空分布；见上文。 |
+| `device_finance_overview_page.dart`（摘要卡） | `financeSummaryColumns` | 仅宽度，下限 2；在并排窗格内强制为一列。推到壳外：测量自己的 `LayoutBuilder`。 |
 | `device_search_dialog.dart`、`chip_search_dialog.dart` | `dialogBodyHeight`、`dialogMaxWidth` | 高度来自窗口减键盘。 |
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | 无需 | 已是 `LayoutBuilder` 驱动的全幅 `InteractiveViewer`；布局缓存以视口宽度为键。 |
 | `device_map_page.dart`、`map_picker_page.dart` | 无需 | 全幅地图填满给它的任何空间；选点器的搜索行已是按钮旁的 `Expanded` 输入框。 |
 
-其余每一页仍是固定单列，已排期：详情页与财务总览图表行在 1.5.2，设备编辑页在 1.5.3，其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
+其余每一页仍是固定单列，已排期：设备编辑页在 1.5.3，其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
 
 ## 与 Google 指南的分歧
 
@@ -183,6 +245,8 @@ Google 的自适应布局指南说窗口尺寸类别「明确不由设备屏幕�
 ## 测试
 
 - `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、四个列表的列数与偏好钳制、两条概览规则、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
+- `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限，以及从门控到 2000 dp 图表永不低于最小值的循环不变量。
+- `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart`、`test/finance_overview_layout_ui_test.dart` — 在 Z Fold 8 横竖、Z Fold 7 竖屏、手机横竖、平板和 600 × 480 下限上渲染页面：哪个窗格放什么、右侧滚动时左窗格不动、无规格与无数据的回退。
 - `test/list_columns_prefs_test.dart` — 四个列数偏好各自独立往返，默认值不写入文件而是缺席，非法值读作自动。
 - `test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart`、`test/service_columns_ui_test.dart` — 针对种子存储目录，在 Z Fold 8 横竖、Pixel 9 横竖和平板上渲染设备、网络、数据集与服务列表：列数、隐藏的控件、存下的选择、钳制、滑动或菜单的切换，以及分组页头。
 - `test/shell_nav_ui_test.dart` — 在 Pixel 9 横竖、Z Fold 8 横竖和桌面窗口渲染壳：出现哪种导航、导航栏携带同样五个目的地、点击可导航。

@@ -8,8 +8,9 @@ navigation rail; `serviceMetricMinWidth`, `serviceMetricMaxColumns` and
 `financeSummaryGap`, `financeSummaryMinColumns` and `financeSummaryMaxColumns` for the finance
 summary card; and `dialogInsetHorizontal`, `dialogInsetVertical`, `dialogMaxWidth` and
 `dialogMinBodyHeight` for the search dialogs; and `deviceTileMinWidth`, `networkTileMinWidth`,
-`dataSetTileMinWidth` and `serviceCardMinWidth` for the four multi-column lists. Nine pure helpers
-sit on top of them.
+`dataSetTileMinWidth` and `serviceCardMinWidth` for the four multi-column lists; and
+`financeSummaryPaneMinWidth` and `financeChartMinWidth` for the finance overview's side-by-side
+row. Eleven pure helpers sit on top of them.
 
 The module deliberately depends on nothing but `dart:core` — it holds no Flutter imports, and
 `canSplitLayout` takes two doubles rather than a `Size` for exactly that reason — so every helper
@@ -27,7 +28,10 @@ Consumers: `shell_scaffold.dart` for `useNavigationRail`; the four list pages fo
 `device_storage.dart` for `listColumnsAuto` and `listMaxColumns` when validating the stored
 preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
 `service_list_page.dart` for `serviceMetricColumns`, `useTopologyActionsRow` and `dialogMaxWidth`;
-`device_finance_overview_page.dart` for `financeSummaryColumns`; `device_search_dialog.dart` and
+`device_finance_overview_page.dart` for `financeSummaryColumns`, `canSplitLayout`,
+`useFinanceSideBySide` and `financeSummaryPaneWidth`; `detail_layout.dart` (see
+[detail_layout.md](detail_layout.md)), whose `useDetailTwoPane` is a one-line delegate to
+`canSplitLayout`; `device_search_dialog.dart` and
 `chip_search_dialog.dart` for `dialogBodyHeight`, `dialogMaxWidth` and the two inset constants.
 
 ## Declarations
@@ -44,8 +48,10 @@ preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
 | [`useTopologyActionsRow`](#usetopologyactionsrow) | top-level function | A | Report whether the topology card's title and actions share a row. |
 | [`financeSummaryColumns`](#financesummarycolumns) | top-level function | A | Return how many columns the finance summary card lays its metrics in. |
 | [`dialogBodyHeight`](#dialogbodyheight) | top-level function | A | Return the height a search dialog's body should take. |
+| [`useFinanceSideBySide`](#usefinancesidebyside) | top-level function | A | Report whether the finance summary fits beside the chart. |
+| [`financeSummaryPaneWidth`](#financesummarypanewidth) | top-level function | A | Return the width of the finance summary's metric column. |
 
-The twenty-three constants are documented in source with the reason for each value and are not
+The twenty-five constants are documented in source with the reason for each value and are not
 repeated as rows here.
 
 ## Documentation
@@ -188,3 +194,29 @@ repeated as rows here.
   (preferred 480).
 - **Notes:** Before 1.5.0 both dialogs were fixed at their preferred height, which overflowed a
   phone or a folded cover screen held in landscape.
+
+### `bool useFinanceSideBySide(double contentWidth)` <a id="usefinancesidebyside"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Report whether the finance summary fits beside the asset-distribution chart.
+- **Inputs:** `contentWidth` — the finance page's body width less its 32 dp of padding; the raw
+  window, since the page is pushed above the shell.
+- **Returns:** `bool` — `contentWidth >= 240 + 340 + 12`.
+- **Side effects:** None.
+- **Usage:** `_DeviceFinanceOverviewPageState.build`, together with `canSplitLayout` and a
+  non-empty distribution.
+- **Notes:** A width floor on top of the split rule, not instead of it. Every unfolded foldable
+  clears it because MyDevice's two blocks are smaller than MyAnime's; the floor still binds at the
+  600 dp split minimum.
+
+### `double financeSummaryPaneWidth(double contentWidth)` <a id="financesummarypanewidth"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Return the width of the finance summary's metric column.
+- **Inputs:** `contentWidth` — the width both blocks share.
+- **Returns:** `double` — `(contentWidth × 0.34).clamp(240, 360)`.
+- **Side effects:** None.
+- **Usage:** The `SizedBox` around the summary card in the side-by-side row.
+- **Notes:** No right-hand cap: above the gate the pane grows at 0.34 while the chart grows at
+  0.66, so the chart's 340 dp floor is met at the boundary and exceeded above it — asserted across
+  the whole range in `test/detail_layout_test.dart`.

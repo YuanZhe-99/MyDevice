@@ -49,27 +49,72 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
+    // The double gate: the window must have the shape to split, the body
+    // must have room for both blocks, and the chart must have something to
+    // draw — an empty chart renders a one-line placeholder that would strand
+    // the summary beside a blank half. The page is pushed above the shell,
+    // so its body width is the raw window less the 16 dp padding each side.
+    final screen = MediaQuery.sizeOf(context);
+    final buckets = _assetBuckets(l10n);
+    final hasDistribution =
+        buckets.isNotEmpty &&
+        buckets.fold(0.0, (sum, bucket) => sum + bucket.amount) > 0;
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.financialOverview)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        children: [
-          _buildSummaryCard(l10n, theme),
-          const SizedBox(height: 12),
-          _buildAssetDistribution(l10n, theme),
-          const SizedBox(height: 12),
-          _buildTrendCard(l10n, theme),
-        ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final contentWidth = constraints.maxWidth - 32;
+          final sideBySide =
+              canSplitLayout(screen.width, screen.height) &&
+              useFinanceSideBySide(contentWidth) &&
+              hasDistribution;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              if (sideBySide)
+                // IntrinsicHeight gives the row a height inside the unbounded
+                // list so both cards can stretch to the taller one — the
+                // chart's — instead of the summary hanging off the top.
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      SizedBox(
+                        width: financeSummaryPaneWidth(contentWidth),
+                        child: _buildSummaryCard(l10n, theme, fixedColumns: 1),
+                      ),
+                      const SizedBox(width: listTileGap),
+                      Expanded(child: _buildAssetDistribution(l10n, theme)),
+                    ],
+                  ),
+                )
+              else ...[
+                _buildSummaryCard(l10n, theme),
+                const SizedBox(height: 12),
+                _buildAssetDistribution(l10n, theme),
+              ],
+              const SizedBox(height: 12),
+              _buildTrendCard(l10n, theme),
+            ],
+          );
+        },
       ),
     );
   }
 
   /// Purpose: Build and return summary card for the current context.
-  /// Inputs: `l10n`, `theme`.
+  /// Inputs: `l10n`, `theme`; `fixedColumns` — a column count to use instead
+  /// of `financeSummaryColumns`, which the side-by-side layout sets to 1 so
+  /// the three metrics stack in their narrow pane.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: Internal helper used within this file only.
-  Widget _buildSummaryCard(AppLocalizations l10n, ThemeData theme) {
+  Widget _buildSummaryCard(
+    AppLocalizations l10n,
+    ThemeData theme, {
+    int? fixedColumns,
+  }) {
     final cs = theme.colorScheme;
     final devicesWithFinance = widget.devices
         .where((device) => device.hasFinancialData)
@@ -78,44 +123,73 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final columns = financeSummaryColumns(constraints.maxWidth);
-            final itemWidth =
-                (constraints.maxWidth - (columns - 1) * 16) / columns;
-            return Wrap(
-              spacing: 16,
-              runSpacing: 14,
-              children: [
-                SizedBox(
-                  width: itemWidth,
-                  child: _metric(
+        // The single-column pane is a plain Column rather than the
+        // LayoutBuilder below: LayoutBuilder has no intrinsic height, and the
+        // side-by-side row measures its children's to stretch both cards.
+        child: fixedColumns == 1
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _metric(
                     theme,
                     l10n.financialTotalCost,
                     _moneyText(_totalFinancialCost()),
                   ),
-                ),
-                SizedBox(
-                  width: itemWidth,
-                  child: _metric(
+                  const SizedBox(height: 14),
+                  _metric(
                     theme,
                     l10n.financialDailyCost,
                     _moneyText(_totalDailyCost()),
                   ),
-                ),
-                SizedBox(
-                  width: itemWidth,
-                  child: _metric(
+                  const SizedBox(height: 14),
+                  _metric(
                     theme,
                     l10n.financialDevicesWithFinance,
                     '$devicesWithFinance',
                     valueColor: cs.primary,
                   ),
-                ),
-              ],
-            );
-          },
-        ),
+                ],
+              )
+            : LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns =
+                      fixedColumns ??
+                      financeSummaryColumns(constraints.maxWidth);
+                  final itemWidth =
+                      (constraints.maxWidth - (columns - 1) * 16) / columns;
+                  return Wrap(
+                    spacing: 16,
+                    runSpacing: 14,
+                    children: [
+                      SizedBox(
+                        width: itemWidth,
+                        child: _metric(
+                          theme,
+                          l10n.financialTotalCost,
+                          _moneyText(_totalFinancialCost()),
+                        ),
+                      ),
+                      SizedBox(
+                        width: itemWidth,
+                        child: _metric(
+                          theme,
+                          l10n.financialDailyCost,
+                          _moneyText(_totalDailyCost()),
+                        ),
+                      ),
+                      SizedBox(
+                        width: itemWidth,
+                        child: _metric(
+                          theme,
+                          l10n.financialDevicesWithFinance,
+                          '$devicesWithFinance',
+                          valueColor: cs.primary,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }

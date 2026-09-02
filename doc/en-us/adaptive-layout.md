@@ -167,6 +167,92 @@ trailing chevron becomes a menu carrying the same actions — the trailing menu 
 already use. Delete has no other entrance on either page, so the menu is what keeps it reachable.
 Reorder mode always renders a single column, because `ReorderableListView` wants one child per item.
 
+## Detail pages: two panes
+
+The device detail page and the network detail page split under the same rule, through a one-line
+page-named delegate in [`detail_layout.dart`](functions/shared/utils/detail_layout.md):
+
+```dart
+bool useDetailTwoPane(double width, double height) => canSplitLayout(width, height);
+double detailLeftPaneWidth(double totalWidth) => (totalWidth * 0.36).clamp(260.0, 420.0);
+```
+
+The delegate exists so the pages keep their own vocabulary; `test/detail_layout_test.dart` asserts
+it still agrees with `canSplitLayout` at every named viewport, so the delegation cannot drift. The
+pane is proportional rather than fixed because one foldable generation spans ~672 to ~954 dp
+unfolded; the clamps keep it usable at the narrow end (260 at the 600 dp floor, leaving 339 on the
+right) and stop it sprawling on a desktop.
+
+| Page | Left pane (fixed, scrolls only if it must) | Right pane (scrolls) | Extra gate |
+|---|---|---|---|
+| Device detail | Header card (avatar, name, brand / model, dates), then the location map and the notes | The spec cards: finance, CPU, GPU, memory & storage, display, other | **At least one spec section.** Every section is conditional, so a device with none would face a blank right half; it keeps the single column instead. |
+| Network detail | The info card (type logo, type, subnet, gateway, DNS, notes) | The devices header and the assignment list | None: an empty assignment list renders an empty-state card, never nothing. |
+
+The single-column order is untouched — header, specs, map, notes on the device page; info card,
+then devices on the network page. Both pages are pushed above the shell, so `constraints.maxWidth`
+is the whole window and no rail is subtracted. The 100 dp label gutter in the spec rows stays: at
+the 600 dp floor the right pane's cards still have 275 dp inside their padding, and on the network
+page's 260 dp info card a long DNS list wraps, which is acceptable.
+
+| Viewport | Splits | Left pane | Right pane |
+|---|---|---|---|
+| Z Fold 8 landscape 933 × 704 | yes | 336 | 596 |
+| Z Fold 8 portrait 704 × 933 | no | — | — |
+| Z Fold 7 832 × 750 / 750 × 832 | yes | 300 / 270 | 531 / 479 |
+| Fold 8 Ultra 954 × 859 / Pixel 10 Pro Fold 791 × 820 | yes | 343 / 285 | 610 / 505 |
+| Tablet 1024 × 768 / 768 × 1024 | yes / no | 369 / — | 654 / — |
+| Phone 412 × 915 / 915 × 412 | no | — | — |
+| Desktop 1600 × 900 | yes | 420 | 1179 |
+
+## Two blocks side by side: a width floor on top of the split rule
+
+Some layouts need both questions answered. The finance overview is the case: three summary metrics
+above a 220 dp pie chart cost most of a Z Fold 8's ~640 dp body before the trend chart appears.
+Putting the metrics in a narrow column beside the pie reclaims that — but only where the chart still
+has room to draw in.
+
+```dart
+canSplitLayout(screenWidth, screenHeight)   // does the window have the shape?
+  && useFinanceSideBySide(contentWidth)     // is there room for both blocks?
+  && hasDistribution                        // is there a chart at all?
+```
+
+`useFinanceSideBySide` is `contentWidth >= 240 + 340 + 12`. The two minimums are the summary pane
+(a `titleLarge` money value at ~150 plus card padding and slack for the longest Japanese label) and
+the chart (a 232 dp pie plus its labels and the distribution rows under it). The content width is
+the raw window less the page's 32 dp of padding, because the page is pushed above the shell.
+
+`financeSummaryPaneWidth` is `(contentWidth * 0.34).clamp(240, 360)` with **no right-hand cap**.
+None can bind: above the gate the pane grows at 0.34 of the width while the chart grows at 0.66,
+so the chart's floor is met exactly at the boundary and only more comfortably above it. That
+invariant is asserted across the whole range in `test/detail_layout_test.dart` rather than defended
+by a second clamp. The row sits inside an `IntrinsicHeight` so both cards stretch to the chart's
+height instead of the summary hanging off the top.
+
+The third condition is not defensive padding. An empty chart renders a one-line "no data"
+placeholder, so without it the metrics would sit in a 240 dp pane beside a nearly blank half rather
+than falling back to their full-width row.
+
+Unlike MyAnime's statistics page, **every unfolded foldable clears the width floor** — a Z Fold 5
+in portrait leaves 627 against the 592 needed — because MyDevice's two blocks are smaller. That is
+the rule working, not slack in it; the floor still binds at the 600 dp split minimum (568).
+
+| Viewport | Splits | Content | Beside | Pane | Chart |
+|---|---|---|---|---|---|
+| Z Fold 8 landscape 933 × 704 | yes | 901 | **yes** | 306 | 583 |
+| Z Fold 8 portrait 704 × 933 | no | — | no | — | — |
+| Z Fold 7 750 × 832 | yes | 718 | **yes** | 244 | 462 |
+| Z Fold 6 675 · Z Fold 5 659 | yes | 643 / 627 | **yes** / **yes** | 240 / 240 | 391 / 375 |
+| Tablet 1024 × 768 / 768 × 1024 | yes / no | 992 / — | **yes** / no | 337 / — | 643 / — |
+| Phone landscape 915 × 412 | no | — | no | — | — |
+| Split floor 600 × 480 | yes | 568 | no | — | — |
+| Desktop 1600 × 900 | yes | 1568 | **yes** | 360 | 1196 |
+
+**The cost of gating this on `canSplitLayout`:** a phone in landscape at 915 × 412 keeps the stacked
+layout, although it is the viewport with the least height of any and the one that would benefit
+most. A width-only rule — the one `useNavigationRail` uses — would have helped it. The app-wide
+split rule was chosen instead, deliberately, for consistency with the detail pages and the lists.
+
 ## Where navigation lives
 
 A **second rule, and deliberately a narrower one**:
@@ -224,9 +310,8 @@ Only the five tab pages live inside the `ShellRoute`. Every other page — devic
 detail, every edit page, the finance overview, the maps, the settings sub-pages — is pushed on the
 **root** navigator with `Navigator.of(context, rootNavigator: true)`, above the shell. It has no
 rail beside it and no bottom bar under it, so `constraints.maxWidth` *is* the whole width. Passing
-such a page's width through `shellContentWidth` would silently lose 81 dp. The finance overview's
-summary card is the first such page to carry a rule; it reads its own `LayoutBuilder` and nothing
-else.
+such a page's width through `shellContentWidth` would silently lose 81 dp. The detail pages and the
+finance overview all read their own `LayoutBuilder` and nothing else.
 
 ## Dialogs derive their height from the window
 
@@ -269,14 +354,16 @@ to save and restore.
 | `service_list_page.dart` (overview metric grid) | `serviceMetricColumns` | Width only, from the overview list's `LayoutBuilder`. |
 | `service_list_page.dart` (topology card header) | `useTopologyActionsRow` | Width only. The value is the 680 the card used inline before 1.5.0; the card is now handed the width left after the rail, so a Pixel 10 Pro Fold in portrait stacks the actions under the title where it used to row them. |
 | `service_list_page.dart` (quick-access route dialog) | `dialogMaxWidth` | A constant, not a rule. |
-| `device_finance_overview_page.dart` (summary card) | `financeSummaryColumns` | Width only, floored at two. Pushed outside the shell: measures its own `LayoutBuilder`. |
+| `device_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Plus a third gate: at least one spec section. Pushed outside the shell: measures the raw window. |
+| `network_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Pushed outside the shell. |
+| `device_finance_overview_page.dart` (summary beside chart) | `canSplitLayout`, `useFinanceSideBySide`, `financeSummaryPaneWidth` | The double gate, plus a non-empty distribution; see above. |
+| `device_finance_overview_page.dart` (summary card) | `financeSummaryColumns` | Width only, floored at two; forced to one column inside the side-by-side pane. Pushed outside the shell: measures its own `LayoutBuilder`. |
 | `device_search_dialog.dart`, `chip_search_dialog.dart` | `dialogBodyHeight`, `dialogMaxWidth` | Height from the window less the keyboard. |
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | none needed | Already a `LayoutBuilder`-driven, full-bleed `InteractiveViewer`; the layout cache is keyed on the viewport width. |
 | `device_map_page.dart`, `map_picker_page.dart` | none needed | A full-bleed map fills whatever it is given; the picker's search row is already an `Expanded` field beside a button. |
 
-Every other page is still a fixed single column and is scheduled: detail pages and the finance
-overview's chart row in 1.5.2, the device edit page in 1.5.3, the remaining edit pages and sheets
-in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
+Every other page is still a fixed single column and is scheduled: the device edit page in 1.5.3,
+the remaining edit pages and sheets in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
 count remains in `lib/`: the emoji picker's `crossAxisCount: 8` in `device_edit_page.dart`, a count
 rather than a comparison, listed here so the "no inline width decision" claim stays honest.
 
@@ -301,6 +388,13 @@ verbatim.
   the tables above, with the device named in a comment so a regression names the device it would
   break. It also asserts that `serviceMetricColumns` still agrees with the inline arithmetic it
   replaced.
+- `test/detail_layout_test.dart` — the detail delegate's agreement with the split rule, the pane
+  width's clamps, the finance width floor at named devices, and the loop invariant that the chart
+  never falls under its minimum from the gate up to 2000 dp.
+- `test/device_detail_layout_ui_test.dart`, `test/network_detail_layout_ui_test.dart`,
+  `test/finance_overview_layout_ui_test.dart` — the rendered pages at a Z Fold 8 both ways, a
+  Z Fold 7 in portrait, a phone both ways, a tablet and the 600 × 480 floor: which pane holds what,
+  that the left pane holds still while the right one scrolls, the no-specs and no-data fallbacks.
 - `test/list_columns_prefs_test.dart` — the four column preferences round-trip independently, the
   default is absent from the file rather than written, and a malformed value reads as auto.
 - `test/list_columns_ui_test.dart`, `test/list_columns_more_ui_test.dart`,

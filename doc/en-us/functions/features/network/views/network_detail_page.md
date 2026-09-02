@@ -32,7 +32,10 @@ existing assignment (by the `(networkId, deviceId)` pair, not an id).
 | [`_editAssignment`](#editassignment) | method (`_NetworkDetailPageState`) | A | Re-open the assignment-configuration dialog for an existing assignment and persist changes. |
 | [`_removeAssignment`](#removeassignment) | method (`_NetworkDetailPageState`) | A | Confirm and, if accepted, remove a device's assignment from this network. |
 | [`_showAssignmentDialog`](#showassignmentdialog) | method (`_NetworkDetailPageState`) | A | Show the address-mode/IP/hostname/exit-node configuration dialog for one assignment. |
-| `build` | method (widget) | B | Build the scaffold: app bar (map/edit/delete actions), network info card, sortable device list. |
+| `build` | method (widget) | B | Build the scaffold: app bar (map/edit/delete actions) around `_buildBody`. |
+| `_buildBody` | method (widget helper) | B | Choose the layout: a single `ListView` (info card, then the devices header and list) unless `useDetailTwoPane` passes, in which case a `Row` of a `detailLeftPaneWidth`-wide scrolling info card and a right `ListView` of the devices children. |
+| `_buildInfoCard` | method (widget helper) | B | The network info card (type logo, type, subnet, gateway, DNS, notes), extracted from `build` unchanged. |
+| `_buildDevicesChildren` | method (widget helper) | B | The devices header row plus the assignment list or its empty-state card, extracted from `build` unchanged. |
 | `_buildDeviceList` | method (widget helper) | B | Build the device-card list, inserting category headers when grouping is on. |
 | `_buildDeviceCard` | method (widget helper) | B | Render one assignment's card (device name, mode/IP/hostname/exit-node subtitle, edit/remove menu). |
 | `_infoRow` | method (widget helper) | B | Render one label/value row in the network info card. |

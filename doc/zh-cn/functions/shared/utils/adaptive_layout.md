@@ -1,12 +1,12 @@
 # lib/shared/utils/adaptive_layout.dart
 
-全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；以及四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`。其上有九个纯函数助手。
+全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；以及财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`。其上有十一个纯函数助手。
 
 该模块刻意只依赖 `dart:core`——不含 Flutter import，`canSplitLayout` 正因此接收两个 double 而非 `Size`——所以每个助手都能直接单元测试（`test/adaptive_layout_test.dart`），渲染结果则由 `test/shell_nav_ui_test.dart`、`test/dialog_layout_ui_test.dart`、`test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart` 和 `test/service_columns_ui_test.dart` 在真实设备几何上单独覆盖。
 
 这些数字的散文推导、折叠屏设备表以及与 Google 指南的对照见 [../../../adaptive-layout.md](../../../adaptive-layout.md)。本页记录声明。
 
-使用方：`shell_scaffold.dart` 用 `useNavigationRail`；四个列表页用 `listColumnCount`、`columnCapacity`、`shellContentWidth` 及各自的 tile 最小值，`device_storage.dart` 校验已存偏好时用 `listColumnsAuto` 和 `listMaxColumns`；`adaptive_tile_grid.dart` 用 `listRowCount` 和 `listTileGap`；`service_list_page.dart` 用 `serviceMetricColumns`、`useTopologyActionsRow` 和 `dialogMaxWidth`；`device_finance_overview_page.dart` 用 `financeSummaryColumns`；`device_search_dialog.dart` 和 `chip_search_dialog.dart` 用 `dialogBodyHeight`、`dialogMaxWidth` 和两个内缩常量。
+使用方：`shell_scaffold.dart` 用 `useNavigationRail`；四个列表页用 `listColumnCount`、`columnCapacity`、`shellContentWidth` 及各自的 tile 最小值，`device_storage.dart` 校验已存偏好时用 `listColumnsAuto` 和 `listMaxColumns`；`adaptive_tile_grid.dart` 用 `listRowCount` 和 `listTileGap`；`service_list_page.dart` 用 `serviceMetricColumns`、`useTopologyActionsRow` 和 `dialogMaxWidth`；`device_finance_overview_page.dart` 用 `financeSummaryColumns`、`canSplitLayout`、`useFinanceSideBySide` 和 `financeSummaryPaneWidth`；`detail_layout.dart`（见 [detail_layout.md](detail_layout.md)）的 `useDetailTwoPane` 是 `canSplitLayout` 的一行委托；`device_search_dialog.dart` 和 `chip_search_dialog.dart` 用 `dialogBodyHeight`、`dialogMaxWidth` 和两个内缩常量。
 
 ## 声明
 
@@ -22,8 +22,10 @@
 | [`useTopologyActionsRow`](#usetopologyactionsrow) | 顶层函数 | A | 报告拓扑卡片的标题与动作是否共享一行。 |
 | [`financeSummaryColumns`](#financesummarycolumns) | 顶层函数 | A | 返回财务摘要卡把指标排成多少列。 |
 | [`dialogBodyHeight`](#dialogbodyheight) | 顶层函数 | A | 返回搜索对话框主体应取的高度。 |
+| [`useFinanceSideBySide`](#usefinancesidebyside) | 顶层函数 | A | 报告财务摘要是否放得下在图表旁边。 |
+| [`financeSummaryPaneWidth`](#financesummarypanewidth) | 顶层函数 | A | 返回财务摘要指标列的宽度。 |
 
-二十三个常量在源码中连同每个值的理由一起记录，此处不重复成行。
+二十五个常量在源码中连同每个值的理由一起记录，此处不重复成行。
 
 ## 文档
 
@@ -132,3 +134,23 @@
 - **算法：** `(availableHeight − 2 × 40).clamp(240, preferred)`；`preferred` 低于 240 时返回 240。
 - **用法：** `_DeviceSearchDialogState.build`（首选 560）和 `_ChipSearchDialogState.build`（首选 480）。
 - **备注：** 1.5.0 之前两个对话框固定为首选高度，在横持手机或横持折叠态外屏上溢出。
+
+### `bool useFinanceSideBySide(double contentWidth)` <a id="usefinancesidebyside"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/adaptive_layout.dart`。
+- **用途：** 报告财务摘要是否放得下在资产分布图旁边。
+- **输入：** `contentWidth` — 财务页 body 宽度减其 32 dp 内边距；即原始窗口，因为页面推到壳之上。
+- **返回：** `bool` — `contentWidth >= 240 + 340 + 12`。
+- **副作用：** 无。
+- **用法：** `_DeviceFinanceOverviewPageState.build`，与 `canSplitLayout` 和非空分布一起。
+- **备注：** 叠在分栏规则之上的宽度下限，不是替代它。每台展开的折叠屏都超过它，因为 MyDevice 的两块比 MyAnime 的小；下限在 600 dp 分栏最小值处仍然生效。
+
+### `double financeSummaryPaneWidth(double contentWidth)` <a id="financesummarypanewidth"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/adaptive_layout.dart`。
+- **用途：** 返回财务摘要指标列的宽度。
+- **输入：** `contentWidth` — 两块共享的宽度。
+- **返回：** `double` — `(contentWidth × 0.34).clamp(240, 360)`。
+- **副作用：** 无。
+- **用法：** 并排行中摘要卡外的 `SizedBox`。
+- **备注：** 没有右侧上限：门控之上窗格以 0.34 增长而图表以 0.66 增长，所以图表 340 dp 下限在边界处满足、其上超出——在 `test/detail_layout_test.dart` 中跨整个范围断言。

@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/detail_layout.dart';
 import '../../../shared/views/device_map_page.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
@@ -512,124 +513,193 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
           IconButton(icon: const Icon(Icons.delete), onPressed: _deleteNetwork),
         ],
       ),
-      body: ListView(
+      body: _buildBody(context, net, theme, cs, l10n),
+    );
+  }
+
+  /// Purpose: Build the page body in whichever layout the window calls for.
+  /// Inputs: `context`, `net`, `theme`, `cs`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. The gate reads the
+  /// whole screen through `useDetailTwoPane`; the pane width reads the body's
+  /// own constraints, the raw window, because this page is pushed above the
+  /// shell. No third gate is needed: the assignment list renders an
+  /// empty-state card rather than nothing, so the right pane is never blank.
+  Widget _buildBody(
+    BuildContext context,
+    Network net,
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
+    final screen = MediaQuery.sizeOf(context);
+    final info = _buildInfoCard(net, cs, l10n);
+    final devices = _buildDevicesChildren(theme, cs, l10n);
+
+    if (!useDetailTwoPane(screen.width, screen.height)) {
+      return ListView(
         padding: const EdgeInsets.all(16),
+        children: [info, const SizedBox(height: 24), ...devices],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final paneWidth = detailLeftPaneWidth(constraints.maxWidth);
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(
+              width: paneWidth,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: info,
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: devices,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Purpose: Build the network info card (type logo, type, subnet, gateway,
+  /// DNS, notes).
+  /// Inputs: `net`, `cs`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so it can be the top of the single column or the whole
+  /// left pane.
+  Widget _buildInfoCard(Network net, ColorScheme cs, AppLocalizations l10n) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_typeLogo.containsKey(net.type))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SvgPicture.asset(
+                  _typeLogo[net.type]!,
+                  width: 32,
+                  height: 32,
+                  colorFilter: ColorFilter.mode(cs.onSurface, BlendMode.srcIn),
+                ),
+              ),
+            _infoRow(l10n.networkType, _typeLabel(l10n, net.type)),
+            if (net.subnet != null) _infoRow(l10n.networkSubnet, net.subnet!),
+            if (net.gateway != null)
+              _infoRow(l10n.networkGateway, net.gateway!),
+            if (net.dnsServers.isNotEmpty)
+              _infoRow(l10n.networkDns, net.dnsServers.join(', ')),
+            if (net.notes != null) _infoRow(l10n.networkNotes, net.notes!),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Purpose: Build the devices header row and the assignment list (or its
+  /// empty-state card).
+  /// Inputs: `theme`, `cs`, `l10n`.
+  /// Returns: `List<Widget>` ready to spread into a `ListView`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so the same children can follow the info card in the
+  /// single column or fill the right pane.
+  List<Widget> _buildDevicesChildren(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
+    return [
+      // ── Devices header ──
+      Row(
         children: [
-          // ── Network info ──
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_typeLogo.containsKey(net.type))
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: SvgPicture.asset(
-                        _typeLogo[net.type]!,
-                        width: 32,
-                        height: 32,
-                        colorFilter: ColorFilter.mode(
-                          cs.onSurface,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                  _infoRow(l10n.networkType, _typeLabel(l10n, net.type)),
-                  if (net.subnet != null)
-                    _infoRow(l10n.networkSubnet, net.subnet!),
-                  if (net.gateway != null)
-                    _infoRow(l10n.networkGateway, net.gateway!),
-                  if (net.dnsServers.isNotEmpty)
-                    _infoRow(l10n.networkDns, net.dnsServers.join(', ')),
-                  if (net.notes != null)
-                    _infoRow(l10n.networkNotes, net.notes!),
-                ],
+          Icon(Icons.devices, size: 20, color: cs.primary),
+          const SizedBox(width: 8),
+          Text(
+            l10n.networkDevices,
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: cs.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          PopupMenuButton<dynamic>(
+            icon: const Icon(Icons.sort, size: 20),
+            tooltip: l10n.sortTitle,
+            itemBuilder: (_) => [
+              ...NetworkDeviceSortMode.values.map(
+                (m) => CheckedPopupMenuItem<NetworkDeviceSortMode>(
+                  value: m,
+                  checked: _sortMode == m,
+                  child: Text(_sortModeLabel(l10n, m)),
+                ),
+              ),
+              const PopupMenuDivider(),
+              CheckedPopupMenuItem<String>(
+                value: 'ascending',
+                checked: _sortAscending,
+                child: Text(l10n.sortAscending),
+              ),
+              CheckedPopupMenuItem<String>(
+                value: 'group',
+                checked: _groupByCategory,
+                child: Text(l10n.sortGroupByCategory),
+              ),
+              CheckedPopupMenuItem<String>(
+                value: 'exitFirst',
+                checked: _exitNodeFirst,
+                child: Text(l10n.sortExitNodeFirst),
+              ),
+            ],
+            onSelected: (value) {
+              if (value is NetworkDeviceSortMode) {
+                setState(() => _sortMode = value);
+              } else if (value == 'ascending') {
+                setState(() => _sortAscending = !_sortAscending);
+              } else if (value == 'group') {
+                setState(() => _groupByCategory = !_groupByCategory);
+              } else if (value == 'exitFirst') {
+                setState(() => _exitNodeFirst = !_exitNodeFirst);
+              }
+              _saveSortPrefs();
+            },
+          ),
+          TextButton.icon(
+            onPressed: _addDevice,
+            icon: const Icon(Icons.add, size: 18),
+            label: Text(l10n.addDevice),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+
+      if (_assignments.isEmpty)
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Text(
+                l10n.noNetworkDevices,
+                style: TextStyle(color: cs.onSurfaceVariant),
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // ── Devices header ──
-          Row(
-            children: [
-              Icon(Icons.devices, size: 20, color: cs.primary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.networkDevices,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: cs.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              PopupMenuButton<dynamic>(
-                icon: const Icon(Icons.sort, size: 20),
-                tooltip: l10n.sortTitle,
-                itemBuilder: (_) => [
-                  ...NetworkDeviceSortMode.values.map(
-                    (m) => CheckedPopupMenuItem<NetworkDeviceSortMode>(
-                      value: m,
-                      checked: _sortMode == m,
-                      child: Text(_sortModeLabel(l10n, m)),
-                    ),
-                  ),
-                  const PopupMenuDivider(),
-                  CheckedPopupMenuItem<String>(
-                    value: 'ascending',
-                    checked: _sortAscending,
-                    child: Text(l10n.sortAscending),
-                  ),
-                  CheckedPopupMenuItem<String>(
-                    value: 'group',
-                    checked: _groupByCategory,
-                    child: Text(l10n.sortGroupByCategory),
-                  ),
-                  CheckedPopupMenuItem<String>(
-                    value: 'exitFirst',
-                    checked: _exitNodeFirst,
-                    child: Text(l10n.sortExitNodeFirst),
-                  ),
-                ],
-                onSelected: (value) {
-                  if (value is NetworkDeviceSortMode) {
-                    setState(() => _sortMode = value);
-                  } else if (value == 'ascending') {
-                    setState(() => _sortAscending = !_sortAscending);
-                  } else if (value == 'group') {
-                    setState(() => _groupByCategory = !_groupByCategory);
-                  } else if (value == 'exitFirst') {
-                    setState(() => _exitNodeFirst = !_exitNodeFirst);
-                  }
-                  _saveSortPrefs();
-                },
-              ),
-              TextButton.icon(
-                onPressed: _addDevice,
-                icon: const Icon(Icons.add, size: 18),
-                label: Text(l10n.addDevice),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          if (_assignments.isEmpty)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Center(
-                  child: Text(
-                    l10n.noNetworkDevices,
-                    style: TextStyle(color: cs.onSurfaceVariant),
-                  ),
-                ),
-              ),
-            )
-          else
-            ..._buildDeviceList(l10n, cs),
-        ],
-      ),
-    );
+        )
+      else
+        ..._buildDeviceList(l10n, cs),
+    ];
   }
 
   /// Purpose: Build and return device list for the current context.

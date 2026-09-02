@@ -17,7 +17,10 @@
 | `_billingCycleLabel` | 方法（`DeviceDetailPage`） | B | 把 `BillingCycle` 映射到其本地化标签。 |
 | [`_moneyText`](#_moneytext) | 方法（`DeviceDetailPage`） | A | 格式化 `MoneyValue`，转换金额不同于设备默认货币时追加。 |
 | [`_defaultMoneyText`](#_defaultmoneytext) | 方法（`DeviceDetailPage`） | A | 用设备推断默认货币符号格式化原始金额。 |
-| `build` | 方法（组件） | B | 构建脚手架并为设备组装所有规格小节。 |
+| `build` | 方法（组件） | B | 围绕 `_buildBody` 构建脚手架（带编辑操作的应用栏）。 |
+| `_buildBody` | 方法（组件辅助） | B | 选择布局：单个 `ListView`（页头、规格、地图、备注），除非 `useDetailTwoPane` 通过且至少有一个规格小节——此时是一个 `Row`：`detailLeftPaneWidth` 宽的可滚动左窗格（页头、地图、备注）加右侧规格卡片 `ListView`。 |
+| `_buildSpecSections` | 方法（组件辅助） | B | 六个条件规格小节（财务、CPU、GPU、内存、显示、其他），从 `build` 原样抽出。 |
+| `_buildTrailingSections` | 方法（组件辅助） | B | 结束单列、在双栏时位于左侧页头之下的条件地图与备注块。 |
 | `_buildHeader` | 方法（组件辅助） | B | 渲染英雄卡片（头像、名、品牌/型号、logo、购买/发布日期）。 |
 | `_sectionTitle` | 方法（组件辅助） | B | 渲染带图标和可选品牌 logo 的小节标题行。 |
 | `_specCard` | 方法（组件辅助） | B | 把规格行列表包进 `Card`，所有行为空时渲染无。 |

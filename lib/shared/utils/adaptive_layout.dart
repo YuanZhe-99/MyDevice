@@ -299,3 +299,47 @@ int listColumnCount({
   if (preference == listColumnsAuto) return capacity;
   return preference.clamp(1, capacity);
 }
+
+/// Smallest width, in logical pixels, the finance summary's metric column
+/// may occupy when it sits beside the asset-distribution chart.
+///
+/// A `titleLarge` money value such as "¥123,456.78" runs to roughly 150 dp,
+/// the card spends 32 on its own padding, and 58 of slack keeps the longest
+/// Japanese label ("財務データのあるデバイス") on one line.
+const financeSummaryPaneMinWidth = 240.0;
+
+/// Smallest width, in logical pixels, the asset-distribution chart may be
+/// given before the summary stops sitting beside it.
+///
+/// The pie is 2 × (72 radius + 44 centre) = 232 across, its percentage labels
+/// sit inside that, and the distribution rows under it carry a colour dot, a
+/// category name, an amount and a count; 340 keeps a typical row on one line.
+const financeChartMinWidth = 340.0;
+
+/// Purpose: Report whether the finance summary fits beside the chart.
+/// Inputs: `contentWidth` — the width the finance page's body gets, in
+/// logical pixels, which is the raw window less the page's own padding: the
+/// page is pushed above the shell and has no navigation rail beside it.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: A width floor **on top of** [canSplitLayout], not instead of it —
+/// the double gate. Callers must test both, and must also test that the
+/// chart has data, because an empty chart renders a one-line placeholder that
+/// would strand the summary beside a blank half. Unlike MyAnime's statistics
+/// page every unfolded foldable clears this floor, because the two blocks
+/// here are smaller; that is the rule working, not slack in it.
+bool useFinanceSideBySide(double contentWidth) =>
+    contentWidth >=
+    financeSummaryPaneMinWidth + financeChartMinWidth + listTileGap;
+
+/// Purpose: Return the width of the finance summary's metric column.
+/// Inputs: `contentWidth` — the width both blocks share, in logical pixels.
+/// Returns: `double`.
+/// Side effects: None.
+/// Notes: No right-hand cap is needed: above [useFinanceSideBySide] the pane
+/// grows at 0.34 of the width while the chart grows at 0.66, so
+/// [financeChartMinWidth] is met exactly at the gate and only more
+/// comfortably above it. `test/detail_layout_test.dart` asserts that across
+/// the whole range rather than defending it with arithmetic that never fires.
+double financeSummaryPaneWidth(double contentWidth) =>
+    (contentWidth * 0.34).clamp(financeSummaryPaneMinWidth, 360.0);

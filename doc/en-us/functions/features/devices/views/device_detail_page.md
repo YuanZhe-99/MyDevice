@@ -23,7 +23,10 @@ the app bar's edit action.
 | `_billingCycleLabel` | method (`DeviceDetailPage`) | B | Map a `BillingCycle` to its localized label. |
 | [`_moneyText`](#_moneytext) | method (`DeviceDetailPage`) | A | Format a `MoneyValue`, appending the converted amount when it differs from the device's default currency. |
 | [`_defaultMoneyText`](#_defaultmoneytext) | method (`DeviceDetailPage`) | A | Format a raw amount using the device's inferred default currency symbol. |
-| `build` | method (widget) | B | Build the scaffold and assemble all spec sections for the device. |
+| `build` | method (widget) | B | Build the scaffold (app bar with the edit action) around `_buildBody`. |
+| `_buildBody` | method (widget helper) | B | Choose the layout: a single `ListView` (header, specs, map, notes) unless `useDetailTwoPane` passes and there is at least one spec section, in which case a `Row` of a `detailLeftPaneWidth`-wide scrolling left pane (header, map, notes) and a right `ListView` of the spec cards. |
+| `_buildSpecSections` | method (widget helper) | B | The six conditional spec sections (finance, CPU, GPU, memory, display, other), extracted from `build` unchanged. |
+| `_buildTrailingSections` | method (widget helper) | B | The conditional map and notes blocks that end the single column and sit under the header on the left. |
 | `_buildHeader` | method (widget helper) | B | Render the hero card (avatar, name, brand/model, logo, purchase/release dates). |
 | `_sectionTitle` | method (widget helper) | B | Render a section heading row with icon and optional brand logo. |
 | `_specCard` | method (widget helper) | B | Wrap a list of spec rows in a `Card`, or render nothing if all rows are empty. |

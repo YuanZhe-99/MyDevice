@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/detail_layout.dart';
 import '../models/device.dart';
 import '../services/exchange_rate_service.dart';
 import '../widgets/device_avatar.dart';
@@ -285,232 +286,311 @@ class DeviceDetailPage extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
+      body: _buildBody(context, theme, cs, l10n),
+    );
+  }
+
+  /// Purpose: Build the page body in whichever layout the window calls for.
+  /// Inputs: `context`, `theme`, `cs`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. The gate reads the
+  /// whole screen through `useDetailTwoPane`; the pane width reads the body's
+  /// own constraints, which are the raw window because this page is pushed
+  /// above the shell. A device with no spec section at all keeps the single
+  /// column even on a wide window — the right pane would otherwise be blank.
+  /// The single-column order (header, specs, map, notes) is unchanged; the
+  /// two-pane layout keeps the header, map and notes on the left and scrolls
+  /// the spec cards on the right.
+  Widget _buildBody(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
+    final screen = MediaQuery.sizeOf(context);
+    final header = _buildHeader(theme, cs, l10n);
+    final specs = _buildSpecSections(theme, cs, l10n);
+    final trailing = _buildTrailingSections(theme, cs, l10n);
+
+    if (!useDetailTwoPane(screen.width, screen.height) || specs.isEmpty) {
+      return ListView(
         padding: const EdgeInsets.all(16),
-        children: [
-          // ── Hero header ──
-          _buildHeader(theme, cs, l10n),
-          const SizedBox(height: 24),
+        children: [header, const SizedBox(height: 24), ...specs, ...trailing],
+      );
+    }
 
-          if (device.hasFinancialData ||
-              device.acquisitionType != null ||
-              device.lifecycleStatus != DeviceLifecycleStatus.inService) ...[
-            _sectionTitle(
-              theme,
-              cs,
-              l10n.lifecycleAndFinance,
-              Icons.payments_outlined,
-            ),
-            _specCard(theme, [
-              _specRow(l10n.deviceStatus, _statusLabel(l10n)),
-              if (device.acquisitionType != null)
-                _specRow(
-                  l10n.acquisitionType,
-                  _acquisitionTypeLabel(l10n, device.acquisitionType!),
-                ),
-              _specRow(
-                l10n.deviceRetiredDate,
-                device.retiredDate != null
-                    ? DateFormat.yMd(
-                        l10n.localeName,
-                      ).format(device.retiredDate!)
-                    : null,
-              ),
-              _specRow(
-                l10n.purchasePrice,
-                device.purchasePrice != null
-                    ? _moneyText(device.purchasePrice!)
-                    : null,
-              ),
-              _specRow(
-                l10n.soldPrice,
-                device.soldPrice != null ? _moneyText(device.soldPrice!) : null,
-              ),
-              for (final cost in device.recurringCosts)
-                _specRow(
-                  cost.name ?? _recurringCostKindLabel(l10n, cost.kind),
-                  '${_moneyText(cost.price)} / ${_billingCycleLabel(l10n, cost.billingCycle)}',
-                ),
-              if (device.hasFinancialData)
-                _specRow(
-                  l10n.financialTotalCost,
-                  _defaultMoneyText(device.totalCost()),
-                ),
-              if (device.averageDailyCost() != null)
-                _specRow(
-                  l10n.financialDailyCost,
-                  _defaultMoneyText(device.averageDailyCost()!),
-                ),
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // ── CPU ──
-          if (device.cpu.model != null) ...[
-            _sectionTitle(
-              theme,
-              cs,
-              l10n.cpuInfo,
-              Icons.memory,
-              logoPath: _detectModelLogo(device.cpu.model),
-            ),
-            _specCard(theme, [
-              _specRow(l10n.cpuModel, device.cpu.model),
-              _specRow(l10n.cpuArchitecture, device.cpu.architecture),
-              _specRow(l10n.cpuFrequency, device.cpu.frequency),
-              _specRow(l10n.cpuPCores, device.cpu.performanceCores?.toString()),
-              _specRow(l10n.cpuECores, device.cpu.efficiencyCores?.toString()),
-              _specRow(l10n.cpuThreads, device.cpu.threads?.toString()),
-              _specRow(l10n.cpuCache, device.cpu.cache),
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // ── GPU ──
-          if (device.gpu.model != null) ...[
-            _sectionTitle(
-              theme,
-              cs,
-              l10n.gpuInfo,
-              Icons.graphic_eq,
-              logoPath: _detectModelLogo(device.gpu.model),
-            ),
-            _specCard(theme, [
-              _specRow(l10n.gpuModel, device.gpu.model),
-              _specRow(l10n.gpuArchitecture, device.gpu.architecture),
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Memory & Storage ──
-          if (device.ram != null || device.storage.isNotEmpty) ...[
-            _sectionTitle(theme, cs, l10n.ram, Icons.sd_storage),
-            _specCard(theme, [
-              _specRow(
-                l10n.ram,
-                device.ram != null
-                    ? device.ramType != null
-                          ? '${device.ram} ${device.ramType!.displayName}'
-                          : device.ram
-                    : null,
-              ),
-              for (int i = 0; i < device.storage.length; i++) ...[
-                _specRow(
-                  '${l10n.storage} ${i + 1}',
-                  device.storage[i].displayString,
-                ),
-                if (device.storage[i].brand != null)
-                  _specRowWithLogo(
-                    l10n.storageBrand,
-                    device.storage[i].brand!,
-                    _detectStorageBrandLogo(device.storage[i].brand),
-                    cs,
-                  ),
-                if (device.storage[i].serialNumber != null)
-                  _specRow(
-                    l10n.storageSerialNumber,
-                    device.storage[i].serialNumber,
-                  ),
-              ],
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Display ──
-          if (device.screenSize != null ||
-              device.screenResolutionW != null) ...[
-            _sectionTitle(theme, cs, l10n.screenSize, Icons.monitor),
-            _specCard(theme, [
-              _specRow(l10n.screenSize, device.screenSize),
-              if (device.screenResolutionW != null &&
-                  device.screenResolutionH != null)
-                _specRow(
-                  l10n.screenResolution,
-                  '${device.screenResolutionW} × ${device.screenResolutionH}',
-                ),
-              if (device.ppi != null)
-                _specRow(l10n.ppi, device.ppi!.toStringAsFixed(0)),
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Other ──
-          if (device.battery != null ||
-              device.os != null ||
-              device.locationName != null ||
-              device.serialNumber != null) ...[
-            _sectionTitle(
-              theme,
-              cs,
-              l10n.os,
-              Icons.info_outline,
-              logoPath: _detectOsLogo(device.os),
-            ),
-            _specCard(theme, [
-              _specRow(l10n.deviceSerialNumber, device.serialNumber),
-              _specRow(l10n.battery, device.battery),
-              _specRow(l10n.os, device.os),
-              _specRow(l10n.deviceLocation, device.locationName),
-            ]),
-            const SizedBox(height: 16),
-          ],
-
-          // ── Map ──
-          if (device.latitude != null && device.longitude != null) ...[
-            _sectionTitle(theme, cs, l10n.deviceLocation, Icons.map),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final paneWidth = detailLeftPaneWidth(constraints.maxWidth);
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             SizedBox(
-              height: 200,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: FlutterMap(
-                  options: MapOptions(
-                    initialCenter: LatLng(device.latitude!, device.longitude!),
-                    initialZoom: 13,
-                    interactionOptions: const InteractionOptions(
-                      flags: InteractiveFlag.none,
-                    ),
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.mydevice',
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: LatLng(device.latitude!, device.longitude!),
-                          width: 40,
-                          height: 40,
-                          child: Icon(
-                            Icons.location_pin,
-                            size: 40,
-                            color: cs.primary,
-                          ),
-                        ),
-                      ],
+              width: paneWidth,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [header, const SizedBox(height: 24), ...trailing],
+                ),
+              ),
+            ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: specs,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Purpose: Build the conditional spec sections (finance, CPU, GPU, memory,
+  /// display, other), each a title and a card followed by a 16 dp gap.
+  /// Inputs: `theme`, `cs`, `l10n`.
+  /// Returns: `List<Widget>` — empty when the device carries no spec at all.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so the same sections can be the middle of the single
+  /// column or the whole right pane, rather than being written twice.
+  List<Widget> _buildSpecSections(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
+    return [
+      if (device.hasFinancialData ||
+          device.acquisitionType != null ||
+          device.lifecycleStatus != DeviceLifecycleStatus.inService) ...[
+        _sectionTitle(
+          theme,
+          cs,
+          l10n.lifecycleAndFinance,
+          Icons.payments_outlined,
+        ),
+        _specCard(theme, [
+          _specRow(l10n.deviceStatus, _statusLabel(l10n)),
+          if (device.acquisitionType != null)
+            _specRow(
+              l10n.acquisitionType,
+              _acquisitionTypeLabel(l10n, device.acquisitionType!),
+            ),
+          _specRow(
+            l10n.deviceRetiredDate,
+            device.retiredDate != null
+                ? DateFormat.yMd(l10n.localeName).format(device.retiredDate!)
+                : null,
+          ),
+          _specRow(
+            l10n.purchasePrice,
+            device.purchasePrice != null
+                ? _moneyText(device.purchasePrice!)
+                : null,
+          ),
+          _specRow(
+            l10n.soldPrice,
+            device.soldPrice != null ? _moneyText(device.soldPrice!) : null,
+          ),
+          for (final cost in device.recurringCosts)
+            _specRow(
+              cost.name ?? _recurringCostKindLabel(l10n, cost.kind),
+              '${_moneyText(cost.price)} / ${_billingCycleLabel(l10n, cost.billingCycle)}',
+            ),
+          if (device.hasFinancialData)
+            _specRow(
+              l10n.financialTotalCost,
+              _defaultMoneyText(device.totalCost()),
+            ),
+          if (device.averageDailyCost() != null)
+            _specRow(
+              l10n.financialDailyCost,
+              _defaultMoneyText(device.averageDailyCost()!),
+            ),
+        ]),
+        const SizedBox(height: 16),
+      ],
+
+      // ── CPU ──
+      if (device.cpu.model != null) ...[
+        _sectionTitle(
+          theme,
+          cs,
+          l10n.cpuInfo,
+          Icons.memory,
+          logoPath: _detectModelLogo(device.cpu.model),
+        ),
+        _specCard(theme, [
+          _specRow(l10n.cpuModel, device.cpu.model),
+          _specRow(l10n.cpuArchitecture, device.cpu.architecture),
+          _specRow(l10n.cpuFrequency, device.cpu.frequency),
+          _specRow(l10n.cpuPCores, device.cpu.performanceCores?.toString()),
+          _specRow(l10n.cpuECores, device.cpu.efficiencyCores?.toString()),
+          _specRow(l10n.cpuThreads, device.cpu.threads?.toString()),
+          _specRow(l10n.cpuCache, device.cpu.cache),
+        ]),
+        const SizedBox(height: 16),
+      ],
+
+      // ── GPU ──
+      if (device.gpu.model != null) ...[
+        _sectionTitle(
+          theme,
+          cs,
+          l10n.gpuInfo,
+          Icons.graphic_eq,
+          logoPath: _detectModelLogo(device.gpu.model),
+        ),
+        _specCard(theme, [
+          _specRow(l10n.gpuModel, device.gpu.model),
+          _specRow(l10n.gpuArchitecture, device.gpu.architecture),
+        ]),
+        const SizedBox(height: 16),
+      ],
+
+      // ── Memory & Storage ──
+      if (device.ram != null || device.storage.isNotEmpty) ...[
+        _sectionTitle(theme, cs, l10n.ram, Icons.sd_storage),
+        _specCard(theme, [
+          _specRow(
+            l10n.ram,
+            device.ram != null
+                ? device.ramType != null
+                      ? '${device.ram} ${device.ramType!.displayName}'
+                      : device.ram
+                : null,
+          ),
+          for (int i = 0; i < device.storage.length; i++) ...[
+            _specRow(
+              '${l10n.storage} ${i + 1}',
+              device.storage[i].displayString,
+            ),
+            if (device.storage[i].brand != null)
+              _specRowWithLogo(
+                l10n.storageBrand,
+                device.storage[i].brand!,
+                _detectStorageBrandLogo(device.storage[i].brand),
+                cs,
+              ),
+            if (device.storage[i].serialNumber != null)
+              _specRow(
+                l10n.storageSerialNumber,
+                device.storage[i].serialNumber,
+              ),
+          ],
+        ]),
+        const SizedBox(height: 16),
+      ],
+
+      // ── Display ──
+      if (device.screenSize != null || device.screenResolutionW != null) ...[
+        _sectionTitle(theme, cs, l10n.screenSize, Icons.monitor),
+        _specCard(theme, [
+          _specRow(l10n.screenSize, device.screenSize),
+          if (device.screenResolutionW != null &&
+              device.screenResolutionH != null)
+            _specRow(
+              l10n.screenResolution,
+              '${device.screenResolutionW} × ${device.screenResolutionH}',
+            ),
+          if (device.ppi != null)
+            _specRow(l10n.ppi, device.ppi!.toStringAsFixed(0)),
+        ]),
+        const SizedBox(height: 16),
+      ],
+
+      // ── Other ──
+      if (device.battery != null ||
+          device.os != null ||
+          device.locationName != null ||
+          device.serialNumber != null) ...[
+        _sectionTitle(
+          theme,
+          cs,
+          l10n.os,
+          Icons.info_outline,
+          logoPath: _detectOsLogo(device.os),
+        ),
+        _specCard(theme, [
+          _specRow(l10n.deviceSerialNumber, device.serialNumber),
+          _specRow(l10n.battery, device.battery),
+          _specRow(l10n.os, device.os),
+          _specRow(l10n.deviceLocation, device.locationName),
+        ]),
+        const SizedBox(height: 16),
+      ],
+    ];
+  }
+
+  /// Purpose: Build the sections that follow the specs: the location map and
+  /// the notes card, each conditional.
+  /// Inputs: `theme`, `cs`, `l10n`.
+  /// Returns: `List<Widget>`, possibly empty.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. These sit at the end
+  /// of the single column and under the header in the two-pane left pane.
+  List<Widget> _buildTrailingSections(
+    ThemeData theme,
+    ColorScheme cs,
+    AppLocalizations l10n,
+  ) {
+    return [
+      // ── Map ──
+      if (device.latitude != null && device.longitude != null) ...[
+        _sectionTitle(theme, cs, l10n.deviceLocation, Icons.map),
+        SizedBox(
+          height: 200,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: FlutterMap(
+              options: MapOptions(
+                initialCenter: LatLng(device.latitude!, device.longitude!),
+                initialZoom: 13,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.none,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.mydevice',
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: LatLng(device.latitude!, device.longitude!),
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.location_pin,
+                        size: 40,
+                        color: cs.primary,
+                      ),
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 16),
-          ],
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
 
-          // ── Notes ──
-          if (device.notes != null) ...[
-            _sectionTitle(theme, cs, l10n.deviceNotes, Icons.notes),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(device.notes!, style: theme.textTheme.bodyMedium),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ],
-      ),
-    );
+      // ── Notes ──
+      if (device.notes != null) ...[
+        _sectionTitle(theme, cs, l10n.deviceNotes, Icons.notes),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(device.notes!, style: theme.textTheme.bodyMedium),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    ];
   }
 
   /// Purpose: Build and return header for the current context.

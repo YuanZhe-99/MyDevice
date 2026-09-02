@@ -139,6 +139,32 @@ double detailLeftPaneWidth(double totalWidth) => (totalWidth * 0.36).clamp(260.0
 | 手机 412 × 915 / 915 × 412 | 否 | — | — |
 | 桌面 1600 × 900 | 是 | 420 | 1179 |
 
+## 不能滚动的窗格：设备编辑页
+
+设备编辑页经由同一个 `useDetailTwoPane` 委托和 `detailLeftPaneWidth` 分栏，但它的左窗格有详情页没有的要求：它装着正在编辑的东西——头像选择器、名称字段和类别下拉——应当留在屏幕上，而品牌以下的一切在右侧滚动。两个窗格都在同一个 `Form` 里，所以 `validate()` 仍能触及两侧的字段；每个控制器本来就住在 `State` 里，所以编辑到一半折叠或展开时输入了一半的值不会丢。
+
+朴素做法——固定 56 dp 头像上方两个字段——放得下，但固定的*大*头像放不下：在分栏规则放行的 480 dp 最小高度，扣掉应用栏后窗格只有 424 dp。所以头像**按剩余高度**定尺寸，列按构造就能放下：
+
+```dart
+const deviceEditLeftPaneFieldBudget = 318.0;   // 列中除头像外的全部
+double editAvatarSize(double paneWidth, double paneHeight) =>
+    (paneHeight - 318).clamp(56.0, 160.0)      // 再以 paneWidth − 32 封顶
+```
+
+318 是：顶部内边距 16，头像与其 chip 之间 12，最坏情况三行 32 dp 的 `ActionChip` 加 8 dp 行距（260 dp 窗格把日文标签一行一个）= 112，其下 16，56 dp 名称字段，12，56 dp 类别字段，名称字段下校验错误的 22 余量，底部内边距 16。在 480 下限头像得 106；Z Fold 8 横屏（704 − 56 = 648）达到 160 上限；56 的下限就是单列图标区一直用的尺寸。`test/detail_layout_test.dart` 断言算式而非像素：从 480 到 1200 的每个窗口高度上，组装后的列都不超过窗格高度。
+
+**品牌、型号和序列号刻意留在右侧。** 品牌的 `Autocomplete` 覆盖层硬上限 360 dp，比 260 dp 的窗格还宽；它的 68 dp 会在分栏最小值处把头像压到 56 dp 下限之下。单列顺序原样不动：名称、类别、品牌、型号、序列号、图标区、日期、财务、CPU、GPU、其他规格、备注。
+
+窗格仍包在 `minHeight` 钉住窗格高度的 `SingleChildScrollView` 里。不是因为它应当滚动，而是软键盘可能把 body 压到算式覆盖不到的高度，退化成滚动远好于溢出条纹。
+
+| 视口 | 分栏 | 窗格 | 窗格高度 | 头像 |
+|---|---|---|---|---|
+| Z Fold 8 横屏 933 × 704 | 是 | 336 | 648 | 160 |
+| Z Fold 7 832 × 750 / 750 × 832 | 是 | 300 / 270 | 694 / 776 | 160 / 160 |
+| 平板 1024 × 768 | 是 | 369 | 712 | 160 |
+| 分栏下限 600 × 480 | 是 | 260 | 424 | 106 |
+| Z Fold 8 竖屏、平板竖屏、手机任一方向 | 否 | — | — | 56，单列 |
+
 ## 两块并排：分栏规则之上的宽度下限
 
 有些布局需要同时回答两个问题。财务总览就是：三个摘要指标叠在 220 dp 饼图之上，在趋势图出现之前就花掉 Z Fold 8 约 640 dp body 的大部分。把指标放进饼图旁的窄列能收回这些——但只在图表仍有空间绘制的地方。
@@ -228,13 +254,14 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `service_list_page.dart`（快捷访问路由对话框） | `dialogMaxWidth` | 常量，不是规则。 |
 | `device_detail_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth` | 外加第三道门控：至少一个规格小节。推到壳外：测量原始窗口。 |
 | `network_detail_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth` | 推到壳外。 |
+| `device_edit_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth`、`editAvatarSize` | 左窗格按构造不滚动；见上文。推到壳外。 |
 | `device_finance_overview_page.dart`（摘要与图表并排） | `canSplitLayout`、`useFinanceSideBySide`、`financeSummaryPaneWidth` | 双重门控，外加非空分布；见上文。 |
 | `device_finance_overview_page.dart`（摘要卡） | `financeSummaryColumns` | 仅宽度，下限 2；在并排窗格内强制为一列。推到壳外：测量自己的 `LayoutBuilder`。 |
 | `device_search_dialog.dart`、`chip_search_dialog.dart` | `dialogBodyHeight`、`dialogMaxWidth` | 高度来自窗口减键盘。 |
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | 无需 | 已是 `LayoutBuilder` 驱动的全幅 `InteractiveViewer`；布局缓存以视口宽度为键。 |
 | `device_map_page.dart`、`map_picker_page.dart` | 无需 | 全幅地图填满给它的任何空间；选点器的搜索行已是按钮旁的 `Expanded` 输入框。 |
 
-其余每一页仍是固定单列，已排期：设备编辑页在 1.5.3，其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
+其余每一页仍是固定单列，已排期：其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
 
 ## 与 Google 指南的分歧
 
@@ -245,7 +272,8 @@ Google 的自适应布局指南说窗口尺寸类别「明确不由设备屏幕�
 ## 测试
 
 - `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、四个列表的列数与偏好钳制、两条概览规则、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
-- `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限，以及从门控到 2000 dp 图表永不低于最小值的循环不变量。
+- `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限、从门控到 2000 dp 图表永不低于最小值的循环不变量，以及从 480 到 1200 的每个窗口高度上编辑页左列都放得进窗格的循环不变量。
+- `test/device_edit_two_pane_ui_test.dart` — 在 Z Fold 8 横竖、手机、600 × 480 下限和 300 dp 软键盘内缩下渲染编辑页：哪些字段共享左窗格、同一个 `Form` 仍包住两侧、没有溢出。
 - `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart`、`test/finance_overview_layout_ui_test.dart` — 在 Z Fold 8 横竖、Z Fold 7 竖屏、手机横竖、平板和 600 × 480 下限上渲染页面：哪个窗格放什么、右侧滚动时左窗格不动、无规格与无数据的回退。
 - `test/list_columns_prefs_test.dart` — 四个列数偏好各自独立往返，默认值不写入文件而是缺席，非法值读作自动。
 - `test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart`、`test/service_columns_ui_test.dart` — 针对种子存储目录，在 Z Fold 8 横竖、Pixel 9 横竖和平板上渲染设备、网络、数据集与服务列表：列数、隐藏的控件、存下的选择、钳制、滑动或菜单的切换，以及分组页头。

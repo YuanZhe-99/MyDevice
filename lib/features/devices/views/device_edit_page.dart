@@ -8,6 +8,7 @@ import '../../../app/flavor.dart';
 import '../../datasets/services/dataset_storage.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_service.dart';
+import '../../../shared/utils/detail_layout.dart';
 import '../../../shared/widgets/map_picker_page.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
@@ -1088,50 +1089,111 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   }
 
   /// Purpose: Build and return icon section for the current context.
-  /// Inputs: `l10n`.
+  /// Inputs: `l10n`; `avatarSize` — the preview's diameter, 56 in the single
+  /// column and `editAvatarSize` in the two-pane left pane; `stacked` — put
+  /// the chips under a centred preview instead of beside it.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  Widget _buildIconSection(AppLocalizations l10n) {
+  /// Notes: Internal helper used within this file only. The stacked form is
+  /// what the two-pane left pane uses: a 260 dp pane has no room for a large
+  /// preview and three chips side by side.
+  Widget _buildIconSection(
+    AppLocalizations l10n, {
+    double avatarSize = 56,
+    bool stacked = false,
+  }) {
     final preview = DeviceAvatar(
       category: _category,
       emoji: _emoji,
       imagePath: _imagePath,
-      size: 56,
+      size: avatarSize,
+    );
+    final chips = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: stacked ? WrapAlignment.center : WrapAlignment.start,
+      children: [
+        ActionChip(
+          avatar: const Icon(Icons.emoji_emotions, size: 18),
+          label: Text(l10n.deviceEmoji),
+          onPressed: () => _showEmojiPicker(l10n),
+        ),
+        ActionChip(
+          avatar: const Icon(Icons.image, size: 18),
+          label: Text(
+            _imagePath != null ? l10n.deviceChangeImage : l10n.devicePickImage,
+          ),
+          onPressed: _pickImage,
+        ),
+        if (_emoji != null || _imagePath != null)
+          ActionChip(
+            avatar: const Icon(Icons.clear, size: 18),
+            label: Text(l10n.deviceRemoveIcon),
+            onPressed: _removeIcon,
+          ),
+      ],
     );
 
+    if (stacked) {
+      return Column(
+        children: [
+          Center(child: preview),
+          const SizedBox(height: 12),
+          chips,
+        ],
+      );
+    }
     return Row(
       children: [
         preview,
         const SizedBox(width: 16),
-        Expanded(
-          child: Wrap(
-            spacing: 8,
-            children: [
-              ActionChip(
-                avatar: const Icon(Icons.emoji_emotions, size: 18),
-                label: Text(l10n.deviceEmoji),
-                onPressed: () => _showEmojiPicker(l10n),
-              ),
-              ActionChip(
-                avatar: const Icon(Icons.image, size: 18),
-                label: Text(
-                  _imagePath != null
-                      ? l10n.deviceChangeImage
-                      : l10n.devicePickImage,
-                ),
-                onPressed: _pickImage,
-              ),
-              if (_emoji != null || _imagePath != null)
-                ActionChip(
-                  avatar: const Icon(Icons.clear, size: 18),
-                  label: Text(l10n.deviceRemoveIcon),
-                  onPressed: _removeIcon,
-                ),
-            ],
-          ),
-        ),
+        Expanded(child: chips),
       ],
+    );
+  }
+
+  /// Purpose: Build the device name field.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget` — the only validated field on the form.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from the
+  /// field list so the two-pane left pane and the single column share it.
+  Widget _buildNameField(AppLocalizations l10n) {
+    return TextFormField(
+      controller: _nameCtrl,
+      decoration: InputDecoration(labelText: l10n.deviceName),
+      validator: (v) =>
+          (v == null || v.trim().isEmpty) ? l10n.deviceName : null,
+    );
+  }
+
+  /// Purpose: Build the device category dropdown.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: Updates `_category` and rebuilds when a value is chosen.
+  /// Notes: Internal helper used within this file only. Extracted from the
+  /// field list so the two-pane left pane and the single column share it.
+  Widget _buildCategoryField(AppLocalizations l10n) {
+    return DropdownButtonFormField<DeviceCategory>(
+      initialValue: _category,
+      decoration: InputDecoration(labelText: l10n.deviceCategory),
+      items: DeviceCategory.values
+          .map(
+            (cat) => DropdownMenuItem(
+              value: cat,
+              child: Row(
+                children: [
+                  Icon(deviceCategoryIcon(cat), size: 20),
+                  const SizedBox(width: 8),
+                  Text(_categoryLabel(l10n, cat)),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) {
+        if (v != null) setState(() => _category = v);
+      },
     );
   }
 
@@ -1513,675 +1575,723 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
           TextButton(onPressed: _save, child: Text(l10n.save)),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+      body: Form(key: _formKey, child: _buildFormBody(context, l10n, theme)),
+    );
+  }
+
+  /// Purpose: Build the form body in whichever layout the window calls for.
+  /// Inputs: `context`, `l10n`, `theme`.
+  /// Returns: `Widget` — always inside the one `Form`, so `validate()` still
+  /// reaches fields on both sides.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. The gate reads the
+  /// whole screen through `useDetailTwoPane`; the pane width reads the body's
+  /// constraints, the raw window, because this page is pushed above the
+  /// shell. The left pane is non-scrolling by construction: the avatar takes
+  /// the height left after `deviceEditLeftPaneFieldBudget`, so the column
+  /// fits at every splittable height. It is still wrapped in a scroll view
+  /// with a minimum height, because a soft keyboard can shrink the body below
+  /// what the arithmetic covers, and degrading to a scroll beats an overflow.
+  /// Brand, model and serial stay on the right: brand's autocomplete overlay
+  /// is capped at 360 dp, wider than a 260 dp pane, and its 68 dp would push
+  /// the avatar under its 56 dp floor at the 480 dp split minimum.
+  Widget _buildFormBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    ThemeData theme,
+  ) {
+    final screen = MediaQuery.sizeOf(context);
+    if (!useDetailTwoPane(screen.width, screen.height)) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: _buildFields(l10n, theme, twoPane: false),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final paneWidth = detailLeftPaneWidth(constraints.maxWidth);
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── Basic info ──
-            TextFormField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(labelText: l10n.deviceName),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? l10n.deviceName : null,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<DeviceCategory>(
-              initialValue: _category,
-              decoration: InputDecoration(labelText: l10n.deviceCategory),
-              items: DeviceCategory.values
-                  .map(
-                    (cat) => DropdownMenuItem(
-                      value: cat,
-                      child: Row(
-                        children: [
-                          Icon(deviceCategoryIcon(cat), size: 20),
-                          const SizedBox(width: 8),
-                          Text(_categoryLabel(l10n, cat)),
-                        ],
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _category = v);
-              },
-            ),
-            const SizedBox(height: 12),
-            Autocomplete<BrandEntry>(
-              initialValue: _brandCtrl.value,
-              optionsBuilder: (textEditingValue) {
-                if (textEditingValue.text.isEmpty) return _brandPresets;
-                final query = textEditingValue.text.toLowerCase();
-                return _brandPresets.where(
-                  (b) => b.name.toLowerCase().contains(query),
-                );
-              },
-              displayStringForOption: (b) => b.name,
-              fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-                _brandCtrl.text = ctrl.text;
-                ctrl.addListener(() => _brandCtrl.text = ctrl.text);
-                return TextFormField(
-                  controller: ctrl,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(labelText: l10n.deviceBrand),
-                );
-              },
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4,
+            SizedBox(
+              width: paneWidth,
+              child: LayoutBuilder(
+                builder: (context, pane) {
+                  final avatar = editAvatarSize(paneWidth, pane.maxHeight);
+                  return SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxHeight: 240,
-                        maxWidth: 360,
-                      ),
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (context, index) {
-                          final brand = options.elementAt(index);
-                          return ListTile(
-                            leading: brand.logo != null
-                                ? SvgPicture.asset(
-                                    brand.logo!,
-                                    width: 24,
-                                    height: 24,
-                                    colorFilter: ColorFilter.mode(
-                                      Theme.of(context).colorScheme.onSurface,
-                                      BlendMode.srcIn,
-                                    ),
-                                  )
-                                : const Icon(Icons.business, size: 24),
-                            title: Text(brand.name),
-                            dense: true,
-                            onTap: () => onSelected(brand),
-                          );
-                        },
+                      constraints: BoxConstraints(minHeight: pane.maxHeight),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildIconSection(
+                              l10n,
+                              avatarSize: avatar,
+                              stacked: true,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildNameField(l10n),
+                            const SizedBox(height: 12),
+                            _buildCategoryField(l10n),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _modelCtrl,
-              decoration: InputDecoration(labelText: l10n.deviceModel),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _serialNumberCtrl,
-              decoration: InputDecoration(labelText: l10n.deviceSerialNumber),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Emoji / Image icon ──
-            _buildIconSection(l10n),
-            const SizedBox(height: 12),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.devicePurchaseDate),
-              subtitle: Text(
-                _purchaseDate != null
-                    ? DateFormat.yMd(l10n.localeName).format(_purchaseDate!)
-                    : '—',
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: _pickDate,
-                  ),
-                  if (_purchaseDate != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() => _purchaseDate = null),
-                    ),
-                ],
+                  );
+                },
               ),
             ),
-
-            // ── Release date ──
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.deviceReleaseDate),
-              subtitle: Text(
-                _releaseDate != null
-                    ? DateFormat.yMd(l10n.localeName).format(_releaseDate!)
-                    : '—',
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.calendar_today),
-                    onPressed: _pickReleaseDate,
-                  ),
-                  if (_releaseDate != null)
-                    IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() => _releaseDate = null),
-                    ),
-                ],
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: _buildFields(l10n, theme, twoPane: true),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
 
-            const Divider(height: 32),
-            _buildFinancialSection(l10n, theme),
-
-            const Divider(height: 32),
-
-            // ── CPU section ──
-            Row(
-              children: [
-                _brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text)),
-                Expanded(
-                  child: Text(
-                    l10n.cpuInfo,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
+  /// Purpose: Build the form's field list.
+  /// Inputs: `l10n`, `theme`; `twoPane` — omit the name, category and icon
+  /// section, which the two-pane left pane renders itself.
+  /// Returns: `List<Widget>` ready to spread into a `ListView`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. With `twoPane` false
+  /// this is exactly the single column the page always had, in the same
+  /// order: name, category, brand, model, serial, icon, dates, finance, CPU,
+  /// GPU, other specs, notes.
+  List<Widget> _buildFields(
+    AppLocalizations l10n,
+    ThemeData theme, {
+    required bool twoPane,
+  }) {
+    return [
+      // ── Basic info ──
+      if (!twoPane) ...[
+        _buildNameField(l10n),
+        const SizedBox(height: 12),
+        _buildCategoryField(l10n),
+        const SizedBox(height: 12),
+      ],
+      Autocomplete<BrandEntry>(
+        initialValue: _brandCtrl.value,
+        optionsBuilder: (textEditingValue) {
+          if (textEditingValue.text.isEmpty) return _brandPresets;
+          final query = textEditingValue.text.toLowerCase();
+          return _brandPresets.where(
+            (b) => b.name.toLowerCase().contains(query),
+          );
+        },
+        displayStringForOption: (b) => b.name,
+        fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
+          _brandCtrl.text = ctrl.text;
+          ctrl.addListener(() => _brandCtrl.text = ctrl.text);
+          return TextFormField(
+            controller: ctrl,
+            focusNode: focusNode,
+            decoration: InputDecoration(labelText: l10n.deviceBrand),
+          );
+        },
+        optionsViewBuilder: (context, onSelected, options) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Material(
+              elevation: 4,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxHeight: 240,
+                  maxWidth: 360,
                 ),
-                if (AppFlavor.isFull)
-                  IconButton(
-                    icon: const Icon(Icons.travel_explore, size: 20),
-                    tooltip: l10n.fetchFromInternet,
-                    onPressed: _searchCpuOnline,
-                  ),
-                TextButton.icon(
-                  icon: const Icon(Icons.list, size: 18),
-                  label: Text(l10n.cpuInfo),
-                  onPressed: _cpuPresets.isNotEmpty ? _pickCpuPreset : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Autocomplete<CpuInfo>(
-              key: ValueKey('cpu_auto_$_cpuAutoKey'),
-              initialValue: _cpuModelCtrl.value,
-              optionsBuilder: (textEditingValue) {
-                if (textEditingValue.text.isEmpty) return const [];
-                final query = textEditingValue.text.toLowerCase();
-                return _cpuPresets.where(
-                  (c) => (c.model ?? '').toLowerCase().contains(query),
-                );
-              },
-              displayStringForOption: (c) => c.model ?? '',
-              fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-                ctrl.addListener(() => _cpuModelCtrl.text = ctrl.text);
-                return TextFormField(
-                  controller: ctrl,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(labelText: l10n.cpuModel),
-                );
-              },
-              onSelected: (cpu) => _applyCpuPreset(cpu),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _cpuArchCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.cpuArchitecture,
-                hintText: l10n.cpuArchHint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _cpuFreqCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.cpuFrequency,
-                hintText: l10n.cpuFreqHint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _cpuPCoresCtrl,
-                    decoration: InputDecoration(labelText: l10n.cpuPCores),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _cpuECoresCtrl,
-                    decoration: InputDecoration(labelText: l10n.cpuECores),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _cpuThreadsCtrl,
-                    decoration: InputDecoration(labelText: l10n.cpuThreads),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _cpuCacheCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.cpuCache,
-                hintText: l10n.cpuCacheHint,
-              ),
-            ),
-
-            const Divider(height: 32),
-
-            // ── GPU section ──
-            Row(
-              children: [
-                _brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text)),
-                Expanded(
-                  child: Text(
-                    l10n.gpuInfo,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-                if (AppFlavor.isFull)
-                  IconButton(
-                    icon: const Icon(Icons.travel_explore, size: 20),
-                    tooltip: l10n.fetchFromInternet,
-                    onPressed: _searchGpuOnline,
-                  ),
-                TextButton.icon(
-                  icon: const Icon(Icons.list, size: 18),
-                  label: Text(l10n.gpuInfo),
-                  onPressed: _gpuPresets.isNotEmpty ? _pickGpuPreset : null,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Autocomplete<GpuInfo>(
-              key: ValueKey('gpu_auto_$_gpuAutoKey'),
-              initialValue: _gpuModelCtrl.value,
-              optionsBuilder: (textEditingValue) {
-                if (textEditingValue.text.isEmpty) return const [];
-                final query = textEditingValue.text.toLowerCase();
-                return _gpuPresets.where(
-                  (g) => (g.model ?? '').toLowerCase().contains(query),
-                );
-              },
-              displayStringForOption: (g) => g.model ?? '',
-              fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-                ctrl.addListener(() => _gpuModelCtrl.text = ctrl.text);
-                return TextFormField(
-                  controller: ctrl,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(labelText: l10n.gpuModel),
-                );
-              },
-              onSelected: (gpu) => _applyGpuPreset(gpu),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _gpuArchCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.gpuArchitecture,
-                hintText: l10n.gpuArchHint,
-              ),
-            ),
-
-            const Divider(height: 32),
-
-            // ── Other specs ──
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _ramCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.ram,
-                      hintText: l10n.ramHint,
-                    ),
-                    keyboardType: TextInputType.number,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                DropdownButton<String>(
-                  value: _ramUnit,
-                  underline: const SizedBox.shrink(),
-                  items: _memoryUnits
-                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v != null) setState(() => _ramUnit = v);
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<RamType>(
-              initialValue: _ramType,
-              decoration: InputDecoration(
-                labelText: l10n.ramType,
-                isDense: true,
-              ),
-              items: [
-                DropdownMenuItem<RamType>(value: null, child: Text('-')),
-                ...RamType.values.map(
-                  (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
-                ),
-              ],
-              onChanged: (v) => setState(() => _ramType = v),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Storage (multiple entries) ──
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.storage,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline, size: 20),
-                  onPressed: () => setState(() {
-                    _storageEntries.add('');
-                    _storageUnits.add('GB');
-                    _storageTypes.add(null);
-                    _storageInterfaces.add(null);
-                    _storageBrandCtrls.add(TextEditingController());
-                    _storageSerialCtrls.add(TextEditingController());
-                    _storageOriginalIndices.add(null);
-                  }),
-                ),
-              ],
-            ),
-            for (int i = 0; i < _storageEntries.length; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            initialValue: _storageEntries[i],
-                            decoration: InputDecoration(
-                              labelText: '${l10n.storage} ${i + 1}',
-                              hintText: l10n.storageCapacityHint,
-                            ),
-                            keyboardType: TextInputType.number,
-                            onChanged: (v) => _storageEntries[i] = v,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        DropdownButton<String>(
-                          value: _storageUnits[i],
-                          underline: const SizedBox.shrink(),
-                          items: _memoryUnits
-                              .map(
-                                (u) =>
-                                    DropdownMenuItem(value: u, child: Text(u)),
-                              )
-                              .toList(),
-                          onChanged: (v) {
-                            if (v != null) setState(() => _storageUnits[i] = v);
-                          },
-                        ),
-                        if (_storageEntries.length > 1)
-                          IconButton(
-                            icon: const Icon(
-                              Icons.remove_circle_outline,
-                              size: 20,
-                            ),
-                            onPressed: () => setState(() {
-                              _storageBrandCtrls[i].dispose();
-                              _storageSerialCtrls[i].dispose();
-                              _storageEntries.removeAt(i);
-                              _storageUnits.removeAt(i);
-                              _storageTypes.removeAt(i);
-                              _storageInterfaces.removeAt(i);
-                              _storageBrandCtrls.removeAt(i);
-                              _storageSerialCtrls.removeAt(i);
-                              _storageOriginalIndices.removeAt(i);
-                            }),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<StorageType?>(
-                            initialValue: _storageTypes[i],
-                            decoration: InputDecoration(
-                              labelText: l10n.storageType,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemCount: options.length,
+                  itemBuilder: (context, index) {
+                    final brand = options.elementAt(index);
+                    return ListTile(
+                      leading: brand.logo != null
+                          ? SvgPicture.asset(
+                              brand.logo!,
+                              width: 24,
+                              height: 24,
+                              colorFilter: ColorFilter.mode(
+                                Theme.of(context).colorScheme.onSurface,
+                                BlendMode.srcIn,
                               ),
-                            ),
-                            items: [
-                              DropdownMenuItem<StorageType?>(
-                                value: null,
-                                child: Text('-'),
-                              ),
-                              ...StorageType.values.map(
-                                (t) => DropdownMenuItem(
-                                  value: t,
-                                  child: Text(_storageTypeLabel(l10n, t)),
-                                ),
-                              ),
-                            ],
-                            onChanged: (v) =>
-                                setState(() => _storageTypes[i] = v),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: DropdownButtonFormField<StorageInterface?>(
-                            initialValue: _storageInterfaces[i],
-                            decoration: InputDecoration(
-                              labelText: l10n.storageInterface,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
-                            items: [
-                              DropdownMenuItem<StorageInterface?>(
-                                value: null,
-                                child: Text('-'),
-                              ),
-                              ...StorageInterface.values.map(
-                                (t) => DropdownMenuItem(
-                                  value: t,
-                                  child: Text(_storageInterfaceLabel(l10n, t)),
-                                ),
-                              ),
-                            ],
-                            onChanged: (v) =>
-                                setState(() => _storageInterfaces[i] = v),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _storageBrandCtrls[i],
-                            decoration: InputDecoration(
-                              labelText: l10n.storageBrand,
-                              isDense: true,
-                              hintText: l10n.storageBrandHint,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _storageSerialCtrls[i],
-                            decoration: InputDecoration(
-                              labelText: l10n.storageSerialNumber,
-                              isDense: true,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _screenSizeCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.screenSize,
-                hintText: l10n.screenSizeHint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _screenResWCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.screenResolution,
-                      hintText: 'W',
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('×'),
-                ),
-                Expanded(
-                  child: TextFormField(
-                    controller: _screenResHCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.screenResolution,
-                      hintText: 'H',
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ],
-            ),
-            Builder(
-              builder: (context) {
-                final w = int.tryParse(_screenResWCtrl.text.trim());
-                final h = int.tryParse(_screenResHCtrl.text.trim());
-                if (w == null || h == null) return const SizedBox.shrink();
-                final tempDevice = Device(
-                  name: '',
-                  category: _category,
-                  screenSize: _nonEmpty(_screenSizeCtrl.text),
-                  screenResolutionW: w,
-                  screenResolutionH: h,
-                );
-                final ppi = tempDevice.ppi;
-                if (ppi == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '${l10n.ppi}: ${ppi.toStringAsFixed(0)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _batteryCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.battery,
-                hintText: l10n.batteryHint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _osCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.os,
-                hintText: l10n.osHint,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _locationCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.deviceLocation,
-                hintText: l10n.locationHint,
-                prefixIcon: const Icon(Icons.location_on_outlined),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.map_outlined),
-                  tooltip: l10n.mapPickLocation,
-                  onPressed: () async {
-                    final initial = (_latitude != null && _longitude != null)
-                        ? LatLng(_latitude!, _longitude!)
-                        : null;
-                    final result =
-                        await Navigator.of(
-                          context,
-                          rootNavigator: true,
-                        ).push<LatLng>(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                MapPickerPage(initialPosition: initial),
-                          ),
-                        );
-                    if (result != null && mounted) {
-                      setState(() {
-                        _latitude = result.latitude;
-                        _longitude = result.longitude;
-                      });
-                    }
+                            )
+                          : const Icon(Icons.business, size: 24),
+                      title: Text(brand.name),
+                      dense: true,
+                      onTap: () => onSelected(brand),
+                    );
                   },
                 ),
               ),
             ),
-            if (_latitude != null && _longitude != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 4, left: 12),
-                child: Text(
-                  '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
+          );
+        },
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _modelCtrl,
+        decoration: InputDecoration(labelText: l10n.deviceModel),
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _serialNumberCtrl,
+        decoration: InputDecoration(labelText: l10n.deviceSerialNumber),
+      ),
+      const SizedBox(height: 12),
 
-            const Divider(height: 32),
-
-            // ── Notes ──
-            TextFormField(
-              controller: _notesCtrl,
-              decoration: InputDecoration(labelText: l10n.deviceNotes),
-              maxLines: 3,
+      // ── Emoji / Image icon ──
+      if (!twoPane) ...[_buildIconSection(l10n), const SizedBox(height: 12)],
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.devicePurchaseDate),
+        subtitle: Text(
+          _purchaseDate != null
+              ? DateFormat.yMd(l10n.localeName).format(_purchaseDate!)
+              : '—',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.calendar_today),
+              onPressed: _pickDate,
             ),
-            const SizedBox(height: 32),
+            if (_purchaseDate != null)
+              IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => _purchaseDate = null),
+              ),
           ],
         ),
       ),
-    );
+
+      // ── Release date ──
+      ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l10n.deviceReleaseDate),
+        subtitle: Text(
+          _releaseDate != null
+              ? DateFormat.yMd(l10n.localeName).format(_releaseDate!)
+              : '—',
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.calendar_today),
+              onPressed: _pickReleaseDate,
+            ),
+            if (_releaseDate != null)
+              IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() => _releaseDate = null),
+              ),
+          ],
+        ),
+      ),
+
+      const Divider(height: 32),
+      _buildFinancialSection(l10n, theme),
+
+      const Divider(height: 32),
+
+      // ── CPU section ──
+      Row(
+        children: [
+          _brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text)),
+          Expanded(
+            child: Text(
+              l10n.cpuInfo,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          if (AppFlavor.isFull)
+            IconButton(
+              icon: const Icon(Icons.travel_explore, size: 20),
+              tooltip: l10n.fetchFromInternet,
+              onPressed: _searchCpuOnline,
+            ),
+          TextButton.icon(
+            icon: const Icon(Icons.list, size: 18),
+            label: Text(l10n.cpuInfo),
+            onPressed: _cpuPresets.isNotEmpty ? _pickCpuPreset : null,
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      Autocomplete<CpuInfo>(
+        key: ValueKey('cpu_auto_$_cpuAutoKey'),
+        initialValue: _cpuModelCtrl.value,
+        optionsBuilder: (textEditingValue) {
+          if (textEditingValue.text.isEmpty) return const [];
+          final query = textEditingValue.text.toLowerCase();
+          return _cpuPresets.where(
+            (c) => (c.model ?? '').toLowerCase().contains(query),
+          );
+        },
+        displayStringForOption: (c) => c.model ?? '',
+        fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
+          ctrl.addListener(() => _cpuModelCtrl.text = ctrl.text);
+          return TextFormField(
+            controller: ctrl,
+            focusNode: focusNode,
+            decoration: InputDecoration(labelText: l10n.cpuModel),
+          );
+        },
+        onSelected: (cpu) => _applyCpuPreset(cpu),
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _cpuArchCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.cpuArchitecture,
+          hintText: l10n.cpuArchHint,
+        ),
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _cpuFreqCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.cpuFrequency,
+          hintText: l10n.cpuFreqHint,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: _cpuPCoresCtrl,
+              decoration: InputDecoration(labelText: l10n.cpuPCores),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextFormField(
+              controller: _cpuECoresCtrl,
+              decoration: InputDecoration(labelText: l10n.cpuECores),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextFormField(
+              controller: _cpuThreadsCtrl,
+              decoration: InputDecoration(labelText: l10n.cpuThreads),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _cpuCacheCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.cpuCache,
+          hintText: l10n.cpuCacheHint,
+        ),
+      ),
+
+      const Divider(height: 32),
+
+      // ── GPU section ──
+      Row(
+        children: [
+          _brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text)),
+          Expanded(
+            child: Text(
+              l10n.gpuInfo,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          if (AppFlavor.isFull)
+            IconButton(
+              icon: const Icon(Icons.travel_explore, size: 20),
+              tooltip: l10n.fetchFromInternet,
+              onPressed: _searchGpuOnline,
+            ),
+          TextButton.icon(
+            icon: const Icon(Icons.list, size: 18),
+            label: Text(l10n.gpuInfo),
+            onPressed: _gpuPresets.isNotEmpty ? _pickGpuPreset : null,
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      Autocomplete<GpuInfo>(
+        key: ValueKey('gpu_auto_$_gpuAutoKey'),
+        initialValue: _gpuModelCtrl.value,
+        optionsBuilder: (textEditingValue) {
+          if (textEditingValue.text.isEmpty) return const [];
+          final query = textEditingValue.text.toLowerCase();
+          return _gpuPresets.where(
+            (g) => (g.model ?? '').toLowerCase().contains(query),
+          );
+        },
+        displayStringForOption: (g) => g.model ?? '',
+        fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
+          ctrl.addListener(() => _gpuModelCtrl.text = ctrl.text);
+          return TextFormField(
+            controller: ctrl,
+            focusNode: focusNode,
+            decoration: InputDecoration(labelText: l10n.gpuModel),
+          );
+        },
+        onSelected: (gpu) => _applyGpuPreset(gpu),
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _gpuArchCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.gpuArchitecture,
+          hintText: l10n.gpuArchHint,
+        ),
+      ),
+
+      const Divider(height: 32),
+
+      // ── Other specs ──
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: _ramCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.ram,
+                hintText: l10n.ramHint,
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ),
+          const SizedBox(width: 8),
+          DropdownButton<String>(
+            value: _ramUnit,
+            underline: const SizedBox.shrink(),
+            items: _memoryUnits
+                .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) setState(() => _ramUnit = v);
+            },
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      DropdownButtonFormField<RamType>(
+        initialValue: _ramType,
+        decoration: InputDecoration(labelText: l10n.ramType, isDense: true),
+        items: [
+          DropdownMenuItem<RamType>(value: null, child: Text('-')),
+          ...RamType.values.map(
+            (t) => DropdownMenuItem(value: t, child: Text(t.displayName)),
+          ),
+        ],
+        onChanged: (v) => setState(() => _ramType = v),
+      ),
+      const SizedBox(height: 12),
+
+      // ── Storage (multiple entries) ──
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.storage,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, size: 20),
+            onPressed: () => setState(() {
+              _storageEntries.add('');
+              _storageUnits.add('GB');
+              _storageTypes.add(null);
+              _storageInterfaces.add(null);
+              _storageBrandCtrls.add(TextEditingController());
+              _storageSerialCtrls.add(TextEditingController());
+              _storageOriginalIndices.add(null);
+            }),
+          ),
+        ],
+      ),
+      for (int i = 0; i < _storageEntries.length; i++)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: _storageEntries[i],
+                      decoration: InputDecoration(
+                        labelText: '${l10n.storage} ${i + 1}',
+                        hintText: l10n.storageCapacityHint,
+                      ),
+                      keyboardType: TextInputType.number,
+                      onChanged: (v) => _storageEntries[i] = v,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: _storageUnits[i],
+                    underline: const SizedBox.shrink(),
+                    items: _memoryUnits
+                        .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) setState(() => _storageUnits[i] = v);
+                    },
+                  ),
+                  if (_storageEntries.length > 1)
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline, size: 20),
+                      onPressed: () => setState(() {
+                        _storageBrandCtrls[i].dispose();
+                        _storageSerialCtrls[i].dispose();
+                        _storageEntries.removeAt(i);
+                        _storageUnits.removeAt(i);
+                        _storageTypes.removeAt(i);
+                        _storageInterfaces.removeAt(i);
+                        _storageBrandCtrls.removeAt(i);
+                        _storageSerialCtrls.removeAt(i);
+                        _storageOriginalIndices.removeAt(i);
+                      }),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<StorageType?>(
+                      initialValue: _storageTypes[i],
+                      decoration: InputDecoration(
+                        labelText: l10n.storageType,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: [
+                        DropdownMenuItem<StorageType?>(
+                          value: null,
+                          child: Text('-'),
+                        ),
+                        ...StorageType.values.map(
+                          (t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(_storageTypeLabel(l10n, t)),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) => setState(() => _storageTypes[i] = v),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DropdownButtonFormField<StorageInterface?>(
+                      initialValue: _storageInterfaces[i],
+                      decoration: InputDecoration(
+                        labelText: l10n.storageInterface,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                      items: [
+                        DropdownMenuItem<StorageInterface?>(
+                          value: null,
+                          child: Text('-'),
+                        ),
+                        ...StorageInterface.values.map(
+                          (t) => DropdownMenuItem(
+                            value: t,
+                            child: Text(_storageInterfaceLabel(l10n, t)),
+                          ),
+                        ),
+                      ],
+                      onChanged: (v) =>
+                          setState(() => _storageInterfaces[i] = v),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _storageBrandCtrls[i],
+                      decoration: InputDecoration(
+                        labelText: l10n.storageBrand,
+                        isDense: true,
+                        hintText: l10n.storageBrandHint,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _storageSerialCtrls[i],
+                      decoration: InputDecoration(
+                        labelText: l10n.storageSerialNumber,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _screenSizeCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.screenSize,
+          hintText: l10n.screenSizeHint,
+        ),
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: _screenResWCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.screenResolution,
+                hintText: 'W',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Text('×'),
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: _screenResHCtrl,
+              decoration: InputDecoration(
+                labelText: l10n.screenResolution,
+                hintText: 'H',
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (_) => setState(() {}),
+            ),
+          ),
+        ],
+      ),
+      Builder(
+        builder: (context) {
+          final w = int.tryParse(_screenResWCtrl.text.trim());
+          final h = int.tryParse(_screenResHCtrl.text.trim());
+          if (w == null || h == null) return const SizedBox.shrink();
+          final tempDevice = Device(
+            name: '',
+            category: _category,
+            screenSize: _nonEmpty(_screenSizeCtrl.text),
+            screenResolutionW: w,
+            screenResolutionH: h,
+          );
+          final ppi = tempDevice.ppi;
+          if (ppi == null) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${l10n.ppi}: ${ppi.toStringAsFixed(0)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.secondary,
+              ),
+            ),
+          );
+        },
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _batteryCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.battery,
+          hintText: l10n.batteryHint,
+        ),
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _osCtrl,
+        decoration: InputDecoration(labelText: l10n.os, hintText: l10n.osHint),
+      ),
+      const SizedBox(height: 12),
+      TextFormField(
+        controller: _locationCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.deviceLocation,
+          hintText: l10n.locationHint,
+          prefixIcon: const Icon(Icons.location_on_outlined),
+          suffixIcon: IconButton(
+            icon: const Icon(Icons.map_outlined),
+            tooltip: l10n.mapPickLocation,
+            onPressed: () async {
+              final initial = (_latitude != null && _longitude != null)
+                  ? LatLng(_latitude!, _longitude!)
+                  : null;
+              final result = await Navigator.of(context, rootNavigator: true)
+                  .push<LatLng>(
+                    MaterialPageRoute(
+                      builder: (_) => MapPickerPage(initialPosition: initial),
+                    ),
+                  );
+              if (result != null && mounted) {
+                setState(() {
+                  _latitude = result.latitude;
+                  _longitude = result.longitude;
+                });
+              }
+            },
+          ),
+        ),
+      ),
+      if (_latitude != null && _longitude != null)
+        Padding(
+          padding: const EdgeInsets.only(top: 4, left: 12),
+          child: Text(
+            '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+
+      const Divider(height: 32),
+
+      // ── Notes ──
+      TextFormField(
+        controller: _notesCtrl,
+        decoration: InputDecoration(labelText: l10n.deviceNotes),
+        maxLines: 3,
+      ),
+      const SizedBox(height: 32),
+    ];
   }
 }
 

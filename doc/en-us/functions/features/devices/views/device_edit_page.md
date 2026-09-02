@@ -58,13 +58,17 @@ model this form edits.
 | `_showEmojiPicker` | method (`_DeviceEditPageState`) | B | Show a bottom-sheet grid of `_commonEmojis`; tapping one sets `_emoji` and clears `_imagePath`. |
 | [`_pickImage`](#_pickimage) | method (`_DeviceEditPageState`) | A | Let the user pick a photo and adopt it as the device's icon, clearing any emoji. |
 | `_removeIcon` | method (`_DeviceEditPageState`) | B | Clear both `_emoji` and `_imagePath`. |
-| `_buildIconSection` | method (widget helper) | B | Render the avatar preview plus image-pick/emoji-pick/remove actions. |
+| `_buildIconSection` | method (widget helper) | B | Render the avatar preview plus image-pick/emoji-pick/remove actions; `avatarSize` (56, or `editAvatarSize` in the two-pane left pane) and `stacked` (chips centred under the preview rather than beside it). |
+| `_buildNameField` | method (widget helper) | B | The validated name `TextFormField`, shared by the single column and the two-pane left pane. |
+| `_buildCategoryField` | method (widget helper) | B | The category `DropdownButtonFormField`, shared likewise. |
+| `_buildFormBody` | method (widget helper) | B | Choose the layout inside the one `Form`: the single-column `ListView` of `_buildFields`, or — when `useDetailTwoPane` passes — a `Row` of a `detailLeftPaneWidth`-wide left pane (stacked icon section at `editAvatarSize`, name, category; a `SingleChildScrollView` pinned to the pane height as the soft-keyboard fallback) and a right `ListView` of the remaining fields. |
+| `_buildFields` | method (widget helper) | B | The full field list in its original order; `twoPane` omits the name, category and icon section that the left pane renders itself. |
 | `_currencyItems` | method (widget helper) | B | Build the currency dropdown's items from `supportedCurrencies`, plus `current` if not already listed. |
 | `_buildMoneyFields` | method (widget helper) | B | Render an amount+currency row and, for a non-default currency, an auto-rate checkbox and manual-rate field. |
 | `_addRecurringCost` | method (`_DeviceEditPageState`) | B | Append a new blank `_RecurringCostDraft` (default kind `other`, currency = `_defaultCurrency`). |
 | `_buildRecurringCostCard` | method (widget helper) | B | Render one recurring-cost draft's editable card (kind/name/billing cycle/money fields/remove button). |
 | `_buildFinancialSection` | method (widget helper) | B | Render the acquisition/lifecycle/purchase/sold/recurring-costs financial section. |
-| `build` | method (widget) | B | Build the scaffold, app bar (save + online-search actions), and the full editable form. |
+| `build` | method (widget) | B | Build the scaffold and app bar (save + online-search actions) around `_buildFormBody`. |
 | `_RecurringCostDraft` (constructor) | constructor | B | Create a draft with fresh amount/name/rate controllers, defaulting `billingCycle` to monthly and `autoRate` to true. |
 | [`_RecurringCostDraft.fromCost`](#_recurringcostdraft-fromcost) | factory constructor (`_RecurringCostDraft`) | A | Convert a persisted `DeviceRecurringCost` into an editable draft. |
 | `dispose` | method (`_RecurringCostDraft`) | B | Dispose the draft's three controllers. |

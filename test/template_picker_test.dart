@@ -8,8 +8,16 @@ import 'package:my_device/app/app.dart';
 /// Returns: `Future<void>`.
 /// Side effects: Pumps the app and taps the template FAB.
 /// Notes: The FAB is located by its `heroTag` rather than by icon or position,
-/// so the test does not break when the FAB row is restyled.
+/// so the test does not break when the FAB row is restyled. The viewport is
+/// pinned to a 4:3 tablet in portrait because the default 800 × 600 test window
+/// passes the app-wide split rule, and this test is about the picker, not
+/// the editor's two-pane layout; a 768 dp width also keeps `flutter_test`'s
+/// em-square rendering of the English dropdown labels from overflowing, a font
+/// artifact the layout tests avoid by running in Simplified Chinese.
 Future<void> openTemplateSheet(WidgetTester tester) async {
+  tester.view.devicePixelRatio = 1.0;
+  tester.view.physicalSize = const Size(768, 1024);
+  addTearDown(tester.view.reset);
   await tester.pumpWidget(const ProviderScope(child: MyDeviceApp()));
   await tester.pump();
   await tester.pump(const Duration(seconds: 1));

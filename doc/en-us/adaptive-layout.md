@@ -204,6 +204,51 @@ page's 260 dp info card a long DNS list wraps, which is acceptable.
 | Phone 412 × 915 / 915 × 412 | no | — | — |
 | Desktop 1600 × 900 | yes | 420 | 1179 |
 
+## A pane that must not scroll: the device edit page
+
+The device edit page splits through the same `useDetailTwoPane` delegate and
+`detailLeftPaneWidth`, but its left pane has a requirement the detail pages do not: it holds the
+thing being edited — the avatar picker, the name field and the category dropdown — and should stay
+on screen while everything from brand down scrolls on the right. Both panes stay inside the one
+`Form`, so `validate()` still reaches fields on both sides, and every controller already lives in
+`State`, so a half-typed value survives folding or unfolding mid-edit.
+
+The naive version — a fixed 56 dp avatar above two fields — would fit, but a fixed *large* avatar
+would not: at the 480 dp minimum height the split rule admits, the pane has 424 dp after the app
+bar. So the avatar is sized **from the height left over**, and the column fits by construction:
+
+```dart
+const deviceEditLeftPaneFieldBudget = 318.0;   // everything in the column except the avatar
+double editAvatarSize(double paneWidth, double paneHeight) =>
+    (paneHeight - 318).clamp(56.0, 160.0)      // then capped at paneWidth − 32
+```
+
+The 318 is 16 of top padding, 12 between the avatar and its chips, three rows of 32 dp
+`ActionChip`s at 8 dp run spacing in the worst case (a 260 dp pane puts the Japanese labels one per
+row) = 112, 16 under them, a 56 dp name field, 12, a 56 dp category field, 22 of slack for a
+validation error under the name field, and 16 of bottom padding. At the 480 floor the avatar comes
+out at 106; a Z Fold 8 in landscape (704 − 56 = 648) reaches the 160 ceiling; the 56 floor is the
+size the single-column icon section always had. `test/detail_layout_test.dart` asserts the
+arithmetic, not the pixels: the assembled column stays under the pane height at every window height
+from 480 to 1200.
+
+**Brand, model and serial stay on the right, deliberately.** Brand's `Autocomplete` overlay is
+hard-capped at 360 dp, wider than a 260 dp pane, and its 68 dp would push the avatar under its 56 dp
+floor at the split minimum. The single-column order is untouched: name, category, brand, model,
+serial, icon section, dates, finance, CPU, GPU, other specs, notes.
+
+The pane is still wrapped in a `SingleChildScrollView` with `minHeight` pinned to the pane. Not
+because it should ever scroll, but because a soft keyboard can shrink the body below what the
+arithmetic covers, and degrading to a scroll is far better than an overflow stripe.
+
+| Viewport | Splits | Pane | Pane height | Avatar |
+|---|---|---|---|---|
+| Z Fold 8 landscape 933 × 704 | yes | 336 | 648 | 160 |
+| Z Fold 7 832 × 750 / 750 × 832 | yes | 300 / 270 | 694 / 776 | 160 / 160 |
+| Tablet 1024 × 768 | yes | 369 | 712 | 160 |
+| Split floor 600 × 480 | yes | 260 | 424 | 106 |
+| Z Fold 8 portrait, tablet portrait, phone either way | no | — | — | 56, single column |
+
 ## Two blocks side by side: a width floor on top of the split rule
 
 Some layouts need both questions answered. The finance overview is the case: three summary metrics
@@ -356,14 +401,15 @@ to save and restore.
 | `service_list_page.dart` (quick-access route dialog) | `dialogMaxWidth` | A constant, not a rule. |
 | `device_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Plus a third gate: at least one spec section. Pushed outside the shell: measures the raw window. |
 | `network_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Pushed outside the shell. |
+| `device_edit_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth`, `editAvatarSize` | The left pane is non-scrolling by construction; see above. Pushed outside the shell. |
 | `device_finance_overview_page.dart` (summary beside chart) | `canSplitLayout`, `useFinanceSideBySide`, `financeSummaryPaneWidth` | The double gate, plus a non-empty distribution; see above. |
 | `device_finance_overview_page.dart` (summary card) | `financeSummaryColumns` | Width only, floored at two; forced to one column inside the side-by-side pane. Pushed outside the shell: measures its own `LayoutBuilder`. |
 | `device_search_dialog.dart`, `chip_search_dialog.dart` | `dialogBodyHeight`, `dialogMaxWidth` | Height from the window less the keyboard. |
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | none needed | Already a `LayoutBuilder`-driven, full-bleed `InteractiveViewer`; the layout cache is keyed on the viewport width. |
 | `device_map_page.dart`, `map_picker_page.dart` | none needed | A full-bleed map fills whatever it is given; the picker's search row is already an `Expanded` field beside a button. |
 
-Every other page is still a fixed single column and is scheduled: the device edit page in 1.5.3,
-the remaining edit pages and sheets in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
+Every other page is still a fixed single column and is scheduled: the remaining edit pages and
+sheets in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
 count remains in `lib/`: the emoji picker's `crossAxisCount: 8` in `device_edit_page.dart`, a count
 rather than a comparison, listed here so the "no inline width decision" claim stays honest.
 
@@ -389,8 +435,12 @@ verbatim.
   break. It also asserts that `serviceMetricColumns` still agrees with the inline arithmetic it
   replaced.
 - `test/detail_layout_test.dart` — the detail delegate's agreement with the split rule, the pane
-  width's clamps, the finance width floor at named devices, and the loop invariant that the chart
-  never falls under its minimum from the gate up to 2000 dp.
+  width's clamps, the finance width floor at named devices, the loop invariant that the chart
+  never falls under its minimum from the gate up to 2000 dp, and the loop invariant that the edit
+  page's left column fits its pane at every window height from 480 to 1200.
+- `test/device_edit_two_pane_ui_test.dart` — the rendered edit page at a Z Fold 8 both ways, a
+  phone, the 600 × 480 floor and under a 300 dp soft-keyboard inset: which fields share the left
+  pane, that one `Form` still wraps both, and that nothing overflows.
 - `test/device_detail_layout_ui_test.dart`, `test/network_detail_layout_ui_test.dart`,
   `test/finance_overview_layout_ui_test.dart` — the rendered pages at a Z Fold 8 both ways, a
   Z Fold 7 in portrait, a phone both ways, a tablet and the 600 × 480 floor: which pane holds what,

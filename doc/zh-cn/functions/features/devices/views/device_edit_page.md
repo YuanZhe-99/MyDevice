@@ -42,13 +42,17 @@
 | `_showEmojiPicker` | 方法（`_DeviceEditPageState`） | B | 显示 `_commonEmojis` 底部面板网格；点击一个设 `_emoji` 并清除 `_imagePath`。 |
 | [`_pickImage`](#_pickimage) | 方法（`_DeviceEditPageState`） | A | 让用户挑照片并采用为设备图标，清除任何 emoji。 |
 | `_removeIcon` | 方法（`_DeviceEditPageState`） | B | 清除 `_emoji` 和 `_imagePath` 两者。 |
-| `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览加图像挑/emoji 挑/移除操作。 |
+| `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览加图像挑/emoji 挑/移除操作；`avatarSize`（56，或双栏左窗格中的 `editAvatarSize`）与 `stacked`（chip 居中放在预览之下而非旁边）。 |
+| `_buildNameField` | 方法（组件辅助） | B | 带校验的名称 `TextFormField`，单列与双栏左窗格共享。 |
+| `_buildCategoryField` | 方法（组件辅助） | B | 类别 `DropdownButtonFormField`，同样共享。 |
+| `_buildFormBody` | 方法（组件辅助） | B | 在同一个 `Form` 内选择布局：`_buildFields` 的单列 `ListView`，或——`useDetailTwoPane` 通过时——一个 `Row`：`detailLeftPaneWidth` 宽的左窗格（`editAvatarSize` 尺寸的堆叠图标区、名称、类别；钉住窗格高度的 `SingleChildScrollView` 作软键盘兜底）加右侧其余字段的 `ListView`。 |
+| `_buildFields` | 方法（组件辅助） | B | 按原顺序的完整字段列表；`twoPane` 时省略左窗格自己渲染的名称、类别与图标区。 |
 | `_currencyItems` | 方法（组件辅助） | B | 从 `supportedCurrencies` 构建货币下拉项，加未列出时的 `current`。 |
 | `_buildMoneyFields` | 方法（组件辅助） | B | 渲染金额+货币行，非默认货币时加自动汇率复选框和手动汇率字段。 |
 | `_addRecurringCost` | 方法（`_DeviceEditPageState`） | B | 追加新空白 `_RecurringCostDraft`（默认种类 `other`，货币 = `_defaultCurrency`）。 |
 | `_buildRecurringCostCard` | 方法（组件辅助） | B | 渲染一个循环成本草稿的可编辑卡片（种类/名/计费周期/货币字段/移除按钮）。 |
 | `_buildFinancialSection` | 方法（组件辅助） | B | 渲染获取/生命周期/购买/出售/循环成本财务小节。 |
-| `build` | 方法（组件） | B | 构建脚手架、应用栏（保存 + 在线搜索操作）和完整可编辑表单。 |
+| `build` | 方法（组件） | B | 围绕 `_buildFormBody` 构建脚手架和应用栏（保存 + 在线搜索操作）。 |
 | `_RecurringCostDraft`（构造函数） | 构造函数 | B | 创建带新鲜金额/名/汇率控制器、`billingCycle` 默认月度、`autoRate` 默认 true 的草稿。 |
 | [`_RecurringCostDraft.fromCost`](#_recurringcostdraft-fromcost) | 工厂构造函数（`_RecurringCostDraft`） | A | 把持久化 `DeviceRecurringCost` 转换为可编辑草稿。 |
 | `dispose` | 方法（`_RecurringCostDraft`） | B | 释放草稿的三个控制器。 |

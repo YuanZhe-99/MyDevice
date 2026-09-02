@@ -87,4 +87,32 @@ void main() {
       expect(financeSummaryPaneWidth(1568), 360); // desktop cap
     });
   });
+
+  group('device edit left pane', () {
+    test('the column fits at every splittable height', () {
+      // Pane height is the window less a 56 dp app bar; the split floor is
+      // 480 and a desktop window is taken as 1200.
+      for (var h = 480.0; h <= 1200; h += 1) {
+        final pane = h - 56;
+        final avatar = editAvatarSize(300, pane);
+        expect(
+          avatar + deviceEditLeftPaneFieldBudget,
+          lessThanOrEqualTo(pane),
+          reason: 'overflows at window height $h',
+        );
+      }
+    });
+
+    test('clamps at both ends', () {
+      expect(editAvatarSize(300, 424), 106); // 480 floor: 424 − 318
+      expect(editAvatarSize(300, 374), deviceEditAvatarMinSize); // floor
+      expect(editAvatarSize(300, 648), deviceEditAvatarMaxSize); // Fold 8
+      expect(editAvatarSize(300, 2000), deviceEditAvatarMaxSize);
+    });
+
+    test('a narrow pane re-derives from its width', () {
+      expect(editAvatarSize(120, 2000), 88); // 120 − 32
+      expect(editAvatarSize(0, 2000), deviceEditAvatarMaxSize); // no width
+    });
+  });
 }

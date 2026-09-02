@@ -18,7 +18,7 @@ locally in `_averageDailyCostAt`/`_totalDailyCostAt`). See
 | `DeviceFinanceOverviewPage` (constructor) | constructor | B | Store the device list and default currency for the page widget. |
 | `createState` | method (`DeviceFinanceOverviewPage`) | B | Create the page's mutable state object. |
 | `build` | method (widget) | B | Build the scaffold and stack the summary/distribution/trend cards. |
-| `_buildSummaryCard` | method (widget helper) | B | Render the total cost / daily cost / device-count metrics row. |
+| `_buildSummaryCard` | method (widget helper) | B | Render the total cost / daily cost / device-count metrics row, in the columns `financeSummaryColumns` (`adaptive_layout.dart`) returns for the card's width. |
 | `_buildAssetDistribution` | method (widget helper) | B | Render the asset-distribution pie chart and per-category legend rows. |
 | `_buildTrendCard` | method (widget helper) | B | Render the trend chart's title, range selector, and line chart panel. |
 | [`_buildLineChartPanel`](#_buildlinechartpanel) | method (`_DeviceFinanceOverviewPageState`) | A | Compute log-scale axis bounds/intervals and build the `fl_chart` `LineChart`. |

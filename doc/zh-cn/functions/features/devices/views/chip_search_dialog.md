@@ -14,7 +14,7 @@
 | `dispose` | 方法（组件生命周期） | B | 释放查询文本控制器。 |
 | [`_search`](#_search) | 方法（`_ChipSearchDialogState`） | A | 对 `ChipSearchService` 运行 CPU/GPU 搜索并更新对话框状态。 |
 | `_select` | 方法（`_ChipSearchDialogState`） | B | 把所选结果转换为 `CpuInfo`/`GpuInfo` 弹出对话框。 |
-| `build` | 方法（组件） | B | 构建对话框壳（页头、搜索栏、结果区）。 |
+| `build` | 方法（组件） | B | 构建对话框壳（页头、搜索栏、结果区）——宽 `dialogMaxWidth`，高 `dialogBodyHeight(窗口 − 键盘, preferred: 480)`。 |
 | `_buildResults` | 方法（组件辅助） | B | 渲染搜索结果的加载/错误/空/列表状态。 |
 | [`_coresLabel`](#_coreslabel) | 方法（`_ChipSearchDialogState`） | A | 把 CPU 结果的性能/效率核心数格式化为短标签。 |
 

@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_share_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../../devices/widgets/device_category_icon.dart';
@@ -351,19 +352,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
-            const spacing = 12.0;
-            const minMetricWidth = 150.0;
-            final availableWidth = constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : MediaQuery.sizeOf(context).width - 32;
-            final columnCount = math.min(
-              4,
-              math.max(
-                1,
-                ((availableWidth + spacing) / (minMetricWidth + spacing))
-                    .floor(),
-              ),
-            );
+            const spacing = listTileGap;
+            final availableWidth = constraints.maxWidth;
+            final columnCount = serviceMetricColumns(availableWidth);
             final cardWidth =
                 (availableWidth - spacing * (columnCount - 1)) / columnCount;
             return Wrap(
@@ -620,7 +611,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
         padding: const EdgeInsets.all(16),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final compact = constraints.maxWidth < 680;
+            final compact = !useTopologyActionsRow(constraints.maxWidth);
             final title = Row(
               children: [
                 Icon(
@@ -1201,7 +1192,7 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
     return AlertDialog(
       title: Text(l10n.serviceAddAccess),
       content: SizedBox(
-        width: 560,
+        width: dialogMaxWidth,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(

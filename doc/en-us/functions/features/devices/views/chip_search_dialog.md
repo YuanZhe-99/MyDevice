@@ -21,7 +21,7 @@ renders whatever comes back.
 | `dispose` | method (widget lifecycle) | B | Dispose the query text controller. |
 | [`_search`](#_search) | method (`_ChipSearchDialogState`) | A | Run a CPU/GPU search against `ChipSearchService` and update dialog state. |
 | `_select` | method (`_ChipSearchDialogState`) | B | Pop the dialog with the chosen result converted to `CpuInfo`/`GpuInfo`. |
-| `build` | method (widget) | B | Build the dialog shell (header, search bar, results area). |
+| `build` | method (widget) | B | Build the dialog shell (header, search bar, results area) — `dialogMaxWidth` wide, `dialogBodyHeight(window − keyboard, preferred: 480)` tall. |
 | `_buildResults` | method (widget helper) | B | Render the loading/error/empty/list states for search results. |
 | [`_coresLabel`](#_coreslabel) | method (`_ChipSearchDialogState`) | A | Format a CPU result's performance/efficiency core counts into a short label. |
 

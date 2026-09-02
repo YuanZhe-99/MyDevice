@@ -32,6 +32,9 @@ the `myapps_data` package embedded at `packages/myapps_data`, documented at
 
 - [Architecture](architecture.md) — app shell, routing, state management, theming,
   localization, repository layout.
+- [Adaptive Layout](adaptive-layout.md) — when a layout may split on a foldable, tablet or
+  desktop window, where navigation lives, how many columns fit, and why the rule is an aspect
+  test rather than a width breakpoint.
 - [Data Formats](data-formats.md) — every persisted model's fields, the `extraJson`
   unknown-field preservation pattern, and the full persisted-data inventory.
 - [WebDAV Sync](sync.md) — the 9-step per-record three-way sync flow, retry/heartbeat

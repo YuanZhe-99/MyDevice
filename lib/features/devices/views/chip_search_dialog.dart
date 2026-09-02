@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../models/device.dart';
 import '../services/chip_search_service.dart';
 
@@ -167,11 +168,20 @@ class _ChipSearchDialogState extends State<_ChipSearchDialog> {
     final isCpu = widget.mode == _ChipMode.cpu;
     final title = isCpu ? l10n.searchCpuInfo : l10n.searchGpuInfo;
 
+    // See device_search_dialog.dart: the body height follows the window less
+    // the soft keyboard rather than a fixed value.
+    final availableHeight =
+        MediaQuery.sizeOf(context).height -
+        MediaQuery.viewInsetsOf(context).bottom;
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: dialogInsetHorizontal,
+        vertical: dialogInsetVertical,
+      ),
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
-        height: 480,
+        width: dialogMaxWidth,
+        height: dialogBodyHeight(availableHeight, preferred: 480),
         child: Column(
           children: [
             // Header

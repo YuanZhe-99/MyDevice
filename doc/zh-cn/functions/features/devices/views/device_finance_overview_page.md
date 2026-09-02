@@ -9,7 +9,7 @@
 | `DeviceFinanceOverviewPage`（构造函数） | 构造函数 | B | 为页面组件存储设备列表和默认货币。 |
 | `createState` | 方法（`DeviceFinanceOverviewPage`） | B | 创建页面可变状态对象。 |
 | `build` | 方法（组件） | B | 构建脚手架并堆叠摘要/分布/趋势卡片。 |
-| `_buildSummaryCard` | 方法（组件辅助） | B | 渲染总成本 / 每日成本 / 设备数指标行。 |
+| `_buildSummaryCard` | 方法（组件辅助） | B | 按 `financeSummaryColumns`（`adaptive_layout.dart`）为卡片宽度返回的列数渲染总成本 / 每日成本 / 设备数指标行。 |
 | `_buildAssetDistribution` | 方法（组件辅助） | B | 渲染资产分布饼图和逐类别图例行。 |
 | `_buildTrendCard` | 方法（组件辅助） | B | 渲染趋势图标题、范围选择器和折线图面板。 |
 | [`_buildLineChartPanel`](#_buildlinechartpanel) | 方法（`_DeviceFinanceOverviewPageState`） | A | 计算对数刻度轴边界/间隔并构建 `fl_chart` `LineChart`。 |

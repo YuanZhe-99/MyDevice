@@ -18,7 +18,7 @@
 ## 应用壳：`lib/app/`
 
 - **`app.dart`** — `MyDeviceApp`，监视 `appSettingsProvider` 并构建 `MaterialApp.router` 的 `ConsumerWidget`。它把主题模式、语言区域、支持语言区域和 `routerConfig: appRouter` 接在一起。应用标题字面为 `'MyDevice!!!!!'`。
-- **`router.dart`** — `appRouter` 是 `initialLocation: '/devices'` 的 `GoRouter`，带包裹 `ShellScaffold` 的单个 `ShellRoute`。五个底部标签路由住在那个壳内：
+- **`router.dart`** — `appRouter` 是 `initialLocation: '/devices'` 的 `GoRouter`，带包裹 `ShellScaffold` 的单个 `ShellRoute`。五个标签路由住在那个壳内，在窄于 600 逻辑像素的窗口上由底部 `NavigationBar` 到达，更宽的窗口上由侧边 `NavigationRail` 到达——这是 `lib/shared/utils/adaptive_layout.dart` 里 `useNavigationRail` 的仅宽度决策（见[自适应布局](adaptive-layout.md)）。其他每一页都推到壳之上的根导航器：
 
   | 路径 | 页面 |
   | --- | --- |
@@ -116,8 +116,9 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 
 ## 核心架构规则
 
-- 导航用带上面列出的五个底部标签 `ShellRoute` 的 `go_router`。
+- 导航用带上面列出的五个标签 `ShellRoute` 的 `go_router`。
 - 视觉系统经 `flex_color_scheme` 用 Material 3。
+- 每个宽度或高度决策——布局能否分栏、导航放在哪里、能容纳多少列、对话框能多高——都经过 `lib/shared/utils/adaptive_layout.dart`。组件文件里把尺寸和数字比较就是 bug。见[自适应布局](adaptive-layout.md)。
 - 文件 IO 经 `DeviceStorage.getAppDir()`，使用户配置的自定义存储路径（`storage_config.json`）总是被尊重。
 - JSON 输出用 `JsonEncoder.withIndent('  ')` 美化打印。
 - 可选 null/空字段经条件映射条目从 JSON 省略（如 `if (notes != null) 'notes': notes`），不写显式 `null`。

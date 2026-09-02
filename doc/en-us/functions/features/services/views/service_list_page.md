@@ -58,11 +58,11 @@ functions** at its tail (lines 2253–2438: `_splitTargets` through `_iconForSer
 | `_viewLabel` | method (`_ServiceListPageState`) | B | Map a `_ServiceView` to its localized segmented-button label. |
 | `build` | method (widget, `_ServiceListPageState`) | B | Build the scaffold: app bar actions, FAB, view switcher, current view body. |
 | `_buildCurrentView` | method (widget helper) | B | Dispatch to the builder for the currently selected `_ServiceView`. |
-| `_buildOverview` | method (widget helper) | B | Render the overview view: metric cards, topology card, warnings, route groups, service list. |
+| `_buildOverview` | method (widget helper) | B | Render the overview view: metric cards (columns from `serviceMetricColumns`), topology card, warnings, route groups, service list. |
 | `_buildDevices` | method (widget helper) | B | Render the by-device view: services grouped and expandable per device. |
 | `_buildRoutes` | method (widget helper, `_ServiceListPageState`) | B | Render the routes view: one card per route. |
 | `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage list. |
-| `_topologyCard` | method (widget helper) | B | Render the overview's topology summary card with a responsive header/actions row. |
+| `_topologyCard` | method (widget helper) | B | Render the overview's topology summary card; the header/actions row is gated by `useTopologyActionsRow` from `adaptive_layout.dart`. |
 | `_openTopology` | method (`_ServiceListPageState`) | B | Push the full-screen topology page for a built graph. |
 | [`_routesGroupedByService`](#routesgroupedbyservice) | method (`_ServiceListPageState`) | A | Group routes by source service id and sort the groups by service name. |
 | `_serviceRouteGroupCard` | method (widget helper) | B | Render one service's route group as an expandable card. |
@@ -83,7 +83,7 @@ functions** at its tail (lines 2253–2438: `_splitTargets` through `_iconForSer
 | [`_buildRoutes`](#buildroutes) | method (`_QuickAccessRouteDialogState`) | A | Assemble the single `ServiceRoute` described by the current form state. |
 | [`_buildHop`](#buildhop) | method (`_QuickAccessRouteDialogState`) | A | Build the one `ServiceRouteHop` matching the selected quick-access method. |
 | `_submit` | method (`_QuickAccessRouteDialogState`) | B | Validate the form and pop the dialog with the built route list. |
-| `build` | method (widget, `_QuickAccessRouteDialogState`) | B | Render the quick-access form (source/endpoint/method/relay/access-level fields). |
+| `build` | method (widget, `_QuickAccessRouteDialogState`) | B | Render the quick-access form (source/endpoint/method/relay/access-level fields) at `dialogMaxWidth`. |
 | [`_relayServiceOptions`](#relayserviceoptions) | method (`_QuickAccessRouteDialogState`) | A | List candidate relay services, preferring FRP-like ones for port-mapping methods. |
 | [`_isFrpLikeService`](#isfrplikeservice) | method (`_QuickAccessRouteDialogState`) | A | Heuristically decide whether a service looks like an FRP/tunnel relay. |
 | `_deviceName` | method (`_QuickAccessRouteDialogState`) | B | Resolve a device id to its name, or the id itself if unresolved. |

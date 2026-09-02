@@ -26,8 +26,11 @@ overall repository layout of MyDevice!!!!!. For data-level details see
   and builds a `MaterialApp.router`. It wires theme mode, locale, supported locales, and
   `routerConfig: appRouter` together. The app title is literally `'MyDevice!!!!!'`.
 - **`router.dart`** — `appRouter` is a `GoRouter` with `initialLocation: '/devices'` and a
-  single `ShellRoute` wrapping a `ShellScaffold`. Five bottom-tab routes live inside that
-  shell:
+  single `ShellRoute` wrapping a `ShellScaffold`. Five tab routes live inside that shell,
+  reached from a bottom `NavigationBar` on windows narrower than 600 logical pixels and from a
+  side `NavigationRail` on wider ones — a width-only decision made by `useNavigationRail` in
+  `lib/shared/utils/adaptive_layout.dart` (see [Adaptive Layout](adaptive-layout.md)). Every
+  other page is pushed on the root navigator above the shell:
 
   | Path | Page |
   | --- | --- |
@@ -153,8 +156,12 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
 
 ## Core architecture rules
 
-- Navigation uses `go_router` with a `ShellRoute` for the five bottom tabs listed above.
+- Navigation uses `go_router` with a `ShellRoute` for the five tabs listed above.
 - The visual system uses Material 3 via `flex_color_scheme`.
+- Every width or height decision — whether a layout may split, where navigation lives, how many
+  columns fit, how tall a dialog may be — goes through `lib/shared/utils/adaptive_layout.dart`. A
+  widget file that compares a size against a number is a bug. See
+  [Adaptive Layout](adaptive-layout.md).
 - File I/O goes through `DeviceStorage.getAppDir()` so a user-configured custom storage
   path (`storage_config.json`) is always honored.
 - JSON output is pretty-printed with `JsonEncoder.withIndent('  ')`.

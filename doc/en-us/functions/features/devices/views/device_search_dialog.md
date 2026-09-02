@@ -24,7 +24,7 @@ no current values, feeding a brand-new `DeviceEditPage`).
 | [`_initToggles`](#_inittoggles) | method (`_SearchDialogState`) | A | Set default checkbox state for each importable field based on what the result has. |
 | [`_fetchImage`](#_fetchimage) | method (`_SearchDialogState`) | A | Download the matched device's photo and stage it as a fetched image. |
 | [`_apply`](#_apply) | method (`_SearchDialogState`) | A | Assemble the field-name → value map to return to the caller from the checked toggles. |
-| `build` | method (widget) | B | Build the dialog shell and switch between search/preview phases. |
+| `build` | method (widget) | B | Build the dialog shell — `dialogMaxWidth` wide, `dialogBodyHeight(window − keyboard, preferred: 560)` tall — and switch between search/preview phases. |
 | `_buildSearchView` | method (widget helper) | B | Render the search phase (header, search bar, results list). |
 | `_buildSearchResults` | method (widget helper) | B | Render the loading/error/empty/list states for search results. |
 | `_buildPreviewView` | method (widget helper) | B | Render the preview phase (source badge, field list, apply/cancel buttons). |

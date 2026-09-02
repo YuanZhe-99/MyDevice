@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../models/device.dart';
 import '../services/exchange_rate_service.dart';
 
@@ -79,7 +80,7 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
         padding: const EdgeInsets.all(16),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= 520 ? 3 : 2;
+            final columns = financeSummaryColumns(constraints.maxWidth);
             final itemWidth =
                 (constraints.maxWidth - (columns - 1) * 16) / columns;
             return Wrap(

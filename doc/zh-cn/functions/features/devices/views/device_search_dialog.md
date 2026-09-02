@@ -17,7 +17,7 @@
 | [`_initToggles`](#_inittoggles) | 方法（`_SearchDialogState`） | A | 基于结果有什么为每个可导入字段设置默认复选框状态。 |
 | [`_fetchImage`](#_fetchimage) | 方法（`_SearchDialogState`） | A | 下载匹配设备照片并暂存为获取图像。 |
 | [`_apply`](#_apply) | 方法（`_SearchDialogState`） | A | 从勾选切换组装要返回调用方的字段名 → 值映射。 |
-| `build` | 方法（组件） | B | 构建对话框壳并在搜索/预览阶段间切换。 |
+| `build` | 方法（组件） | B | 构建对话框壳——宽 `dialogMaxWidth`，高 `dialogBodyHeight(窗口 − 键盘, preferred: 560)`——并在搜索/预览阶段间切换。 |
 | `_buildSearchView` | 方法（组件辅助） | B | 渲染搜索阶段（页头、搜索栏、结果列表）。 |
 | `_buildSearchResults` | 方法（组件辅助） | B | 渲染搜索结果的加载/错误/空/列表状态。 |
 | `_buildPreviewView` | 方法（组件辅助） | B | 渲染预览阶段（来源徽章、字段列表、应用/取消按钮）。 |

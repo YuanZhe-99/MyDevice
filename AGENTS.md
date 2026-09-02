@@ -33,6 +33,7 @@ about to change, verify against the code, then fix the docs in the same commit.
 | WebDAV sync flow, lock, conflicts | `doc/en-us/sync.md` |
 | Backup, restore, blob store | `doc/en-us/backup-restore.md` |
 | Files on disk, what syncs, `storage_config.json` keys | `doc/en-us/data-formats.md` |
+| When a layout splits, where navigation lives, how many columns fit; foldable rules | `doc/en-us/adaptive-layout.md` |
 | Windows/macOS/iOS/Android specifics, `file_picker` pin, Gradle/AGP state | `doc/en-us/platform-notes.md` |
 | CI jobs, build commands, fresh-clone steps | `doc/en-us/ci-cd.md` |
 | Why a behavior exists; past releases | `doc/en-us/version-history.md` |

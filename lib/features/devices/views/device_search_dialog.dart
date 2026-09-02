@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/image_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../services/device_search_service.dart';
 
 /// Shows the device search dialog.
@@ -197,14 +198,18 @@ class _SearchDialogState extends State<_SearchDialog> {
         ? l10n.searchAllSourcesFailed
         : l10n.searchPartialFailure;
     if (failures.isEmpty) return heading;
-    final lines = failures.map((f) => switch (f.status) {
-      DeviceSearchStatus.blocked => l10n.searchSourceBlocked(f.source),
-      DeviceSearchStatus.unreachable => l10n.searchSourceUnreachable(f.source),
-      DeviceSearchStatus.markupChanged => l10n.searchSourceMarkupChanged(
-        f.source,
-      ),
-      DeviceSearchStatus.ok => '',
-    });
+    final lines = failures.map(
+      (f) => switch (f.status) {
+        DeviceSearchStatus.blocked => l10n.searchSourceBlocked(f.source),
+        DeviceSearchStatus.unreachable => l10n.searchSourceUnreachable(
+          f.source,
+        ),
+        DeviceSearchStatus.markupChanged => l10n.searchSourceMarkupChanged(
+          f.source,
+        ),
+        DeviceSearchStatus.ok => '',
+      },
+    );
     return [heading, ...lines.where((l) => l.isNotEmpty)].join('\n');
   }
 
@@ -352,11 +357,21 @@ class _SearchDialogState extends State<_SearchDialog> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // The window less the soft keyboard is what the dialog can actually use;
+    // the body height is derived from it rather than fixed, so a phone in
+    // landscape gets a dialog that fits instead of one that overflows.
+    final availableHeight =
+        MediaQuery.sizeOf(context).height -
+        MediaQuery.viewInsetsOf(context).bottom;
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 40),
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: dialogInsetHorizontal,
+        vertical: dialogInsetVertical,
+      ),
       clipBehavior: Clip.antiAlias,
       child: SizedBox(
-        height: 560,
+        width: dialogMaxWidth,
+        height: dialogBodyHeight(availableHeight, preferred: 560),
         child: _phase == _Phase.search
             ? _buildSearchView(l10n)
             : _buildPreviewView(l10n),

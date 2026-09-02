@@ -27,11 +27,11 @@
 | `_viewLabel` | 方法（`_ServiceListPageState`） | B | 把 `_ServiceView` 映射到其本地化分段按钮标签。 |
 | `build` | 方法（组件，`_ServiceListPageState`） | B | 构建脚手架：应用栏操作、FAB、视图切换器、当前视图主体。 |
 | `_buildCurrentView` | 方法（组件辅助） | B | 分发到当前所选 `_ServiceView` 的构建器。 |
-| `_buildOverview` | 方法（组件辅助） | B | 渲染总览视图：指标卡片、拓扑卡片、警告、路由组、服务列表。 |
+| `_buildOverview` | 方法（组件辅助） | B | 渲染总览视图：指标卡片（列数来自 `serviceMetricColumns`）、拓扑卡片、警告、路由组、服务列表。 |
 | `_buildDevices` | 方法（组件辅助） | B | 渲染按设备视图：每设备分组并可展开的服务。 |
 | `_buildRoutes` | 方法（组件辅助，`_ServiceListPageState`） | B | 渲染路由视图：每路由一张卡片。 |
 | `_buildPorts` | 方法（组件辅助） | B | 渲染端口视图：端口冲突横幅加逐设备端口使用列表。 |
-| `_topologyCard` | 方法（组件辅助） | B | 渲染总览拓扑摘要卡片，带响应式页头/操作行。 |
+| `_topologyCard` | 方法（组件辅助） | B | 渲染总览拓扑摘要卡片；页头/操作行由 `adaptive_layout.dart` 的 `useTopologyActionsRow` 门控。 |
 | `_openTopology` | 方法（`_ServiceListPageState`） | B | 为构建图压入全屏拓扑页。 |
 | [`_routesGroupedByService`](#routesgroupedbyservice) | 方法（`_ServiceListPageState`） | A | 按源服务 id 分组路由并按服务名排序组。 |
 | `_serviceRouteGroupCard` | 方法（组件辅助） | B | 渲染一个服务的路由组为可展开卡片。 |
@@ -52,7 +52,7 @@
 | [`_buildRoutes`](#buildroutes) | 方法（`_QuickAccessRouteDialogState`） | A | 组装当前表单状态描述的单个 `ServiceRoute`。 |
 | [`_buildHop`](#buildhop) | 方法（`_QuickAccessRouteDialogState`） | A | 构建匹配所选快速访问方法的单跳 `ServiceRouteHop`。 |
 | `_submit` | 方法（`_QuickAccessRouteDialogState`） | B | 验证表单并带构建路由列表弹出对话框。 |
-| `build` | 方法（组件，`_QuickAccessRouteDialogState`） | B | 渲染快速访问表单（源/端点/方法/中继/访问级别字段）。 |
+| `build` | 方法（组件，`_QuickAccessRouteDialogState`） | B | 以 `dialogMaxWidth` 渲染快速访问表单（源/端点/方法/中继/访问级别字段）。 |
 | [`_relayServiceOptions`](#relayserviceoptions) | 方法（`_QuickAccessRouteDialogState`） | A | 列出候选中继服务，端口映射方法偏好 FRP 类。 |
 | [`_isFrpLikeService`](#isfrplikeservice) | 方法（`_QuickAccessRouteDialogState`） | A | 启发式决定服务是否像 FRP/隧道中继。 |
 | `_deviceName` | 方法（`_QuickAccessRouteDialogState`） | B | 把设备 id 解析为其名，无法解析时 id 本身。 |

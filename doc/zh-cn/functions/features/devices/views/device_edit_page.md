@@ -39,7 +39,7 @@
 | [`_applySearchResult`](#_applysearchresult) | 方法（`_DeviceEditPageState`） | A | 把搜索结果字段映射应用到表单，把 CPU/GPU 文本与加载预设模糊匹配。 |
 | [`_detectLogoForModel`](#_detectlogoformodel) | 方法（`_DeviceEditPageState`） | A | 为实时输入的 CPU/GPU 型号字符串找到 SVG logo 路径。 |
 | `_brandLogoWidget` | 方法（组件辅助） | B | 渲染小 SVG logo（着色为 `onSurface`），`logoPath` 为 null 时无。 |
-| `_showEmojiPicker` | 方法（`_DeviceEditPageState`） | B | 显示 `_commonEmojis` 底部面板网格；点击一个设 `_emoji` 并清除 `_imagePath`。 |
+| `_showEmojiPicker` | 方法（`_DeviceEditPageState`） | B | 以 `emojiGridColumns(表单宽度)` 列显示 `_commonEmojis` 底部面板网格；点击一个设 `_emoji` 并清除 `_imagePath`。CPU / GPU 预设面板以 `sheetInitialSize(窗口高度, preferred: 0.6)` 打开。 |
 | [`_pickImage`](#_pickimage) | 方法（`_DeviceEditPageState`） | A | 让用户挑照片并采用为设备图标，清除任何 emoji。 |
 | `_removeIcon` | 方法（`_DeviceEditPageState`） | B | 清除 `_emoji` 和 `_imagePath` 两者。 |
 | `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览加图像挑/emoji 挑/移除操作；`avatarSize`（56，或双栏左窗格中的 `editAvatarSize`）与 `stacked`（chip 居中放在预览之下而非旁边）。 |

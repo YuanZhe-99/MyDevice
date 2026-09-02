@@ -23,7 +23,10 @@ stable identifiers.
 | [`_save`](#save) | method (`_DataSetEditPageState`) | A | Build the storage links, construct/update the `DataSet`, persist it, and pop. |
 | `_pickEmoji` | method (`_DataSetEditPageState`) | B | Show the emoji-picker dialog and apply the chosen emoji. |
 | `dispose` | method (widget lifecycle) | B | Dispose the name text controller. |
-| `build` | method (widget) | B | Build the scaffold: emoji/name row, then a per-device storage checklist. |
+| `build` | method (widget) | B | Build the scaffold around `_buildBody`. |
+| `_buildBody` | method (widget helper) | B | Choose the layout: a single `ListView` (emoji/name row, then the storage checklist), or — when `useDetailTwoPane` passes — a `Row` of an `editFormLeftPaneWidth`-wide fixed left pane holding the row (in a scroll view pinned to the pane height as the soft-keyboard fallback) and a right `ListView` of the checklist. |
+| `_buildHeaderRow` | method (widget helper) | B | The emoji tile and name field row — extracted from `build` unchanged. |
+| `_buildStorageChildren` | method (widget helper) | B | The storage heading, empty-state text and per-device checkbox cards — extracted from `build` unchanged. |
 
 Row count (9) matches `grep -c 'Purpose:' dataset_edit_page.dart` (9) exactly.
 

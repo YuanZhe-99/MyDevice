@@ -69,3 +69,25 @@ double editAvatarSize(double paneWidth, double paneHeight) {
   if (maxWidth > 0 && size > maxWidth) size = maxWidth;
   return size;
 }
+
+/// Purpose: Return the width of an edit form's fixed left pane.
+/// Inputs: `totalWidth` — the page body's width, the raw window.
+/// Returns: `double`.
+/// Side effects: None.
+/// Notes: Wider than [detailLeftPaneWidth] because the service, route and
+/// dataset edit pages put form fields on the left rather than a card of
+/// text: an `OutlineInputBorder` dropdown whose longest localized label is
+/// Japanese needs about 268 inside the pane's 32 dp of padding, hence the 300
+/// floor. At the 600 dp split minimum the right pane keeps 299, enough for
+/// the Docker Compose editor's monospace text at 267.
+double editFormLeftPaneWidth(double totalWidth) {
+  return (totalWidth * 0.42).clamp(300.0, 480.0);
+}
+
+/// Logical pixels the dataset edit page's fixed left pane needs: 16 of
+/// padding, the 56 dp emoji tile and name field row, and 16 of padding.
+///
+/// No arithmetic is needed to make that pane fit — 88 is far under the 424 a
+/// pane has at the 480 dp split floor — but it is stated so the test can pin
+/// it.
+const dataSetEditLeftPaneHeight = 88.0;

@@ -115,4 +115,21 @@ void main() {
       expect(editAvatarSize(0, 2000), deviceEditAvatarMaxSize); // no width
     });
   });
+
+  group('edit form left pane', () {
+    test('is proportional between wider clamps than a detail pane', () {
+      expect(editFormLeftPaneWidth(600), 300); // split floor: 252 → 300
+      expect(editFormLeftPaneWidth(933), closeTo(391.86, 0.01)); // Fold 8
+      expect(editFormLeftPaneWidth(1024), closeTo(430.08, 0.01)); // tablet
+      expect(editFormLeftPaneWidth(1600), 480); // desktop: 672 → 480
+    });
+
+    test('leaves the compose editor 299 at the split floor', () {
+      expect(600 - 1 - editFormLeftPaneWidth(600), 299);
+    });
+
+    test('the dataset edit left pane fits the shortest split window', () {
+      expect(dataSetEditLeftPaneHeight, lessThan(480 - 56));
+    });
+  });
 }

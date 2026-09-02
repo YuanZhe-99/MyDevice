@@ -10,7 +10,9 @@ summary card; and `dialogInsetHorizontal`, `dialogInsetVertical`, `dialogMaxWidt
 `dialogMinBodyHeight` for the search dialogs; and `deviceTileMinWidth`, `networkTileMinWidth`,
 `dataSetTileMinWidth` and `serviceCardMinWidth` for the four multi-column lists; and
 `financeSummaryPaneMinWidth` and `financeChartMinWidth` for the finance overview's side-by-side
-row. Eleven pure helpers sit on top of them.
+row; `formMaxWidth` for the network edit form; `emojiCellMinWidth`, `emojiCellGap` and
+`emojiMaxColumns` for the emoji picker; and `sheetCompactHeight` and `sheetMaxSize` for the
+draggable sheets. Thirteen pure helpers sit on top of them.
 
 The module deliberately depends on nothing but `dart:core` — it holds no Flutter imports, and
 `canSplitLayout` takes two doubles rather than a `Size` for exactly that reason — so every helper
@@ -50,8 +52,10 @@ preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
 | [`dialogBodyHeight`](#dialogbodyheight) | top-level function | A | Return the height a search dialog's body should take. |
 | [`useFinanceSideBySide`](#usefinancesidebyside) | top-level function | A | Report whether the finance summary fits beside the chart. |
 | [`financeSummaryPaneWidth`](#financesummarypanewidth) | top-level function | A | Return the width of the finance summary's metric column. |
+| [`emojiGridColumns`](#emojigridcolumns) | top-level function | A | Return how many columns the emoji picker lays its cells in. |
+| [`sheetInitialSize`](#sheetinitialsize) | top-level function | A | Return the fraction of the window a draggable sheet opens to. |
 
-The twenty-five constants are documented in source with the reason for each value and are not
+The thirty-one constants are documented in source with the reason for each value and are not
 repeated as rows here.
 
 ## Documentation
@@ -220,3 +224,30 @@ repeated as rows here.
 - **Notes:** No right-hand cap: above the gate the pane grows at 0.34 while the chart grows at
   0.66, so the chart's 340 dp floor is met at the boundary and exceeded above it — asserted across
   the whole range in `test/detail_layout_test.dart`.
+
+### `int emojiGridColumns(double sheetWidth)` <a id="emojigridcolumns"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Return how many columns the emoji picker lays its cells in.
+- **Inputs:** `sheetWidth` — the grid's `LayoutBuilder` constraint.
+- **Returns:** `int`, 1 to `emojiMaxColumns` (12).
+- **Side effects:** None.
+- **Algorithm:** `columnCapacity(sheetWidth, minItemWidth: 37, gap: 4, maxColumns: 12)`.
+- **Usage:** `_DeviceEditPageState._showEmojiPicker`.
+- **Notes:** 328 (a 360 dp phone less the sheet's padding) → 8, the count the picker hardcoded
+  before 1.5.4; 412 → 9; 608 → 12. The last hardcoded count in `lib/` retired.
+
+### `double sheetInitialSize(double screenHeight, {required double preferred})` <a id="sheetinitialsize"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Return the fraction of the window a draggable sheet opens to.
+- **Inputs:** `screenHeight` — the window height; `preferred` — the fraction the sheet wants on
+  a tall window.
+- **Returns:** `double` — `sheetMaxSize` (0.95) under `sheetCompactHeight` (480), else
+  `preferred`, never above `sheetMaxSize`.
+- **Side effects:** None.
+- **Usage:** The device template, CPU preset, GPU preset and service template pickers'
+  `initialChildSize`, whose `maxChildSize` is `sheetMaxSize`.
+- **Notes:** All four sheets are `isScrollControlled` with an autofocused search field; on a
+  412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. Capped so the
+  initial size can never exceed the maximum, which would assert.

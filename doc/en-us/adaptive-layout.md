@@ -402,16 +402,23 @@ to save and restore.
 | `device_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Plus a third gate: at least one spec section. Pushed outside the shell: measures the raw window. |
 | `network_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Pushed outside the shell. |
 | `device_edit_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth`, `editAvatarSize` | The left pane is non-scrolling by construction; see above. Pushed outside the shell. |
+| `service_edit_page.dart`, `service_route_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | Two panes that **both scroll**: the identity / source half (seven and five blocks, ~476 and ~340 dp) is too tall to pin at the 480 dp floor the way the device edit page pins its three, so the left pane is a plain scroll view. The pane is 0.42 of the window clamped 300–480, wider than a detail pane because it holds dropdowns whose longest Japanese label needs 268 inside 32 of padding; at the 600 dp floor the right pane keeps 299 for the Docker Compose editor. Pushed outside the shell. |
+| `dataset_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | A fixed left pane (the 56 dp emoji tile and the name field, 88 dp with padding — no arithmetic needed under the 424 a pane has at the floor) with the same scroll-view fallback; the storage checklist scrolls on the right. Pushed outside the shell. |
+| `network_edit_page.dart` | `formMaxWidth` | Width only, not the split rule: a lone column of six fields is capped at 600 dp and centred, so a desktop window stops stretching each field across its whole width and a phone is unchanged. |
+| The four `DraggableScrollableSheet` pickers (device template, CPU and GPU presets, service template) | `sheetInitialSize`, `sheetMaxSize` | Under 480 dp of height a sheet opens at 0.95 instead of its preferred 0.6 / 0.82: all four are `isScrollControlled` with an autofocused search field, and on a 412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. |
+| Emoji picker sheet (`device_edit_page.dart`) | `emojiGridColumns` | `columnCapacity` at a 37 dp cell with a 4 dp gap, which reproduces the eight columns a 360 dp phone always had and gives a Material 3 sheet at its 640 dp cap twelve. The last hardcoded count in `lib/`. |
 | `device_finance_overview_page.dart` (summary beside chart) | `canSplitLayout`, `useFinanceSideBySide`, `financeSummaryPaneWidth` | The double gate, plus a non-empty distribution; see above. |
 | `device_finance_overview_page.dart` (summary card) | `financeSummaryColumns` | Width only, floored at two; forced to one column inside the side-by-side pane. Pushed outside the shell: measures its own `LayoutBuilder`. |
 | `device_search_dialog.dart`, `chip_search_dialog.dart` | `dialogBodyHeight`, `dialogMaxWidth` | Height from the window less the keyboard. |
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | none needed | Already a `LayoutBuilder`-driven, full-bleed `InteractiveViewer`; the layout cache is keyed on the viewport width. |
 | `device_map_page.dart`, `map_picker_page.dart` | none needed | A full-bleed map fills whatever it is given; the picker's search row is already an `Expanded` field beside a button. |
+| Network detail's device picker sheet, dataset edit's emoji `SimpleDialog` | none needed | A `Wrap` of sixteen emoji and a short device list; both fit a phone and are capped by Material 3's 640 dp sheet and 560 dp dialog widths. |
 
-Every other page is still a fixed single column and is scheduled: the remaining edit pages and
-sheets in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
-count remains in `lib/`: the emoji picker's `crossAxisCount: 8` in `device_edit_page.dart`, a count
-rather than a comparison, listed here so the "no inline width decision" claim stays honest.
+Only the settings family (1.5.5) is still a fixed single column. **With 1.5.4, every width decision
+and every hardcoded count in `lib/` goes through `adaptive_layout.dart`**: the whole-tree grep in
+§11 of the series guide — `maxWidth|maxHeight|size.width|size.height` compared against a number,
+and `crossAxisCount:` followed by one — hits nothing outside `lib/shared/utils/`, where the two
+policy modules are the one place such a comparison belongs.
 
 ## Divergence from Google's guidance
 
@@ -441,6 +448,10 @@ verbatim.
 - `test/device_edit_two_pane_ui_test.dart` — the rendered edit page at a Z Fold 8 both ways, a
   phone, the 600 × 480 floor and under a 300 dp soft-keyboard inset: which fields share the left
   pane, that one `Form` still wraps both, and that nothing overflows.
+- `test/edit_pages_two_pane_ui_test.dart` — the service, route, dataset and network edit pages at
+  a Z Fold 8 both ways, a phone, the floor and a desktop: which half lands where, the dataset
+  pane at the floor, and the network form's 600 dp cap against a phone's full width. The emoji
+  grid, the sheet fractions and `editFormLeftPaneWidth` are pinned by the pure tests.
 - `test/device_detail_layout_ui_test.dart`, `test/network_detail_layout_ui_test.dart`,
   `test/finance_overview_layout_ui_test.dart` — the rendered pages at a Z Fold 8 both ways, a
   Z Fold 7 in portrait, a phone both ways, a tablet and the 600 × 480 floor: which pane holds what,

@@ -1259,8 +1259,11 @@ class _TemplatePickerState extends State<_TemplatePicker> {
     final items = _filtered;
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
+      initialChildSize: sheetInitialSize(
+        MediaQuery.sizeOf(context).height,
+        preferred: 0.6,
+      ),
+      maxChildSize: sheetMaxSize,
       minChildSize: 0.3,
       builder: (context, scrollController) => Column(
         children: [

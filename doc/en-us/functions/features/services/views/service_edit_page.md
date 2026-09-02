@@ -30,13 +30,16 @@ Persistence goes through `ServiceStorage.addOrUpdateService`/`deleteService`
 | `_addEndpoint` | method (`_ServiceEditPageState`) | B | Open the endpoint dialog and append the result to the endpoints list. |
 | `_editEndpoint` | method (`_ServiceEditPageState`) | B | Open the endpoint dialog pre-filled from an existing endpoint and replace it in place. |
 | [`_showEndpointDialog`](#showendpointdialog) | method (`_ServiceEditPageState`) | A | Show the add/edit modal dialog for one `ServiceEndpoint` and build the result. |
-| `build` | method (widget build, `_ServiceEditPageState`) | B | Render the service edit form (fields, endpoint cards, Compose editor, save/delete actions). |
+| `build` | method (widget build, `_ServiceEditPageState`) | B | Render the scaffold (save/delete actions) around `_buildFormBody`. |
+| `_buildFormBody` | method (widget helper) | B | Choose the layout inside the one `Form`: a single `ListView` of both halves, or — when `useDetailTwoPane` passes — a `Row` of an `editFormLeftPaneWidth`-wide scrolling identity pane and a right `ListView` of the details. Both panes scroll. |
+| `_buildIdentityFields` | method (widget helper) | B | Name, device, template button, icon + kind, icon name, runtime, state — extracted from `build` unchanged. |
+| `_buildDetailFields` | method (widget helper) | B | Endpoint cards, notes, the Compose editor and the save button — extracted from `build` unchanged. |
 | `_emptyToNull` | top-level function | B | Trim a string and convert an empty result to `null`. |
 | `_ServiceTemplatePicker` constructor | constructor (`_ServiceTemplatePicker`) | B | Create a service template picker instance. |
 | `createState` | method (`_ServiceTemplatePicker`) | B | Create the mutable state object for the template picker widget. |
 | `dispose` | method (`_ServiceTemplatePickerState`) | B | Dispose the search text controller. |
 | [`_filteredTemplates`](#filteredtemplates) | getter (`_ServiceTemplatePickerState`) | A | Filter templates by selected kind/search query and sort them (featured first, then kind, then name). |
-| `build` | method (widget build, `_ServiceTemplatePickerState`) | B | Render the draggable template picker sheet (search field, kind chips, template list). |
+| `build` | method (widget build, `_ServiceTemplatePickerState`) | B | Render the draggable template picker sheet (search field, kind chips, template list); opens at `sheetInitialSize(window height, preferred: 0.82)`, capped at `sheetMaxSize`. |
 
 ## Documentation
 

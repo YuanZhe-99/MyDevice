@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../models/network.dart';
 import '../services/network_storage.dart';
 
@@ -137,75 +138,84 @@ class _NetworkEditPageState extends State<NetworkEditPage> {
         title: Text(_isEditing ? l10n.editNetwork : l10n.addNetwork),
         actions: [TextButton(onPressed: _save, child: Text(l10n.save))],
       ),
+      // A lone column of six fields is capped at `formMaxWidth` and centred:
+      // width only, not the split rule, so a phone is unchanged and a desktop
+      // window stops stretching each field across its whole width. Pushed
+      // above the shell, so the body is the raw window.
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _nameCtrl,
-              decoration: InputDecoration(labelText: l10n.networkName),
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? l10n.networkName : null,
-            ),
-            const SizedBox(height: 12),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: formMaxWidth),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: _nameCtrl,
+                  decoration: InputDecoration(labelText: l10n.networkName),
+                  validator: (v) =>
+                      (v == null || v.trim().isEmpty) ? l10n.networkName : null,
+                ),
+                const SizedBox(height: 12),
 
-            // Network type dropdown
-            DropdownButtonFormField<NetworkType>(
-              initialValue: _type,
-              decoration: InputDecoration(labelText: l10n.networkType),
-              items: NetworkType.values
-                  .map(
-                    (t) => DropdownMenuItem(
-                      value: t,
-                      child: Text(_typeLabel(l10n, t)),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) setState(() => _type = v);
-              },
-            ),
-            const SizedBox(height: 12),
+                // Network type dropdown
+                DropdownButtonFormField<NetworkType>(
+                  initialValue: _type,
+                  decoration: InputDecoration(labelText: l10n.networkType),
+                  items: NetworkType.values
+                      .map(
+                        (t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(_typeLabel(l10n, t)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() => _type = v);
+                  },
+                ),
+                const SizedBox(height: 12),
 
-            TextFormField(
-              controller: _subnetCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.networkSubnet,
-                hintText: l10n.networkSubnetHint,
-              ),
-            ),
-            const SizedBox(height: 12),
+                TextFormField(
+                  controller: _subnetCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.networkSubnet,
+                    hintText: l10n.networkSubnetHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-            TextFormField(
-              controller: _gatewayCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.networkGateway,
-                hintText: l10n.networkGatewayHint,
-              ),
-            ),
-            const SizedBox(height: 12),
+                TextFormField(
+                  controller: _gatewayCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.networkGateway,
+                    hintText: l10n.networkGatewayHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-            TextFormField(
-              controller: _dnsCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.networkDns,
-                hintText: l10n.networkDnsHint,
-              ),
-            ),
-            const SizedBox(height: 12),
+                TextFormField(
+                  controller: _dnsCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.networkDns,
+                    hintText: l10n.networkDnsHint,
+                  ),
+                ),
+                const SizedBox(height: 12),
 
-            TextFormField(
-              controller: _notesCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.networkNotes,
-                hintText: l10n.networkNotesHint,
-              ),
-              maxLines: null,
-              minLines: 3,
+                TextFormField(
+                  controller: _notesCtrl,
+                  decoration: InputDecoration(
+                    labelText: l10n.networkNotes,
+                    hintText: l10n.networkNotesHint,
+                  ),
+                  maxLines: null,
+                  minLines: 3,
+                ),
+                const SizedBox(height: 32),
+              ],
             ),
-            const SizedBox(height: 32),
-          ],
+          ),
         ),
       ),
     );

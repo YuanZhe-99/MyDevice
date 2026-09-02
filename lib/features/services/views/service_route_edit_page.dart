@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/detail_layout.dart';
 import '../models/service.dart';
 import '../services/service_analysis.dart';
 import '../services/service_storage.dart';
@@ -433,166 +434,224 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: _sourceServiceId,
-                    decoration: InputDecoration(
-                      labelText: l10n.routeSourceService,
-                    ),
-                    items: _services
-                        .map(
-                          (service) => DropdownMenuItem(
-                            value: service.id,
-                            child: Text(service.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() {
-                      _sourceServiceId = value;
-                      _sourceEndpointId =
-                          _selectedSource?.endpoints.firstOrNull?.id;
-                    }),
-                  ),
-                  if (source != null) ...[
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _sourceEndpointId,
-                      decoration: InputDecoration(
-                        labelText: l10n.serviceEndpoint,
-                      ),
-                      items: [
-                        DropdownMenuItem<String>(
-                          value: null,
-                          child: Text(l10n.optionalNone),
-                        ),
-                        for (final endpoint in source.endpoints)
-                          DropdownMenuItem(
-                            value: endpoint.id,
-                            child: Text(
-                              '${endpoint.label ?? endpoint.protocol.name} · ${endpoint.portText}',
-                            ),
-                          ),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _sourceEndpointId = value),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<ServiceAccessLevel>(
-                    initialValue: _accessLevel,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceAccessLevel,
-                    ),
-                    items: ServiceAccessLevel.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) setState(() => _accessLevel = value);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _finalUrlCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceFinalUrl,
-                      hintText: 'https://example.com\nhttps://app.example.com',
-                      helperText: l10n.serviceAccessTargetsHint,
-                    ),
-                    minLines: 2,
-                    maxLines: 4,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.serviceRoutePreview,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(_routePreview()),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.routeHops,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _addHop,
-                        icon: const Icon(Icons.add),
-                        label: Text(l10n.addRouteHop),
-                      ),
-                    ],
-                  ),
-                  for (var i = 0; i < _hops.length; i++)
-                    Card(
-                      child: ListTile(
-                        leading: CircleAvatar(child: Text('${i + 1}')),
-                        title: Text(_hopTitle(_hops[i])),
-                        subtitle: Text(_hopSubtitle(_hops[i])),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              tooltip: l10n.serviceMoveUp,
-                              icon: const Icon(Icons.arrow_upward),
-                              onPressed: i == 0
-                                  ? null
-                                  : () => _moveHop(i, i - 1),
-                            ),
-                            IconButton(
-                              tooltip: l10n.serviceMoveDown,
-                              icon: const Icon(Icons.arrow_downward),
-                              onPressed: i == _hops.length - 1
-                                  ? null
-                                  : () => _moveHop(i, i + 1),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () =>
-                                  setState(() => _hops.removeAt(i)),
-                            ),
-                          ],
-                        ),
-                        onTap: () => _editHop(i),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _notesCtrl,
-                    decoration: InputDecoration(labelText: l10n.deviceNotes),
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.save),
-                    label: Text(l10n.save),
-                  ),
-                ],
+          : Form(key: _formKey, child: _buildFormBody(context, l10n, source)),
+    );
+  }
+
+  /// Purpose: Build the form body in whichever layout the window calls for.
+  /// Inputs: `context`, `l10n`, `source` — the selected source service.
+  /// Returns: `Widget` — always inside the one `Form`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Two panes that
+  /// **both scroll**, like the service edit page: the source half (source,
+  /// endpoint, access level, final URL, preview) is five blocks and ~340 dp,
+  /// too tall to pin at the split floor, so the left pane is a plain scroll
+  /// view. The pane width is `editFormLeftPaneWidth`. Pushed above the
+  /// shell: the body width is the raw window.
+  Widget _buildFormBody(
+    BuildContext context,
+    AppLocalizations l10n,
+    ServiceNode? source,
+  ) {
+    final screen = MediaQuery.sizeOf(context);
+    final sourceFields = _buildSourceFields(context, l10n, source);
+    final hopFields = _buildHopFields(context, l10n);
+    if (!useDetailTwoPane(screen.width, screen.height)) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [...sourceFields, ...hopFields],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: editFormLeftPaneWidth(constraints.maxWidth),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: sourceFields,
               ),
             ),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: hopFields,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  /// Purpose: Build the source half of the form: source service, its
+  /// endpoint, access level, final URL and the route preview card.
+  /// Inputs: `context`, `l10n`, `source`.
+  /// Returns: `List<Widget>` ready to spread into a list or column.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so both layouts share it.
+  List<Widget> _buildSourceFields(
+    BuildContext context,
+    AppLocalizations l10n,
+    ServiceNode? source,
+  ) {
+    return [
+      DropdownButtonFormField<String>(
+        initialValue: _sourceServiceId,
+        decoration: InputDecoration(labelText: l10n.routeSourceService),
+        items: _services
+            .map(
+              (service) => DropdownMenuItem(
+                value: service.id,
+                child: Text(service.name),
+              ),
+            )
+            .toList(),
+        onChanged: (value) => setState(() {
+          _sourceServiceId = value;
+          _sourceEndpointId = _selectedSource?.endpoints.firstOrNull?.id;
+        }),
+      ),
+      if (source != null) ...[
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          initialValue: _sourceEndpointId,
+          decoration: InputDecoration(labelText: l10n.serviceEndpoint),
+          items: [
+            DropdownMenuItem<String>(
+              value: null,
+              child: Text(l10n.optionalNone),
+            ),
+            for (final endpoint in source.endpoints)
+              DropdownMenuItem(
+                value: endpoint.id,
+                child: Text(
+                  '${endpoint.label ?? endpoint.protocol.name} · ${endpoint.portText}',
+                ),
+              ),
+          ],
+          onChanged: (value) => setState(() => _sourceEndpointId = value),
+        ),
+      ],
+      const SizedBox(height: 12),
+      DropdownButtonFormField<ServiceAccessLevel>(
+        initialValue: _accessLevel,
+        decoration: InputDecoration(labelText: l10n.serviceAccessLevel),
+        items: ServiceAccessLevel.values
+            .map(
+              (value) =>
+                  DropdownMenuItem(value: value, child: Text(value.name)),
+            )
+            .toList(),
+        onChanged: (value) {
+          if (value != null) setState(() => _accessLevel = value);
+        },
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _finalUrlCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.serviceFinalUrl,
+          hintText: 'https://example.com\nhttps://app.example.com',
+          helperText: l10n.serviceAccessTargetsHint,
+        ),
+        minLines: 2,
+        maxLines: 4,
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 12),
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.serviceRoutePreview,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(_routePreview()),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 24),
+    ];
+  }
+
+  /// Purpose: Build the hop half of the form: the hops list, notes and the
+  /// save button.
+  /// Inputs: `context`, `l10n`.
+  /// Returns: `List<Widget>` ready to spread into a `ListView`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so both layouts share it.
+  List<Widget> _buildHopFields(BuildContext context, AppLocalizations l10n) {
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.routeHops,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          TextButton.icon(
+            onPressed: _addHop,
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addRouteHop),
+          ),
+        ],
+      ),
+      for (var i = 0; i < _hops.length; i++)
+        Card(
+          child: ListTile(
+            leading: CircleAvatar(child: Text('${i + 1}')),
+            title: Text(_hopTitle(_hops[i])),
+            subtitle: Text(_hopSubtitle(_hops[i])),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  tooltip: l10n.serviceMoveUp,
+                  icon: const Icon(Icons.arrow_upward),
+                  onPressed: i == 0 ? null : () => _moveHop(i, i - 1),
+                ),
+                IconButton(
+                  tooltip: l10n.serviceMoveDown,
+                  icon: const Icon(Icons.arrow_downward),
+                  onPressed: i == _hops.length - 1
+                      ? null
+                      : () => _moveHop(i, i + 1),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () => setState(() => _hops.removeAt(i)),
+                ),
+              ],
+            ),
+            onTap: () => _editHop(i),
+          ),
+        ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _notesCtrl,
+        decoration: InputDecoration(labelText: l10n.deviceNotes),
+        maxLines: 4,
+      ),
+      const SizedBox(height: 24),
+      FilledButton.icon(
+        onPressed: _save,
+        icon: const Icon(Icons.save),
+        label: Text(l10n.save),
+      ),
+    ];
   }
 
   /// Purpose: Provide the internal hop title helper for this file.

@@ -11,6 +11,7 @@
 | [`useDetailTwoPane`](#usedetailtwopane) | 顶层函数 | A | 报告详情页是否应使用双栏布局。 |
 | [`detailLeftPaneWidth`](#detailleftpanewidth) | 顶层函数 | A | 返回详情页固定左窗格的宽度。 |
 | [`editAvatarSize`](#editavatarsize) | 顶层函数 | A | 返回设备编辑页左窗格的头像尺寸。 |
+| [`editFormLeftPaneWidth`](#editformleftpanewidth) | 顶层函数 | A | 返回编辑表单固定左窗格的宽度。 |
 
 ## 文档
 
@@ -43,3 +44,13 @@
 - **副作用：** 无。
 - **用法：** `_DeviceEditPageState._buildFormBody`，在左窗格的 `LayoutBuilder` 内。
 - **备注：** 这就是让左窗格不滚动的关键：头像取 `deviceEditLeftPaneFieldBudget` 之后剩余的高度，列按构造就放得下。在 480 dp 分栏下限（扣应用栏后 424）头像为 106；Z Fold 8 横屏达到 160 上限；`test/detail_layout_test.dart` 循环 480 到 1200 的每个窗口高度断言列放得下。
+
+### `double editFormLeftPaneWidth(double totalWidth)` <a id="editformleftpanewidth"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/detail_layout.dart`。
+- **用途：** 返回编辑表单固定左窗格的宽度。
+- **输入：** `totalWidth` — 页面 body 的宽度，即原始窗口。
+- **返回：** `double` — `(totalWidth × 0.42).clamp(300, 480)`。
+- **副作用：** 无。
+- **用法：** 服务、链路和数据集编辑页的 `LayoutBuilder`。
+- **备注：** 比 `detailLeftPaneWidth` 宽，因为这些窗格装的是表单字段而非一张文字卡片：最长本地化标签为日文的 `OutlineInputBorder` 下拉在窗格 32 dp 内边距内需要约 268，故下限 300。600 dp 分栏最小值时右窗格留 299。`dataSetEditLeftPaneHeight`（88）在源码中与之并列，让测试能钉住数据集页固定窗格放得进最矮的分栏窗口。

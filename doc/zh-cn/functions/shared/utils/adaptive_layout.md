@@ -1,6 +1,6 @@
 # lib/shared/utils/adaptive_layout.dart
 
-全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；以及财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`。其上有十一个纯函数助手。
+全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`；网络编辑表单用的 `formMaxWidth`；emoji 选择器用的 `emojiCellMinWidth`、`emojiCellGap` 和 `emojiMaxColumns`；以及可拖拽表单用的 `sheetCompactHeight` 和 `sheetMaxSize`。其上有十三个纯函数助手。
 
 该模块刻意只依赖 `dart:core`——不含 Flutter import，`canSplitLayout` 正因此接收两个 double 而非 `Size`——所以每个助手都能直接单元测试（`test/adaptive_layout_test.dart`），渲染结果则由 `test/shell_nav_ui_test.dart`、`test/dialog_layout_ui_test.dart`、`test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart` 和 `test/service_columns_ui_test.dart` 在真实设备几何上单独覆盖。
 
@@ -24,8 +24,10 @@
 | [`dialogBodyHeight`](#dialogbodyheight) | 顶层函数 | A | 返回搜索对话框主体应取的高度。 |
 | [`useFinanceSideBySide`](#usefinancesidebyside) | 顶层函数 | A | 报告财务摘要是否放得下在图表旁边。 |
 | [`financeSummaryPaneWidth`](#financesummarypanewidth) | 顶层函数 | A | 返回财务摘要指标列的宽度。 |
+| [`emojiGridColumns`](#emojigridcolumns) | 顶层函数 | A | 返回 emoji 选择器把格子排成多少列。 |
+| [`sheetInitialSize`](#sheetinitialsize) | 顶层函数 | A | 返回可拖拽表单打开时占窗口的比例。 |
 
-二十五个常量在源码中连同每个值的理由一起记录，此处不重复成行。
+三十一个常量在源码中连同每个值的理由一起记录，此处不重复成行。
 
 ## 文档
 
@@ -154,3 +156,24 @@
 - **副作用：** 无。
 - **用法：** 并排行中摘要卡外的 `SizedBox`。
 - **备注：** 没有右侧上限：门控之上窗格以 0.34 增长而图表以 0.66 增长，所以图表 340 dp 下限在边界处满足、其上超出——在 `test/detail_layout_test.dart` 中跨整个范围断言。
+
+### `int emojiGridColumns(double sheetWidth)` <a id="emojigridcolumns"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/adaptive_layout.dart`。
+- **用途：** 返回 emoji 选择器把格子排成多少列。
+- **输入：** `sheetWidth` — 网格的 `LayoutBuilder` 约束。
+- **返回：** `int`，1 到 `emojiMaxColumns`（12）。
+- **副作用：** 无。
+- **算法：** `columnCapacity(sheetWidth, minItemWidth: 37, gap: 4, maxColumns: 12)`。
+- **用法：** `_DeviceEditPageState._showEmojiPicker`。
+- **备注：** 328（360 dp 手机减表单内边距）→ 8，即选择器在 1.5.4 之前硬编码的数量；412 → 9；608 → 12。`lib/` 里最后一个硬编码数量由此退役。
+
+### `double sheetInitialSize(double screenHeight, {required double preferred})` <a id="sheetinitialsize"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/adaptive_layout.dart`。
+- **用途：** 返回可拖拽表单打开时占窗口的比例。
+- **输入：** `screenHeight` — 窗口高度；`preferred` — 表单在高窗口上想要的比例。
+- **返回：** `double` — 低于 `sheetCompactHeight`（480）时为 `sheetMaxSize`（0.95），否则为 `preferred`，永不超过 `sheetMaxSize`。
+- **副作用：** 无。
+- **用法：** 设备模板、CPU 预设、GPU 预设和服务模板选择器的 `initialChildSize`，其 `maxChildSize` 为 `sheetMaxSize`。
+- **备注：** 四个表单都是 `isScrollControlled` 且搜索框自动聚焦；在 412 dp 窗口上弹出键盘后 0.6 的表单只剩约 100 dp 结果。封顶让初始尺寸永不超过最大值，否则会 assert。

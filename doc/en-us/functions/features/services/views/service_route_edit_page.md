@@ -31,7 +31,10 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 | `_addHop` | method (`_ServiceRouteEditPageState`) | B | Open the hop dialog and append the result to the hops list. |
 | `_editHop` | method (`_ServiceRouteEditPageState`) | B | Open the hop dialog pre-filled from an existing hop and replace it in place. |
 | [`_showHopDialog`](#showhopdialog) | method (`_ServiceRouteEditPageState`) | A | Show the add/edit modal dialog for one `ServiceRouteHop` and build the result. |
-| `build` | method (widget build, `_ServiceRouteEditPageState`) | B | Render the route edit form (source/endpoint pickers, access level, targets field, preview card, hop list, notes). |
+| `build` | method (widget build, `_ServiceRouteEditPageState`) | B | Render the scaffold (save/delete actions) around `_buildFormBody`. |
+| `_buildFormBody` | method (widget helper) | B | Choose the layout inside the one `Form`: a single `ListView` of both halves, or — when `useDetailTwoPane` passes — a `Row` of an `editFormLeftPaneWidth`-wide scrolling source pane and a right `ListView` of the hops. Both panes scroll. |
+| `_buildSourceFields` | method (widget helper) | B | Source/endpoint pickers, access level, targets field and the preview card — extracted from `build` unchanged. |
+| `_buildHopFields` | method (widget helper) | B | The hop list, notes and the save button — extracted from `build` unchanged. |
 | [`_hopTitle`](#hoptitle) | method (`_ServiceRouteEditPageState`) | A | Compute the display title for one hop, preferring its linked service name, then label, then host, then hop type. |
 | [`_hopSubtitle`](#hopsubtitle) | method (`_ServiceRouteEditPageState`) | A | Compose the multi-part subtitle line for one hop (type, method, endpoint, host/scheme/port/path, notes). |
 | `_hopEndpoint` | method (`_ServiceRouteEditPageState`) | B | Look up the `ServiceEndpoint` a hop references, if any. |

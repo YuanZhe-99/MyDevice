@@ -8,6 +8,7 @@ import '../../../app/flavor.dart';
 import '../../datasets/services/dataset_storage.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/utils/detail_layout.dart';
 import '../../../shared/widgets/map_picker_page.dart';
 import '../models/device.dart';
@@ -1029,30 +1030,38 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 8,
-                  mainAxisSpacing: 4,
-                  crossAxisSpacing: 4,
+              // The column count follows the sheet's width through
+              // `emojiGridColumns`: a phone keeps the eight it always had,
+              // a Material 3 sheet at its 640 dp cap gets twelve.
+              LayoutBuilder(
+                builder: (context, constraints) => GridView.builder(
+                  shrinkWrap: true,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: emojiGridColumns(constraints.maxWidth),
+                    mainAxisSpacing: emojiCellGap,
+                    crossAxisSpacing: emojiCellGap,
+                  ),
+                  itemCount: _commonEmojis.length,
+                  itemBuilder: (context, index) {
+                    final emoji = _commonEmojis[index];
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        setState(() {
+                          _emoji = emoji;
+                          _imagePath = null;
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Center(
+                        child: Text(
+                          emoji,
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                itemCount: _commonEmojis.length,
-                itemBuilder: (context, index) {
-                  final emoji = _commonEmojis[index];
-                  return InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      setState(() {
-                        _emoji = emoji;
-                        _imagePath = null;
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: Center(
-                      child: Text(emoji, style: const TextStyle(fontSize: 24)),
-                    ),
-                  );
-                },
               ),
             ],
           ),
@@ -2415,8 +2424,11 @@ class _CpuPresetPickerState extends State<_CpuPresetPicker> {
     final items = _filtered;
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
+      initialChildSize: sheetInitialSize(
+        MediaQuery.sizeOf(context).height,
+        preferred: 0.6,
+      ),
+      maxChildSize: sheetMaxSize,
       minChildSize: 0.3,
       builder: (context, scrollController) {
         final l10n = AppLocalizations.of(context)!;
@@ -2511,8 +2523,11 @@ class _GpuPresetPickerState extends State<_GpuPresetPicker> {
     final items = _filtered;
     return DraggableScrollableSheet(
       expand: false,
-      initialChildSize: 0.6,
-      maxChildSize: 0.9,
+      initialChildSize: sheetInitialSize(
+        MediaQuery.sizeOf(context).height,
+        preferred: 0.6,
+      ),
+      maxChildSize: sheetMaxSize,
       minChildSize: 0.3,
       builder: (context, scrollController) {
         final l10n = AppLocalizations.of(context)!;

@@ -310,4 +310,35 @@ void main() {
       );
     });
   });
+
+  group('emoji picker columns', () {
+    test('a phone keeps the eight it always had', () {
+      expect(emojiGridColumns(328), 8); // 360 dp phone less sheet padding
+    });
+
+    test('grows with the sheet up to twelve', () {
+      expect(emojiGridColumns(380), 9); // Pixel 9 less padding
+      expect(emojiGridColumns(608), 12); // M3 sheet cap less padding
+      expect(emojiGridColumns(3000), emojiMaxColumns);
+      expect(emojiGridColumns(0), 1);
+    });
+  });
+
+  group('draggable sheet initial size', () {
+    test('opens near-full on a compact-height window', () {
+      expect(sheetInitialSize(412, preferred: 0.6), sheetMaxSize); // phone land
+      expect(sheetInitialSize(416, preferred: 0.82), sheetMaxSize); // cover
+      expect(sheetInitialSize(479, preferred: 0.6), sheetMaxSize);
+    });
+
+    test('keeps the preferred fraction elsewhere', () {
+      expect(sheetInitialSize(480, preferred: 0.6), 0.6);
+      expect(sheetInitialSize(704, preferred: 0.82), 0.82); // Fold 8 land
+      expect(sheetInitialSize(915, preferred: 0.6), 0.6); // Pixel 9
+    });
+
+    test('never exceeds the maximum a sheet may be dragged to', () {
+      expect(sheetInitialSize(915, preferred: 0.99), sheetMaxSize);
+    });
+  });
 }

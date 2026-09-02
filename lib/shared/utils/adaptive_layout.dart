@@ -343,3 +343,69 @@ bool useFinanceSideBySide(double contentWidth) =>
 /// the whole range rather than defending it with arithmetic that never fires.
 double financeSummaryPaneWidth(double contentWidth) =>
     (contentWidth * 0.34).clamp(financeSummaryPaneMinWidth, 360.0);
+
+/// Widest, in logical pixels, a lone form column may grow.
+///
+/// Material's guidance for a single text field: past this a label and its
+/// value stop fitting in one eye sweep, and a 1600 dp window would otherwise
+/// stretch the network edit form across its whole width. Width only — a
+/// phone never reaches it and is unchanged.
+const formMaxWidth = 600.0;
+
+/// Minimum width, in logical pixels, one cell of the emoji picker may occupy.
+///
+/// A 24 sp emoji is about 30 dp wide; 37 plus the 4 dp gap reproduces the
+/// 41 dp pitch a 360 dp phone had at the old fixed eight columns, so phones
+/// keep eight while a Material 3 sheet at its 640 dp cap gets twelve.
+const emojiCellMinWidth = 37.0;
+
+/// Gap, in logical pixels, between emoji picker cells.
+const emojiCellGap = 4.0;
+
+/// Most columns the emoji picker will use, however wide the sheet is.
+const emojiMaxColumns = 12;
+
+/// Height, in logical pixels, under which a window counts as compact for a
+/// bottom sheet: the compact/medium height boundary.
+///
+/// Declared separately from [splitMinHeight] although the value is the same,
+/// because it answers a different question — how much of a short window a
+/// sheet may take — and the two may diverge.
+const sheetCompactHeight = 480.0;
+
+/// Fraction of the window a draggable sheet opens to on a compact-height
+/// window, and the most any sheet may be dragged to.
+///
+/// The four pickers are `isScrollControlled` with an autofocused search
+/// field; on a 412 dp tall window with a keyboard, a 0.6 sheet leaves about
+/// 100 dp of results. Opening near-full is the fix.
+const sheetMaxSize = 0.95;
+
+/// Purpose: Return how many columns the emoji picker lays its cells in.
+/// Inputs: `sheetWidth` — the width the grid gets, in logical pixels.
+/// Returns: `int`, 1 to [emojiMaxColumns].
+/// Side effects: None.
+/// Notes: [columnCapacity] at [emojiCellMinWidth]. 328 (a 360 dp phone less
+/// the sheet's padding) → 8, the count the picker hardcoded before 1.5.4;
+/// 412 → 9; 608 → 12.
+int emojiGridColumns(double sheetWidth) => columnCapacity(
+  sheetWidth,
+  minItemWidth: emojiCellMinWidth,
+  gap: emojiCellGap,
+  maxColumns: emojiMaxColumns,
+);
+
+/// Purpose: Return the fraction of the window a draggable sheet opens to.
+/// Inputs: `screenHeight` — the window height in logical pixels;
+/// `preferred` — the fraction the sheet wants when the window is tall.
+/// Returns: `double`, never above [sheetMaxSize].
+/// Side effects: None.
+/// Notes: Under [sheetCompactHeight] the sheet opens at [sheetMaxSize] so a
+/// phone in landscape with the keyboard up still shows a useful list; at and
+/// above it the preferred fraction stands. Capped so a caller's
+/// `initialChildSize` can never exceed its `maxChildSize`, which would
+/// assert.
+double sheetInitialSize(double screenHeight, {required double preferred}) {
+  final size = screenHeight < sheetCompactHeight ? sheetMaxSize : preferred;
+  return size > sheetMaxSize ? sheetMaxSize : size;
+}

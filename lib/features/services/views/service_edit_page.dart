@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/adaptive_layout.dart';
+import '../../../shared/utils/detail_layout.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/service.dart';
@@ -463,192 +465,241 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  TextFormField(
-                    controller: _nameCtrl,
-                    decoration: InputDecoration(labelText: l10n.serviceName),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? l10n.serviceNameRequired
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _deviceId,
-                    decoration: InputDecoration(labelText: l10n.serviceDevice),
-                    items: _devices
-                        .map(
-                          (device) => DropdownMenuItem(
-                            value: device.id,
-                            child: Text(device.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) => setState(() => _deviceId = value),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _pickTemplate,
-                    icon: const Icon(Icons.category_outlined),
-                    label: Text(
-                      _templateId == null
-                          ? l10n.serviceTemplate
-                          : '${l10n.serviceTemplate}: ${_templateName(_templateId!)}',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      CircleAvatar(child: Icon(iconForServiceIcon(_icon))),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<ServiceKind>(
-                          initialValue: _kind,
-                          decoration: InputDecoration(
-                            labelText: l10n.serviceKind,
-                          ),
-                          items: ServiceKind.values
-                              .map(
-                                (value) => DropdownMenuItem(
-                                  value: value,
-                                  child: Text(value.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) {
-                            if (value != null) setState(() => _kind = value);
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _iconCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceIcon,
-                      hintText: 'dns, cloud, source, theaters...',
-                    ),
-                    onChanged: (value) =>
-                        setState(() => _icon = _emptyToNull(value)),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<ServiceRuntime>(
-                    initialValue: _runtime,
-                    decoration: InputDecoration(labelText: l10n.serviceRuntime),
-                    items: [
-                      DropdownMenuItem<ServiceRuntime>(
-                        value: null,
-                        child: Text(l10n.optionalNone),
-                      ),
-                      for (final value in ServiceRuntime.values)
-                        DropdownMenuItem(value: value, child: Text(value.name)),
-                    ],
-                    onChanged: (value) => setState(() => _runtime = value),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<ServiceState>(
-                    initialValue: _state,
-                    decoration: InputDecoration(labelText: l10n.serviceState),
-                    items: ServiceState.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value != null) setState(() => _state = value);
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.serviceEndpoints,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: _addEndpoint,
-                        icon: const Icon(Icons.add),
-                        label: Text(l10n.addServiceEndpoint),
-                      ),
-                    ],
-                  ),
-                  for (var i = 0; i < _endpoints.length; i++)
-                    Card(
-                      child: ListTile(
-                        title: Text(
-                          '${_endpoints[i].protocol.name}/${_endpoints[i].portText}',
-                        ),
-                        subtitle: Text(
-                          [
-                                _endpoints[i].label,
-                                _endpoints[i].bindAddress,
-                                _endpoints[i].path,
-                              ]
-                              .whereType<String>()
-                              .where((s) => s.isNotEmpty)
-                              .join(' · '),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () =>
-                              setState(() => _endpoints.removeAt(i)),
-                        ),
-                        onTap: () => _editEndpoint(i),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _notesCtrl,
-                    decoration: InputDecoration(labelText: l10n.deviceNotes),
-                    maxLines: 4,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.serviceDockerCompose,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.copyServiceCompose,
-                        onPressed: _composeCtrl.text.isEmpty
-                            ? null
-                            : _copyCompose,
-                        icon: const Icon(Icons.copy),
-                      ),
-                    ],
-                  ),
-                  TextField(
-                    controller: _composeCtrl,
-                    decoration: InputDecoration(
-                      hintText: 'services:\n  app:\n    image: ...',
-                      border: const OutlineInputBorder(),
-                    ),
-                    minLines: 6,
-                    maxLines: 14,
-                    onChanged: (_) => setState(() {}),
-                  ),
-                  const SizedBox(height: 24),
-                  FilledButton.icon(
-                    onPressed: _save,
-                    icon: const Icon(Icons.save),
-                    label: Text(l10n.save),
-                  ),
-                ],
+          : Form(key: _formKey, child: _buildFormBody(context, l10n)),
+    );
+  }
+
+  /// Purpose: Build the form body in whichever layout the window calls for.
+  /// Inputs: `context`, `l10n`.
+  /// Returns: `Widget` — always inside the one `Form`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Two panes that
+  /// **both scroll**: the identity half (name through state) is seven blocks
+  /// and ~476 dp, too tall to pin at the 480 dp split floor the way the
+  /// device edit page pins its three, so the left pane is a plain scroll view
+  /// rather than a fixed column. The pane width is `editFormLeftPaneWidth`,
+  /// wider than a detail pane because it holds dropdowns rather than a card
+  /// of text. Pushed above the shell: the body width is the raw window.
+  Widget _buildFormBody(BuildContext context, AppLocalizations l10n) {
+    final screen = MediaQuery.sizeOf(context);
+    final identity = _buildIdentityFields(l10n);
+    final details = _buildDetailFields(context, l10n);
+    if (!useDetailTwoPane(screen.width, screen.height)) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [...identity, ...details],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: editFormLeftPaneWidth(constraints.maxWidth),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: identity,
               ),
             ),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: details,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  /// Purpose: Build the identity half of the form: name, device, template,
+  /// icon and kind, icon name, runtime, state.
+  /// Inputs: `l10n`.
+  /// Returns: `List<Widget>` ready to spread into a list or column.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so both layouts share it.
+  List<Widget> _buildIdentityFields(AppLocalizations l10n) {
+    return [
+      TextFormField(
+        controller: _nameCtrl,
+        decoration: InputDecoration(labelText: l10n.serviceName),
+        validator: (value) => value == null || value.trim().isEmpty
+            ? l10n.serviceNameRequired
+            : null,
+      ),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<String>(
+        initialValue: _deviceId,
+        decoration: InputDecoration(labelText: l10n.serviceDevice),
+        items: _devices
+            .map(
+              (device) =>
+                  DropdownMenuItem(value: device.id, child: Text(device.name)),
+            )
+            .toList(),
+        onChanged: (value) => setState(() => _deviceId = value),
+      ),
+      const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: _pickTemplate,
+        icon: const Icon(Icons.category_outlined),
+        label: Text(
+          _templateId == null
+              ? l10n.serviceTemplate
+              : '${l10n.serviceTemplate}: ${_templateName(_templateId!)}',
+        ),
+      ),
+      const SizedBox(height: 12),
+      Row(
+        children: [
+          CircleAvatar(child: Icon(iconForServiceIcon(_icon))),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<ServiceKind>(
+              initialValue: _kind,
+              decoration: InputDecoration(labelText: l10n.serviceKind),
+              items: ServiceKind.values
+                  .map(
+                    (value) =>
+                        DropdownMenuItem(value: value, child: Text(value.name)),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _kind = value);
+              },
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      TextField(
+        controller: _iconCtrl,
+        decoration: InputDecoration(
+          labelText: l10n.serviceIcon,
+          hintText: 'dns, cloud, source, theaters...',
+        ),
+        onChanged: (value) => setState(() => _icon = _emptyToNull(value)),
+      ),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<ServiceRuntime>(
+        initialValue: _runtime,
+        decoration: InputDecoration(labelText: l10n.serviceRuntime),
+        items: [
+          DropdownMenuItem<ServiceRuntime>(
+            value: null,
+            child: Text(l10n.optionalNone),
+          ),
+          for (final value in ServiceRuntime.values)
+            DropdownMenuItem(value: value, child: Text(value.name)),
+        ],
+        onChanged: (value) => setState(() => _runtime = value),
+      ),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<ServiceState>(
+        initialValue: _state,
+        decoration: InputDecoration(labelText: l10n.serviceState),
+        items: ServiceState.values
+            .map(
+              (value) =>
+                  DropdownMenuItem(value: value, child: Text(value.name)),
+            )
+            .toList(),
+        onChanged: (value) {
+          if (value != null) setState(() => _state = value);
+        },
+      ),
+      const SizedBox(height: 24),
+    ];
+  }
+
+  /// Purpose: Build the detail half of the form: the endpoints list, notes,
+  /// the Docker Compose editor and the save button.
+  /// Inputs: `context`, `l10n`.
+  /// Returns: `List<Widget>` ready to spread into a `ListView`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so both layouts share it.
+  List<Widget> _buildDetailFields(BuildContext context, AppLocalizations l10n) {
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.serviceEndpoints,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          TextButton.icon(
+            onPressed: _addEndpoint,
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addServiceEndpoint),
+          ),
+        ],
+      ),
+      for (var i = 0; i < _endpoints.length; i++)
+        Card(
+          child: ListTile(
+            title: Text(
+              '${_endpoints[i].protocol.name}/${_endpoints[i].portText}',
+            ),
+            subtitle: Text(
+              [
+                _endpoints[i].label,
+                _endpoints[i].bindAddress,
+                _endpoints[i].path,
+              ].whereType<String>().where((s) => s.isNotEmpty).join(' · '),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => setState(() => _endpoints.removeAt(i)),
+            ),
+            onTap: () => _editEndpoint(i),
+          ),
+        ),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _notesCtrl,
+        decoration: InputDecoration(labelText: l10n.deviceNotes),
+        maxLines: 4,
+      ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.serviceDockerCompose,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            tooltip: l10n.copyServiceCompose,
+            onPressed: _composeCtrl.text.isEmpty ? null : _copyCompose,
+            icon: const Icon(Icons.copy),
+          ),
+        ],
+      ),
+      TextField(
+        controller: _composeCtrl,
+        decoration: InputDecoration(
+          hintText: 'services:\n  app:\n    image: ...',
+          border: const OutlineInputBorder(),
+        ),
+        minLines: 6,
+        maxLines: 14,
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 24),
+      FilledButton.icon(
+        onPressed: _save,
+        icon: const Icon(Icons.save),
+        label: Text(l10n.save),
+      ),
+    ];
   }
 }
 
@@ -733,9 +784,12 @@ class _ServiceTemplatePickerState extends State<_ServiceTemplatePicker> {
         padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottomPadding),
         child: DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.82,
+          initialChildSize: sheetInitialSize(
+            MediaQuery.sizeOf(context).height,
+            preferred: 0.82,
+          ),
           minChildSize: 0.45,
-          maxChildSize: 0.95,
+          maxChildSize: sheetMaxSize,
           builder: (context, scrollController) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

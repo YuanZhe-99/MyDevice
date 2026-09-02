@@ -20,6 +20,7 @@ Consumers: `device_detail_page.dart`, `network_detail_page.dart` and `device_edi
 | [`useDetailTwoPane`](#usedetailtwopane) | top-level function | A | Report whether a detail page should use its two-pane layout. |
 | [`detailLeftPaneWidth`](#detailleftpanewidth) | top-level function | A | Return the width of a detail page's fixed left pane. |
 | [`editAvatarSize`](#editavatarsize) | top-level function | A | Return the avatar size for the device edit page's left pane. |
+| [`editFormLeftPaneWidth`](#editformleftpanewidth) | top-level function | A | Return the width of an edit form's fixed left pane. |
 
 ## Documentation
 
@@ -62,3 +63,17 @@ Consumers: `device_detail_page.dart`, `network_detail_page.dart` and `device_edi
   (424 after the app bar) the avatar is 106; a Z Fold 8 in landscape reaches the 160 ceiling;
   `test/detail_layout_test.dart` loops every window height from 480 to 1200 and asserts the column
   fits.
+
+### `double editFormLeftPaneWidth(double totalWidth)` <a id="editformleftpanewidth"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/detail_layout.dart`.
+- **Purpose:** Return the width of an edit form's fixed left pane.
+- **Inputs:** `totalWidth` — the page body's width, the raw window.
+- **Returns:** `double` — `(totalWidth × 0.42).clamp(300, 480)`.
+- **Side effects:** None.
+- **Usage:** The service, route and dataset edit pages' `LayoutBuilder`.
+- **Notes:** Wider than `detailLeftPaneWidth` because these panes hold form fields rather than a
+  card of text: an `OutlineInputBorder` dropdown whose longest localized label is Japanese needs
+  about 268 inside the pane's 32 dp of padding, hence the 300 floor. At the 600 dp split minimum
+  the right pane keeps 299. `dataSetEditLeftPaneHeight` (88) sits beside it in source so the
+  test can pin that the dataset page's fixed pane fits the shortest split window.

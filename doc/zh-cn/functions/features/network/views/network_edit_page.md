@@ -14,7 +14,7 @@
 | `_nonEmpty` | 方法（`_NetworkEditPageState`） | B | 修剪字段文本，空白时返回 `null`。 |
 | `_typeLabel` | 方法（`_NetworkEditPageState`） | B | 把 `NetworkType` 映射到其本地化标签。 |
 | [`_save`](#save) | 方法（`_NetworkEditPageState`） | A | 验证表单、构建 `Network`、持久化并弹出。 |
-| `build` | 方法（组件） | B | 构建脚手架：名/类型/子网/网关/DNS/备注表单字段。 |
+| `build` | 方法（组件） | B | 构建脚手架：名/类型/子网/网关/DNS/备注表单字段，放在封顶 `formMaxWidth`（600）并居中的一列里——仅宽度，手机不变。 |
 
 行数（9）与 `grep -c 'Purpose:' network_edit_page.dart`（9）精确匹配。
 

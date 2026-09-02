@@ -255,13 +255,19 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `device_detail_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth` | 外加第三道门控：至少一个规格小节。推到壳外：测量原始窗口。 |
 | `network_detail_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth` | 推到壳外。 |
 | `device_edit_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth`、`editAvatarSize` | 左窗格按构造不滚动；见上文。推到壳外。 |
+| `service_edit_page.dart`、`service_route_edit_page.dart` | `useDetailTwoPane`、`editFormLeftPaneWidth` | **两栏都滚动**：身份 / 源那半边（七块和五块，约 476 和 340 dp）太高，无法像设备编辑页钉住三件套那样在 480 dp 下限钉住，所以左窗格是普通滚动视图。窗格是窗口的 0.42 钳到 300–480，比详情窗格宽，因为它装的是下拉——最长日文标签在 32 内边距内需要 268；600 dp 下限时右窗格给 Docker Compose 编辑器留 299。推到壳外。 |
+| `dataset_edit_page.dart` | `useDetailTwoPane`、`editFormLeftPaneWidth` | 固定左窗格（56 dp emoji 块加名称字段，含内边距 88 dp——远低于下限处窗格的 424，无需算式）配同样的滚动视图兜底；存储清单在右侧滚动。推到壳外。 |
+| `network_edit_page.dart` | `formMaxWidth` | 仅宽度，不是分栏规则：六个字段的单列封顶 600 dp 并居中，桌面窗口不再把每个字段拉到整个宽度，手机不变。 |
+| 四个 `DraggableScrollableSheet` 选择器（设备模板、CPU 与 GPU 预设、服务模板） | `sheetInitialSize`、`sheetMaxSize` | 高度低于 480 dp 时表单以 0.95 而非首选的 0.6 / 0.82 打开：四者都是 `isScrollControlled` 且搜索框自动聚焦，在 412 dp 高的窗口上弹出键盘后 0.6 的表单只剩约 100 dp 结果。 |
+| emoji 选择器表单（`device_edit_page.dart`） | `emojiGridColumns` | 37 dp 格子加 4 dp 间距的 `columnCapacity`，复现 360 dp 手机一直有的八列，并给 640 dp 上限的 Material 3 表单十二列。`lib/` 里最后一个硬编码数量。 |
 | `device_finance_overview_page.dart`（摘要与图表并排） | `canSplitLayout`、`useFinanceSideBySide`、`financeSummaryPaneWidth` | 双重门控，外加非空分布；见上文。 |
 | `device_finance_overview_page.dart`（摘要卡） | `financeSummaryColumns` | 仅宽度，下限 2；在并排窗格内强制为一列。推到壳外：测量自己的 `LayoutBuilder`。 |
 | `device_search_dialog.dart`、`chip_search_dialog.dart` | `dialogBodyHeight`、`dialogMaxWidth` | 高度来自窗口减键盘。 |
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | 无需 | 已是 `LayoutBuilder` 驱动的全幅 `InteractiveViewer`；布局缓存以视口宽度为键。 |
 | `device_map_page.dart`、`map_picker_page.dart` | 无需 | 全幅地图填满给它的任何空间；选点器的搜索行已是按钮旁的 `Expanded` 输入框。 |
+| 网络详情的设备选择表单、数据集编辑的 emoji `SimpleDialog` | 无需 | 十六个 emoji 的 `Wrap` 和一个短设备列表；两者在手机上放得下，并被 Material 3 的 640 dp 表单宽和 560 dp 对话框宽封顶。 |
 
-其余每一页仍是固定单列，已排期：其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
+只剩设置家族（1.5.5）仍是固定单列。**到 1.5.4，`lib/` 里的每个宽度决策和每个硬编码数量都经过 `adaptive_layout.dart`**：系列指南 §11 的全树 grep——`maxWidth|maxHeight|size.width|size.height` 与数字比较，以及后跟数字的 `crossAxisCount:`——在 `lib/shared/utils/` 之外没有任何命中，而那两个策略模块正是这种比较唯一该在的地方。
 
 ## 与 Google 指南的分歧
 
@@ -274,6 +280,7 @@ Google 的自适应布局指南说窗口尺寸类别「明确不由设备屏幕�
 - `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、四个列表的列数与偏好钳制、两条概览规则、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
 - `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限、从门控到 2000 dp 图表永不低于最小值的循环不变量，以及从 480 到 1200 的每个窗口高度上编辑页左列都放得进窗格的循环不变量。
 - `test/device_edit_two_pane_ui_test.dart` — 在 Z Fold 8 横竖、手机、600 × 480 下限和 300 dp 软键盘内缩下渲染编辑页：哪些字段共享左窗格、同一个 `Form` 仍包住两侧、没有溢出。
+- `test/edit_pages_two_pane_ui_test.dart` — 服务、链路、数据集和网络编辑页在 Z Fold 8 横竖、手机、下限和桌面上：哪半边落在哪里、下限处的数据集窗格、网络表单的 600 dp 上限对比手机的全宽。emoji 网格、表单比例和 `editFormLeftPaneWidth` 由纯函数测试钉住。
 - `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart`、`test/finance_overview_layout_ui_test.dart` — 在 Z Fold 8 横竖、Z Fold 7 竖屏、手机横竖、平板和 600 × 480 下限上渲染页面：哪个窗格放什么、右侧滚动时左窗格不动、无规格与无数据的回退。
 - `test/list_columns_prefs_test.dart` — 四个列数偏好各自独立往返，默认值不写入文件而是缺席，非法值读作自动。
 - `test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart`、`test/service_columns_ui_test.dart` — 针对种子存储目录，在 Z Fold 8 横竖、Pixel 9 横竖和平板上渲染设备、网络、数据集与服务列表：列数、隐藏的控件、存下的选择、钳制、滑动或菜单的切换，以及分组页头。

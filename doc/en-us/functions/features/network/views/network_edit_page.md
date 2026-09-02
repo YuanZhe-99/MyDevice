@@ -19,7 +19,7 @@ edit page in this app. Saves through
 | `_nonEmpty` | method (`_NetworkEditPageState`) | B | Trim a field's text, returning `null` if it's blank. |
 | `_typeLabel` | method (`_NetworkEditPageState`) | B | Map a `NetworkType` to its localized label. |
 | [`_save`](#save) | method (`_NetworkEditPageState`) | A | Validate the form, build a `Network`, persist it, and pop. |
-| `build` | method (widget) | B | Build the scaffold: name/type/subnet/gateway/DNS/notes form fields. |
+| `build` | method (widget) | B | Build the scaffold: name/type/subnet/gateway/DNS/notes form fields in a column capped at `formMaxWidth` (600) and centred — width only, so a phone is unchanged. |
 
 Row count (9) matches `grep -c 'Purpose:' network_edit_page.dart` (9) exactly.
 

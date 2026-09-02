@@ -55,7 +55,7 @@ model this form edits.
 | [`_applySearchResult`](#_applysearchresult) | method (`_DeviceEditPageState`) | A | Apply a search-result field map onto the form, fuzzy-matching CPU/GPU text against loaded presets. |
 | [`_detectLogoForModel`](#_detectlogoformodel) | method (`_DeviceEditPageState`) | A | Find an SVG logo path for a live-typed CPU/GPU model string. |
 | `_brandLogoWidget` | method (widget helper) | B | Render a small SVG logo (tinted to `onSurface`), or nothing if `logoPath` is null. |
-| `_showEmojiPicker` | method (`_DeviceEditPageState`) | B | Show a bottom-sheet grid of `_commonEmojis`; tapping one sets `_emoji` and clears `_imagePath`. |
+| `_showEmojiPicker` | method (`_DeviceEditPageState`) | B | Show a bottom-sheet grid of `_commonEmojis` in `emojiGridColumns(sheet width)` columns; tapping one sets `_emoji` and clears `_imagePath`. The CPU / GPU preset sheets open at `sheetInitialSize(window height, preferred: 0.6)`. |
 | [`_pickImage`](#_pickimage) | method (`_DeviceEditPageState`) | A | Let the user pick a photo and adopt it as the device's icon, clearing any emoji. |
 | `_removeIcon` | method (`_DeviceEditPageState`) | B | Clear both `_emoji` and `_imagePath`. |
 | `_buildIconSection` | method (widget helper) | B | Render the avatar preview plus image-pick/emoji-pick/remove actions; `avatarSize` (56, or `editAvatarSize` in the two-pane left pane) and `stacked` (chips centred under the preview rather than beside it). |

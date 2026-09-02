@@ -19,7 +19,10 @@
 | `_addHop` | 方法（`_ServiceRouteEditPageState`） | B | 打开跳对话框并把结果追加进跳列表。 |
 | `_editHop` | 方法（`_ServiceRouteEditPageState`） | B | 打开带既有跳预填的跳对话框并原地替换。 |
 | [`_showHopDialog`](#showhopdialog) | 方法（`_ServiceRouteEditPageState`） | A | 显示一个 `ServiceRouteHop` 的增/改模态对话框并构建结果。 |
-| `build` | 方法（组件构建，`_ServiceRouteEditPageState`） | B | 渲染路由编辑表单（源/端点选择器、访问级别、目标字段、预览卡片、跳列表、备注）。 |
+| `build` | 方法（组件构建，`_ServiceRouteEditPageState`） | B | 围绕 `_buildFormBody` 渲染脚手架（保存/删除操作）。 |
+| `_buildFormBody` | 方法（组件辅助） | B | 在同一个 `Form` 内选择布局：两半合一的单个 `ListView`，或——`useDetailTwoPane` 通过时——一个 `Row`：`editFormLeftPaneWidth` 宽的可滚动源窗格加右侧跳列表 `ListView`。两栏都滚动。 |
+| `_buildSourceFields` | 方法（组件辅助） | B | 源/端点选择器、访问级别、目标字段和预览卡片——从 `build` 原样抽出。 |
+| `_buildHopFields` | 方法（组件辅助） | B | 跳列表、备注和保存按钮——从 `build` 原样抽出。 |
 | [`_hopTitle`](#hoptitle) | 方法（`_ServiceRouteEditPageState`） | A | 计算一跳显示标题，偏好其链接服务名、然后标签、然后主机、然后跳类型。 |
 | [`_hopSubtitle`](#hopsubtitle) | 方法（`_ServiceRouteEditPageState`） | A | 组合一跳多部分副标题行（类型、方法、端点、主机/scheme/端口/路径、备注）。 |
 | `_hopEndpoint` | 方法（`_ServiceRouteEditPageState`） | B | 查找跳引用的 `ServiceEndpoint`（如有）。 |

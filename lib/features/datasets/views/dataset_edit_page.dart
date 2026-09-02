@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/detail_layout.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/dataset.dart';
@@ -194,105 +195,168 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // ── Emoji + Name ──
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GestureDetector(
-                      onTap: _pickEmoji,
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          _emoji,
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: l10n.dataSetName,
-                          border: const OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // ── Storage selection ──
-                Text(
-                  l10n.dataSetStorages,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (_devices.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      l10n.dataSetNoDeviceStorages,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ..._devices.map((device) {
-                  final selected = _selectedStorages[device.id] ?? {};
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                          child: Text(
-                            device.name,
-                            style: Theme.of(context).textTheme.titleSmall,
-                          ),
-                        ),
-                        ...List.generate(device.storage.length, (i) {
-                          final st = device.storage[i];
-                          final checked = selected.contains(i);
-                          return CheckboxListTile(
-                            value: checked,
-                            title: Text(st.displayString),
-                            dense: true,
-                            onChanged: (val) {
-                              setState(() {
-                                final set = _selectedStorages.putIfAbsent(
-                                  device.id,
-                                  () => {},
-                                );
-                                if (val == true) {
-                                  set.add(i);
-                                } else {
-                                  set.remove(i);
-                                }
-                              });
-                            },
-                          );
-                        }),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
+          : _buildBody(context, l10n),
     );
+  }
+
+  /// Purpose: Build the page body in whichever layout the window calls for.
+  /// Inputs: `context`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. A fixed left pane
+  /// like the device edit page's, but with no arithmetic to do: the emoji
+  /// tile and name field row is 88 dp with its padding, far under the 424 a
+  /// pane has at the 480 dp split floor. It still sits in a scroll view with
+  /// the pane's height as its minimum, as the soft-keyboard fallback. The
+  /// storage checklist scrolls on the right. Pushed above the shell: the
+  /// body width is the raw window.
+  Widget _buildBody(BuildContext context, AppLocalizations l10n) {
+    final screen = MediaQuery.sizeOf(context);
+    final header = _buildHeaderRow(context, l10n);
+    final storage = _buildStorageChildren(context, l10n);
+    if (!useDetailTwoPane(screen.width, screen.height)) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [header, const SizedBox(height: 24), ...storage],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: editFormLeftPaneWidth(constraints.maxWidth),
+            child: LayoutBuilder(
+              builder: (context, pane) => SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: pane.maxHeight),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: header,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: storage,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Purpose: Build the emoji tile and name field row.
+  /// Inputs: `context`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so both layouts share it.
+  Widget _buildHeaderRow(BuildContext context, AppLocalizations l10n) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: _pickEmoji,
+          child: Container(
+            width: 56,
+            height: 56,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(_emoji, style: const TextStyle(fontSize: 28)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: l10n.dataSetName,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Purpose: Build the storage selection: its heading, the empty-state
+  /// text, and one card of checkboxes per device.
+  /// Inputs: `context`, `l10n`.
+  /// Returns: `List<Widget>` ready to spread into a `ListView`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so both layouts share it.
+  List<Widget> _buildStorageChildren(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    return [
+      // ── Storage selection ──
+      Text(
+        l10n.dataSetStorages,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (_devices.isEmpty)
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            l10n.dataSetNoDeviceStorages,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ..._devices.map((device) {
+        final selected = _selectedStorages[device.id] ?? {};
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Text(
+                  device.name,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              ...List.generate(device.storage.length, (i) {
+                final st = device.storage[i];
+                final checked = selected.contains(i);
+                return CheckboxListTile(
+                  value: checked,
+                  title: Text(st.displayString),
+                  dense: true,
+                  onChanged: (val) {
+                    setState(() {
+                      final set = _selectedStorages.putIfAbsent(
+                        device.id,
+                        () => {},
+                      );
+                      if (val == true) {
+                        set.add(i);
+                      } else {
+                        set.remove(i);
+                      }
+                    });
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      }),
+    ];
   }
 }

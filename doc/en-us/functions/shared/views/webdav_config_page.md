@@ -38,7 +38,7 @@ documents; there are no misattached blocks and no undocumented declarations in t
 | [`_disconnect`](#_disconnect) | method (`_WebDAVConfigPageState`) | A | Delete the saved WebDAV config and clear the form. |
 | `_fillNextcloud` | method (`_WebDAVConfigPageState`) | B | Fill the form with Nextcloud WebDAV URL/path presets. |
 | [`_syncStatusText`](#_syncstatustext) | method (`_WebDAVConfigPageState`) | A | Build a short sync health summary for display. |
-| `build` | method (widget) | B | Render the config form, sync-status card, progress bar, and sync/force/disconnect actions. |
+| `build` | method (widget) | B | Render the config form, sync-status card, progress bar, and sync/force/disconnect actions, in a column capped at `formMaxWidth` and centred. |
 | `_ConflictDialog` (constructor) | constructor | B | Store the conflict to display. |
 | [`_modifiedAtOf`](#_modifiedatof) | method (`_ConflictDialog`, static) | A | Extract a display-ready `modifiedAt` timestamp from a dynamic conflict record, if it has one. |
 | `build` (`_ConflictDialog`) | method (widget) | B | Render the conflict dialog: record name, both sides' timestamp/ID, Keep Local/Keep Remote actions. |

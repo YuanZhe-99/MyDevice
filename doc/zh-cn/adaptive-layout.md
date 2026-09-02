@@ -165,6 +165,34 @@ double editAvatarSize(double paneWidth, double paneHeight) =>
 | 分栏下限 600 × 480 | 是 | 260 | 424 | 106 |
 | Z Fold 8 竖屏、平板竖屏、手机任一方向 | 否 | — | — | 56，单列 |
 
+## 设置页：列表与详情
+
+设置页是壳内唯一通往二级页面的页面——WebDAV 表单、备份页、隐私政策和许可证。在 `canSplitLayout` 放行的窗口上，它把一级列表留在左侧、把选中的页面宿主在右侧；在更窄的窗口上则像一直以来那样把页面推到壳之上的根导航器全屏显示。每一行都经过同一个 `_open`，两种模式不会漂移；选择依据上一次 build 而非在点击处理器里重算，所以点击做的就是用户看到的。
+
+```dart
+double settingsLeftPaneWidth(double contentWidth) {
+  final preferred = (contentWidth * 0.44).clamp(300.0, 440.0);
+  final capped = contentWidth - settingsRightPaneMinWidth;   // 280
+  return preferred <= capped ? preferred : capped.clamp(240.0, 440.0);
+}
+```
+
+左窗格比详情页的需要更多空间，因为它装的是带尾部下拉的完整 `ListTile` 而非一张文字卡片。封顶让宿主页面保持在 280 dp 以上，且只在最窄的展开折叠屏和手动缩小的桌面窗口上生效：Z Fold 5 竖屏扣除导航栏后给设置 body 578，此时 300 只会留 278，所以列表让出两个像素。`test/adaptive_layout_test.dart` 断言从分栏下限到 2000 dp 的每个宽度上详情窗格都超过其最小值。这里的内容宽度*就是* `shellContentWidth`，因为这是壳内五页之一；body 的 `LayoutBuilder` 已扣除导航栏。
+
+宿主页面放在以选择为键的嵌套 `Navigator` 里。这让它拥有真实的 route——其内的 `Navigator.pop` 仍有意义，对话框仍可用——并且因为只持有一个 route 的嵌套导航器报告 `canPop == false`，页面自己的应用栏不会长出返回箭头。四个页面无一需要改动即可嵌入。窗口缩回单栏时选择被保留，所以折叠设备再展开会恢复它。选择前的占位文案是本次发布唯一新增的字符串。Flutter 许可页是始终全屏打开的那一行：`showLicensePage` 被告知 `useRootNavigator: true`，永远不会落进窗格。
+
+**阅读与表单宽度。** 隐私政策和许可证是正文，封顶 `readingMaxWidth`（680——约 95 个拉丁或 48 个 CJK 字符的 `bodyMedium`，舒适阅读度量的上沿）并居中。备份页和 WebDAV 页是表单，像网络编辑表单一样封顶 `formMaxWidth`（600）。两个上限都仅看宽度，在桌面窗口上生效，且永远不在比两者都窄的详情窗格内生效。
+
+| 视口 | 分栏 | 设置 body | 左窗格 | 宿主页面 |
+|---|---|---|---|---|
+| Z Fold 8 横屏 933 × 704 | 是 | 852 | 375 | 476 |
+| Z Fold 8 竖屏 704 × 933 | 否 | — | 推入 | 全屏 |
+| Z Fold 7 832 × 750 / 750 × 832 | 是 | 751 / 669 | 330 / 300 | 420 / 368 |
+| Z Fold 6 675 × 786 · Z Fold 5 659 × 791 | 是 | 594 / 578 | 300 / **298** | 293 / 280 |
+| 平板 1024 × 768 / 768 × 1024 | 是 / 否 | 943 / — | 415 / 推入 | 527 / 全屏 |
+| 手机 412 × 915 / 915 × 412 | 否 | — | 推入 | 全屏 |
+| 桌面 1600 × 900 | 是 | 1519 | 440 | 1078 |
+
 ## 两块并排：分栏规则之上的宽度下限
 
 有些布局需要同时回答两个问题。财务总览就是：三个摘要指标叠在 220 dp 饼图之上，在趋势图出现之前就花掉 Z Fold 8 约 640 dp body 的大部分。把指标放进饼图旁的窄列能收回这些——但只在图表仍有空间绘制的地方。
@@ -259,6 +287,9 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `dataset_edit_page.dart` | `useDetailTwoPane`、`editFormLeftPaneWidth` | 固定左窗格（56 dp emoji 块加名称字段，含内边距 88 dp——远低于下限处窗格的 424，无需算式）配同样的滚动视图兜底；存储清单在右侧滚动。推到壳外。 |
 | `network_edit_page.dart` | `formMaxWidth` | 仅宽度，不是分栏规则：六个字段的单列封顶 600 dp 并居中，桌面窗口不再把每个字段拉到整个宽度，手机不变。 |
 | 四个 `DraggableScrollableSheet` 选择器（设备模板、CPU 与 GPU 预设、服务模板） | `sheetInitialSize`、`sheetMaxSize` | 高度低于 480 dp 时表单以 0.95 而非首选的 0.6 / 0.82 打开：四者都是 `isScrollControlled` 且搜索框自动聚焦，在 412 dp 高的窗口上弹出键盘后 0.6 的表单只剩约 100 dp 结果。 |
+| `settings_page.dart` | `canSplitLayout`、`settingsLeftPaneWidth` | 列表在左，选中的页面在右侧嵌套 `Navigator` 中宿主；否则推入全屏。壳内：body 的 `LayoutBuilder` 已扣除导航栏。 |
+| `license_page.dart`、`privacy_policy_page.dart` | `readingMaxWidth` | 仅宽度：正文封顶 680 并居中。 |
+| `backup_page.dart`、`webdav_config_page.dart` | `formMaxWidth` | 仅宽度：表单封顶 600 并居中。 |
 | emoji 选择器表单（`device_edit_page.dart`） | `emojiGridColumns` | 37 dp 格子加 4 dp 间距的 `columnCapacity`，复现 360 dp 手机一直有的八列，并给 640 dp 上限的 Material 3 表单十二列。`lib/` 里最后一个硬编码数量。 |
 | `device_finance_overview_page.dart`（摘要与图表并排） | `canSplitLayout`、`useFinanceSideBySide`、`financeSummaryPaneWidth` | 双重门控，外加非空分布；见上文。 |
 | `device_finance_overview_page.dart`（摘要卡） | `financeSummaryColumns` | 仅宽度，下限 2；在并排窗格内强制为一列。推到壳外：测量自己的 `LayoutBuilder`。 |
@@ -267,7 +298,7 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `device_map_page.dart`、`map_picker_page.dart` | 无需 | 全幅地图填满给它的任何空间；选点器的搜索行已是按钮旁的 `Expanded` 输入框。 |
 | 网络详情的设备选择表单、数据集编辑的 emoji `SimpleDialog` | 无需 | 十六个 emoji 的 `Wrap` 和一个短设备列表；两者在手机上放得下，并被 Material 3 的 640 dp 表单宽和 560 dp 对话框宽封顶。 |
 
-只剩设置家族（1.5.5）仍是固定单列。**到 1.5.4，`lib/` 里的每个宽度决策和每个硬编码数量都经过 `adaptive_layout.dart`**：系列指南 §11 的全树 grep——`maxWidth|maxHeight|size.width|size.height` 与数字比较，以及后跟数字的 `crossAxisCount:`——在 `lib/shared/utils/` 之外没有任何命中，而那两个策略模块正是这种比较唯一该在的地方。
+1.5.5 加入设置家族后，应用中的每个界面在此表中要么有规则，要么有记录在案的无需规则的理由。**`lib/` 里的每个宽度决策和每个硬编码数量都经过 `adaptive_layout.dart`**：系列指南 §11 的全树 grep——`maxWidth|maxHeight|size.width|size.height` 与数字比较，以及后跟数字的 `crossAxisCount:`——在 `lib/shared/utils/` 之外没有任何命中，而那两个策略模块正是这种比较唯一该在的地方。
 
 ## 与 Google 指南的分歧
 
@@ -280,6 +311,7 @@ Google 的自适应布局指南说窗口尺寸类别「明确不由设备屏幕�
 - `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、四个列表的列数与偏好钳制、两条概览规则、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
 - `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限、从门控到 2000 dp 图表永不低于最小值的循环不变量，以及从 480 到 1200 的每个窗口高度上编辑页左列都放得进窗格的循环不变量。
 - `test/device_edit_two_pane_ui_test.dart` — 在 Z Fold 8 横竖、手机、600 × 480 下限和 300 dp 软键盘内缩下渲染编辑页：哪些字段共享左窗格、同一个 `Form` 仍包住两侧、没有溢出。
+- `test/settings_two_pane_ui_test.dart` — 设置页在 Z Fold 8 横竖和手机上：列表旁的占位、某行在列表旁宿主其页面且无返回箭头、同一行推入全屏且有返回箭头，以及桌面窗口上许可证正文的封顶。
 - `test/edit_pages_two_pane_ui_test.dart` — 服务、链路、数据集和网络编辑页在 Z Fold 8 横竖、手机、下限和桌面上：哪半边落在哪里、下限处的数据集窗格、网络表单的 600 dp 上限对比手机的全宽。emoji 网格、表单比例和 `editFormLeftPaneWidth` 由纯函数测试钉住。
 - `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart`、`test/finance_overview_layout_ui_test.dart` — 在 Z Fold 8 横竖、Z Fold 7 竖屏、手机横竖、平板和 600 × 480 下限上渲染页面：哪个窗格放什么、右侧滚动时左窗格不动、无规格与无数据的回退。
 - `test/list_columns_prefs_test.dart` — 四个列数偏好各自独立往返，默认值不写入文件而是缺席，非法值读作自动。

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../shared/services/auto_sync_service.dart';
+import '../../shared/utils/adaptive_layout.dart';
 import '../../shared/services/sync_merge.dart';
 import '../../shared/services/sync_progress.dart';
 import '../../shared/services/sync_wake_lock.dart';
@@ -508,72 +509,137 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
       appBar: AppBar(title: Text(l10n.settingsWebDAVSync), centerTitle: true),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                // Presets
-                Row(
+          // Capped at `formMaxWidth` and centred: width only, so a phone is
+          // unchanged; binds on a desktop window and never inside the
+          // settings detail pane, which is narrower than the cap.
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: formMaxWidth),
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: _fillNextcloud,
-                      icon: const Icon(Icons.cloud, size: 18),
-                      label: Text(l10n.settingsWebDAVNextcloud),
+                    // Presets
+                    Row(
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: _fillNextcloud,
+                          icon: const Icon(Icons.cloud, size: 18),
+                          label: Text(l10n.settingsWebDAVNextcloud),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                    const SizedBox(height: 16),
 
-                // Server URL
-                TextField(
-                  controller: _urlController,
-                  decoration: InputDecoration(
-                    labelText: l10n.settingsWebDAVServerURL,
-                    hintText: 'https://example.com/remote.php/dav/files/user',
-                  ),
-                  keyboardType: TextInputType.url,
-                ),
-                const SizedBox(height: 12),
+                    // Server URL
+                    TextField(
+                      controller: _urlController,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsWebDAVServerURL,
+                        hintText:
+                            'https://example.com/remote.php/dav/files/user',
+                      ),
+                      keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: 12),
 
-                TextField(
-                  controller: _userController,
-                  decoration: InputDecoration(
-                    labelText: l10n.settingsWebDAVUsername,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                TextField(
-                  controller: _passController,
-                  decoration: InputDecoration(
-                    labelText: l10n.settingsWebDAVPassword,
-                  ),
-                  obscureText: true,
-                ),
-                const SizedBox(height: 12),
-
-                TextField(
-                  controller: _pathController,
-                  decoration: InputDecoration(
-                    labelText: l10n.settingsWebDAVRemotePath,
-                    hintText: '/MyDevice',
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Actions
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _saveConfig,
-                        child: Text(l10n.save),
+                    TextField(
+                      controller: _userController,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsWebDAVUsername,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _testing ? null : _testConnection,
-                        child: _testing
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: _passController,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsWebDAVPassword,
+                      ),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 12),
+
+                    TextField(
+                      controller: _pathController,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsWebDAVRemotePath,
+                        hintText: '/MyDevice',
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Actions
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: _saveConfig,
+                            child: Text(l10n.save),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _testing ? null : _testConnection,
+                            child: _testing
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(l10n.settingsWebDAVTestConnection),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    if (_isConfigured) ...[
+                      if (syncStatus != null) ...[
+                        Card(
+                          color: AutoSyncService.instance.lastError == null
+                              ? theme.colorScheme.surfaceContainerHighest
+                              : theme.colorScheme.errorContainer,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Text(
+                              syncStatus,
+                              style: TextStyle(
+                                color:
+                                    AutoSyncService.instance.lastError == null
+                                    ? theme.colorScheme.onSurfaceVariant
+                                    : theme.colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      ValueListenableBuilder<SyncProgress>(
+                        valueListenable: WebDAVService.progress,
+                        builder: (context, progress, _) {
+                          if (!progress.isRunning) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              LinearProgressIndicator(value: progress.fraction),
+                              const SizedBox(height: 8),
+                              Text(
+                                _progressText(l10n, progress),
+                                style: theme.textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          );
+                        },
+                      ),
+                      FilledButton.icon(
+                        onPressed: _syncing ? null : _syncNow,
+                        icon: _syncing
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
@@ -581,114 +647,61 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : Text(l10n.settingsWebDAVTestConnection),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                if (_isConfigured) ...[
-                  if (syncStatus != null) ...[
-                    Card(
-                      color: AutoSyncService.instance.lastError == null
-                          ? theme.colorScheme.surfaceContainerHighest
-                          : theme.colorScheme.errorContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Text(
-                          syncStatus,
-                          style: TextStyle(
-                            color: AutoSyncService.instance.lastError == null
-                                ? theme.colorScheme.onSurfaceVariant
-                                : theme.colorScheme.onErrorContainer,
-                          ),
+                            : const Icon(Icons.sync),
+                        label: Text(
+                          _syncing
+                              ? l10n.settingsWebDAVSyncing
+                              : l10n.settingsWebDAVSyncNow,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  ValueListenableBuilder<SyncProgress>(
-                    valueListenable: WebDAVService.progress,
-                    builder: (context, progress, _) {
-                      if (!progress.isRunning) {
-                        return const SizedBox.shrink();
-                      }
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      const SizedBox(height: 12),
+                      Row(
                         children: [
-                          LinearProgressIndicator(value: progress.fraction),
-                          const SizedBox(height: 8),
-                          Text(
-                            _progressText(l10n, progress),
-                            style: theme.textTheme.bodySmall,
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _syncing ? null : _forceUpload,
+                              icon: const Icon(Icons.upload, size: 18),
+                              label: Text(l10n.settingsWebDAVForceUpload),
+                            ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _syncing ? null : _forceDownload,
+                              icon: const Icon(Icons.download, size: 18),
+                              label: Text(l10n.settingsWebDAVForceDownload),
+                            ),
+                          ),
                         ],
-                      );
-                    },
-                  ),
-                  FilledButton.icon(
-                    onPressed: _syncing ? null : _syncNow,
-                    icon: _syncing
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.sync),
-                    label: Text(
-                      _syncing
-                          ? l10n.settingsWebDAVSyncing
-                          : l10n.settingsWebDAVSyncNow,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _syncing ? null : _forceUpload,
-                          icon: const Icon(Icons.upload, size: 18),
-                          label: Text(l10n.settingsWebDAVForceUpload),
-                        ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _syncing ? null : _forceDownload,
-                          icon: const Icon(Icons.download, size: 18),
-                          label: Text(l10n.settingsWebDAVForceDownload),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(l10n.settingsWebDAVAutoSync),
+                        subtitle: Text(l10n.settingsWebDAVAutoSyncDesc),
+                        value: _autoSync,
+                        onChanged: (v) async {
+                          setState(() => _autoSync = v);
+                          final config = _currentConfig;
+                          await WebDAVService.saveConfig(config);
+                          if (v && config.isConfigured) {
+                            AutoSyncService.instance.requestSyncNow();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _disconnect,
+                        icon: const Icon(Icons.link_off),
+                        label: Text(l10n.settingsWebDAVDisconnect),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.error,
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.settingsWebDAVAutoSync),
-                    subtitle: Text(l10n.settingsWebDAVAutoSyncDesc),
-                    value: _autoSync,
-                    onChanged: (v) async {
-                      setState(() => _autoSync = v);
-                      final config = _currentConfig;
-                      await WebDAVService.saveConfig(config);
-                      if (v && config.isConfigured) {
-                        AutoSyncService.instance.requestSyncNow();
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: _disconnect,
-                    icon: const Icon(Icons.link_off),
-                    label: Text(l10n.settingsWebDAVDisconnect),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                  ),
-                ],
-              ],
+                  ],
+                ),
+              ),
             ),
     );
   }

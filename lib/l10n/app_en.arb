@@ -550,5 +550,6 @@
   "listColumns": "Columns",
   "listColumnsAuto": "Auto",
   "listColumnsCount": "{count} columns",
+  "settingsSelectItem": "Select an item from the list",
   "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } }
 }

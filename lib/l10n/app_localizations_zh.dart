@@ -1442,6 +1442,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String listColumnsCount(int count) {
     return '$count 列';
   }
+
+  @override
+  String get settingsSelectItem => '从左侧列表中选择一项';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -2882,4 +2885,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String listColumnsCount(int count) {
     return '$count 欄';
   }
+
+  @override
+  String get settingsSelectItem => '從左側清單中選擇一項';
 }

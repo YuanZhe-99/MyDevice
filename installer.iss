@@ -1,7 +1,7 @@
 [Setup]
 AppId={{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
 AppName=MyDevice!!!!!
-AppVersion=1.5.4
+AppVersion=1.5.5
 AppPublisher=yuanzhe
 AppPublisherURL=https://github.com/yuanzhe
 DefaultDirName={autopf}\MyDevice!!!!!

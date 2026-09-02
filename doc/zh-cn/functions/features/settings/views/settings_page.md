@@ -28,7 +28,11 @@
 | [`_loadApiSettings`](#_loadapisettings) | 方法（`_SettingsPageState`） | A | 加载持久化本地 API 服务器设置。 |
 | [`_showApiSettingsDialog`](#_showapisettingsdialog) | 方法（`_SettingsPageState`） | A | 让用户编辑并保存本地 API 服务器设置，然后重启服务器。 |
 | [`_refreshExchangeRates`](#_refreshexchangerates) | 方法（`_SettingsPageState`） | A | 手动刷新并保存最新汇率。 |
-| `build` | 方法（组件） | B | 渲染通用/数据/桌面/关于小节。 |
+| `build` | 方法（组件） | B | 把分栏规则（屏幕上的 `canSplitLayout`）读入 `_twoPane`，然后要么单独渲染 `_buildSettingsList`，要么渲染一个 `Row`：`settingsLeftPaneWidth` 宽的列表加 `_buildDetailPane`。 |
+| `_buildSettingsList` | 方法（组件辅助） | B | 通用/数据/桌面/关于小节，从 `build` 原样抽出，让列表既能是整个 body 也能是左窗格。 |
+| `_detailPage` | 方法（组件辅助） | B | 把 `_SettingsDetail` 映射到其页面：WebDAV 配置、备份、隐私政策、许可证。 |
+| `_open` | 方法（`_SettingsPageState`） | B | `_twoPane` 时选择详情窗格的页面，否则推到根导航器——每一行共用的唯一路径。 |
+| `_buildDetailPane` | 方法（组件辅助） | B | 未选择时的占位（`settingsSelectItem`），否则是以选择为键、宿主 `_detailPage` 的嵌套 `Navigator`。 |
 
 ## 文档
 
@@ -167,9 +171,9 @@
 - **输入：** 无。
 - **返回：** `Future<void>`。
 - **副作用：** 调用 `launchAtStartup.isEnabled()`（查询平台启动项状态，按 [平台说明 — launch_at_startup](../../../../platform-notes.md#launch_at_startup)）；挂载时 `setState`。
-- **算法：** Await `launchAtStartup.isEnabled()`，仍挂载时设 `_autoStart`。
+- **算法：** Await `launchAtStartup.isEnabled()`，把 `UnsupportedError` 读作 `false`，仍挂载时设 `_autoStart`。
 - **用法：** `_isDesktop` 时从 [`initState`](#initstate) 调用。
-- **备注：** 无。
+- **备注：** `launchAtStartup` 在 `main` 调用其 `setup` 之前会抛 `UnsupportedError`——在 `flutter test` 下从不会调用，插件注册失败时也无法调用；两种情况都读作「未启用」，而不是让整个设置页崩掉。
 
 ### `Future<void> _loadApiSettings()` <a id="_loadapisettings"></a>
 - **种类：** `_SettingsPageState` 的方法

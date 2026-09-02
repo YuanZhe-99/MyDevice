@@ -13,7 +13,7 @@ network or storage access, and no branching logic — it is pushed from
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `LicensePage` (constructor) | constructor | B | Create the page widget (no parameters). |
-| `build` | method (widget) | B | Render an app bar and the scrollable, selectable GPLv3 license text. |
+| `build` | method (widget) | B | Render an app bar and the scrollable, selectable GPLv3 license text, capped at `readingMaxWidth` and centred. |
 
 ## Documentation
 

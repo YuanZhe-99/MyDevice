@@ -13,6 +13,7 @@ import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/import_export_service.dart';
 import '../../../shared/services/local_api_server.dart';
 import '../../../shared/services/tray_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/views/webdav_config_page.dart';
 import '../../devices/services/device_storage.dart';
 import '../../devices/services/exchange_rate_service.dart';
@@ -52,6 +53,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   String _apiPassword = '';
   String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
   bool _autoUpdateExchangeRates = true;
+  // Which second-level page the detail pane is showing, when there is one.
+  // Kept when the window narrows back to one pane rather than cleared, so
+  // folding a device shut and opening it again restores the selection.
+  _SettingsDetail? _detail;
+  bool _twoPane = false;
 
   /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
   /// Inputs: None.
@@ -177,6 +183,87 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// Notes: Internal helper used within this file only.
   bool get _isDesktop =>
       !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+  /// Purpose: Build the second-level page a settings row leads to.
+  /// Inputs: `detail`.
+  /// Returns: `Widget` — the page, a `Scaffold` with its own app bar.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. The same widget
+  /// serves both modes: pushed full-screen on a narrow window, and hosted in
+  /// the detail pane on a wide one. None of the four pages needed a change to
+  /// be embeddable, because a nested `Navigator` holding one route reports
+  /// `canPop == false` and their app bars therefore grow no back arrow.
+  Widget _detailPage(_SettingsDetail detail) {
+    return switch (detail) {
+      _SettingsDetail.webdav => const WebDAVConfigPage(),
+      _SettingsDetail.backup => const BackupPage(),
+      _SettingsDetail.privacy => const PrivacyPolicyPage(),
+      _SettingsDetail.license => const app_license.LicensePage(),
+    };
+  }
+
+  /// Purpose: Open a second-level page the way the current layout calls for.
+  /// Inputs: `detail`.
+  /// Returns: None.
+  /// Side effects: Either selects the detail pane's page or pushes a route on
+  /// the root navigator.
+  /// Notes: Internal helper used within this file only. Every one of the four
+  /// rows goes through here, so the two modes cannot drift apart. `_twoPane`
+  /// is what was on screen at the last build, so a tap does what the user saw.
+  void _open(_SettingsDetail detail) {
+    if (_twoPane) {
+      setState(() => _detail = detail);
+      return;
+    }
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute(builder: (_) => _detailPage(detail)));
+  }
+
+  /// Purpose: Build the right-hand pane of the two-pane settings layout.
+  /// Inputs: `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. The nested
+  /// `Navigator` gives the hosted page a real route, which is what keeps
+  /// `Navigator.pop` inside it meaningful and its app bar leading-free.
+  /// Keying it on the selection disposes and rebuilds on every change, which
+  /// is correct for two pages that load asynchronously when they mount.
+  Widget _buildDetailPane(AppLocalizations l10n) {
+    final detail = _detail;
+    if (detail == null) {
+      final theme = Theme.of(context);
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.tune_outlined,
+                size: 48,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.settingsSelectItem,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return Navigator(
+      key: ValueKey(detail),
+      onGenerateRoute: (_) =>
+          MaterialPageRoute(builder: (_) => _detailPage(detail)),
+    );
+  }
 
   /// Purpose: Export data to an external representation.
   /// Inputs: None.
@@ -380,9 +467,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   /// Inputs: None.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild. Touches platform integration state.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. `launchAtStartup`
+  /// throws `UnsupportedError` until `main` has called its `setup`, which
+  /// never happens under `flutter test` and could not happen if the plugin
+  /// failed to register; either reads as "not enabled" rather than taking
+  /// the whole settings page down.
   Future<void> _loadAutoStartStatus() async {
-    final enabled = await launchAtStartup.isEnabled();
+    bool enabled;
+    try {
+      enabled = await launchAtStartup.isEnabled();
+    } on UnsupportedError {
+      enabled = false;
+    }
     if (!mounted) return;
     setState(() => _autoStart = enabled);
   }
@@ -522,292 +618,331 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final webDavStatus = _webDavStatusText(l10n);
     final notifier = ref.read(appSettingsProvider.notifier);
 
+    // The gate reads the whole screen; the pane width reads the body's own
+    // constraints, which already exclude the navigation rail. `_twoPane` is
+    // cached here rather than recomputed in the tap handler so that what a
+    // tap does always matches what was on screen when it happened.
+    final screen = MediaQuery.sizeOf(context);
+    _twoPane = canSplitLayout(screen.width, screen.height);
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.navSettings)),
-      body: ListView(
-        children: [
-          // ── General ──
-          _buildSection(l10n.settingsGeneral, [
-            ListTile(
-              leading: const Icon(Icons.palette_outlined),
-              title: Text(l10n.settingsTheme),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<ThemeMode>(
-                segments: [
-                  ButtonSegment(
-                    value: ThemeMode.system,
-                    icon: const Icon(Icons.brightness_auto, size: 18),
-                    label: Text(l10n.settingsThemeSystem),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.light,
-                    icon: const Icon(Icons.light_mode, size: 18),
-                    label: Text(l10n.settingsThemeLight),
-                  ),
-                  ButtonSegment(
-                    value: ThemeMode.dark,
-                    icon: const Icon(Icons.dark_mode, size: 18),
-                    label: Text(l10n.settingsThemeDark),
-                  ),
-                ],
-                selected: {settings.themeMode},
-                onSelectionChanged: (s) => notifier.setThemeMode(s.first),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final list = _buildSettingsList(
+            l10n,
+            settings,
+            notifier,
+            webDavStatus,
+          );
+          if (!_twoPane) return list;
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: settingsLeftPaneWidth(constraints.maxWidth),
+                child: list,
               ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.language),
-              title: Text(l10n.settingsLanguage),
-              trailing: DropdownButton<Locale?>(
-                value: settings.locale,
-                underline: const SizedBox.shrink(),
-                items: [
-                  DropdownMenuItem(
-                    value: null,
-                    child: Text(l10n.settingsLanguageSystem),
-                  ),
-                  const DropdownMenuItem(
-                    value: Locale('en'),
-                    child: Text('English'),
-                  ),
-                  const DropdownMenuItem(
-                    value: Locale('zh'),
-                    child: Text('简体中文'),
-                  ),
-                  const DropdownMenuItem(
-                    value: Locale('zh', 'TW'),
-                    child: Text('繁體中文'),
-                  ),
-                  const DropdownMenuItem(
-                    value: Locale('ja'),
-                    child: Text('日本語'),
-                  ),
-                ],
-                onChanged: (locale) => notifier.setLocale(locale),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.currency_exchange),
-              title: Text(l10n.settingsDefaultCurrency),
-              trailing: DropdownButton<String>(
-                value: _defaultCurrency,
-                underline: const SizedBox.shrink(),
-                items: DeviceExchangeRateService.supportedCurrencies
-                    .map(
-                      (code) => DropdownMenuItem(
-                        value: code,
-                        child: Text(
-                          '${DeviceExchangeRateService.currencySymbol(code)} $code',
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) async {
-                  if (value == null) return;
-                  await DeviceExchangeRateService.setDefaultCurrency(value);
-                  if (mounted) setState(() => _defaultCurrency = value);
-                },
-              ),
-            ),
-            SwitchListTile(
-              secondary: const Icon(Icons.sync_outlined),
-              title: Text(l10n.settingsAutoUpdateExchangeRates),
-              value: _autoUpdateExchangeRates,
-              onChanged: (value) async {
-                await DeviceExchangeRateService.setAutoUpdateEnabled(value);
-                if (mounted) setState(() => _autoUpdateExchangeRates = value);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.refresh),
-              title: Text(l10n.settingsRefreshExchangeRates),
-              onTap: _refreshExchangeRates,
-            ),
-          ]),
-
-          // ── Data ──
-          _buildSection(l10n.settingsData, [
-            ListTile(
-              leading: const Icon(Icons.sync_outlined),
-              title: Text(l10n.settingsWebDAVSync),
-              subtitle: webDavStatus == null
-                  ? null
-                  : Text(
-                      webDavStatus,
-                      style: TextStyle(
-                        color: AutoSyncService.instance.lastError == null
-                            ? null
-                            : Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(builder: (_) => const WebDAVConfigPage()),
-              ),
-            ),
-            const Divider(height: 1, indent: 16, endIndent: 16),
-            ListTile(
-              leading: const Icon(Icons.backup_outlined),
-              title: Text(l10n.backupTitle),
-              subtitle: Text(l10n.backupSubtitle),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(
-                context,
-                rootNavigator: true,
-              ).push(MaterialPageRoute(builder: (_) => const BackupPage())),
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_upload_outlined),
-              title: Text(l10n.exportData),
-              onTap: _exportData,
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_download_outlined),
-              title: Text(l10n.importData),
-              onTap: _importData,
-            ),
-            if (_isDesktop)
-              ListTile(
-                leading: const Icon(Icons.folder_outlined),
-                title: Text(l10n.settingsStorageLocation),
-                subtitle: Text(
-                  _storagePath,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _showStoragePathDialog(context),
-              ),
-            if (_isDesktop)
-              ListTile(
-                leading: const Icon(Icons.folder_open_outlined),
-                title: Text(l10n.dataMigration),
-                subtitle: Text(l10n.dataMigrationDesc),
-                onTap: _openDataFolder,
-              ),
-          ]),
-
-          // ── Desktop ──
-          if (_isDesktop)
-            _buildSection(l10n.settingsDesktop, [
-              SwitchListTile(
-                secondary: const Icon(Icons.minimize_outlined),
-                title: Text(l10n.settingsMinimizeToTray),
-                value: _minimizeToTray,
-                onChanged: (v) {
-                  setState(() => _minimizeToTray = v);
-                  TrayService.instance.setMinimizeToTray(v);
-                },
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.close_outlined),
-                title: Text(l10n.settingsCloseToTray),
-                value: _closeToTray,
-                onChanged: (v) {
-                  setState(() => _closeToTray = v);
-                  TrayService.instance.setCloseToTray(v);
-                },
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.login_outlined),
-                title: Text(l10n.settingsAutoStart),
-                value: _autoStart,
-                onChanged: (v) async {
-                  if (v) {
-                    await launchAtStartup.enable();
-                  } else {
-                    await launchAtStartup.disable();
-                  }
-                  setState(() => _autoStart = v);
-                },
-              ),
-              const Divider(height: 1, indent: 16, endIndent: 16),
-              SwitchListTile(
-                secondary: const Icon(Icons.dns_outlined),
-                title: Text(l10n.settingsApiEnabled),
-                subtitle: Text(
-                  LocalApiServer.isRunning
-                      ? l10n.settingsApiRunning(LocalApiServer.port)
-                      : LocalApiServer.lastError == 'credentials_required'
-                      ? l10n.settingsApiNeedCredentials
-                      : LocalApiServer.lastError != null
-                      ? '${l10n.settingsApiStopped} (${LocalApiServer.lastError})'
-                      : l10n.settingsApiStopped,
-                  style:
-                      !LocalApiServer.isRunning &&
-                          LocalApiServer.lastError != null
-                      ? TextStyle(color: Theme.of(context).colorScheme.error)
-                      : null,
-                ),
-                value: _apiEnabled,
-                onChanged: (v) async {
-                  final config = await DeviceStorage.readConfig();
-                  config['apiEnabled'] = v;
-                  await DeviceStorage.writeConfig(config);
-                  setState(() => _apiEnabled = v);
-                  if (v) {
-                    await LocalApiServer.start();
-                  } else {
-                    await LocalApiServer.stop();
-                  }
-                  if (mounted) setState(() {});
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: Text(l10n.settingsApiServer),
-                trailing: const Icon(Icons.chevron_right),
-                enabled: _apiEnabled,
-                onTap: _apiEnabled ? _showApiSettingsDialog : null,
-              ),
-            ]),
-
-          // ── About ──
-          _buildSection(l10n.settingsAbout, [
-            ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: Text(l10n.settingsVersion),
-              trailing: Text(
-                _version,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.privacy_tip_outlined),
-              title: Text(l10n.settingsPrivacyPolicy),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.gavel_outlined),
-              title: Text(l10n.settingsLicense),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (_) => const app_license.LicensePage(),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.description_outlined),
-              title: Text(l10n.settingsLicenses),
-              onTap: () => showLicensePage(
-                context: context,
-                applicationName: l10n.appTitle,
-                applicationVersion: _version,
-              ),
-            ),
-          ]),
-
-          const SizedBox(height: 24),
-        ],
+              const VerticalDivider(width: 1),
+              Expanded(child: _buildDetailPane(l10n)),
+            ],
+          );
+        },
       ),
     );
   }
+
+  /// Purpose: Build the first-level settings list.
+  /// Inputs: `l10n`, `settings`, `notifier`, `webDavStatus`.
+  /// Returns: `Widget` — the scrolling list of sections.
+  /// Side effects: None beyond building widgets.
+  /// Notes: Internal helper used within this file only. Extracted from
+  /// `build` unchanged so the same list can be the whole body on a narrow
+  /// window and the left pane on a wide one, rather than being written twice.
+  Widget _buildSettingsList(
+    AppLocalizations l10n,
+    AppSettings settings,
+    AppSettingsNotifier notifier,
+    String? webDavStatus,
+  ) {
+    return ListView(
+      children: [
+        // ── General ──
+        _buildSection(l10n.settingsGeneral, [
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: Text(l10n.settingsTheme),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SegmentedButton<ThemeMode>(
+              segments: [
+                ButtonSegment(
+                  value: ThemeMode.system,
+                  icon: const Icon(Icons.brightness_auto, size: 18),
+                  label: Text(l10n.settingsThemeSystem),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.light,
+                  icon: const Icon(Icons.light_mode, size: 18),
+                  label: Text(l10n.settingsThemeLight),
+                ),
+                ButtonSegment(
+                  value: ThemeMode.dark,
+                  icon: const Icon(Icons.dark_mode, size: 18),
+                  label: Text(l10n.settingsThemeDark),
+                ),
+              ],
+              selected: {settings.themeMode},
+              onSelectionChanged: (s) => notifier.setThemeMode(s.first),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.language),
+            title: Text(l10n.settingsLanguage),
+            trailing: DropdownButton<Locale?>(
+              value: settings.locale,
+              underline: const SizedBox.shrink(),
+              items: [
+                DropdownMenuItem(
+                  value: null,
+                  child: Text(l10n.settingsLanguageSystem),
+                ),
+                const DropdownMenuItem(
+                  value: Locale('en'),
+                  child: Text('English'),
+                ),
+                const DropdownMenuItem(
+                  value: Locale('zh'),
+                  child: Text('简体中文'),
+                ),
+                const DropdownMenuItem(
+                  value: Locale('zh', 'TW'),
+                  child: Text('繁體中文'),
+                ),
+                const DropdownMenuItem(value: Locale('ja'), child: Text('日本語')),
+              ],
+              onChanged: (locale) => notifier.setLocale(locale),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.currency_exchange),
+            title: Text(l10n.settingsDefaultCurrency),
+            trailing: DropdownButton<String>(
+              value: _defaultCurrency,
+              underline: const SizedBox.shrink(),
+              items: DeviceExchangeRateService.supportedCurrencies
+                  .map(
+                    (code) => DropdownMenuItem(
+                      value: code,
+                      child: Text(
+                        '${DeviceExchangeRateService.currencySymbol(code)} $code',
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) async {
+                if (value == null) return;
+                await DeviceExchangeRateService.setDefaultCurrency(value);
+                if (mounted) setState(() => _defaultCurrency = value);
+              },
+            ),
+          ),
+          SwitchListTile(
+            secondary: const Icon(Icons.sync_outlined),
+            title: Text(l10n.settingsAutoUpdateExchangeRates),
+            value: _autoUpdateExchangeRates,
+            onChanged: (value) async {
+              await DeviceExchangeRateService.setAutoUpdateEnabled(value);
+              if (mounted) setState(() => _autoUpdateExchangeRates = value);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.refresh),
+            title: Text(l10n.settingsRefreshExchangeRates),
+            onTap: _refreshExchangeRates,
+          ),
+        ]),
+
+        // ── Data ──
+        _buildSection(l10n.settingsData, [
+          ListTile(
+            leading: const Icon(Icons.sync_outlined),
+            title: Text(l10n.settingsWebDAVSync),
+            subtitle: webDavStatus == null
+                ? null
+                : Text(
+                    webDavStatus,
+                    style: TextStyle(
+                      color: AutoSyncService.instance.lastError == null
+                          ? null
+                          : Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+            trailing: const Icon(Icons.chevron_right),
+            selected: _twoPane && _detail == _SettingsDetail.webdav,
+            onTap: () => _open(_SettingsDetail.webdav),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          ListTile(
+            leading: const Icon(Icons.backup_outlined),
+            title: Text(l10n.backupTitle),
+            subtitle: Text(l10n.backupSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            selected: _twoPane && _detail == _SettingsDetail.backup,
+            onTap: () => _open(_SettingsDetail.backup),
+          ),
+          ListTile(
+            leading: const Icon(Icons.file_upload_outlined),
+            title: Text(l10n.exportData),
+            onTap: _exportData,
+          ),
+          ListTile(
+            leading: const Icon(Icons.file_download_outlined),
+            title: Text(l10n.importData),
+            onTap: _importData,
+          ),
+          if (_isDesktop)
+            ListTile(
+              leading: const Icon(Icons.folder_outlined),
+              title: Text(l10n.settingsStorageLocation),
+              subtitle: Text(
+                _storagePath,
+                style: Theme.of(context).textTheme.bodySmall,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showStoragePathDialog(context),
+            ),
+          if (_isDesktop)
+            ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: Text(l10n.dataMigration),
+              subtitle: Text(l10n.dataMigrationDesc),
+              onTap: _openDataFolder,
+            ),
+        ]),
+
+        // ── Desktop ──
+        if (_isDesktop)
+          _buildSection(l10n.settingsDesktop, [
+            SwitchListTile(
+              secondary: const Icon(Icons.minimize_outlined),
+              title: Text(l10n.settingsMinimizeToTray),
+              value: _minimizeToTray,
+              onChanged: (v) {
+                setState(() => _minimizeToTray = v);
+                TrayService.instance.setMinimizeToTray(v);
+              },
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.close_outlined),
+              title: Text(l10n.settingsCloseToTray),
+              value: _closeToTray,
+              onChanged: (v) {
+                setState(() => _closeToTray = v);
+                TrayService.instance.setCloseToTray(v);
+              },
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.login_outlined),
+              title: Text(l10n.settingsAutoStart),
+              value: _autoStart,
+              onChanged: (v) async {
+                if (v) {
+                  await launchAtStartup.enable();
+                } else {
+                  await launchAtStartup.disable();
+                }
+                setState(() => _autoStart = v);
+              },
+            ),
+            const Divider(height: 1, indent: 16, endIndent: 16),
+            SwitchListTile(
+              secondary: const Icon(Icons.dns_outlined),
+              title: Text(l10n.settingsApiEnabled),
+              subtitle: Text(
+                LocalApiServer.isRunning
+                    ? l10n.settingsApiRunning(LocalApiServer.port)
+                    : LocalApiServer.lastError == 'credentials_required'
+                    ? l10n.settingsApiNeedCredentials
+                    : LocalApiServer.lastError != null
+                    ? '${l10n.settingsApiStopped} (${LocalApiServer.lastError})'
+                    : l10n.settingsApiStopped,
+                style:
+                    !LocalApiServer.isRunning &&
+                        LocalApiServer.lastError != null
+                    ? TextStyle(color: Theme.of(context).colorScheme.error)
+                    : null,
+              ),
+              value: _apiEnabled,
+              onChanged: (v) async {
+                final config = await DeviceStorage.readConfig();
+                config['apiEnabled'] = v;
+                await DeviceStorage.writeConfig(config);
+                setState(() => _apiEnabled = v);
+                if (v) {
+                  await LocalApiServer.start();
+                } else {
+                  await LocalApiServer.stop();
+                }
+                if (mounted) setState(() {});
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: Text(l10n.settingsApiServer),
+              trailing: const Icon(Icons.chevron_right),
+              enabled: _apiEnabled,
+              onTap: _apiEnabled ? _showApiSettingsDialog : null,
+            ),
+          ]),
+
+        // ── About ──
+        _buildSection(l10n.settingsAbout, [
+          ListTile(
+            leading: const Icon(Icons.info_outline),
+            title: Text(l10n.settingsVersion),
+            trailing: Text(
+              _version,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: Text(l10n.settingsPrivacyPolicy),
+            trailing: const Icon(Icons.chevron_right),
+            selected: _twoPane && _detail == _SettingsDetail.privacy,
+            onTap: () => _open(_SettingsDetail.privacy),
+          ),
+          ListTile(
+            leading: const Icon(Icons.gavel_outlined),
+            title: Text(l10n.settingsLicense),
+            trailing: const Icon(Icons.chevron_right),
+            selected: _twoPane && _detail == _SettingsDetail.license,
+            onTap: () => _open(_SettingsDetail.license),
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined),
+            title: Text(l10n.settingsLicenses),
+            // Always full-screen, above the shell, never inside the pane.
+            onTap: () => showLicensePage(
+              context: context,
+              useRootNavigator: true,
+              applicationName: l10n.appTitle,
+              applicationVersion: _version,
+            ),
+          ),
+        ]),
+
+        const SizedBox(height: 24),
+      ],
+    );
+  }
 }
+
+/// The four second-level pages the settings list leads to.
+enum _SettingsDetail { webdav, backup, privacy, license }

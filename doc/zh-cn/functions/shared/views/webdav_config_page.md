@@ -27,7 +27,7 @@
 | [`_disconnect`](#_disconnect) | 方法（`_WebDAVConfigPageState`） | A | 删除保存 WebDAV 配置并清除表单。 |
 | `_fillNextcloud` | 方法（`_WebDAVConfigPageState`） | B | 用 Nextcloud WebDAV URL/路径预设填充表单。 |
 | [`_syncStatusText`](#_syncstatustext) | 方法（`_WebDAVConfigPageState`） | A | 构建显示用短同步健康摘要。 |
-| `build` | 方法（组件） | B | 渲染配置表单、同步状态卡片、进度条和同步/强制/断开操作。 |
+| `build` | 方法（组件） | B | 渲染配置表单、同步状态卡片、进度条和同步/强制/断开操作，放在封顶 `formMaxWidth` 并居中的一列里。 |
 | `_ConflictDialog`（构造函数） | 构造函数 | B | 存储要显示的冲突。 |
 | [`_modifiedAtOf`](#_modifiedatof) | 方法（`_ConflictDialog`，静态） | A | 从动态冲突记录提取显示就绪 `modifiedAt` 时间戳（如有）。 |
 | `build`（`_ConflictDialog`） | 方法（组件） | B | 渲染冲突对话框：记录名、两侧时间戳/ID、保留本地/保留远程操作。 |

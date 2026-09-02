@@ -341,4 +341,35 @@ void main() {
       expect(sheetInitialSize(915, preferred: 0.99), sheetMaxSize);
     });
   });
+
+  group('settings left pane', () {
+    test('is proportional between its clamps', () {
+      expect(settingsLeftPaneWidth(852), closeTo(374.88, 0.01)); // Fold 8 land
+      expect(settingsLeftPaneWidth(943), closeTo(414.92, 0.01)); // tablet land
+    });
+
+    test('clamps at both ends', () {
+      expect(settingsLeftPaneWidth(669), 300); // Fold 7 portrait: 294 → 300
+      expect(settingsLeftPaneWidth(1519), 440); // desktop: 668 → 440
+    });
+
+    test('gives up width rather than starve the detail pane', () {
+      // Z Fold 5 portrait: 659 − 81 = 578; 300 would leave 278 < 280.
+      expect(settingsLeftPaneWidth(578), 298);
+      expect(578 - settingsLeftPaneWidth(578), settingsRightPaneMinWidth);
+      expect(settingsLeftPaneWidth(500), 240); // the cap's own floor
+    });
+
+    test('the detail pane clears its minimum from the split floor up', () {
+      // From 520 up: at the 519 the split floor leaves after the rail the
+      // cap's own 240 floor wins and the detail pane is 279, one short.
+      for (var w = 520.0; w <= 2000; w += 1) {
+        expect(
+          w - settingsLeftPaneWidth(w),
+          greaterThanOrEqualTo(settingsRightPaneMinWidth - 1e-9),
+          reason: 'detail pane starved at $w',
+        );
+      }
+    });
+  });
 }

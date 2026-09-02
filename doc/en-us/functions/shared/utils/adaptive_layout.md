@@ -11,8 +11,9 @@ summary card; and `dialogInsetHorizontal`, `dialogInsetVertical`, `dialogMaxWidt
 `dataSetTileMinWidth` and `serviceCardMinWidth` for the four multi-column lists; and
 `financeSummaryPaneMinWidth` and `financeChartMinWidth` for the finance overview's side-by-side
 row; `formMaxWidth` for the network edit form; `emojiCellMinWidth`, `emojiCellGap` and
-`emojiMaxColumns` for the emoji picker; and `sheetCompactHeight` and `sheetMaxSize` for the
-draggable sheets. Thirteen pure helpers sit on top of them.
+`emojiMaxColumns` for the emoji picker; `sheetCompactHeight` and `sheetMaxSize` for the
+draggable sheets; and `settingsRightPaneMinWidth` and `readingMaxWidth` for the settings family.
+Fourteen pure helpers sit on top of them.
 
 The module deliberately depends on nothing but `dart:core` — it holds no Flutter imports, and
 `canSplitLayout` takes two doubles rather than a `Size` for exactly that reason — so every helper
@@ -54,8 +55,9 @@ preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
 | [`financeSummaryPaneWidth`](#financesummarypanewidth) | top-level function | A | Return the width of the finance summary's metric column. |
 | [`emojiGridColumns`](#emojigridcolumns) | top-level function | A | Return how many columns the emoji picker lays its cells in. |
 | [`sheetInitialSize`](#sheetinitialsize) | top-level function | A | Return the fraction of the window a draggable sheet opens to. |
+| [`settingsLeftPaneWidth`](#settingsleftpanewidth) | top-level function | A | Return the width of the settings page's fixed left pane. |
 
-The thirty-one constants are documented in source with the reason for each value and are not
+The thirty-three constants are documented in source with the reason for each value and are not
 repeated as rows here.
 
 ## Documentation
@@ -251,3 +253,18 @@ repeated as rows here.
 - **Notes:** All four sheets are `isScrollControlled` with an autofocused search field; on a
   412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. Capped so the
   initial size can never exceed the maximum, which would assert.
+
+### `double settingsLeftPaneWidth(double contentWidth)` <a id="settingsleftpanewidth"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Return the width of the settings page's fixed left pane.
+- **Inputs:** `contentWidth` — the settings body's width, which the page's `LayoutBuilder`
+  reports already less the navigation rail.
+- **Returns:** `double` — `(contentWidth × 0.44).clamp(300, 440)`, or, when that would leave the
+  detail pane under `settingsRightPaneMinWidth` (280), `contentWidth − 280` clamped to 240–440.
+- **Side effects:** None.
+- **Usage:** `_SettingsPageState.build`, sizing the `SizedBox` around `_buildSettingsList`.
+- **Notes:** The left pane needs more room than a detail page's because it carries full
+  `ListTile`s with trailing dropdowns. The cap binds only on a Z Fold 5 in portrait (578 → 298)
+  and a hand-resized desktop window; `test/adaptive_layout_test.dart` loops every width from the
+  split floor to 2000 dp asserting the detail pane clears its minimum.

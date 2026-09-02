@@ -29,7 +29,7 @@ are no misattached blocks and no undocumented tail declarations in this file.
 | [`_deleteBackup`](#_deletebackup) | method (`_BackupPageState`) | A | Confirm and delete a backup bundle, then reload the list. |
 | [`_toggleAutoBackup`](#_toggleautobackup) | method (`_BackupPageState`) | A | Persist the auto-backup enabled flag. |
 | [`_setRetention`](#_setretention) | method (`_BackupPageState`) | A | Persist the backup retention-days setting. |
-| `build` | method (widget) | B | Render the info card, settings section, create-backup tile, and backup history list. |
+| `build` | method (widget) | B | Render the info card, settings section, create-backup tile, and backup history list, in a column capped at `formMaxWidth` and centred. |
 | `_buildSection` | method (widget helper) | B | Render one titled settings section. |
 | `_RestoreModuleDialog` (constructor) | constructor | B | Store the list of modules available to restore from a bundle. |
 | `createState` (`_RestoreModuleDialog`) | method (`_RestoreModuleDialog`) | B | Create the dialog's mutable state object. |

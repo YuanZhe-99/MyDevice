@@ -1463,4 +1463,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String listColumnsCount(int count) {
     return '$count columns';
   }
+
+  @override
+  String get settingsSelectItem => 'Select an item from the list';
 }

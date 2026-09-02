@@ -527,5 +527,6 @@
   "listColumns": "欄數",
   "listColumnsAuto": "自動",
   "listColumnsCount": "{count} 欄",
+  "settingsSelectItem": "從左側清單中選擇一項",
   "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } }
 }

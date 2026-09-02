@@ -1447,4 +1447,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String listColumnsCount(int count) {
     return '$count 列';
   }
+
+  @override
+  String get settingsSelectItem => '左のリストから項目を選択してください';
 }

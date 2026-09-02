@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 
 class LicensePage extends StatelessWidget {
   /// Purpose: Create a license page instance.
@@ -21,11 +22,18 @@ class LicensePage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsLicense)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: SelectableText(
-          _licenseText,
-          style: Theme.of(context).textTheme.bodyMedium,
+      // Prose is capped at `readingMaxWidth` and centred: width only, so a
+      // phone is unchanged and a desktop window keeps a readable measure.
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: readingMaxWidth),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: SelectableText(
+              _licenseText,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
         ),
       ),
     );

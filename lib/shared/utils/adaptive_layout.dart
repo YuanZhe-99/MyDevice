@@ -409,3 +409,36 @@ double sheetInitialSize(double screenHeight, {required double preferred}) {
   final size = screenHeight < sheetCompactHeight ? sheetMaxSize : preferred;
   return size > sheetMaxSize ? sheetMaxSize : size;
 }
+
+/// Smallest width, in logical pixels, the settings detail pane may be given.
+///
+/// The hosted pages are the WebDAV form, the backup page, the privacy policy
+/// and the license: a form field with its label, or a paragraph of prose,
+/// stops being usable under this.
+const settingsRightPaneMinWidth = 280.0;
+
+/// Widest, in logical pixels, a column of prose may grow.
+///
+/// About 95 Latin or 48 CJK characters of `bodyMedium` per line — the top of
+/// a comfortable reading measure. Separate from [formMaxWidth] because prose
+/// and form fields answer different questions and may diverge.
+const readingMaxWidth = 680.0;
+
+/// Purpose: Return the width of the settings page's fixed left pane.
+/// Inputs: `contentWidth` — the width both panes share, in logical pixels,
+/// which is [shellContentWidth] rather than the screen width because the
+/// settings page is one of the five inside the shell.
+/// Returns: `double`.
+/// Side effects: None.
+/// Notes: Proportional, then clamped, then capped so the detail pane can
+/// never be squeezed below [settingsRightPaneMinWidth]. The left pane needs
+/// more room than a detail page's does, because it carries full `ListTile`s
+/// with trailing dropdowns rather than a card of text. The cap only binds on
+/// a hand-resized desktop window and on the narrowest foldables, where it
+/// gives up left-pane width rather than let the right pane become unusable.
+double settingsLeftPaneWidth(double contentWidth) {
+  final preferred = (contentWidth * 0.44).clamp(300.0, 440.0);
+  final capped = contentWidth - settingsRightPaneMinWidth;
+  if (preferred <= capped) return preferred;
+  return capped.clamp(240.0, 440.0);
+}

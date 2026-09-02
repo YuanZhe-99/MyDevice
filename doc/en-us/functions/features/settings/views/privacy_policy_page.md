@@ -17,7 +17,7 @@ file's 3 real declarations exactly (all three sit directly above the declaration
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `PrivacyPolicyPage` (constructor) | constructor | B | Create the page widget (no parameters). |
-| `build` | method (widget) | B | Resolve the active locale's policy text and render it in a scrollable, selectable view. |
+| `build` | method (widget) | B | Resolve the active locale's policy text and render it in a scrollable, selectable view capped at `readingMaxWidth` and centred. |
 | `_getText` | method (`PrivacyPolicyPage`) | B | Select which locale-specific policy string to display. |
 
 ## Documentation

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/services/backup_service.dart';
 import '../../../shared/services/sync_wake_lock.dart';
 import '../../../shared/services/webdav_service.dart';
@@ -165,9 +166,7 @@ class _BackupPageState extends State<BackupPage> {
     if (result.missingImages > 0 && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            l10n.backupRestoreMissingImages(result.missingImages),
-          ),
+          content: Text(l10n.backupRestoreMissingImages(result.missingImages)),
         ),
       );
     }
@@ -309,125 +308,136 @@ class _BackupPageState extends State<BackupPage> {
       appBar: AppBar(title: Text(l10n.backupTitle)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: theme.colorScheme.primary,
-                            size: 20,
+          // Capped at `formMaxWidth` and centred: width only, so a phone is
+          // unchanged; binds on a desktop window and never inside the
+          // settings detail pane, which is narrower than the cap.
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: formMaxWidth),
+                child: ListView(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: theme.colorScheme.primary,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  l10n.backupLocalOnlyNote,
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              l10n.backupLocalOnlyNote,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
 
-                // ── Settings ──
-                _buildSection(context, l10n.settingsGeneral, [
-                  SwitchListTile(
-                    secondary: const Icon(Icons.schedule_outlined),
-                    title: Text(l10n.backupAutoBackup),
-                    subtitle: Text(l10n.backupAutoBackupDesc),
-                    value: _autoBackup,
-                    onChanged: _toggleAutoBackup,
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.auto_delete),
-                    title: Text(l10n.backupRetention),
-                    trailing: DropdownButton<int>(
-                      value: _retentionDays,
-                      underline: const SizedBox.shrink(),
-                      items: _retentionOptions.map((d) {
-                        final label = d == 0
-                            ? l10n.backupKeepForever
-                            : l10n.backupKeepDays(d);
-                        return DropdownMenuItem(value: d, child: Text(label));
-                      }).toList(),
-                      onChanged: (v) {
-                        if (v != null) _setRetention(v);
-                      },
-                    ),
-                  ),
-                ]),
+                    // ── Settings ──
+                    _buildSection(context, l10n.settingsGeneral, [
+                      SwitchListTile(
+                        secondary: const Icon(Icons.schedule_outlined),
+                        title: Text(l10n.backupAutoBackup),
+                        subtitle: Text(l10n.backupAutoBackupDesc),
+                        value: _autoBackup,
+                        onChanged: _toggleAutoBackup,
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.auto_delete),
+                        title: Text(l10n.backupRetention),
+                        trailing: DropdownButton<int>(
+                          value: _retentionDays,
+                          underline: const SizedBox.shrink(),
+                          items: _retentionOptions.map((d) {
+                            final label = d == 0
+                                ? l10n.backupKeepForever
+                                : l10n.backupKeepDays(d);
+                            return DropdownMenuItem(
+                              value: d,
+                              child: Text(label),
+                            );
+                          }).toList(),
+                          onChanged: (v) {
+                            if (v != null) _setRetention(v);
+                          },
+                        ),
+                      ),
+                    ]),
 
-                // ── Manual backup ──
-                _buildSection(context, l10n.backupCreate, [
-                  ListTile(
-                    leading: const Icon(Icons.backup),
-                    title: Text(l10n.backupCreate),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: _createBackup,
-                  ),
-                ]),
+                    // ── Manual backup ──
+                    _buildSection(context, l10n.backupCreate, [
+                      ListTile(
+                        leading: const Icon(Icons.backup),
+                        title: Text(l10n.backupCreate),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: _createBackup,
+                      ),
+                    ]),
 
-                // ── Backup list ──
-                _buildSection(
-                  context,
-                  l10n.backupHistory(_backups.length),
-                  _backups.isEmpty
-                      ? [
-                          Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Text(
-                              l10n.backupNoBackups,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                    // ── Backup list ──
+                    _buildSection(
+                      context,
+                      l10n.backupHistory(_backups.length),
+                      _backups.isEmpty
+                          ? [
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Text(
+                                  l10n.backupNoBackups,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        ]
-                      : _backups.map((b) {
-                          final dateStr = dateFormat.format(b.date);
-                          return ListTile(
-                            leading: Icon(
-                              b.corrupt
-                                  ? Icons.error_outline
-                                  : Icons.inventory_2_outlined,
-                              color: b.corrupt
-                                  ? theme.colorScheme.error
-                                  : null,
-                            ),
-                            title: Text(dateStr),
-                            subtitle: Text(
-                              b.corrupt
-                                  ? '${b.displaySize} · ${l10n.backupCorrupt}'
-                                  : b.displaySize,
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.restore),
-                                  tooltip: l10n.backupRestore,
-                                  onPressed: b.corrupt
-                                      ? null
-                                      : () => _restoreBackup(b),
+                            ]
+                          : _backups.map((b) {
+                              final dateStr = dateFormat.format(b.date);
+                              return ListTile(
+                                leading: Icon(
+                                  b.corrupt
+                                      ? Icons.error_outline
+                                      : Icons.inventory_2_outlined,
+                                  color: b.corrupt
+                                      ? theme.colorScheme.error
+                                      : null,
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline),
-                                  tooltip: l10n.delete,
-                                  onPressed: () => _deleteBackup(b),
+                                title: Text(dateStr),
+                                subtitle: Text(
+                                  b.corrupt
+                                      ? '${b.displaySize} · ${l10n.backupCorrupt}'
+                                      : b.displaySize,
                                 ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.restore),
+                                      tooltip: l10n.backupRestore,
+                                      onPressed: b.corrupt
+                                          ? null
+                                          : () => _restoreBackup(b),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline),
+                                      tooltip: l10n.delete,
+                                      onPressed: () => _deleteBackup(b),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
     );
   }
@@ -463,6 +473,7 @@ class _BackupPageState extends State<BackupPage> {
 /// Dialog to pick which modules to restore.
 class _RestoreModuleDialog extends StatefulWidget {
   final List<String> availableModules;
+
   /// Purpose: Create a restore module dialog instance.
   /// Inputs: None.
   /// Returns: A new `_RestoreModuleDialog` instance.

@@ -249,6 +249,57 @@ arithmetic covers, and degrading to a scroll is far better than an overflow stri
 | Split floor 600 × 480 | yes | 260 | 424 | 106 |
 | Z Fold 8 portrait, tablet portrait, phone either way | no | — | — | 56, single column |
 
+## The settings page: list and detail
+
+The settings page is the one page inside the shell that leads to second-level pages — the WebDAV
+form, the backup page, the privacy policy and the license. On a window `canSplitLayout` admits it
+keeps its first-level list on the left and hosts the chosen page on the right; on a narrower one it
+pushes the page full-screen on the root navigator, above the shell, exactly as it always did. Every
+row goes through one `_open` so the two modes cannot drift, and the choice is read from the last
+build rather than recomputed in the tap handler, so a tap does what the user saw.
+
+```dart
+double settingsLeftPaneWidth(double contentWidth) {
+  final preferred = (contentWidth * 0.44).clamp(300.0, 440.0);
+  final capped = contentWidth - settingsRightPaneMinWidth;   // 280
+  return preferred <= capped ? preferred : capped.clamp(240.0, 440.0);
+}
+```
+
+The left pane needs more room than a detail page's, because it carries full `ListTile`s with
+trailing dropdowns rather than a card of text. The cap keeps the hosted page above 280 dp, and it
+only binds on the narrowest unfolded foldables and a hand-resized desktop window: a Z Fold 5 in
+portrait gives the settings body 578 after the rail, where 300 would leave 278, so the list gives
+up two pixels instead. `test/adaptive_layout_test.dart` asserts the detail pane clears its minimum
+at every width from the split floor to 2000 dp. The content width here *is* `shellContentWidth`,
+because this is one of the five pages inside the shell; the body's `LayoutBuilder` already excludes
+the rail.
+
+The hosted page sits in a nested `Navigator` keyed on the selection. That is what gives it a real
+route — `Navigator.pop` inside it stays meaningful, dialogs still work — and, because a nested
+navigator holding one route reports `canPop == false`, the page's own app bar grows no back arrow.
+None of the four pages needed a change to be embeddable. The selection survives the window
+narrowing back to one pane, so folding a device shut and opening it again restores it. The
+placeholder before any selection is the only new string this release adds. The Flutter licenses
+page is the one row that always opens full-screen: `showLicensePage` is told
+`useRootNavigator: true` so it can never land inside the pane.
+
+**Reading and form widths.** The privacy policy and the license are prose, capped at
+`readingMaxWidth` (680 — about 95 Latin or 48 CJK characters of `bodyMedium`, the top of a
+comfortable measure) and centred. The backup and WebDAV pages are forms, capped at `formMaxWidth`
+(600) like the network edit form. Both caps are width-only, bind on a desktop window, and never
+inside the detail pane, which is narrower than either.
+
+| Viewport | Splits | Settings body | Left pane | Hosted page |
+|---|---|---|---|---|
+| Z Fold 8 landscape 933 × 704 | yes | 852 | 375 | 476 |
+| Z Fold 8 portrait 704 × 933 | no | — | pushed | full-screen |
+| Z Fold 7 832 × 750 / 750 × 832 | yes | 751 / 669 | 330 / 300 | 420 / 368 |
+| Z Fold 6 675 × 786 · Z Fold 5 659 × 791 | yes | 594 / 578 | 300 / **298** | 293 / 280 |
+| Tablet 1024 × 768 / 768 × 1024 | yes / no | 943 / — | 415 / pushed | 527 / full-screen |
+| Phone 412 × 915 / 915 × 412 | no | — | pushed | full-screen |
+| Desktop 1600 × 900 | yes | 1519 | 440 | 1078 |
+
 ## Two blocks side by side: a width floor on top of the split rule
 
 Some layouts need both questions answered. The finance overview is the case: three summary metrics
@@ -406,6 +457,9 @@ to save and restore.
 | `dataset_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | A fixed left pane (the 56 dp emoji tile and the name field, 88 dp with padding — no arithmetic needed under the 424 a pane has at the floor) with the same scroll-view fallback; the storage checklist scrolls on the right. Pushed outside the shell. |
 | `network_edit_page.dart` | `formMaxWidth` | Width only, not the split rule: a lone column of six fields is capped at 600 dp and centred, so a desktop window stops stretching each field across its whole width and a phone is unchanged. |
 | The four `DraggableScrollableSheet` pickers (device template, CPU and GPU presets, service template) | `sheetInitialSize`, `sheetMaxSize` | Under 480 dp of height a sheet opens at 0.95 instead of its preferred 0.6 / 0.82: all four are `isScrollControlled` with an autofocused search field, and on a 412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. |
+| `settings_page.dart` | `canSplitLayout`, `settingsLeftPaneWidth` | List on the left, the chosen page hosted in a nested `Navigator` on the right; pushed full-screen otherwise. Inside the shell: the body's `LayoutBuilder` already excludes the rail. |
+| `license_page.dart`, `privacy_policy_page.dart` | `readingMaxWidth` | Width only: prose capped at 680 and centred. |
+| `backup_page.dart`, `webdav_config_page.dart` | `formMaxWidth` | Width only: forms capped at 600 and centred. |
 | Emoji picker sheet (`device_edit_page.dart`) | `emojiGridColumns` | `columnCapacity` at a 37 dp cell with a 4 dp gap, which reproduces the eight columns a 360 dp phone always had and gives a Material 3 sheet at its 640 dp cap twelve. The last hardcoded count in `lib/`. |
 | `device_finance_overview_page.dart` (summary beside chart) | `canSplitLayout`, `useFinanceSideBySide`, `financeSummaryPaneWidth` | The double gate, plus a non-empty distribution; see above. |
 | `device_finance_overview_page.dart` (summary card) | `financeSummaryColumns` | Width only, floored at two; forced to one column inside the side-by-side pane. Pushed outside the shell: measures its own `LayoutBuilder`. |
@@ -414,8 +468,9 @@ to save and restore.
 | `device_map_page.dart`, `map_picker_page.dart` | none needed | A full-bleed map fills whatever it is given; the picker's search row is already an `Expanded` field beside a button. |
 | Network detail's device picker sheet, dataset edit's emoji `SimpleDialog` | none needed | A `Wrap` of sixteen emoji and a short device list; both fit a phone and are capped by Material 3's 640 dp sheet and 560 dp dialog widths. |
 
-Only the settings family (1.5.5) is still a fixed single column. **With 1.5.4, every width decision
-and every hardcoded count in `lib/` goes through `adaptive_layout.dart`**: the whole-tree grep in
+With the settings family in 1.5.5, every screen in the app has either a rule in this table or a
+recorded reason it needs none. **Every width decision and every hardcoded count in `lib/` goes
+through `adaptive_layout.dart`**: the whole-tree grep in
 §11 of the series guide — `maxWidth|maxHeight|size.width|size.height` compared against a number,
 and `crossAxisCount:` followed by one — hits nothing outside `lib/shared/utils/`, where the two
 policy modules are the one place such a comparison belongs.
@@ -448,6 +503,9 @@ verbatim.
 - `test/device_edit_two_pane_ui_test.dart` — the rendered edit page at a Z Fold 8 both ways, a
   phone, the 600 × 480 floor and under a 300 dp soft-keyboard inset: which fields share the left
   pane, that one `Form` still wraps both, and that nothing overflows.
+- `test/settings_two_pane_ui_test.dart` — the settings page at a Z Fold 8 both ways and a phone:
+  the placeholder beside the list, a row hosting its page beside the list with no back arrow, the
+  same row pushing full-screen with one, and the license page's prose capped on a desktop window.
 - `test/edit_pages_two_pane_ui_test.dart` — the service, route, dataset and network edit pages at
   a Z Fold 8 both ways, a phone, the floor and a desktop: which half lands where, the dataset
   pane at the floor, and the network form's 600 dp cap against a phone's full width. The emoji

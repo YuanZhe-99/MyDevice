@@ -2812,6 +2812,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} columns'**
   String listColumnsCount(int count);
+
+  /// No description provided for @settingsSelectItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an item from the list'**
+  String get settingsSelectItem;
 }
 
 class _AppLocalizationsDelegate

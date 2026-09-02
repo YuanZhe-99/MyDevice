@@ -40,7 +40,11 @@ are no misattached blocks and no undocumented declarations in this file.
 | [`_loadApiSettings`](#_loadapisettings) | method (`_SettingsPageState`) | A | Load the persisted local API server settings. |
 | [`_showApiSettingsDialog`](#_showapisettingsdialog) | method (`_SettingsPageState`) | A | Let the user edit and save local API server settings, then restart the server. |
 | [`_refreshExchangeRates`](#_refreshexchangerates) | method (`_SettingsPageState`) | A | Manually refresh and save the latest exchange rates. |
-| `build` | method (widget) | B | Render the General/Data/Desktop/About sections. |
+| `build` | method (widget) | B | Read the split rule (`canSplitLayout` on the screen) into `_twoPane`, then render either `_buildSettingsList` alone or a `Row` of it at `settingsLeftPaneWidth` beside `_buildDetailPane`. |
+| `_buildSettingsList` | method (widget helper) | B | The General/Data/Desktop/About sections, extracted from `build` unchanged so the list can be the whole body or the left pane. |
+| `_detailPage` | method (widget helper) | B | Map a `_SettingsDetail` to its page: WebDAV config, backup, privacy policy, license. |
+| `_open` | method (`_SettingsPageState`) | B | Select the detail pane's page when `_twoPane`, else push it on the root navigator — the one path every row uses. |
+| `_buildDetailPane` | method (widget helper) | B | The placeholder (`settingsSelectItem`) before a selection, else a nested `Navigator` keyed on the selection hosting `_detailPage`. |
 
 ## Documentation
 
@@ -226,9 +230,12 @@ are no misattached blocks and no undocumented declarations in this file.
 - **Returns:** `Future<void>`.
 - **Side effects:** Calls `launchAtStartup.isEnabled()` (queries platform startup-item state, per
   [Platform Notes](../../../../platform-notes.md#launch_at_startup)); `setState` if mounted.
-- **Algorithm:** Awaits `launchAtStartup.isEnabled()`, sets `_autoStart` if still mounted.
+- **Algorithm:** Awaits `launchAtStartup.isEnabled()`, reading an `UnsupportedError` as `false`,
+  and sets `_autoStart` if still mounted.
 - **Usage:** Called from [`initState`](#initstate) when `_isDesktop`.
-- **Notes:** None.
+- **Notes:** `launchAtStartup` throws `UnsupportedError` until `main` has called its `setup`,
+  which never happens under `flutter test` and could not happen if the plugin failed to register;
+  either reads as "not enabled" rather than taking the whole settings page down.
 
 ### `Future<void> _loadApiSettings()` <a id="_loadapisettings"></a>
 - **Kind:** method of `_SettingsPageState`

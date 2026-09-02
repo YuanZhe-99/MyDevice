@@ -18,7 +18,7 @@
 | [`_deleteBackup`](#_deletebackup) | 方法（`_BackupPageState`） | A | 确认并删除备份捆绑，然后重载列表。 |
 | [`_toggleAutoBackup`](#_toggleautobackup) | 方法（`_BackupPageState`） | A | 持久化自动备份启用标志。 |
 | [`_setRetention`](#_setretention) | 方法（`_BackupPageState`） | A | 持久化备份保留天数设置。 |
-| `build` | 方法（组件） | B | 渲染信息卡片、设置小节、创建备份块和备份历史列表。 |
+| `build` | 方法（组件） | B | 渲染信息卡片、设置小节、创建备份块和备份历史列表，放在封顶 `formMaxWidth` 并居中的一列里。 |
 | `_buildSection` | 方法（组件辅助） | B | 渲染一个带标题的设置小节。 |
 | `_RestoreModuleDialog`（构造函数） | 构造函数 | B | 存储可从捆绑恢复的模块列表。 |
 | `createState`（`_RestoreModuleDialog`） | 方法（`_RestoreModuleDialog`） | B | 创建对话框可变状态对象。 |

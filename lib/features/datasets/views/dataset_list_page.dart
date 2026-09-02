@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
+import '../../../shared/widgets/adaptive_tile_grid.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/dataset.dart';
@@ -34,6 +36,7 @@ class _DataSetListPageState extends State<DataSetListPage> {
   DataSetSortMode _sortMode = DataSetSortMode.custom;
   bool _sortAscending = false;
   bool _reordering = false;
+  int _columnsPref = listColumnsAuto;
 
   /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
   /// Inputs: None.
@@ -76,12 +79,25 @@ class _DataSetListPageState extends State<DataSetListPage> {
     final config = await DeviceStorage.readConfig();
     final mode = config['datasetSortMode'] as String?;
     final asc = config['datasetSortAscending'] as bool? ?? false;
+    final columns = await DeviceStorage.getDataSetListColumns();
+    if (!mounted) return;
     setState(() {
       _sortMode =
           DataSetSortMode.values.where((e) => e.name == mode).firstOrNull ??
           DataSetSortMode.custom;
       _sortAscending = asc;
+      _columnsPref = columns;
     });
+  }
+
+  /// Purpose: Store a new column preference and re-render with it.
+  /// Inputs: `columns` — `listColumnsAuto` or a pinned count.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and writes `storage_config.json`.
+  /// Notes: Internal helper used within this file only.
+  void _setColumnsPref(int columns) {
+    setState(() => _columnsPref = columns);
+    DeviceStorage.setDataSetListColumns(columns);
   }
 
   /// Purpose: Save sort prefs to the relevant storage or service layer.
@@ -225,11 +241,16 @@ class _DataSetListPageState extends State<DataSetListPage> {
   }
 
   /// Purpose: Build and return data set tile for the current context.
-  /// Inputs: `ds`.
+  /// Inputs: `ds`; optional `trailing`; `reorderHandle` — true when the
+  /// trailing widget is a drag handle, which disables the tap-to-edit.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: Internal helper used within this file only.
-  Widget _buildDataSetTile(DataSet ds, {Widget? trailing}) {
+  Widget _buildDataSetTile(
+    DataSet ds, {
+    Widget? trailing,
+    bool reorderHandle = false,
+  }) {
     final lines = _storageLines(ds);
     return ListTile(
       leading: Text(ds.emoji, style: const TextStyle(fontSize: 28)),
@@ -238,7 +259,29 @@ class _DataSetListPageState extends State<DataSetListPage> {
           ? Text(lines.join('\n'), maxLines: 4, overflow: TextOverflow.ellipsis)
           : null,
       trailing: trailing ?? const Icon(Icons.chevron_right),
-      onTap: trailing != null ? null : () => _editDataSet(ds),
+      onTap: reorderHandle ? null : () => _editDataSet(ds),
+    );
+  }
+
+  /// Purpose: Build one dataset tile for a multi-column row.
+  /// Inputs: `ds`, `l10n`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond the tile's own handlers.
+  /// Notes: Internal helper used within this file only. The single-column
+  /// list deletes by swipe; a horizontal drag inside one narrow cell is
+  /// ambiguous, so above one column the chevron becomes a menu carrying the
+  /// delete action — the only other entrance delete has.
+  Widget _buildMenuTile(DataSet ds, AppLocalizations l10n) {
+    return _buildDataSetTile(
+      ds,
+      trailing: PopupMenuButton<String>(
+        itemBuilder: (_) => [
+          PopupMenuItem(value: 'delete', child: Text(l10n.deleteDataSet)),
+        ],
+        onSelected: (value) {
+          if (value == 'delete') _deleteDataSet(ds);
+        },
+      ),
     );
   }
 
@@ -250,6 +293,21 @@ class _DataSetListPageState extends State<DataSetListPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Gate on the whole screen; measure capacity from what the list gets
+    // after the navigation rail and the 8 dp the multi-column rows add.
+    final screen = MediaQuery.sizeOf(context);
+    final contentWidth = shellContentWidth(screen.width) - 16;
+    final capacity = canSplitLayout(screen.width, screen.height)
+        ? columnCapacity(contentWidth, minItemWidth: dataSetTileMinWidth)
+        : 1;
+    final columns = listColumnCount(
+      screenWidth: screen.width,
+      screenHeight: screen.height,
+      contentWidth: contentWidth,
+      minItemWidth: dataSetTileMinWidth,
+      preference: _columnsPref,
+    );
+    final sorted = _sortedDatasets;
 
     return Scaffold(
       appBar: AppBar(
@@ -261,7 +319,13 @@ class _DataSetListPageState extends State<DataSetListPage> {
               tooltip: l10n.save,
               onPressed: () => setState(() => _reordering = false),
             )
-          else
+          else ...[
+            listColumnsButton(
+              context,
+              preference: _columnsPref,
+              capacity: capacity,
+              onChanged: _setColumnsPref,
+            ),
             PopupMenuButton<dynamic>(
               icon: const Icon(Icons.sort),
               tooltip: l10n.sortTitle,
@@ -304,6 +368,7 @@ class _DataSetListPageState extends State<DataSetListPage> {
                 }
               },
             ),
+          ],
         ],
       ),
       floatingActionButton: _reordering
@@ -341,14 +406,26 @@ class _DataSetListPageState extends State<DataSetListPage> {
                       index: index,
                       child: const Icon(Icons.drag_handle),
                     ),
+                    reorderHandle: true,
                   ),
                 );
               },
             )
+          : columns > 1
+          ? ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              itemCount: listRowCount(sorted.length, columns),
+              itemBuilder: (context, index) => adaptiveTileRow(
+                rowIndex: index,
+                columns: columns,
+                itemCount: sorted.length,
+                itemBuilder: (i) => _buildMenuTile(sorted[i], l10n),
+              ),
+            )
           : ListView.builder(
-              itemCount: _sortedDatasets.length,
+              itemCount: sorted.length,
               itemBuilder: (context, index) {
-                final ds = _sortedDatasets[index];
+                final ds = sorted[index];
                 return Dismissible(
                   key: ValueKey(ds.id),
                   direction: DismissDirection.endToStart,

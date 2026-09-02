@@ -1431,6 +1431,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get backupModuleServices => '服务';
+
+  @override
+  String get listColumns => '列数';
+
+  @override
+  String get listColumnsAuto => '自动';
+
+  @override
+  String listColumnsCount(int count) {
+    return '$count 列';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -2860,4 +2871,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get backupModuleServices => '服務';
+
+  @override
+  String get listColumns => '欄數';
+
+  @override
+  String get listColumnsAuto => '自動';
+
+  @override
+  String listColumnsCount(int count) {
+    return '$count 欄';
+  }
 }

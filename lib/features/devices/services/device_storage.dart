@@ -12,6 +12,7 @@ import '../../network/services/network_storage.dart';
 import '../../services/services/service_storage.dart';
 import '../models/device.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 
 class DeviceStorage {
   static const _dataFileName = 'device_data.json';
@@ -358,4 +359,102 @@ class DeviceStorage {
     }
     await writeConfig(config);
   }
+
+  // ── List column preferences (device-local, never synced) ──
+
+  /// Purpose: Read a stored list column preference.
+  /// Inputs: `key` — the `storage_config.json` key for one list page.
+  /// Returns: `Future<int>` — `listColumnsAuto` when unset or malformed.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Internal helper shared by the four per-page accessors; the
+  /// preference is clamped again at render time against what the width fits.
+  static Future<int> _getListColumns(String key) async {
+    final config = await readConfig();
+    final value = config[key];
+    if (value is! int || value < 1 || value > listMaxColumns) {
+      return listColumnsAuto;
+    }
+    return value;
+  }
+
+  /// Purpose: Persist a list column preference for one list page.
+  /// Inputs: `key`, `columns`.
+  /// Returns: None.
+  /// Side effects: Writes `storage_config.json`.
+  /// Notes: The default `listColumnsAuto` is removed from config rather than
+  /// stored, matching how `setThemeMode` handles its default.
+  static Future<void> _setListColumns(String key, int columns) async {
+    final config = await readConfig();
+    if (columns >= 1 && columns <= listMaxColumns) {
+      config[key] = columns;
+    } else {
+      config.remove(key);
+    }
+    await writeConfig(config);
+  }
+
+  /// Purpose: Read the device list's column preference.
+  /// Inputs: None.
+  /// Returns: `Future<int>` — defaults to `listColumnsAuto`.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: None.
+  static Future<int> getDeviceListColumns() =>
+      _getListColumns('deviceListColumns');
+
+  /// Purpose: Persist the device list's column preference.
+  /// Inputs: `columns`.
+  /// Returns: None.
+  /// Side effects: Writes `storage_config.json`.
+  /// Notes: None.
+  static Future<void> setDeviceListColumns(int columns) =>
+      _setListColumns('deviceListColumns', columns);
+
+  /// Purpose: Read the network list's column preference.
+  /// Inputs: None.
+  /// Returns: `Future<int>` — defaults to `listColumnsAuto`.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: None.
+  static Future<int> getNetworkListColumns() =>
+      _getListColumns('networkListColumns');
+
+  /// Purpose: Persist the network list's column preference.
+  /// Inputs: `columns`.
+  /// Returns: None.
+  /// Side effects: Writes `storage_config.json`.
+  /// Notes: None.
+  static Future<void> setNetworkListColumns(int columns) =>
+      _setListColumns('networkListColumns', columns);
+
+  /// Purpose: Read the dataset list's column preference.
+  /// Inputs: None.
+  /// Returns: `Future<int>` — defaults to `listColumnsAuto`.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: None.
+  static Future<int> getDataSetListColumns() =>
+      _getListColumns('dataSetListColumns');
+
+  /// Purpose: Persist the dataset list's column preference.
+  /// Inputs: `columns`.
+  /// Returns: None.
+  /// Side effects: Writes `storage_config.json`.
+  /// Notes: None.
+  static Future<void> setDataSetListColumns(int columns) =>
+      _setListColumns('dataSetListColumns', columns);
+
+  /// Purpose: Read the services page's column preference.
+  /// Inputs: None.
+  /// Returns: `Future<int>` — defaults to `listColumnsAuto`.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: One preference serves the devices, routes and ports views; the
+  /// overview is always a single column.
+  static Future<int> getServiceListColumns() =>
+      _getListColumns('serviceListColumns');
+
+  /// Purpose: Persist the services page's column preference.
+  /// Inputs: `columns`.
+  /// Returns: None.
+  /// Side effects: Writes `storage_config.json`.
+  /// Notes: None.
+  static Future<void> setServiceListColumns(int columns) =>
+      _setListColumns('serviceListColumns', columns);
 }

@@ -26,7 +26,8 @@ Declarations table below).
 | `_typeLabel` | method (`_NetworkListPageState`) | B | Map a `NetworkType` to its localized label. |
 | `_sortModeLabel` | method (`_NetworkListPageState`) | B | Map a `NetworkSortMode` to its localized label. |
 | `_buildNetworkCard` | method (widget helper) | B | Render one network's card, with an optional trailing drag handle. |
-| `build` | method (widget) | B | Build the scaffold: app bar, sort menu, network list or reorder view, add FAB. |
+| `_setColumnsPref` | method (`_NetworkListPageState`) | B | Store a new column preference (`DeviceStorage.setNetworkListColumns`) and re-render. |
+| `build` | method (widget) | B | Build the scaffold: app bar, column control (hidden at capacity 1 and while reordering), sort menu, network list — one `adaptiveTileRow` per index above one column — or reorder view, add FAB. Column count from `listColumnCount` at `shellContentWidth − 16` and `networkTileMinWidth`. |
 
 Row count (15) matches `grep -c 'Purpose:' network_list_page.dart` (15) exactly.
 

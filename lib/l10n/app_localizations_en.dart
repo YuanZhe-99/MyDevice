@@ -1452,4 +1452,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupModuleServices => 'Services';
+
+  @override
+  String get listColumns => 'Columns';
+
+  @override
+  String get listColumnsAuto => 'Auto';
+
+  @override
+  String listColumnsCount(int count) {
+    return '$count columns';
+  }
 }

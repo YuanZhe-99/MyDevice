@@ -545,5 +545,10 @@
   "@serviceCount": { "placeholders": { "count": { "type": "int" } } },
   "serviceRouteCount": "{count} route(s)",
   "@serviceRouteCount": { "placeholders": { "count": { "type": "int" } } },
-  "backupModuleServices": "Services"
+  "backupModuleServices": "Services",
+
+  "listColumns": "Columns",
+  "listColumnsAuto": "Auto",
+  "listColumnsCount": "{count} columns",
+  "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } }
 }

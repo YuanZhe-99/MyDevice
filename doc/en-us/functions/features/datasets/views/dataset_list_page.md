@@ -28,8 +28,10 @@ background sync brings in new local data — the same pattern used by
 | `_editDataSet` | method (`_DataSetListPageState`) | B | Push the dataset edit page for an existing dataset, then reload if it reported a save. |
 | [`_deleteDataSet`](#deletedataset) | method (`_DataSetListPageState`) | A | Confirm and, if accepted, delete a dataset and notify the sync layer. |
 | [`_onReorder`](#onreorder) | method (`_DataSetListPageState`) | A | Move a dataset within the custom order and persist the new order. |
-| `_buildDataSetTile` | method (widget helper) | B | Render one dataset's list tile (emoji, name, storage-summary subtitle). |
-| `build` | method (widget) | B | Build the scaffold: app bar, sort menu, dataset list or reorder view, add FAB. |
+| `_setColumnsPref` | method (`_DataSetListPageState`) | B | Store a new column preference (`DeviceStorage.setDataSetListColumns`) and re-render. |
+| `_buildDataSetTile` | method (widget helper) | B | Render one dataset's list tile (emoji, name, storage-summary subtitle); `reorderHandle` disables tap-to-edit. |
+| `_buildMenuTile` | method (widget helper) | B | The multi-column tile: `_buildDataSetTile` with a trailing delete `PopupMenuButton` in place of the swipe. |
+| `build` | method (widget) | B | Build the scaffold: app bar, column control (hidden at capacity 1 and while reordering), sort menu, dataset list — swipe tiles at one column, `adaptiveTileRow`s of menu tiles above — or reorder view, add FAB. Column count from `listColumnCount` at `shellContentWidth − 16` and `dataSetTileMinWidth`. |
 
 Row count (16) matches `grep -c 'Purpose:' dataset_list_page.dart` (16) exactly.
 

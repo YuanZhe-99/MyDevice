@@ -244,3 +244,58 @@ double dialogBodyHeight(double availableHeight, {required double preferred}) {
   if (preferred < dialogMinBodyHeight) return dialogMinBodyHeight;
   return room.clamp(dialogMinBodyHeight, preferred);
 }
+
+/// Minimum width, in logical pixels, one device list tile may occupy.
+///
+/// The tile is a `Card` inside a 16 dp padded row: 32 of tile padding, a 40 dp
+/// avatar, a 16 gap and a 24 dp chevron (or 48 dp menu) plus 16 make roughly
+/// 152 of chrome, leaving 168 for a name of about twenty characters on one
+/// line and "category · brand · daily cost" in its two subtitle lines.
+const deviceTileMinWidth = 320.0;
+
+/// Minimum width, in logical pixels, one network list tile may occupy.
+///
+/// The same chrome as a device tile, but a single-line "type · subnet"
+/// subtitle of about twenty-five characters (~175 dp), so it fits narrower.
+const networkTileMinWidth = 300.0;
+
+/// Minimum width, in logical pixels, one dataset list tile may occupy.
+///
+/// A bare `ListTile`: 32 of padding, a 34 dp emoji, a 16 gap, a 24 dp chevron
+/// and 16 make 122. The subtitle carries up to four storage lines that must
+/// not wrap, or the fourth line hides a device behind the ellipsis.
+const dataSetTileMinWidth = 320.0;
+
+/// Minimum width, in logical pixels, one services-page card may occupy.
+///
+/// Route cards carry a three-line summary; device and port cards nest tiles
+/// whose trailing `PopupMenuButton` is 48 dp wide.
+const serviceCardMinWidth = 320.0;
+
+/// Purpose: Return the number of columns a list should actually render.
+/// Inputs: `screenWidth`, `screenHeight` — the whole screen, which decides
+/// whether splitting is allowed at all; `contentWidth` — the width the list
+/// itself gets; `minItemWidth` — the narrowest one tile may be;
+/// `preference` — [listColumnsAuto] or a pinned column count.
+/// Returns: `int`, at least 1.
+/// Side effects: None.
+/// Notes: The gate reads the screen while the capacity reads the list's own
+/// width, deliberately. Measuring the split decision against the body would
+/// subtract the app bar and read a Fold 8 in portrait as 0.80 rather than
+/// 0.755, leaving almost no margin under [splitMinAspect]. A pinned preference
+/// is clamped to what fits, so a window that shrinks — or a foldable that
+/// closes — falls back to a single column without losing the stored choice.
+/// Unlike MyAnime's version this takes the minimum as a parameter, because
+/// MyDevice has four tile shapes with four different minimums.
+int listColumnCount({
+  required double screenWidth,
+  required double screenHeight,
+  required double contentWidth,
+  required double minItemWidth,
+  required int preference,
+}) {
+  if (!canSplitLayout(screenWidth, screenHeight)) return 1;
+  final capacity = columnCapacity(contentWidth, minItemWidth: minItemWidth);
+  if (preference == listColumnsAuto) return capacity;
+  return preference.clamp(1, capacity);
+}

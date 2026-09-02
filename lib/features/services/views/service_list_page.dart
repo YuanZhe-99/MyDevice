@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/services/image_share_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
+import '../../../shared/widgets/adaptive_tile_grid.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../../devices/widgets/device_category_icon.dart';
@@ -84,6 +85,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
   List<Network> _networks = [];
   _ServiceView _view = _ServiceView.overview;
   bool _loading = true;
+  int _columnsPref = listColumnsAuto;
 
   /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
   /// Inputs: None.
@@ -126,14 +128,27 @@ class _ServiceListPageState extends State<ServiceListPage> {
     final serviceData = await ServiceStorage.load();
     final deviceData = await DeviceStorage.load();
     final networkData = await NetworkStorage.load();
+    final columns = await DeviceStorage.getServiceListColumns();
     if (!mounted) return;
     setState(() {
       _services = serviceData.services;
       _routes = serviceData.routes;
       _devices = deviceData.devices;
       _networks = networkData.networks;
+      _columnsPref = columns;
       _loading = false;
     });
+  }
+
+  /// Purpose: Store a new column preference and re-render with it.
+  /// Inputs: `columns` — `listColumnsAuto` or a pinned count.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and writes `storage_config.json`.
+  /// Notes: Internal helper used within this file only. One preference serves
+  /// the devices, routes and ports views; the overview stays a single column.
+  void _setColumnsPref(int columns) {
+    setState(() => _columnsPref = columns);
+    DeviceStorage.setServiceListColumns(columns);
   }
 
   /// Purpose: Look up device by id from the current in-memory state.
@@ -256,11 +271,33 @@ class _ServiceListPageState extends State<ServiceListPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    // Gate on the whole screen; measure capacity from what the views get
+    // after the navigation rail and their 8 dp padding. The overview is a
+    // heterogeneous scroll and never takes columns, so its button is hidden.
+    final screen = MediaQuery.sizeOf(context);
+    final contentWidth = shellContentWidth(screen.width) - 16;
+    final capacity = canSplitLayout(screen.width, screen.height)
+        ? columnCapacity(contentWidth, minItemWidth: serviceCardMinWidth)
+        : 1;
+    final columns = listColumnCount(
+      screenWidth: screen.width,
+      screenHeight: screen.height,
+      contentWidth: contentWidth,
+      minItemWidth: serviceCardMinWidth,
+      preference: _columnsPref,
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.navServices),
         actions: [
+          if (_view != _ServiceView.overview)
+            listColumnsButton(
+              context,
+              preference: _columnsPref,
+              capacity: capacity,
+              onChanged: _setColumnsPref,
+            ),
           IconButton(
             icon: const Icon(Icons.add_link),
             tooltip: l10n.serviceAddAccess,
@@ -303,23 +340,25 @@ class _ServiceListPageState extends State<ServiceListPage> {
                     },
                   ),
                 ),
-                Expanded(child: _buildCurrentView(l10n)),
+                Expanded(child: _buildCurrentView(l10n, columns)),
               ],
             ),
     );
   }
 
   /// Purpose: Build and return current view for the current context.
-  /// Inputs: None.
+  /// Inputs: `l10n`, `columns` — from `listColumnCount`, ignored by the
+  /// overview.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: Internal helper used within this file only.
-  Widget _buildCurrentView(AppLocalizations l10n) => switch (_view) {
-    _ServiceView.overview => _buildOverview(l10n),
-    _ServiceView.devices => _buildDevices(l10n),
-    _ServiceView.routes => _buildRoutes(l10n),
-    _ServiceView.ports => _buildPorts(l10n),
-  };
+  Widget _buildCurrentView(AppLocalizations l10n, int columns) =>
+      switch (_view) {
+        _ServiceView.overview => _buildOverview(l10n),
+        _ServiceView.devices => _buildDevices(l10n, columns),
+        _ServiceView.routes => _buildRoutes(l10n, columns),
+        _ServiceView.ports => _buildPorts(l10n, columns),
+      };
 
   /// Purpose: Build and return overview for the current context.
   /// Inputs: `l10n`.
@@ -459,11 +498,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
   }
 
   /// Purpose: Build and return devices for the current context.
-  /// Inputs: `l10n`.
+  /// Inputs: `l10n`, `columns` — cards per row.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  Widget _buildDevices(AppLocalizations l10n) {
+  /// Notes: Internal helper used within this file only. The cards are
+  /// materialized children of one `ListView`, so `adaptiveTileRows` spreads
+  /// them; expansion tiles of different heights top-align within a row.
+  Widget _buildDevices(AppLocalizations l10n, int columns) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
     final grouped = <String, List<ServiceNode>>{};
     for (final service in _services) {
@@ -478,9 +519,12 @@ class _ServiceListPageState extends State<ServiceListPage> {
 
     return ListView(
       padding: const EdgeInsets.all(8),
-      children: [
-        for (final entry in entries)
-          Card(
+      children: adaptiveTileRows(
+        columns: columns,
+        itemCount: entries.length,
+        itemBuilder: (i) {
+          final entry = entries[i];
+          return Card(
             child: ExpansionTile(
               leading: const Icon(Icons.devices_other),
               title: Text(_deviceById(entry.key)?.name ?? entry.key),
@@ -490,30 +534,36 @@ class _ServiceListPageState extends State<ServiceListPage> {
                 for (final service in entry.value) _serviceTile(service),
               ],
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 
   /// Purpose: Build and return routes for the current context.
-  /// Inputs: `l10n`.
+  /// Inputs: `l10n`, `columns` — cards per row.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: Internal helper used within this file only.
-  Widget _buildRoutes(AppLocalizations l10n) {
+  Widget _buildRoutes(AppLocalizations l10n, int columns) {
     if (_routes.isEmpty) return _emptyState(l10n.noServiceRoutes);
     return ListView(
       padding: const EdgeInsets.all(8),
-      children: [for (final route in _routes) _routeCard(route)],
+      children: adaptiveTileRows(
+        columns: columns,
+        itemCount: _routes.length,
+        itemBuilder: (i) => _routeCard(_routes[i]),
+      ),
     );
   }
 
   /// Purpose: Build and return ports for the current context.
-  /// Inputs: `l10n`.
+  /// Inputs: `l10n`, `columns` — per-device cards per row; the conflicts
+  /// card and the heading stay full width.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: Internal helper used within this file only.
-  Widget _buildPorts(AppLocalizations l10n) {
+  Widget _buildPorts(AppLocalizations l10n, int columns) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
     final conflicts = findServicePortConflicts(_services);
     final portUses = listServicePortUses(_services);
@@ -557,39 +607,48 @@ class _ServiceListPageState extends State<ServiceListPage> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
           ),
-        for (final entry in servicesByDevice.entries)
-          Card(
-            child: ExpansionTile(
-              leading: const Icon(Icons.settings_ethernet),
-              title: Text(_deviceById(entry.key)?.name ?? entry.key),
-              initiallyExpanded: true,
-              children: [
-                for (final use in portUses.where(
-                  (use) => use.service.deviceId == entry.key,
-                ))
-                  ListTile(
-                    dense: true,
-                    leading: Icon(_iconForService(use.service)),
-                    title: Text('${use.transport.name}/${use.port}'),
-                    subtitle: Text(
-                      [
-                            use.service.name,
-                            use.endpoint.label,
-                            use.bindAddress == '*'
-                                ? l10n.serviceAnyAddress
-                                : use.bindAddress,
-                            use.endpoint.path,
-                            _routesForEndpoint(use.service.id, use.endpoint.id),
-                          ]
-                          .whereType<String>()
-                          .where((s) => s.isNotEmpty)
-                          .join(' · '),
+        ...adaptiveTileRows(
+          columns: columns,
+          itemCount: servicesByDevice.length,
+          itemBuilder: (i) {
+            final entry = servicesByDevice.entries.elementAt(i);
+            return Card(
+              child: ExpansionTile(
+                leading: const Icon(Icons.settings_ethernet),
+                title: Text(_deviceById(entry.key)?.name ?? entry.key),
+                initiallyExpanded: true,
+                children: [
+                  for (final use in portUses.where(
+                    (use) => use.service.deviceId == entry.key,
+                  ))
+                    ListTile(
+                      dense: true,
+                      leading: Icon(_iconForService(use.service)),
+                      title: Text('${use.transport.name}/${use.port}'),
+                      subtitle: Text(
+                        [
+                              use.service.name,
+                              use.endpoint.label,
+                              use.bindAddress == '*'
+                                  ? l10n.serviceAnyAddress
+                                  : use.bindAddress,
+                              use.endpoint.path,
+                              _routesForEndpoint(
+                                use.service.id,
+                                use.endpoint.id,
+                              ),
+                            ]
+                            .whereType<String>()
+                            .where((s) => s.isNotEmpty)
+                            .join(' · '),
+                      ),
+                      onTap: () => _editService(use.service),
                     ),
-                    onTap: () => _editService(use.service),
-                  ),
-              ],
-            ),
-          ),
+                ],
+              ),
+            );
+          },
+        ),
       ],
     );
   }

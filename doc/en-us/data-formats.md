@@ -234,7 +234,7 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Datasets | `dataset_data.json` | Yes | Per-record by `id` and `modifiedAt` |
 | Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
 | Images | `images/` | Yes | Referenced-only filename comparison |
-| Theme, locale, backup settings, sort preferences, default currency, exchange-rate settings | `storage_config.json` | No | Local preference |
+| Theme, locale, backup settings, sort preferences, list column preferences, default currency, exchange-rate settings | `storage_config.json` | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
 | Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
@@ -248,7 +248,10 @@ changing the path migrates data files, backups, and images (see
 
 - **`storage_config.json`** — local, unsynced preferences (theme, locale, backup
   settings, sort preferences, default currency, exchange-rate settings, custom storage
-  path, tray/minimize/close-to-tray flags, local API port/credentials).
+  path, tray/minimize/close-to-tray flags, local API port/credentials, and the four list
+  column preferences `deviceListColumns`, `networkListColumns`, `dataSetListColumns` and
+  `serviceListColumns` — an integer 1–4 when pinned, absent when auto; see
+  [Adaptive Layout](adaptive-layout.md#how-many-columns)).
 - **`webdav_config.json`** — local WebDAV credentials/config only; never synced.
 - **`.sync_base/`** — per-data-file base snapshots (`device_data.json`,
   `network_data.json`, `dataset_data.json`, `service_data.json`) from the last

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../app/flavor.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/views/device_map_page.dart';
+import '../../../shared/widgets/adaptive_tile_grid.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
 import '../services/exchange_rate_service.dart';
@@ -44,6 +46,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
   bool _sortAscending = false;
   DeviceStatusFilter _statusFilter = DeviceStatusFilter.all;
   String _defaultCurrency = DeviceExchangeRateService.defaultDefaultCurrency;
+  int _columnsPref = listColumnsAuto;
 
   /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
   /// Inputs: None.
@@ -88,13 +91,27 @@ class _DeviceListPageState extends State<DeviceListPage> {
     final mode = config['sortMode'] as String?;
     final group = config['groupByCategory'] as bool? ?? false;
     final asc = config['sortAscending'] as bool? ?? false;
+    final columns = await DeviceStorage.getDeviceListColumns();
+    if (!mounted) return;
     setState(() {
       _sortMode =
           SortMode.values.where((e) => e.name == mode).firstOrNull ??
           SortMode.custom;
       _groupByCategory = group;
       _sortAscending = asc;
+      _columnsPref = columns;
     });
+  }
+
+  /// Purpose: Store a new column preference and re-render with it.
+  /// Inputs: `columns` — `listColumnsAuto` or a pinned count.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and writes `storage_config.json`.
+  /// Notes: Internal helper used within this file only. The stored value is
+  /// clamped at render time, so a count picked on a desktop survives a fold.
+  void _setColumnsPref(int columns) {
+    setState(() => _columnsPref = columns);
+    DeviceStorage.setDeviceListColumns(columns);
   }
 
   /// Purpose: Load financial prefs into the current workflow or state.
@@ -477,6 +494,20 @@ class _DeviceListPageState extends State<DeviceListPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    // The gate reads the whole screen; the capacity reads what the list gets
+    // after the navigation rail and the tiles' 16 dp horizontal margin.
+    final screen = MediaQuery.sizeOf(context);
+    final contentWidth = shellContentWidth(screen.width) - 32;
+    final capacity = canSplitLayout(screen.width, screen.height)
+        ? columnCapacity(contentWidth, minItemWidth: deviceTileMinWidth)
+        : 1;
+    final columns = listColumnCount(
+      screenWidth: screen.width,
+      screenHeight: screen.height,
+      contentWidth: contentWidth,
+      minItemWidth: deviceTileMinWidth,
+      preference: _columnsPref,
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -503,6 +534,12 @@ class _DeviceListPageState extends State<DeviceListPage> {
               onPressed: () => setState(() => _reordering = false),
             )
           else ...[
+            listColumnsButton(
+              context,
+              preference: _columnsPref,
+              capacity: capacity,
+              onChanged: _setColumnsPref,
+            ),
             PopupMenuButton<dynamic>(
               icon: const Icon(Icons.sort),
               tooltip: l10n.sortTitle,
@@ -603,7 +640,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
                 );
               },
             )
-          : _buildDeviceList(l10n, theme),
+          : _buildDeviceList(l10n, theme, columns),
       floatingActionButton: _reordering
           ? null
           : Column(
@@ -633,12 +670,83 @@ class _DeviceListPageState extends State<DeviceListPage> {
     );
   }
 
+  /// Purpose: Build one device tile for the current column count.
+  /// Inputs: `device`, `l10n`, `theme`, `columns`.
+  /// Returns: `Widget`.
+  /// Side effects: None beyond the tile's own handlers.
+  /// Notes: Internal helper used within this file only. At one column the
+  /// tile keeps its swipe-to-edit and swipe-to-delete `Dismissible`; above it
+  /// a horizontal drag inside one narrow cell is ambiguous, so the chevron
+  /// becomes a menu carrying the same two actions — the same trailing menu the
+  /// services tiles already use. Delete has no other entrance, so the menu is
+  /// what keeps it reachable.
+  Widget _buildTile(
+    Device device,
+    AppLocalizations l10n,
+    ThemeData theme,
+    int columns,
+  ) {
+    if (columns == 1) return _buildDismissibleCard(device, l10n, theme);
+    return _DeviceCard(
+      device: device,
+      categoryLabel: _categoryLabel(context, device.category),
+      defaultCurrency: _defaultCurrency,
+      onTap: () => _viewDevice(device),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      trailing: PopupMenuButton<String>(
+        itemBuilder: (_) => [
+          PopupMenuItem(value: 'edit', child: Text(l10n.editDevice)),
+          PopupMenuItem(value: 'delete', child: Text(l10n.deleteDevice)),
+        ],
+        onSelected: (value) {
+          if (value == 'edit') {
+            _editDevice(device);
+          } else if (value == 'delete') {
+            _confirmDeleteDevice(device);
+          }
+        },
+      ),
+    );
+  }
+
+  /// Purpose: Lay a run of devices out as list children at a column count.
+  /// Inputs: `devices`, `l10n`, `theme`, `columns`.
+  /// Returns: `List<Widget>` — the tiles themselves at one column, else one
+  /// padded `Row` per [listRowCount] row.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only. The 16 dp horizontal
+  /// padding replaces the margin the single-column card carries itself, so
+  /// the rows align with the header card above them.
+  List<Widget> _tileRows(
+    List<Device> devices,
+    AppLocalizations l10n,
+    ThemeData theme,
+    int columns,
+  ) {
+    final rows = adaptiveTileRows(
+      columns: columns,
+      itemCount: devices.length,
+      itemBuilder: (i) => _buildTile(devices[i], l10n, theme, columns),
+    );
+    if (columns == 1) return rows;
+    return [
+      for (final row in rows)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: row,
+        ),
+    ];
+  }
+
   /// Purpose: Build and return device list for the current context.
-  /// Inputs: `l10n`, `theme`.
+  /// Inputs: `l10n`, `theme`, `columns` — from `listColumnCount`.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  Widget _buildDeviceList(AppLocalizations l10n, ThemeData theme) {
+  /// Notes: Internal helper used within this file only. The flat list keeps
+  /// `ListView.builder` virtualization by building one row per index; the
+  /// grouped list is materialized already, so it spreads `_tileRows` per
+  /// category under that category's header.
+  Widget _buildDeviceList(AppLocalizations l10n, ThemeData theme, int columns) {
     final sorted = _sortedDevices;
     final header = _buildHomeHeader(l10n, theme);
     if (sorted.isEmpty) {
@@ -661,8 +769,16 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (_groupByCategory) {
       final widgets = <Widget>[header];
       DeviceCategory? lastCat;
+      final group = <Device>[];
+      void flush() {
+        if (group.isEmpty) return;
+        widgets.addAll(_tileRows(List.of(group), l10n, theme, columns));
+        group.clear();
+      }
+
       for (final device in sorted) {
         if (device.category != lastCat) {
+          flush();
           lastCat = device.category;
           widgets.add(
             Padding(
@@ -677,19 +793,38 @@ class _DeviceListPageState extends State<DeviceListPage> {
             ),
           );
         }
-        widgets.add(_buildDismissibleCard(device, l10n, theme));
+        group.add(device);
       }
+      flush();
       return ListView(
         padding: const EdgeInsets.only(bottom: 80),
         children: widgets,
       );
     }
+    if (columns == 1) {
+      return ListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: sorted.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) return header;
+          return _buildDismissibleCard(sorted[index - 1], l10n, theme);
+        },
+      );
+    }
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
-      itemCount: sorted.length + 1,
+      itemCount: listRowCount(sorted.length, columns) + 1,
       itemBuilder: (context, index) {
         if (index == 0) return header;
-        return _buildDismissibleCard(sorted[index - 1], l10n, theme);
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: adaptiveTileRow(
+            rowIndex: index - 1,
+            columns: columns,
+            itemCount: sorted.length,
+            itemBuilder: (i) => _buildTile(sorted[i], l10n, theme, columns),
+          ),
+        );
       },
     );
   }
@@ -964,12 +1099,16 @@ class _DeviceCard extends StatelessWidget {
   final String defaultCurrency;
   final VoidCallback onTap;
   final Widget? trailing;
+  final EdgeInsetsGeometry margin;
 
   /// Purpose: Create a device card instance.
-  /// Inputs: `device`, `categoryLabel`, `defaultCurrency`, `onTap`, optional `trailing`.
+  /// Inputs: `device`, `categoryLabel`, `defaultCurrency`, `onTap`, optional
+  /// `trailing`, optional `margin`.
   /// Returns: A new `_DeviceCard` instance.
   /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: None.
+  /// Notes: `margin` defaults to the 16 dp horizontal / 6 dp vertical the
+  /// single-column list always had; the multi-column rows pass a vertical-only
+  /// margin because the row itself carries the horizontal padding.
   const _DeviceCard({
     super.key,
     required this.device,
@@ -977,6 +1116,7 @@ class _DeviceCard extends StatelessWidget {
     required this.defaultCurrency,
     required this.onTap,
     this.trailing,
+    this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
   });
 
   /// Purpose: Build the current widget subtree for the active UI state.
@@ -998,7 +1138,7 @@ class _DeviceCard extends StatelessWidget {
     }
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: margin,
       child: ListTile(
         leading: DeviceAvatar.fromDevice(device),
         title: Text(device.name),

@@ -20,8 +20,10 @@
 | `_editDataSet` | 方法（`_DataSetListPageState`） | B | 为既有数据集压入数据集编辑页，报告保存后重载。 |
 | [`_deleteDataSet`](#deletedataset) | 方法（`_DataSetListPageState`） | A | 确认并接受时删除数据集并通知同步层。 |
 | [`_onReorder`](#onreorder) | 方法（`_DataSetListPageState`） | A | 在自定义顺序内移动数据集并持久化新顺序。 |
-| `_buildDataSetTile` | 方法（组件辅助） | B | 渲染一个数据集列表块（emoji、名称、存储摘要副标题）。 |
-| `build` | 方法（组件） | B | 构建脚手架：应用栏、排序菜单、数据集列表或重排视图、添加 FAB。 |
+| `_setColumnsPref` | 方法（`_DataSetListPageState`） | B | 存储新的列数偏好（`DeviceStorage.setDataSetListColumns`）并重新渲染。 |
+| `_buildDataSetTile` | 方法（组件辅助） | B | 渲染一个数据集列表块（emoji、名称、存储摘要副标题）；`reorderHandle` 禁用点按编辑。 |
+| `_buildMenuTile` | 方法（组件辅助） | B | 多列 tile：`_buildDataSetTile` 加尾部删除 `PopupMenuButton`，取代滑动。 |
+| `build` | 方法（组件） | B | 构建脚手架：应用栏、列数控件（容量为 1 及重排时隐藏）、排序菜单、数据集列表——一列时是滑动 tile，多列时是菜单 tile 的 `adaptiveTileRow`——或重排视图、添加 FAB。列数由 `listColumnCount` 以 `shellContentWidth − 16` 和 `dataSetTileMinWidth` 得出。 |
 
 行数（16）与 `grep -c 'Purpose:' dataset_list_page.dart`（16）精确匹配。
 

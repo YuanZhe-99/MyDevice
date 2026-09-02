@@ -45,8 +45,11 @@ gating requirements this satisfies (call site 4 of 4).
 | `_toggleGroupByCategory` | method (`_DeviceListPageState`) | B | Toggle category grouping and persist it. |
 | `_toggleSortOrder` | method (`_DeviceListPageState`) | B | Toggle ascending/descending order and persist it. |
 | [`_onReorder`](#_onreorder) | method (`_DeviceListPageState`) | A | Move a device within the custom order and persist the new order. |
-| `build` | method (widget) | B | Build the scaffold: app bar, sort/group menu, device list or reorder view, FABs. |
-| `_buildDeviceList` | method (widget helper) | B | Build the scrollable device list, inserting category headers when grouping is on. |
+| `build` | method (widget) | B | Build the scaffold: app bar, column control (`listColumnsButton`, hidden at capacity 1 and while reordering), sort/group menu, device list or reorder view, FABs. Computes the column count with `listColumnCount` from `shellContentWidth(screen.width) − 32` at `deviceTileMinWidth`. |
+| `_setColumnsPref` | method (`_DeviceListPageState`) | B | Store a new column preference (`DeviceStorage.setDeviceListColumns`) and re-render. |
+| `_buildTile` | method (widget helper) | B | One device tile: the swipe `Dismissible` card at one column, else a `_DeviceCard` with a trailing edit/delete `PopupMenuButton`. |
+| `_tileRows` | method (widget helper) | B | Lay a run of devices out as list children: the tiles at one column, else padded `adaptiveTileRows`. |
+| `_buildDeviceList` | method (widget helper) | B | Build the scrollable device list — one `adaptiveTileRow` per `ListView.builder` index above one column — inserting category headers (each followed by its own rows) when grouping is on. |
 | `_buildHomeHeader` | method (widget helper) | B | Build the financial-summary card and status filter segmented control. |
 | `_buildMetric` | method (widget helper) | B | Render one label/value metric column. |
 | `_buildStatusCount` | method (widget helper) | B | Render one lifecycle-status count with a progress bar. |

@@ -510,5 +510,10 @@
   "serviceWarningDuplicateFinalUrl": "{name}: 最終URLが重複しています",
   "serviceCount": "{count} 件のサービス",
   "serviceRouteCount": "{count} 件のルート",
-  "backupModuleServices": "サービス"
+  "backupModuleServices": "サービス",
+
+  "listColumns": "列数",
+  "listColumnsAuto": "自動",
+  "listColumnsCount": "{count} 列",
+  "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } }
 }

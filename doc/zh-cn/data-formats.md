@@ -145,7 +145,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 | 数据集 | `dataset_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录 |
 | 服务与服务路由 | `service_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录服务/路由 |
 | 图像 | `images/` | 是 | 仅引用文件名比较 |
-| 主题、语言区域、备份设置、排序偏好、默认货币、汇率设置 | `storage_config.json` | 否 | 本地偏好 |
+| 主题、语言区域、备份设置、排序偏好、列表列数偏好、默认货币、汇率设置 | `storage_config.json` | 否 | 本地偏好 |
 | WebDAV 凭据 | `webdav_config.json` | 否 | 仅本地机密/配置 |
 | 同步基础快照 | `.sync_base/*.json` | 否 | 本地合并跟踪 |
 | 备份 | `backups/backup_*.json` | 否 | 本地恢复；v2 捆绑引用去重图像 blob |
@@ -154,7 +154,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 
 默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`；更改路径迁移数据文件、备份和图像（见 [架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
 
-- **`storage_config.json`** — 本地、不同步偏好（主题、语言区域、备份设置、排序偏好、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据）。
+- **`storage_config.json`** — 本地、不同步偏好（主题、语言区域、备份设置、排序偏好、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#多少列)）。
 - **`webdav_config.json`** — 仅本地 WebDAV 凭据/配置；绝不同步。
 - **`.sync_base/`** — 上次成功同步的逐数据文件基础快照（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`），用于三方合并；也持有 `upload_lock.json`，用于下次启动检测中断上传的进行中上传本地记录。见 [WebDAV 同步](sync.md)。
 - **`backups/`** — 完整 v2 捆绑格式和 blob 存储布局见 [备份与恢复](backup-restore.md)。

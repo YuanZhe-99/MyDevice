@@ -512,5 +512,10 @@
   "serviceWarningDuplicateFinalUrl": "{name}: 最终 URL 重复",
   "serviceCount": "{count} 个服务",
   "serviceRouteCount": "{count} 条链路",
-  "backupModuleServices": "服务"
+  "backupModuleServices": "服务",
+
+  "listColumns": "列数",
+  "listColumnsAuto": "自动",
+  "listColumnsCount": "{count} 列",
+  "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } }
 }

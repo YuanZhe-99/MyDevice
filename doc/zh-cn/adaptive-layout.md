@@ -79,7 +79,37 @@ int columnCapacity(
 | 服务概览指标卡（`serviceMetricColumns`） | `150` | 12 | 4 | 16 dp 内边距里一个图标、一个 headline 尺寸计数和两行标签。与被替换的内联规则算术完全等价，所以没有任何视口的列数改变。 |
 | 财务摘要指标（`financeSummaryColumns`） | `160` | 16 | 3，**下限 2** | `titleLarge` 金额在标签之前约占 120 dp。下限防止卡片在外屏上退化成一行一个指标——它从未如此。第三列在 512 dp 出现，而旧内联规则要求 520——这是间距算式只为两个间距付费而非三个。 |
 
-多列*列表*——尽可能多的设备、网络、数据集或服务 tile——是 1.5.1 的主题，此处尚未门控。
+四个**列表**也取多列，先过分栏规则、再看容量。每种 tile 带自己的最小值：
+
+| 列表 | 最小值 | 从内容宽度扣除的内边距 | 数字来源 |
+|---|---|---|---|
+| 设备（`deviceTileMinWidth`） | `320` | 32（卡片两侧各 16 dp 外边距） | 带内边距行里的 `Card`：tile 内边距 32、头像 40、间距 16、尾部 chevron 24（或菜单 48）加 16——约 152 的铺装。168 保住二十字名称一行、“类别 · 品牌 · 日均成本”两行副标题。 |
+| 网络（`networkTileMinWidth`） | `300` | 16（列表 8 dp 内边距） | 同样铺装，但副标题是单行“类型 · 子网”，约二十五字 ~175 dp，所以更窄也放得下。 |
+| 数据集（`dataSetTileMinWidth`） | `320` | 16 | 裸 `ListTile`：32 + 34 dp emoji + 16 + 24 + 16 = 122。副标题最多四行存储信息不能折行，否则第四行被省略号吞掉一台设备。 |
+| 服务——设备 / 链路 / 端口视图（`serviceCardMinWidth`） | `320` | 16 | 链路卡三行摘要；设备卡与端口卡内嵌带 48 dp 尾部菜单的 tile。概览是异构滚动流（指标网格、拓扑卡、警告、链路组、tile），保持单列。 |
+
+`listColumnCount` 把门控与容量合并：`canSplitLayout` 为假时一列，否则用户偏好为 `listColumnsAuto` 时取容量，否则取钳到容量的偏好。钳制而非拒绝，让桌面上设好的偏好带到折叠手机上仍能存活、展开时再回来。每个列表把自己的偏好存在 `storage_config.json`（`deviceListColumns`、`networkListColumns`、`dataSetListColumns`、`serviceListColumns`），设备本地，因为窗口尺寸是设备属性而非账号属性；默认值从文件删除而非写成零。应用栏的列数控件在容量为一时隐藏——而非禁用——所以手机或外屏永远不会显示一个什么也做不了的控件；重排模式与服务概览也隐藏它。
+
+内容宽度是 `shellContentWidth(screenWidth)` 减表中的内边距，因为这五页是壳内的页面——见[下文](#门控量屏幕容量量内容框)。
+
+| 视口 | 分栏 | 设备（−32，320） | 网络（−16，300） | 数据集 / 服务（−16，320） |
+|---|---|---|---|---|
+| Z Fold 8 横屏 933 × 704 | 是 | 2 | 2 | 2 |
+| Z Fold 8 竖屏 704 × 933 | 否 | 1 | 1 | 1 |
+| Z Fold 8 Ultra 954 × 859 / 859 × 954 | 是 | 2 / 2 | 2 / 2 | 2 / 2 |
+| Pixel 10 Pro Fold 820 × 791 / 791 × 820 | 是 | 2 / 2 | 2 / 2 | 2 / 2 |
+| Z Fold 7 832 × 750 / 750 × 832 | 是 | 2 / **1** | 2 / 2 | 2 / 2 |
+| Z Fold 6 675 × 786 · Z Fold 5 659 × 791 | 是 | 1 / 1 | 1 / 1 | 1 / 1 |
+| 平板 1024 × 768 | 是 | 2 | **3** | 2 |
+| 平板 768 × 1024 | 否 | 1 | 1 | 1 |
+| 手机横屏 915 × 412 | 否 | 1 | 1 | 1 |
+| 桌面 1600 × 900 | 是 | 4 | 4 | 4 |
+
+两个格子值得一句话。Z Fold 7 竖屏给设备列表 750 − 81 − 32 = 637，比两个 320 dp tile 加间距所需的 652 少三，所以保持一列，而旁边的数据集列表（653）得到两列——这是规则在边界处起作用，不是 bug。平板横屏给网络列表三列，因为其 tile 最小值是 300：1024 − 81 − 16 = 927 超过 3 × 300 + 2 × 12 = 924。
+
+tile **先从左到右、再从上到下**排列，每行是一个由 `Expanded` 格子组成的 `Row` 而非 `GridView`，所以设备列表保住 `ListView.builder` 的虚拟化，服务视图的卡片仍是同一滚动视图的 children。最后一行不满时用空格子补齐，让剩余 tile 保持宽度。见 [`functions/shared/widgets/adaptive_tile_grid.md`](functions/shared/widgets/adaptive_tile_grid.md)。
+
+**手势随列数变化。** 一列时设备与数据集 tile 保留滑动操作（右滑编辑、左滑删除；数据集仅删除）。多列时在一个窄格子内水平拖动含义不明，所以去掉 `Dismissible`，尾部 chevron 变成携带同样操作的菜单——服务 tile 早已使用的那种尾部菜单。两页的删除都没有其他入口，所以菜单是保住删除的关键。重排模式始终渲染单列，因为 `ReorderableListView` 要求一项一个子组件。
 
 ## 导航放在哪里
 
@@ -93,7 +123,7 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 
 **这是刻意的仅宽度判断，绝不能经由 `canSplitLayout`。** 导航栏不是分栏。它用宽度——只要测试通过就充裕——换取高度——并不充裕。它帮助最大的场景恰恰是分栏规则拒绝的那个：横持的普通手机 915 × 412，底栏花掉 19% 的高度做导航，而 915 逻辑像素的宽度闲置。分栏规则同样拒绝的 Z Fold 8 竖屏，出于同一理由得到导航栏。
 
-一个后果贯穿应用其余部分：只要导航栏显示，`shellContentWidth(screenWidth)` 就减去 `navRailWidth`（81 = 80 dp 导航栏加 1 dp 分割线），壳内每个容量都从它测量，绝不用原始屏幕宽度。今天这只影响服务概览的拓扑卡片动作行；tile 列表在 1.5.1 加入。
+一个后果贯穿应用其余部分：只要导航栏显示，`shellContentWidth(screenWidth)` 就减去 `navRailWidth`（81 = 80 dp 导航栏加 1 dp 分割线），壳内每个容量都从它测量，绝不用原始屏幕宽度：四个列表的列数，以及服务概览的拓扑卡片动作行。
 
 **刻意未从 MyAnime 移植：底栏避让。** MyAnime 的滚动页为底栏预留 80 dp，有导航栏时降到 16。MyDevice 不需要。它的壳 `Scaffold` 持有底栏，每个标签页自带 `Scaffold` 装应用栏和浮动操作按钮，页面 body 从一开始就不在底栏之下。设备列表预留的 `bottom: 80` 是给它三个叠放浮动操作按钮的避让，导航栏不会移除它们——不要通过导航规则去「修」它。
 
@@ -132,6 +162,8 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | 调用点 | 规则 | 备注 |
 |---|---|---|
 | `shell_scaffold.dart` | `useNavigationRail` | 仅宽度；见上文。 |
+| `device_list_page.dart`、`network_list_page.dart`、`dataset_list_page.dart` | `listColumnCount` | 分栏规则，再按各 tile 最小值算容量，再钳制已存偏好。内容宽度是 `shellContentWidth` 减页面内边距。 |
+| `service_list_page.dart`（设备 / 链路 / 端口视图） | `listColumnCount` | 同上，以 `serviceCardMinWidth` 计；一个偏好服务三个视图，概览保持单列。 |
 | `service_list_page.dart`（概览指标网格） | `serviceMetricColumns` | 仅宽度，来自概览列表的 `LayoutBuilder`。 |
 | `service_list_page.dart`（拓扑卡片头部） | `useTopologyActionsRow` | 仅宽度。值就是卡片在 1.5.0 之前内联使用的 680；卡片现在拿到的是扣除导航栏后的宽度，所以 Pixel 10 Pro Fold 竖屏把动作堆叠到标题下，而以前是并排。 |
 | `service_list_page.dart`（快捷访问路由对话框） | `dialogMaxWidth` | 常量，不是规则。 |
@@ -140,7 +172,7 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | 无需 | 已是 `LayoutBuilder` 驱动的全幅 `InteractiveViewer`；布局缓存以视口宽度为键。 |
 | `device_map_page.dart`、`map_picker_page.dart` | 无需 | 全幅地图填满给它的任何空间；选点器的搜索行已是按钮旁的 `Expanded` 输入框。 |
 
-其余每一页仍是固定单列，已排期：多列列表在 1.5.1，详情页与财务总览图表行在 1.5.2，设备编辑页在 1.5.3，其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
+其余每一页仍是固定单列，已排期：详情页与财务总览图表行在 1.5.2，设备编辑页在 1.5.3，其余编辑页与底部表单在 1.5.4，设置家族在 1.5.5。在 1.5.4 之前 `lib/` 里还剩一个硬编码数量：`device_edit_page.dart` 里 emoji 选择器的 `crossAxisCount: 8`，是数量而非比较，列在此处让「没有内联宽度决策」的说法保持诚实。
 
 ## 与 Google 指南的分歧
 
@@ -150,7 +182,9 @@ Google 的自适应布局指南说窗口尺寸类别「明确不由设备屏幕�
 
 ## 测试
 
-- `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、两条概览规则、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
+- `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、四个列表的列数与偏好钳制、两条概览规则、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
+- `test/list_columns_prefs_test.dart` — 四个列数偏好各自独立往返，默认值不写入文件而是缺席，非法值读作自动。
+- `test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart`、`test/service_columns_ui_test.dart` — 针对种子存储目录，在 Z Fold 8 横竖、Pixel 9 横竖和平板上渲染设备、网络、数据集与服务列表：列数、隐藏的控件、存下的选择、钳制、滑动或菜单的切换，以及分组页头。
 - `test/shell_nav_ui_test.dart` — 在 Pixel 9 横竖、Z Fold 8 横竖和桌面窗口渲染壳：出现哪种导航、导航栏携带同样五个目的地、点击可导航。
 - `test/dialog_layout_ui_test.dart` — 两个搜索对话框在五种窗口尺寸打开，断言对话框不超出窗口且遵守宽度上限。
 

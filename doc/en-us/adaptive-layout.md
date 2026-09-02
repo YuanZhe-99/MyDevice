@@ -110,8 +110,62 @@ doc comment on the constant states where the number came from:
 | Services overview metric cards (`serviceMetricColumns`) | `150` | 12 | 4 | An icon, a headline-sized count and a two-line label inside 16 dp of padding. Arithmetically identical to the inline rule it replaced, so no viewport changed its count. |
 | Finance summary metrics (`financeSummaryColumns`) | `160` | 16 | 3, **floor 2** | A `titleLarge` money value runs to roughly 120 dp before its label. The floor keeps the card from stacking one metric per row on a cover screen, which it never did. The third column arrives at 512 dp where the old inline rule asked for 520 — the gap arithmetic paying for two gaps rather than three. |
 
-Multi-column *lists* — as many device, network, dataset or service tiles as fit — are the subject
-of 1.5.1 and are not yet gated here.
+The four **lists** take columns too, under the split rule first and the capacity second. Each
+tile brings its own minimum:
+
+| List | Minimum | Padding taken from the content width | Why that number |
+|---|---|---|---|
+| Devices (`deviceTileMinWidth`) | `320` | 32 (the 16 dp card margin each side) | A `Card` in a padded row spends 32 on tile padding, 40 on the avatar, 16 on a gap and 24 (chevron) or 48 (menu) plus 16 on the trailing edge — roughly 152 of chrome. 168 keeps a twenty-character name on one line and "category · brand · daily cost" in its two subtitle lines. |
+| Networks (`networkTileMinWidth`) | `300` | 16 (8 dp list padding) | The same chrome, but a single-line "type · subnet" subtitle of about twenty-five characters, ~175 dp, so it fits narrower. |
+| Datasets (`dataSetTileMinWidth`) | `320` | 16 | A bare `ListTile`: 32 + a 34 dp emoji + 16 + 24 + 16 = 122. The subtitle carries up to four storage lines that must not wrap, or the fourth line hides a device behind the ellipsis. |
+| Services — devices / routes / ports views (`serviceCardMinWidth`) | `320` | 16 | Route cards carry a three-line summary; device and port cards nest tiles whose trailing menu is 48 dp wide. The overview is a heterogeneous scroll (metric grid, topology card, warnings, route groups, tiles) and stays single-column. |
+
+`listColumnCount` combines the gate with the capacity: one column when `canSplitLayout` is false,
+otherwise the capacity when the user's preference is `listColumnsAuto`, otherwise the preference
+clamped to the capacity. Clamping rather than rejecting is what lets a preference set on a desktop
+survive being carried onto a folded phone and come back on unfolding. Each list stores its own
+preference in `storage_config.json` (`deviceListColumns`, `networkListColumns`,
+`dataSetListColumns`, `serviceListColumns`), device-locally, because window size is a property of
+the device and not of the account; the default is removed from the file rather than written as
+zero. The column control in the app bar is hidden — not disabled — whenever the capacity is one, so
+a phone or a cover screen never shows a control that could do nothing, and it is hidden in reorder
+mode and on the services overview.
+
+Content width is `shellContentWidth(screenWidth)` less the padding in the table, because these five
+pages are the ones inside the shell — see
+[the section below](#measure-the-screen-for-the-gate-the-content-box-for-the-capacity).
+
+| Viewport | Splits | Devices (−32, 320) | Networks (−16, 300) | Datasets / services (−16, 320) |
+|---|---|---|---|---|
+| Z Fold 8 landscape 933 × 704 | yes | 2 | 2 | 2 |
+| Z Fold 8 portrait 704 × 933 | no | 1 | 1 | 1 |
+| Z Fold 8 Ultra 954 × 859 / 859 × 954 | yes | 2 / 2 | 2 / 2 | 2 / 2 |
+| Pixel 10 Pro Fold 820 × 791 / 791 × 820 | yes | 2 / 2 | 2 / 2 | 2 / 2 |
+| Z Fold 7 832 × 750 / 750 × 832 | yes | 2 / **1** | 2 / 2 | 2 / 2 |
+| Z Fold 6 675 × 786 · Z Fold 5 659 × 791 | yes | 1 / 1 | 1 / 1 | 1 / 1 |
+| Tablet 1024 × 768 | yes | 2 | **3** | 2 |
+| Tablet 768 × 1024 | no | 1 | 1 | 1 |
+| Phone landscape 915 × 412 | no | 1 | 1 | 1 |
+| Desktop 1600 × 900 | yes | 4 | 4 | 4 |
+
+Two cells deserve a sentence. A Z Fold 7 in portrait gives the device list 750 − 81 − 32 = 637,
+three short of the 652 two 320-dp tiles and their gap need, so it keeps one column while the
+dataset list beside it (653) gets two — the rule working at its boundary, not a bug. And a tablet in
+landscape gives the network list three columns because its tile's minimum is 300: 1024 − 81 − 16 =
+927 clears 3 × 300 + 2 × 12 = 924.
+
+Tiles are laid out **left to right, then top to bottom**, one `Row` of `Expanded` cells per row
+rather than a `GridView`, so the device list keeps `ListView.builder` virtualization and the
+services views keep their cards as children of one scroll view. Short final rows are padded with
+empty cells so the remaining tiles keep their width. See
+[`functions/shared/widgets/adaptive_tile_grid.md`](functions/shared/widgets/adaptive_tile_grid.md).
+
+**Gestures change with the columns.** At one column the device and dataset tiles keep their swipe
+actions (swipe right to edit, swipe left to delete; datasets delete only). Above one column a
+horizontal drag inside one narrow cell is ambiguous, so the `Dismissible` is dropped and the
+trailing chevron becomes a menu carrying the same actions — the trailing menu the services tiles
+already use. Delete has no other entrance on either page, so the menu is what keeps it reachable.
+Reorder mode always renders a single column, because `ReorderableListView` wants one child per item.
 
 ## Where navigation lives
 
@@ -138,8 +192,8 @@ same reason.
 
 One consequence follows through the rest of the app: `shellContentWidth(screenWidth)` subtracts
 `navRailWidth` (81 = an 80 dp rail plus its 1 dp divider) whenever the rail is showing, and every
-capacity inside the shell is measured from that, never from the raw screen width. Today that is the
-topology card's action row on the services overview; the tile lists join in 1.5.1.
+capacity inside the shell is measured from that, never from the raw screen width: the four lists'
+column counts and the topology card's action row on the services overview.
 
 **Deliberately not ported from MyAnime: a bottom-bar inset.** MyAnime's scrolling pages reserve
 80 dp for the bottom bar and drop it to 16 under a rail. MyDevice does not need to. Its shell
@@ -210,6 +264,8 @@ to save and restore.
 | Call site | Rule | Notes |
 |---|---|---|
 | `shell_scaffold.dart` | `useNavigationRail` | Width only; see above. |
+| `device_list_page.dart`, `network_list_page.dart`, `dataset_list_page.dart` | `listColumnCount` | Split rule, then capacity at each tile's minimum, then the stored preference clamped. Content width is `shellContentWidth` less the page padding. |
+| `service_list_page.dart` (devices / routes / ports views) | `listColumnCount` | As above at `serviceCardMinWidth`; one preference serves the three views and the overview stays single-column. |
 | `service_list_page.dart` (overview metric grid) | `serviceMetricColumns` | Width only, from the overview list's `LayoutBuilder`. |
 | `service_list_page.dart` (topology card header) | `useTopologyActionsRow` | Width only. The value is the 680 the card used inline before 1.5.0; the card is now handed the width left after the rail, so a Pixel 10 Pro Fold in portrait stacks the actions under the title where it used to row them. |
 | `service_list_page.dart` (quick-access route dialog) | `dialogMaxWidth` | A constant, not a rule. |
@@ -218,9 +274,9 @@ to save and restore.
 | `_ServiceTopologyPage` / `_ServiceTopologyView` | none needed | Already a `LayoutBuilder`-driven, full-bleed `InteractiveViewer`; the layout cache is keyed on the viewport width. |
 | `device_map_page.dart`, `map_picker_page.dart` | none needed | A full-bleed map fills whatever it is given; the picker's search row is already an `Expanded` field beside a button. |
 
-Every other page is still a fixed single column and is scheduled: multi-column lists in 1.5.1,
-detail pages and the finance overview's chart row in 1.5.2, the device edit page in 1.5.3, the
-remaining edit pages and sheets in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
+Every other page is still a fixed single column and is scheduled: detail pages and the finance
+overview's chart row in 1.5.2, the device edit page in 1.5.3, the remaining edit pages and sheets
+in 1.5.4, and the settings family in 1.5.5. Until 1.5.4 one hardcoded
 count remains in `lib/`: the emoji picker's `crossAxisCount: 8` in `device_edit_page.dart`, a count
 rather than a comparison, listed here so the "no inline width decision" claim stays honest.
 
@@ -240,10 +296,18 @@ verbatim.
 ## Tests
 
 - `test/adaptive_layout_test.dart` — the gate, the rail rule, the content width, the capacity and
-  row math, the two overview rules, the finance floor and the dialog height, pinned at the real
-  logical-pixel geometry of every device in the tables above, with the device named in a comment so
-  a regression names the device it would break. It also asserts that `serviceMetricColumns` still
-  agrees with the inline arithmetic it replaced.
+  row math, the four lists' column counts and preference clamping, the two overview rules, the
+  finance floor and the dialog height, pinned at the real logical-pixel geometry of every device in
+  the tables above, with the device named in a comment so a regression names the device it would
+  break. It also asserts that `serviceMetricColumns` still agrees with the inline arithmetic it
+  replaced.
+- `test/list_columns_prefs_test.dart` — the four column preferences round-trip independently, the
+  default is absent from the file rather than written, and a malformed value reads as auto.
+- `test/list_columns_ui_test.dart`, `test/list_columns_more_ui_test.dart`,
+  `test/service_columns_ui_test.dart` — the rendered device, network, dataset and services lists at
+  a Z Fold 8 both ways, a Pixel 9 both ways and a tablet, against a seeded storage directory: the
+  column count, the hidden control, the stored pick, the clamp, the swipe-or-menu switch and the
+  grouped headers.
 - `test/shell_nav_ui_test.dart` — the rendered shell at a Pixel 9 both ways, a Z Fold 8 both ways
   and a desktop window: which navigation appears, that the rail carries the same five destinations,
   and that tapping one navigates.

@@ -26,8 +26,14 @@
 | [`setThemeMode`](#setthememode) | 静态方法 | A | 持久化（或清除）主题模式字符串。 |
 | [`getLocaleTag`](#getlocaletag) | 静态方法 | A | 读取持久化语言区域标签。 |
 | [`setLocaleTag`](#setlocaletag) | 静态方法 | A | 持久化（或清除）语言区域标签。 |
+| [`_getListColumns`](#getlistcolumns) | 静态方法 | A | 从 `storage_config.json` 读取一个列表页的列数偏好。 |
+| [`_setListColumns`](#setlistcolumns) | 静态方法 | A | 持久化一个列表页的列数偏好，自动时删除该键。 |
+| `getDeviceListColumns` / `setDeviceListColumns` | 静态方法 | B | 以 `deviceListColumns` 调用 `_getListColumns` / `_setListColumns`。 |
+| `getNetworkListColumns` / `setNetworkListColumns` | 静态方法 | B | 同上，键为 `networkListColumns`。 |
+| `getDataSetListColumns` / `setDataSetListColumns` | 静态方法 | B | 同上，键为 `dataSetListColumns`。 |
+| `getServiceListColumns` / `setServiceListColumns` | 静态方法 | B | 同上，键为 `serviceListColumns`；一个偏好服务设备、链路和端口三个视图。 |
 
-行数（20）与 `grep -c 'Purpose:' device_storage.dart`（20）精确匹配。
+行数（26 行，30 个声明——四个成对访问器行各含两个）与 `grep -c 'Purpose:' device_storage.dart`（30）精确匹配。
 
 ## 文档
 
@@ -301,3 +307,23 @@
   ```
   （来自 `AppSettings` 的语言区域变更处理器）
 - **备注：** 无。
+
+### `static Future<int> _getListColumns(String key)` <a id="getlistcolumns"></a>
+- **种类：** `DeviceStorage` 的静态方法。
+- **来源：** `lib/features/devices/services/device_storage.dart`。
+- **用途：** 读取一个列表页的列数偏好。
+- **输入：** `key` — 该页在 `storage_config.json` 中的键。
+- **返回：** `Future<int>` — 已存的列数，键缺席、不是整数或超出 1..`listMaxColumns` 时为 `listColumnsAuto`。
+- **副作用：** 经 `readConfig` 读 `storage_config.json`。
+- **用法：** 四个 `get…ListColumns` 访问器。
+- **备注：** 偏好在渲染时会再由 `listColumnCount` 按当前宽度钳制；这里只拒绝永远无效的值。
+
+### `static Future<void> _setListColumns(String key, int columns)` <a id="setlistcolumns"></a>
+- **种类：** `DeviceStorage` 的静态方法。
+- **来源：** `lib/features/devices/services/device_storage.dart`。
+- **用途：** 持久化一个列表页的列数偏好。
+- **输入：** `key`；`columns` — `listColumnsAuto` 或钉住的列数。
+- **返回：** 无。
+- **副作用：** 读取并重写 `storage_config.json`。
+- **用法：** 四个 `set…ListColumns` 访问器，由列表页以即发即忘方式调用。
+- **备注：** 1..`listMaxColumns` 内的列数被存储；其他值删除该键，所以默认值在文件中缺席而非写成零——与 `setThemeMode` 一致。

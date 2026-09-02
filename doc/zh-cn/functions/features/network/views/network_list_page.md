@@ -20,7 +20,8 @@
 | `_typeLabel` | 方法（`_NetworkListPageState`） | B | 把 `NetworkType` 映射到其本地化标签。 |
 | `_sortModeLabel` | 方法（`_NetworkListPageState`） | B | 把 `NetworkSortMode` 映射到其本地化标签。 |
 | `_buildNetworkCard` | 方法（组件辅助） | B | 渲染一个网络卡片，带可选尾部拖拽手柄。 |
-| `build` | 方法（组件） | B | 构建脚手架：应用栏、排序菜单、网络列表或重排视图、添加 FAB。 |
+| `_setColumnsPref` | 方法（`_NetworkListPageState`） | B | 存储新的列数偏好（`DeviceStorage.setNetworkListColumns`）并重新渲染。 |
+| `build` | 方法（组件） | B | 构建脚手架：应用栏、列数控件（容量为 1 及重排时隐藏）、排序菜单、网络列表——多列时每个索引一个 `adaptiveTileRow`——或重排视图、添加 FAB。列数由 `listColumnCount` 以 `shellContentWidth − 16` 和 `networkTileMinWidth` 得出。 |
 
 行数（15）与 `grep -c 'Purpose:' network_list_page.dart`（15）精确匹配。
 

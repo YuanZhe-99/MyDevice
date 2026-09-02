@@ -198,4 +198,116 @@ void main() {
       }
     });
   });
+
+  group('list column count', () {
+    int columnsAt(
+      double w,
+      double h, {
+      required double padding,
+      required double minItemWidth,
+      int preference = listColumnsAuto,
+    }) => listColumnCount(
+      screenWidth: w,
+      screenHeight: h,
+      contentWidth: shellContentWidth(w) - padding,
+      minItemWidth: minItemWidth,
+      preference: preference,
+    );
+
+    test('device tiles at named devices', () {
+      const pad = 32.0; // 16 dp card margin on each side
+      const min = deviceTileMinWidth;
+      expect(
+        columnsAt(933, 704, padding: pad, minItemWidth: min),
+        2,
+      ); // Fold 8 land
+      expect(
+        columnsAt(704, 933, padding: pad, minItemWidth: min),
+        1,
+      ); // Fold 8 port
+      expect(
+        columnsAt(750, 832, padding: pad, minItemWidth: min),
+        1,
+      ); // Fold 7 port: 637 < 652
+      expect(
+        columnsAt(832, 750, padding: pad, minItemWidth: min),
+        2,
+      ); // Fold 7 land
+      expect(
+        columnsAt(791, 820, padding: pad, minItemWidth: min),
+        2,
+      ); // Pixel 10 Pro Fold
+      expect(columnsAt(659, 791, padding: pad, minItemWidth: min), 1); // Fold 5
+      expect(columnsAt(675, 786, padding: pad, minItemWidth: min), 1); // Fold 6
+      expect(
+        columnsAt(1024, 768, padding: pad, minItemWidth: min),
+        2,
+      ); // tablet land
+      expect(
+        columnsAt(768, 1024, padding: pad, minItemWidth: min),
+        1,
+      ); // tablet port
+      expect(
+        columnsAt(915, 412, padding: pad, minItemWidth: min),
+        1,
+      ); // phone land
+      expect(
+        columnsAt(1600, 900, padding: pad, minItemWidth: min),
+        4,
+      ); // desktop
+    });
+
+    test('network tiles fit three on a tablet in landscape', () {
+      const pad = 16.0;
+      const min = networkTileMinWidth;
+      expect(columnsAt(933, 704, padding: pad, minItemWidth: min), 2);
+      expect(
+        columnsAt(750, 832, padding: pad, minItemWidth: min),
+        2,
+      ); // Fold 7 port
+      expect(
+        columnsAt(1024, 768, padding: pad, minItemWidth: min),
+        3,
+      ); // 927 >= 924
+      expect(columnsAt(659, 791, padding: pad, minItemWidth: min), 1); // Fold 5
+      expect(columnsAt(1600, 900, padding: pad, minItemWidth: min), 4);
+    });
+
+    test(
+      'dataset and service cards share the device minimum at 8 dp padding',
+      () {
+        const pad = 16.0;
+        for (final min in [dataSetTileMinWidth, serviceCardMinWidth]) {
+          expect(columnsAt(933, 704, padding: pad, minItemWidth: min), 2);
+          expect(
+            columnsAt(750, 832, padding: pad, minItemWidth: min),
+            2,
+          ); // 653 >= 652
+          expect(columnsAt(1024, 768, padding: pad, minItemWidth: min), 2);
+          expect(columnsAt(1600, 900, padding: pad, minItemWidth: min), 4);
+        }
+      },
+    );
+
+    test('a pinned preference is clamped to what fits, never rejected', () {
+      const pad = 32.0;
+      const min = deviceTileMinWidth;
+      expect(
+        columnsAt(1600, 900, padding: pad, minItemWidth: min, preference: 4),
+        4,
+      );
+      expect(
+        columnsAt(933, 704, padding: pad, minItemWidth: min, preference: 4),
+        2,
+      );
+      expect(
+        columnsAt(412, 915, padding: pad, minItemWidth: min, preference: 4),
+        1,
+      );
+      expect(
+        columnsAt(1600, 900, padding: pad, minItemWidth: min, preference: 1),
+        1,
+      );
+    });
+  });
 }

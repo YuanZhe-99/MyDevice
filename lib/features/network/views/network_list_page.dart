@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
+import '../../../shared/utils/adaptive_layout.dart';
+import '../../../shared/widgets/adaptive_tile_grid.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/network.dart';
 import '../services/network_storage.dart';
@@ -33,6 +35,7 @@ class _NetworkListPageState extends State<NetworkListPage> {
   NetworkSortMode _sortMode = NetworkSortMode.custom;
   bool _sortAscending = false;
   bool _reordering = false;
+  int _columnsPref = listColumnsAuto;
 
   /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
   /// Inputs: None.
@@ -75,12 +78,25 @@ class _NetworkListPageState extends State<NetworkListPage> {
     final config = await DeviceStorage.readConfig();
     final mode = config['networkSortMode'] as String?;
     final asc = config['networkSortAscending'] as bool? ?? false;
+    final columns = await DeviceStorage.getNetworkListColumns();
+    if (!mounted) return;
     setState(() {
       _sortMode =
           NetworkSortMode.values.where((e) => e.name == mode).firstOrNull ??
           NetworkSortMode.custom;
       _sortAscending = asc;
+      _columnsPref = columns;
     });
+  }
+
+  /// Purpose: Store a new column preference and re-render with it.
+  /// Inputs: `columns` — `listColumnsAuto` or a pinned count.
+  /// Returns: `void`.
+  /// Side effects: Updates widget state and writes `storage_config.json`.
+  /// Notes: Internal helper used within this file only.
+  void _setColumnsPref(int columns) {
+    setState(() => _columnsPref = columns);
+    DeviceStorage.setNetworkListColumns(columns);
   }
 
   /// Purpose: Save sort prefs to the relevant storage or service layer.
@@ -253,6 +269,21 @@ class _NetworkListPageState extends State<NetworkListPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
+    // Gate on the whole screen; measure capacity from what the list gets
+    // after the navigation rail and its own 8 dp padding.
+    final screen = MediaQuery.sizeOf(context);
+    final contentWidth = shellContentWidth(screen.width) - 16;
+    final capacity = canSplitLayout(screen.width, screen.height)
+        ? columnCapacity(contentWidth, minItemWidth: networkTileMinWidth)
+        : 1;
+    final columns = listColumnCount(
+      screenWidth: screen.width,
+      screenHeight: screen.height,
+      contentWidth: contentWidth,
+      minItemWidth: networkTileMinWidth,
+      preference: _columnsPref,
+    );
+    final sorted = _sortedNetworks;
 
     return Scaffold(
       appBar: AppBar(
@@ -264,7 +295,13 @@ class _NetworkListPageState extends State<NetworkListPage> {
               tooltip: l10n.save,
               onPressed: () => setState(() => _reordering = false),
             )
-          else
+          else ...[
+            listColumnsButton(
+              context,
+              preference: _columnsPref,
+              capacity: capacity,
+              onChanged: _setColumnsPref,
+            ),
             PopupMenuButton<dynamic>(
               icon: const Icon(Icons.sort),
               tooltip: l10n.sortTitle,
@@ -304,6 +341,7 @@ class _NetworkListPageState extends State<NetworkListPage> {
                 }
               },
             ),
+          ],
         ],
       ),
       body: _networks.isEmpty
@@ -337,13 +375,24 @@ class _NetworkListPageState extends State<NetworkListPage> {
                 );
               },
             )
-          : ListView.builder(
+          : columns == 1
+          ? ListView.builder(
               padding: const EdgeInsets.all(8),
-              itemCount: _sortedNetworks.length,
+              itemCount: sorted.length,
               itemBuilder: (context, index) {
-                final net = _sortedNetworks[index];
+                final net = sorted[index];
                 return _buildNetworkCard(net, cs, l10n);
               },
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: listRowCount(sorted.length, columns),
+              itemBuilder: (context, index) => adaptiveTileRow(
+                rowIndex: index,
+                columns: columns,
+                itemCount: sorted.length,
+                itemBuilder: (i) => _buildNetworkCard(sorted[i], cs, l10n),
+              ),
             ),
       floatingActionButton: _reordering
           ? null

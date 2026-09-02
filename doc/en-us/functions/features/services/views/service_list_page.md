@@ -57,11 +57,12 @@ functions** at its tail (lines 2253–2438: `_splitTargets` through `_iconForSer
 | `_editRoute` | method (`_ServiceListPageState`) | B | Push the advanced route editor for an existing route, then reload if it reported a save. |
 | `_viewLabel` | method (`_ServiceListPageState`) | B | Map a `_ServiceView` to its localized segmented-button label. |
 | `build` | method (widget, `_ServiceListPageState`) | B | Build the scaffold: app bar actions, FAB, view switcher, current view body. |
-| `_buildCurrentView` | method (widget helper) | B | Dispatch to the builder for the currently selected `_ServiceView`. |
+| `_setColumnsPref` | method (`_ServiceListPageState`) | B | Store a new column preference (`DeviceStorage.setServiceListColumns`) and re-render. |
+| `_buildCurrentView` | method (widget helper) | B | Dispatch to the builder for the currently selected `_ServiceView`, passing the column count from `listColumnCount` (at `shellContentWidth − 16` and `serviceCardMinWidth`) to the three list views. |
 | `_buildOverview` | method (widget helper) | B | Render the overview view: metric cards (columns from `serviceMetricColumns`), topology card, warnings, route groups, service list. |
-| `_buildDevices` | method (widget helper) | B | Render the by-device view: services grouped and expandable per device. |
-| `_buildRoutes` | method (widget helper, `_ServiceListPageState`) | B | Render the routes view: one card per route. |
-| `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage list. |
+| `_buildDevices` | method (widget helper) | B | Render the by-device view: services grouped and expandable per device, the cards in `adaptiveTileRows` at the given column count. |
+| `_buildRoutes` | method (widget helper, `_ServiceListPageState`) | B | Render the routes view: one card per route, in `adaptiveTileRows`. |
+| `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage cards, the cards in `adaptiveTileRows`. |
 | `_topologyCard` | method (widget helper) | B | Render the overview's topology summary card; the header/actions row is gated by `useTopologyActionsRow` from `adaptive_layout.dart`. |
 | `_openTopology` | method (`_ServiceListPageState`) | B | Push the full-screen topology page for a built graph. |
 | [`_routesGroupedByService`](#routesgroupedbyservice) | method (`_ServiceListPageState`) | A | Group routes by source service id and sort the groups by service name. |

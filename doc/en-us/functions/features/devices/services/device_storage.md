@@ -37,8 +37,14 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`setThemeMode`](#setthememode) | static method | A | Persist (or clear) the theme mode string. |
 | [`getLocaleTag`](#getlocaletag) | static method | A | Read the persisted locale tag. |
 | [`setLocaleTag`](#setlocaletag) | static method | A | Persist (or clear) the locale tag. |
+| [`_getListColumns`](#getlistcolumns) | static method | A | Read one list page's column preference from `storage_config.json`. |
+| [`_setListColumns`](#setlistcolumns) | static method | A | Persist one list page's column preference, removing the key for auto. |
+| `getDeviceListColumns` / `setDeviceListColumns` | static methods | B | `_getListColumns` / `_setListColumns` at `deviceListColumns`. |
+| `getNetworkListColumns` / `setNetworkListColumns` | static methods | B | The same at `networkListColumns`. |
+| `getDataSetListColumns` / `setDataSetListColumns` | static methods | B | The same at `dataSetListColumns`. |
+| `getServiceListColumns` / `setServiceListColumns` | static methods | B | The same at `serviceListColumns`; one preference serves the devices, routes and ports views. |
 
-Row count (20) matches `grep -c 'Purpose:' device_storage.dart` (20) exactly.
+Row count (26 rows, 30 declarations — the four paired accessor rows hold two each) matches `grep -c 'Purpose:' device_storage.dart` (30) exactly.
 
 ## Documentation
 
@@ -395,3 +401,26 @@ Row count (20) matches `grep -c 'Purpose:' device_storage.dart` (20) exactly.
   ```
   (from `AppSettings`'s locale-change handler)
 - **Notes:** None.
+
+### `static Future<int> _getListColumns(String key)` <a id="getlistcolumns"></a>
+- **Kind:** static method of `DeviceStorage`.
+- **Source:** `lib/features/devices/services/device_storage.dart`.
+- **Purpose:** Read one list page's column preference.
+- **Inputs:** `key` — the `storage_config.json` key for that page.
+- **Returns:** `Future<int>` — the stored count, or `listColumnsAuto` when the key is absent, not
+  an integer, or outside 1..`listMaxColumns`.
+- **Side effects:** Reads `storage_config.json` via `readConfig`.
+- **Usage:** The four `get…ListColumns` accessors.
+- **Notes:** The preference is clamped again at render time by `listColumnCount` against what the
+  current width fits; this only rejects values that could never be valid.
+
+### `static Future<void> _setListColumns(String key, int columns)` <a id="setlistcolumns"></a>
+- **Kind:** static method of `DeviceStorage`.
+- **Source:** `lib/features/devices/services/device_storage.dart`.
+- **Purpose:** Persist one list page's column preference.
+- **Inputs:** `key`; `columns` — `listColumnsAuto` or a pinned count.
+- **Returns:** None.
+- **Side effects:** Reads and rewrites `storage_config.json`.
+- **Usage:** The four `set…ListColumns` accessors, called fire-and-forget from the list pages.
+- **Notes:** A count in 1..`listMaxColumns` is stored; anything else removes the key, so the
+  default is absent from the file rather than written as zero — matching `setThemeMode`.

@@ -35,8 +35,11 @@
 | `_toggleGroupByCategory` | 方法（`_DeviceListPageState`） | B | 切换类别分组并持久化。 |
 | `_toggleSortOrder` | 方法（`_DeviceListPageState`） | B | 切换升/降序并持久化。 |
 | [`_onReorder`](#_onreorder) | 方法（`_DeviceListPageState`） | A | 在自定义顺序内移动设备并持久化新顺序。 |
-| `build` | 方法（组件） | B | 构建脚手架：应用栏、排序/分组菜单、设备列表或重排视图、FAB。 |
-| `_buildDeviceList` | 方法（组件辅助） | B | 构建可滚动设备列表，分组开启时插入类别页头。 |
+| `build` | 方法（组件） | B | 构建脚手架：应用栏、列数控件（`listColumnsButton`，容量为 1 及重排时隐藏）、排序/分组菜单、设备列表或重排视图、FAB。以 `shellContentWidth(screen.width) − 32` 和 `deviceTileMinWidth` 经 `listColumnCount` 计算列数。 |
+| `_setColumnsPref` | 方法（`_DeviceListPageState`） | B | 存储新的列数偏好（`DeviceStorage.setDeviceListColumns`）并重新渲染。 |
+| `_buildTile` | 方法（组件辅助） | B | 一个设备 tile：一列时是带滑动 `Dismissible` 的卡片，否则是带尾部编辑/删除 `PopupMenuButton` 的 `_DeviceCard`。 |
+| `_tileRows` | 方法（组件辅助） | B | 把一段设备排成列表 children：一列时就是 tile，否则是带内边距的 `adaptiveTileRows`。 |
+| `_buildDeviceList` | 方法（组件辅助） | B | 构建可滚动设备列表——多列时 `ListView.builder` 每个索引一个 `adaptiveTileRow`——分组开启时插入类别页头（每个页头后跟自己的行）。 |
 | `_buildHomeHeader` | 方法（组件辅助） | B | 构建财务摘要卡片和状态过滤分段控件。 |
 | `_buildMetric` | 方法（组件辅助） | B | 渲染一个标签/值指标列。 |
 | `_buildStatusCount` | 方法（组件辅助） | B | 渲染一个带进度条的生命周期状态计数。 |

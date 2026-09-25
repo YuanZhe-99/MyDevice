@@ -43,11 +43,13 @@ Rules for every agent working from this plan:
 Phases 1–3 were done in a cloud session; the owner asked for Phases 4–6 to be finished by a
 local agent. Everything below is the state at the Phase 3 commit.
 
-- **Branch:** `claude/amazing-clarke-nnahel` on GitHub (`git@github.com:YuanZhe-99/MyDevice.git`).
-  Commits on top of `master` `9c0b7a1`: `27037f5` (this plan), `35dddeb` (Phase 1), `9309888`
-  (Phase 2), `5b2a571` (Phase 3a, extraction), then the Phase 3 feature commit that adds these
-  notes. The cloud session pushed to GitHub only; the owner syncs the Gitea remote
-  (`<local_gitea_address>`) on their own. Nothing is tagged and the version is still `1.5.5+44`.
+- **Where the work is:** `master` on GitHub (`git@github.com:YuanZhe-99/MyDevice.git`),
+  fast-forwarded from `9c0b7a1`: `27037f5` (this plan), `35dddeb` (Phase 1), `9309888`
+  (Phase 2), `5b2a571` (Phase 3a, extraction), `dfa53c7` (Phase 3), `7bc2f5a` (the zh-cn
+  Phase 3 pages) and the commit recording the merge. The cloud session's branch was merged and
+  deleted. Only GitHub was pushed: in a local clone fetch from the `github` remote, since the
+  owner syncs Gitea (`<local_gitea_address>`) on their own. Nothing is tagged and the version
+  is still `1.5.5+44`.
 - **Verified at the Phase 3 commit** with Flutter 3.44.2 on Linux: `flutter gen-l10n` (no
   diff), `flutter analyze` (no issues), `flutter test` (349 tests, green in two consecutive
   full runs), the inline-width grep of `adaptive-layout.md` (empty), and a Linux desktop build.

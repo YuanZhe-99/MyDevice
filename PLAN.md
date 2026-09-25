@@ -46,8 +46,10 @@ local agent. Everything below is the state at the Phase 3 commit.
 - **Where the work is:** `master` on GitHub (`git@github.com:YuanZhe-99/MyDevice.git`),
   fast-forwarded from `9c0b7a1`: `27037f5` (this plan), `35dddeb` (Phase 1), `9309888`
   (Phase 2), `5b2a571` (Phase 3a, extraction), `dfa53c7` (Phase 3), `7bc2f5a` (the zh-cn
-  Phase 3 pages) and the commit recording the merge. The cloud session's branch was merged and
-  deleted. Only GitHub was pushed: in a local clone fetch from the `github` remote, since the
+  Phase 3 pages) and the commit recording the merge. The cloud session's branch was merged, but the
+  session was not allowed to delete it on GitHub: if `claude/amazing-clarke-nnahel` still
+  exists there, delete it (`git push github --delete claude/amazing-clarke-nnahel`); every
+  commit on it is on `master`. Only GitHub was pushed: in a local clone fetch from the `github` remote, since the
   owner syncs Gitea (`<local_gitea_address>`) on their own. Nothing is tagged and the version
   is still `1.5.5+44`.
 - **Verified at the Phase 3 commit** with Flutter 3.44.2 on Linux: `flutter gen-l10n` (no

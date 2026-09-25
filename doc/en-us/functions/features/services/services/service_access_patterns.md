@@ -35,6 +35,8 @@ written through `serviceRouteExtraJsonWithAccessLane` (see
 | [`_proxyHop`](#proxyhop) | method (`ServiceAccessDraft`) | A | Build the reverse-proxy hop. |
 | [`_accessHop`](#accesshop) | method (`ServiceAccessDraft`) | A | Build the pattern's own hop. |
 | [`fromRoute`](#fromroute) | static method (`ServiceAccessDraft`) | A | Read a saved route back into a draft when the round trip is lossless. |
+| [`forNode`](#fornode) | static method (`ServiceAccessDraft`) | A | The draft a topology node's "add access path" action starts from. |
+| `relayDraft` (nested in `forNode`) | local function | B | The relay draft for a relay service, preferring a given FRP ingress. |
 | [`operator ==`](#equals) | operator (`ServiceAccessDraft`) | A | Compare drafts by form content. |
 | `hashCode` | getter (`ServiceAccessDraft`) | B | Hash of the compared fields; `extraJson` contributes its key count. |
 | `toString` | method (`ServiceAccessDraft`) | B | Diagnostic text for test failures. |
@@ -46,6 +48,8 @@ written through `serviceRouteExtraJsonWithAccessLane` (see
 | [`serviceProxyMethodFor`](#serviceproxymethodfor) | top-level function | A | Caddy / Nginx / Traefik / custom for a proxy service. |
 | `isReverseProxyLikeService` | top-level function | B | Kind `reverseProxy` or a known proxy template or name. |
 | [`isFrpLikeService`](#isfrplikeservice) | top-level function | A | The FRP relay heuristic, moved here from the removed quick access dialog. |
+| [`serviceRelayPatternFor`](#servicerelaypatternfor) | top-level function | A | FRP or Pangolin for a named relay service on a VPS, else null. |
+| [`serviceRouteOpensGuided`](#serviceroutesopensguided) | top-level function | A | Whether a saved route opens in the guided page or the advanced editor. |
 | [`serviceAccessProxySuggestions`](#serviceaccessproxysuggestions) | top-level function | A | Proxy-like services to suggest, the source's machine first. |
 | [`serviceAccessRelaySuggestions`](#serviceaccessrelaysuggestions) | top-level function | A | Relay services to suggest for a pattern, VPS devices first. |
 | `named` (nested in `serviceAccessRelaySuggestions`) | local function | B | Whether a service's name, template or icon names the product. |
@@ -100,7 +104,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** None.
 
 ### `const ServiceAccessDraft({...})` <a id="serviceaccessdraft-new"></a>
-- **Kind:** constructor. **Source:** line 206.
+- **Kind:** constructor. **Source:** line 211.
 - **Purpose:** Create an access-path draft.
 - **Inputs:** All optional: `routeId` (the edited route), `sourceServiceId`, `sourceEndpointId`,
   `pattern` (default `direct`), `reachability` (default `lan`), `viaProxy` (default `false`),
@@ -108,7 +112,8 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   `relayServiceId`, `relayEndpointId` (for FRP, the ingress), `remoteDeviceId` (the router of a
   router port forward), `publicHost`, `publicPort`, `targets`, `notes`, `extraJson` (the edited
   route's unknown keys, without `publicTargets` and `accessLane`), `baseHops` (the edited
-  route's hops).
+  route's hops), `initialDeviceId` (a device whose services the source picker offers first — a UI
+  hint set by `forNode` for a device node, never saved).
 - **Returns:** A new `ServiceAccessDraft`. **Side effects:** None.
 - **Algorithm:** Plain field assignment.
 - **Usage:** `const ServiceAccessDraft(sourceServiceId: service.id)` starts a new path from a
@@ -116,7 +121,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** Immutable; the page replaces the whole value through `copyWith` on every change.
 
 ### `ServiceAccessDraft copyWith({...})` <a id="copywith"></a>
-- **Kind:** method of `ServiceAccessDraft`. **Source:** line 249.
+- **Kind:** method of `ServiceAccessDraft`. **Source:** line 255.
 - **Purpose:** Create a copy with selected fields replaced or cleared.
 - **Inputs:** Any content field; a `clearX` flag sets nullable field `X` to null.
 - **Returns:** `ServiceAccessDraft`. **Side effects:** None.
@@ -124,11 +129,11 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   `copyWith` convention.
 - **Usage:** `draft.copyWith(relayServiceId: id, clearRelayEndpointId: true)` when the user
   picks another relay.
-- **Notes:** `routeId`, `extraJson` and `baseHops` always carry over, so an edit keeps its
-  identity whatever the user changes.
+- **Notes:** `routeId`, `extraJson`, `baseHops` and `initialDeviceId` always carry over, so an
+  edit keeps its identity whatever the user changes.
 
 ### `ServiceRoute toRoute({required List<ServiceNode> services})` <a id="toroute"></a>
-- **Kind:** method of `ServiceAccessDraft`. **Source:** line 326.
+- **Kind:** method of `ServiceAccessDraft`. **Source:** line 333.
 - **Purpose:** Build the one `ServiceRoute` the draft describes.
 - **Inputs:** `services` — for the source name, the derived proxy method, and the FRP relay's
   device and default ingress.
@@ -150,7 +155,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   and an add.
 
 ### `ServiceRouteHop _proxyHop(Map<String, ServiceNode> byId, ServiceRouteHop? base)` <a id="proxyhop"></a>
-- **Kind:** method of `ServiceAccessDraft`. **Source:** line 368.
+- **Kind:** method of `ServiceAccessDraft`. **Source:** line 375.
 - **Purpose:** Build the reverse-proxy hop, either the whole reverse-proxy pattern or the prefix.
 - **Inputs:** `byId` — services by id; `base` — the edited hop at this position.
 - **Returns:** `ServiceRouteHop`. **Side effects:** None.
@@ -161,7 +166,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** No label is written: the topology labels the hop by its service.
 
 ### `ServiceRouteHop _accessHop(Map<String, ServiceNode> byId, ServiceRouteHop? base)` <a id="accesshop"></a>
-- **Kind:** method of `ServiceAccessDraft`. **Source:** line 395.
+- **Kind:** method of `ServiceAccessDraft`. **Source:** line 402.
 - **Purpose:** Build the pattern's own hop.
 - **Inputs:** `byId` — services by id; `base` — the edited hop at this position.
 - **Returns:** `ServiceRouteHop`. **Side effects:** None.
@@ -179,7 +184,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   topology builder inferred for a hop without one, so the graph does not change.
 
 ### `static ServiceAccessDraft? fromRoute(ServiceRoute route, List<ServiceNode> services)` <a id="fromroute"></a>
-- **Kind:** static method of `ServiceAccessDraft`. **Source:** line 476.
+- **Kind:** static method of `ServiceAccessDraft`. **Source:** line 483.
 - **Purpose:** Read a saved route back into a draft for the guided page.
 - **Inputs:** `route`; `services` — the current services.
 - **Returns:** The draft, or null when the guided page cannot edit the route without changing or
@@ -193,21 +198,47 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
      back as null ("derive"); an FRP hop without an endpoint reads back its default ingress.
   4. Rebuild the route with `toRoute` and require `_sameAccessShape`; require
      `serviceAccessDraftIssues` to be empty.
-- **Usage:** Opening a route decides between the guided page and the advanced editor with it.
+- **Usage:** [`serviceRouteOpensGuided`](#serviceroutesopensguided) decides with it whether a
+  saved route opens in the guided page or the advanced editor; the guided page reads the route
+  it opens with it.
 - **Notes:** Stays null for three hops, hop notes, paths or schemes, a custom access level, a
   lane override that disagrees with the access level, a free-form FRP hop without a service, or
   a tunnel without a target — all of which the advanced editor keeps intact.
 
+### `static ServiceAccessDraft? forNode(ServiceTopologyNode node, {required List<ServiceNode> services, required List<ServiceRoute> routes, required List<Device> devices})` <a id="fornode"></a>
+- **Kind:** static method of `ServiceAccessDraft`. **Source:** line 568.
+- **Purpose:** Build the draft a topology node's "add access path" action starts from.
+- **Inputs:** `node`; `services`, `routes`, `devices` — the inventory the graph was built from.
+- **Returns:** The draft, or null for a node without such an action. **Side effects:** None.
+- **Algorithm:** By node kind:
+  - **device** — `ServiceAccessDraft(initialDeviceId: node.deviceId)`.
+  - **service** — the local `relayDraft` when [`serviceRelayPatternFor`](#servicerelaypatternfor)
+    names the service a relay: that pattern, its default (public) reachability, the relay and,
+    for FRP, the default ingress (`serviceDefaultIngressEndpoint`); otherwise
+    `ServiceAccessDraft(sourceServiceId: …)`.
+  - **endpoint** — a relay's port (role `remoteService`, e.g. the FRP ingress chip) gives the
+    relay draft with that endpoint as the ingress; any other endpoint gives the source draft with
+    `sourceEndpointId` set.
+  - **domain** — the node's full target (`detail`, else `label`) as the only target, and the
+    pattern every route through the node detects ([`detectServiceAccessPattern`](#detectserviceaccesspattern))
+    when they all agree, with its default reachability; direct otherwise.
+  - **relay**, **remoteEntry** — null; so is a node whose service or endpoint is gone.
+- **Usage:** The topology details' actions ([`service_topology_page.md`](../views/service_topology_page.md)).
+- **Notes:** A relay service offers both actions on the topology — add access from the relay
+  itself (the plain source draft, built by the page) and expose another service through it (this
+  draft). Tested in `test/service_access_patterns_test.dart` ("drafts from topology nodes").
+
 ### `bool operator ==(Object other)` <a id="equals"></a>
-- **Kind:** operator of `ServiceAccessDraft`. **Source:** line 552.
+- **Kind:** operator of `ServiceAccessDraft`. **Source:** line 650.
 - **Purpose:** Compare drafts by form content.
 - **Inputs:** `other`. **Returns:** `bool`. **Side effects:** None.
 - **Algorithm:** Every content field; `targets` and `extraJson` deeply through `_jsonEquals`.
 - **Usage:** The round-trip tests compare `fromRoute(draft.toRoute(...))` with the original.
-- **Notes:** `routeId` and `baseHops` are identity metadata and are not compared.
+- **Notes:** `routeId` and `baseHops` are identity metadata and `initialDeviceId` is a UI hint;
+  none of them is compared.
 
 ### `ServiceAccessPattern? detectServiceAccessPattern(ServiceRoute route, List<ServiceNode> services)` <a id="detectserviceaccesspattern"></a>
-- **Kind:** top-level function. **Source:** line 625.
+- **Kind:** top-level function. **Source:** line 723.
 - **Purpose:** Name the access pattern a saved route follows.
 - **Inputs:** `route`, `services`. **Returns:** The pattern, or null. **Side effects:** None.
 - **Algorithm:** `ServiceAccessDraft.fromRoute(route, services)?.pattern`. The last hop decides:
@@ -215,12 +246,13 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   only hop ⇒ reverse proxy; method Cloudflare Tunnel, Pangolin or Tailscale Funnel ⇒ that
   pattern; method FRP, or a `portForward` hop with a service ⇒ FRP; method router port forward,
   or a `portForward` hop without a service ⇒ router port forward.
-- **Usage:** The route-opening rule and the advanced editor's "Guided editor" action.
+- **Usage:** The advanced editor's "Guided editor" action and the domain case of
+  [`forNode`](#fornode).
 - **Notes:** Detection is defined as "the guided page can edit this losslessly", not as a loose
   classification.
 
 ### `ServiceReachability? serviceReachabilityForRoute(ServiceRoute route)` <a id="servicereachabilityforroute"></a>
-- **Kind:** top-level function. **Source:** line 638.
+- **Kind:** top-level function. **Source:** line 736.
 - **Purpose:** Read the reachability a saved route expresses.
 - **Inputs:** `route`. **Returns:** `ServiceReachability?`. **Side effects:** None.
 - **Algorithm:** Map the access level (`authenticated` ⇒ `publicAuthenticated`, `custom` ⇒ null).
@@ -231,7 +263,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   access level disagree must not silently rewrite either.
 
 ### `List<ServiceAccessDraftIssue> serviceAccessDraftIssues(ServiceAccessDraft draft, List<ServiceNode> services)` <a id="serviceaccessdraftissues"></a>
-- **Kind:** top-level function. **Source:** line 659.
+- **Kind:** top-level function. **Source:** line 757.
 - **Purpose:** List the problems that keep a draft from being saved.
 - **Inputs:** `draft`, `services`. **Returns:** The issues, empty when saveable.
 - **Side effects:** None.
@@ -244,7 +276,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** The source endpoint is not checked — a service without endpoints is a valid source.
 
 ### `List<ServiceAccessDraftWarning> serviceAccessDraftWarnings(ServiceAccessDraft draft, List<ServiceNode> services)` <a id="serviceaccessdraftwarnings"></a>
-- **Kind:** top-level function. **Source:** line 696.
+- **Kind:** top-level function. **Source:** line 794.
 - **Purpose:** List advisory findings the guided page shows beside the preview.
 - **Inputs:** `draft`, `services`. **Returns:** The warnings. **Side effects:** None.
 - **Algorithm:** FRP only: `relayWithoutIngress` when the relay has no endpoint to act as the
@@ -253,7 +285,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** Advisory like port conflicts: never blocks saving.
 
 ### `ServiceRouteMethod serviceProxyMethodFor(ServiceNode proxy)` <a id="serviceproxymethodfor"></a>
-- **Kind:** top-level function. **Source:** line 723.
+- **Kind:** top-level function. **Source:** line 821.
 - **Purpose:** Pick the route method a reverse-proxy hop through a service records.
 - **Inputs:** `proxy`. **Returns:** `ServiceRouteMethod`. **Side effects:** None.
 - **Algorithm:** Lower-case template id, name and icon; `caddy`, then `nginx`, then `traefik`
@@ -263,7 +295,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** None.
 
 ### `bool isFrpLikeService(ServiceNode service)` <a id="isfrplikeservice"></a>
-- **Kind:** top-level function. **Source:** line 752.
+- **Kind:** top-level function. **Source:** line 850.
 - **Purpose:** Report whether a service looks like an FRP server or another tunnel endpoint.
 - **Inputs:** `service`. **Returns:** `bool`. **Side effects:** None.
 - **Algorithm:** "frp" in the lower-cased name, template id, icon or kind name, or kind `tunnel`.
@@ -271,8 +303,32 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** Moved unchanged from the removed quick access dialog's private `_isFrpLikeService`.
   `serviceAccessRelaySuggestions` uses it as the FRP fallback when no service is named after FRP.
 
+### `ServiceAccessPattern? serviceRelayPatternFor(ServiceNode service, List<Device> devices)` <a id="servicerelaypatternfor"></a>
+- **Kind:** top-level function. **Source:** line 869.
+- **Purpose:** Name the relay pattern a VPS service offers other services.
+- **Inputs:** `service`; `devices` — to find its device. **Returns:** `pangolin`, `frp` or null.
+  **Side effects:** None.
+- **Algorithm:** Null unless the service's device has category `vps`; then `pangolin` when the
+  lower-cased name, template id or icon contains "pangolin", `frp` when it contains "frp", else
+  null.
+- **Usage:** [`forNode`](#fornode), for a service node and a relay's endpoint chip.
+- **Notes:** Stricter than [`isFrpLikeService`](#isfrplikeservice): kind `tunnel` alone does not
+  count, since Cloudflare and Tailscale tunnels are not relays another service is exposed through.
+
+### `bool serviceRouteOpensGuided(ServiceRoute route, List<ServiceNode> services)` <a id="serviceroutesopensguided"></a>
+- **Kind:** top-level function. **Source:** line 896.
+- **Purpose:** Decide which editor a saved route opens in.
+- **Inputs:** `route`, `services`. **Returns:** `true` for the guided page, `false` for the
+  advanced editor. **Side effects:** None.
+- **Algorithm:** `ServiceAccessDraft.fromRoute(route, services) != null`.
+- **Usage:** `_editRoute` in [`service_list_page.md`](../views/service_list_page.md), which every
+  place that opens a saved route goes through — route cards, route groups, the overview and the
+  topology's details.
+- **Notes:** Using the lossless round trip rather than a looser classification means the guided
+  page never has to hand an opened route straight over to the advanced editor.
+
 ### `List<String> serviceAccessProxySuggestions(List<ServiceNode> services, {String? sourceServiceId})` <a id="serviceaccessproxysuggestions"></a>
-- **Kind:** top-level function. **Source:** line 769.
+- **Kind:** top-level function. **Source:** line 906.
 - **Purpose:** List the services worth suggesting as a reverse proxy.
 - **Inputs:** `services`; `sourceServiceId` — excluded, and its device's proxies come first.
 - **Returns:** Service ids. **Side effects:** None.
@@ -283,7 +339,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** The picker still offers every other service below the suggestions.
 
 ### `List<String> serviceAccessRelaySuggestions(ServiceAccessPattern pattern, List<ServiceNode> services, List<Device> devices, {String? sourceServiceId})` <a id="serviceaccessrelaysuggestions"></a>
-- **Kind:** top-level function. **Source:** line 799.
+- **Kind:** top-level function. **Source:** line 936.
 - **Purpose:** List the services worth suggesting as the relay of a pattern.
 - **Inputs:** `pattern`, `services`, `devices`; `sourceServiceId` — excluded.
 - **Returns:** Service ids; empty for patterns without a relay. **Side effects:** None.
@@ -297,7 +353,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
   real server.
 
 ### `String? suggestedDirectTarget({required ServiceNode source, ServiceEndpoint? endpoint, required List<NetworkDevice> assignments, required List<Network> networks, required ServiceReachability reachability})` <a id="suggesteddirecttarget"></a>
-- **Kind:** top-level function. **Source:** line 893.
+- **Kind:** top-level function. **Source:** line 1030.
 - **Purpose:** Suggest the address a direct access path opens.
 - **Inputs:** `source`; `endpoint` — the chosen source endpoint; `assignments`, `networks` —
   where the source's device sits; `reachability`.
@@ -314,7 +370,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** With several endpoints and none chosen, no port is guessed.
 
 ### `String? suggestedPublicHost(ServiceNode relay, List<NetworkDevice> assignments)` <a id="suggestedpublichost"></a>
-- **Kind:** top-level function. **Source:** line 960.
+- **Kind:** top-level function. **Source:** line 1097.
 - **Purpose:** Suggest the public host of an FRP relay.
 - **Inputs:** `relay`, `assignments`. **Returns:** `String?`. **Side effects:** None.
 - **Algorithm:** When the relay's device has exactly one network assignment, its host name, else
@@ -323,7 +379,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** Several assignments make the guess ambiguous, so none is made.
 
 ### `ServiceAccessPattern? _patternForHop(ServiceRouteHop hop)` <a id="patternforhop"></a>
-- **Kind:** top-level function. **Source:** line 991.
+- **Kind:** top-level function. **Source:** line 1128.
 - **Purpose:** Classify a route's last hop into a pattern.
 - **Inputs:** `hop`. **Returns:** `ServiceAccessPattern?`. **Side effects:** None.
 - **Algorithm:** Switch on the method (see `detectServiceAccessPattern`); for a `custom` or
@@ -333,7 +389,7 @@ The enums `ServiceAccessPattern` (`direct`, `reverseProxy`, `cloudflareTunnel`, 
 - **Notes:** None.
 
 ### `bool _sameAccessShape(ServiceRoute saved, ServiceRoute rebuilt, Map<String, ServiceNode> byId)` <a id="sameaccessshape"></a>
-- **Kind:** top-level function. **Source:** line 1031.
+- **Kind:** top-level function. **Source:** line 1168.
 - **Purpose:** Check that a rebuilt route reproduces a saved route's content.
 - **Inputs:** `saved`, `rebuilt`, `byId`. **Returns:** `bool`. **Side effects:** None.
 - **Algorithm:** Compare source service and endpoint, access level, trimmed notes, the access

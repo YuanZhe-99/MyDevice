@@ -3311,6 +3311,30 @@ abstract class AppLocalizations {
   /// **'Group by device'**
   String get serviceTopologyGroupByDevice;
 
+  /// No description provided for @serviceTopologyAddAccessFromHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Add access path from here'**
+  String get serviceTopologyAddAccessFromHere;
+
+  /// No description provided for @serviceTopologyExposeThroughRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Expose a service through this relay'**
+  String get serviceTopologyExposeThroughRelay;
+
+  /// No description provided for @serviceTopologyAddServiceToTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Add another service to this target'**
+  String get serviceTopologyAddServiceToTarget;
+
+  /// No description provided for @serviceTopologyAddAccessOnDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Add access path for a service on this device'**
+  String get serviceTopologyAddAccessOnDevice;
+
   /// No description provided for @serviceTopologyRouteFocusHint.
   ///
   /// In en, this message translates to:

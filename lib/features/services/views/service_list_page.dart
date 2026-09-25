@@ -164,7 +164,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
         .push<ServiceEditOutcome>(
           MaterialPageRoute(builder: (_) => ServiceEditPage(service: service)),
         );
-    if (result != null) _load();
+    if (result != null) await _load();
   }
 
   /// Purpose: Add route through the current flow.
@@ -195,16 +195,26 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (saved == true) await _load();
   }
 
-  /// Purpose: Edit route and refresh local state when needed.
+  /// Purpose: Open a saved route in the editor that fits it.
   /// Inputs: `route`.
-  /// Returns: `Future<void>`.
-  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
-  /// Notes: Internal helper used within this file only.
+  /// Returns: `Future<void>` that completes after the editor closes and,
+  /// when it saved or deleted, the page has reloaded.
+  /// Side effects: Pushes `ServiceAccessPathPage` or `ServiceRouteEditPage`
+  /// on the root navigator; reloads on `true`.
+  /// Notes: The guided page when `serviceRouteOpensGuided` says the route
+  /// fits it, the advanced editor otherwise. Every place that opens a saved
+  /// route — route cards, route groups, the overview and the topology's
+  /// details — comes through here.
   Future<void> _editRoute(ServiceRoute route) async {
+    final guided = serviceRouteOpensGuided(route, _services);
     final result = await Navigator.of(context, rootNavigator: true).push<bool>(
-      MaterialPageRoute(builder: (_) => ServiceRouteEditPage(route: route)),
+      MaterialPageRoute(
+        builder: (_) => guided
+            ? ServiceAccessPathPage(route: route)
+            : ServiceRouteEditPage(route: route),
+      ),
     );
-    if (result == true) _load();
+    if (result == true) await _load();
   }
 
   /// Purpose: Return the display label for view label.
@@ -714,11 +724,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
-  /// Purpose: Provide the internal open topology helper for this file.
-  /// Inputs: `graph`.
-  /// Returns: `Future<void>`.
-  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Open the full-screen topology.
+  /// Inputs: `graph` — built from the current inventory.
+  /// Returns: `Future<void>` that completes when the topology closes.
+  /// Side effects: Pushes `ServiceTopologyPage` on the root navigator.
+  /// Notes: Hands it this page's editors, which complete after this page has
+  /// reloaded, and a `reload` that reloads and returns the inventory, so the
+  /// topology shows an edit made from its details without being reopened.
   Future<void> _openTopology(ServiceTopologyGraph graph) {
     return Navigator.of(context, rootNavigator: true).push<void>(
       MaterialPageRoute(
@@ -730,6 +742,10 @@ class _ServiceListPageState extends State<ServiceListPage> {
           onEditService: _editService,
           onEditRoute: _editRoute,
           onAddAccess: _addAccessPath,
+          reload: () async {
+            await _load();
+            return (services: _services, devices: _devices, routes: _routes);
+          },
         ),
       ),
     );
@@ -889,11 +905,14 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
-  /// Purpose: Provide the internal route card helper for this file.
+  /// Purpose: Build the card of one route in the routes view and the route
+  /// groups.
   /// Inputs: `route`.
   /// Returns: `Widget`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: None; a tap opens the route through `_editRoute`.
+  /// Notes: The leading icon is the route's primary method's
+  /// (`iconForRouteMethod`), the generic route icon without one; the
+  /// subtitle is `_routeSummary`.
   Widget _routeCard(ServiceRoute route) {
     final source = _serviceById(route.sourceServiceId);
     final sourceEndpoint = source != null
@@ -901,7 +920,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
         : null;
     return Card(
       child: ListTile(
-        leading: const CircleAvatar(child: Icon(Icons.alt_route)),
+        leading: CircleAvatar(
+          child: Icon(iconForRouteMethod(primaryRouteMethod(route))),
+        ),
         title: Text(serviceRouteDisplayTarget(route)),
         subtitle: Text(
           _routeSummary(route, source: source, sourceEndpoint: sourceEndpoint),
@@ -931,11 +952,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return serviceHopTypeLabel(AppLocalizations.of(context)!, hop.type);
   }
 
-  /// Purpose: Provide the internal route summary helper for this file.
-  /// Inputs: `route`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Summarize a route for its card.
+  /// Inputs: `route`; `source`, `sourceEndpoint` — resolved by the caller.
+  /// Returns: `String` — the chain (source, hops, targets) on the first
+  /// line; the localized access level and access lane on the second.
+  /// Side effects: None.
+  /// Notes: The lane is `serviceAccessLaneForRoute`, so a lane override
+  /// shows here as it does on the topology.
   String _routeSummary(
     ServiceRoute route, {
     ServiceNode? source,
@@ -950,9 +973,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
       ...serviceRouteAccessTargets(route).map(compactAccessTargetLabel),
     ];
     final path = parts.isEmpty ? route.name : parts.join(' -> ');
+    final l10n = AppLocalizations.of(context)!;
     return [
       path,
-      serviceAccessLevelLabel(AppLocalizations.of(context)!, route.accessLevel),
+      [
+        serviceAccessLevelLabel(l10n, route.accessLevel),
+        serviceAccessLaneLabel(l10n, serviceAccessLaneForRoute(route)),
+      ].join(' · '),
     ].join('\n');
   }
 

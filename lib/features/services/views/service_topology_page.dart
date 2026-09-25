@@ -17,6 +17,15 @@ import 'service_topology_widgets.dart';
 
 enum _TopologyInteractionMode { select, move }
 
+/// One "add access path" button of the node details: its key, label, icon
+/// and the draft the guided page opens with.
+typedef _NodeAction = ({
+  Key key,
+  String label,
+  IconData icon,
+  ServiceAccessDraft draft,
+});
+
 /// Smallest zoom the move mode's viewer allows.
 const _minScale = 0.35;
 
@@ -365,6 +374,13 @@ class _TopologyLayoutRequest {
   );
 }
 
+/// The inventory a topology is drawn from.
+typedef ServiceTopologyInventory = ({
+  List<ServiceNode> services,
+  List<Device> devices,
+  List<ServiceRoute> routes,
+});
+
 /// The full-screen service topology: the graph with a select and a move
 /// mode, route highlighting for a selected node, filters, a legend,
 /// rotation, and PNG export.
@@ -376,14 +392,19 @@ class ServiceTopologyPage extends StatefulWidget {
   final List<ServiceNode> services;
   final List<Device> devices;
   final List<ServiceRoute> routes;
-  final ValueChanged<ServiceNode> onEditService;
-  final ValueChanged<ServiceRoute> onEditRoute;
+  final Future<void> Function(ServiceNode service) onEditService;
+  final Future<void> Function(ServiceRoute route) onEditRoute;
   final Future<void> Function({ServiceAccessDraft? draft}) onAddAccess;
+
+  /// Reads the inventory again after an editor the page opened has closed;
+  /// null keeps the graph the page was opened with.
+  final Future<ServiceTopologyInventory> Function()? reload;
 
   /// Purpose: Create the full-screen topology page.
   /// Inputs: `graph` — the topology of `services`, `routes` and `devices`;
-  /// `onEditService`, `onEditRoute`, `onAddAccess` — the Services page's editors,
-  /// offered from the node details.
+  /// `onEditService`, `onEditRoute`, `onAddAccess` — the Services page's
+  /// editors, offered from the node details, each completing when its editor
+  /// has closed; `reload` — the current inventory, read after each of them.
   /// Returns: A new `ServiceTopologyPage`.
   /// Side effects: None.
   /// Notes: The page never writes storage itself; the callbacks do.
@@ -396,6 +417,7 @@ class ServiceTopologyPage extends StatefulWidget {
     required this.onEditService,
     required this.onEditRoute,
     required this.onAddAccess,
+    this.reload,
   });
 
   /// Purpose: Create the mutable state object for this widget.
@@ -408,6 +430,11 @@ class ServiceTopologyPage extends StatefulWidget {
 }
 
 class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
+  /// The inventory on display: the widget's until a reload replaces it.
+  late ServiceTopologyGraph _graph = widget.graph;
+  late List<ServiceNode> _services = widget.services;
+  late List<Device> _devices = widget.devices;
+  late List<ServiceRoute> _routes = widget.routes;
   _TopologyInteractionMode _mode = _TopologyInteractionMode.select;
   final _captureKey = GlobalKey();
   final _viewKey = GlobalKey<_ServiceTopologyViewState>();
@@ -462,20 +489,20 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   /// Notes: The same instances come back until the filter changes, so the
   /// view's identity-keyed layout cache keeps hitting.
   ({ServiceTopologyGraph graph, List<ServiceRoute> routes}) _visible() {
-    if (!_filter.isActive) return (graph: widget.graph, routes: widget.routes);
+    if (!_filter.isActive) return (graph: _graph, routes: _routes);
     final cached = _filtered;
     if (cached != null && cached.filter == _filter) {
       return (graph: cached.graph, routes: cached.routes);
     }
     final input = filterServiceTopologyInput(
-      services: widget.services,
-      routes: widget.routes,
+      services: _services,
+      routes: _routes,
       filter: _filter,
     );
     final graph = buildServiceTopology(
       services: input.services,
       routes: input.routes,
-      devices: widget.devices,
+      devices: _devices,
     );
     _filtered = (filter: _filter, graph: graph, routes: input.routes);
     return (graph: graph, routes: input.routes);
@@ -506,11 +533,7 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
         memo.focus == _focusedRouteId) {
       return (node: node, related: memo.related, highlight: memo.highlight);
     }
-    final related = relatedRoutesForNode(
-      node,
-      routes,
-      services: widget.services,
-    );
+    final related = relatedRoutesForNode(node, routes, services: _services);
     final focused = [
       for (final route in related)
         if (route.id == _focusedRouteId) route,
@@ -594,9 +617,8 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   /// Notes: Offers the devices that host at least one service, by name.
   Future<void> _openFilters() {
     final devices = [
-      for (final device in widget.devices)
-        if (widget.services.any((service) => service.deviceId == device.id))
-          device,
+      for (final device in _devices)
+        if (_services.any((service) => service.deviceId == device.id)) device,
     ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return showModalBottomSheet<void>(
       context: context,
@@ -621,7 +643,7 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
     final related = relatedRoutesForNode(
       node,
       _visible().routes,
-      services: widget.services,
+      services: _services,
     );
     showModalBottomSheet<void>(
       context: context,
@@ -631,27 +653,122 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
         child: _TopologyNodeDetails(
           key: const Key('topology-details-sheet'),
           node: node,
-          services: widget.services,
-          devices: widget.devices,
+          services: _services,
+          devices: _devices,
           routes: related,
           shrinkWrap: true,
           onRouteTap: (route) {
             Navigator.pop(sheetContext);
-            widget.onEditRoute(route);
+            _openEditor(() => widget.onEditRoute(route));
           },
           onEditService: (service) {
             Navigator.pop(sheetContext);
-            widget.onEditService(service);
+            _openEditor(() => widget.onEditService(service));
           },
-          onAddAccess: (service) {
+          actions: _nodeActions(node),
+          onAction: (draft) {
             Navigator.pop(sheetContext);
-            widget.onAddAccess(
-              draft: ServiceAccessDraft(sourceServiceId: service.id),
-            );
+            _openEditor(() => widget.onAddAccess(draft: draft));
           },
         ),
       ),
     );
+  }
+
+  /// Purpose: List the "add access path" actions a node offers.
+  /// Inputs: `node`.
+  /// Returns: The actions, in button order; empty for relays and remote
+  /// entries.
+  /// Side effects: None.
+  /// Notes: The drafts come from `ServiceAccessDraft.forNode`. A service
+  /// always offers "Add access path from here"; a relay service on a VPS
+  /// also offers "Expose a service through this relay". An endpoint chip
+  /// offers one of those two, a domain "Add another service to this target",
+  /// a device "Add access path for a service on this device". Keys:
+  /// `topology-action-from-here`, `topology-action-expose`,
+  /// `topology-action-target`, `topology-action-device`.
+  List<_NodeAction> _nodeActions(ServiceTopologyNode node) {
+    final l10n = AppLocalizations.of(context)!;
+    final draft = ServiceAccessDraft.forNode(
+      node,
+      services: _services,
+      routes: _routes,
+      devices: _devices,
+    );
+    _NodeAction fromHere(ServiceAccessDraft draft) => (
+      key: const Key('topology-action-from-here'),
+      label: l10n.serviceTopologyAddAccessFromHere,
+      icon: Icons.add_link,
+      draft: draft,
+    );
+    final serviceId = node.serviceId;
+    final isService = node.kind == ServiceTopologyNodeKind.service;
+    return [
+      if (isService && serviceId != null && draft != null)
+        fromHere(ServiceAccessDraft(sourceServiceId: serviceId)),
+      if (draft != null && draft.relayServiceId != null)
+        (
+          key: const Key('topology-action-expose'),
+          label: l10n.serviceTopologyExposeThroughRelay,
+          icon: Icons.hub_outlined,
+          draft: draft,
+        )
+      else if (draft != null && !isService)
+        switch (node.kind) {
+          ServiceTopologyNodeKind.domain => (
+            key: const Key('topology-action-target'),
+            label: l10n.serviceTopologyAddServiceToTarget,
+            icon: Icons.language,
+            draft: draft,
+          ),
+          ServiceTopologyNodeKind.device => (
+            key: const Key('topology-action-device'),
+            label: l10n.serviceTopologyAddAccessOnDevice,
+            icon: Icons.devices_other_outlined,
+            draft: draft,
+          ),
+          _ => fromHere(draft),
+        },
+    ];
+  }
+
+  /// Purpose: Run one of the page's editor callbacks, then show what it
+  /// changed.
+  /// Inputs: `open` — calls `onEditService`, `onEditRoute` or `onAddAccess`.
+  /// Returns: `Future<void>` that completes after the refresh.
+  /// Side effects: Awaits the editor; then `_refresh`.
+  /// Notes: The callbacks complete when their editor has closed and the
+  /// Services page has reloaded.
+  Future<void> _openEditor(Future<void> Function() open) async {
+    await open();
+    await _refresh();
+  }
+
+  /// Purpose: Rebuild the graph from the current inventory.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Calls `widget.reload`; replaces the inventory and graph
+  /// and drops the filter and highlight caches.
+  /// Notes: Does nothing without `reload`. The selection and the filter
+  /// stay; a node the edit removed simply is no longer selected. A new graph
+  /// instance means a new layout request, so the canvas lays out again.
+  Future<void> _refresh() async {
+    final reload = widget.reload;
+    if (reload == null) return;
+    final data = await reload();
+    if (!mounted) return;
+    setState(() {
+      _services = data.services;
+      _devices = data.devices;
+      _routes = data.routes;
+      _graph = buildServiceTopology(
+        services: _services,
+        routes: _routes,
+        devices: _devices,
+      );
+      _filtered = null;
+      _lit = null;
+    });
   }
 
   /// Purpose: Export topology image to an external representation.
@@ -730,8 +847,8 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
                 : _ServiceTopologyView(
                     key: _viewKey,
                     graph: visible.graph,
-                    services: widget.services,
-                    devices: widget.devices,
+                    services: _services,
+                    devices: _devices,
                     routes: visible.routes,
                     options: ServiceTopologyLayoutOptions(
                       groupByDevice: _groupByDevice,
@@ -957,17 +1074,17 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
     return _TopologyNodeDetails(
       key: const Key('topology-details-pane'),
       node: selection.node,
-      services: widget.services,
-      devices: widget.devices,
+      services: _services,
+      devices: _devices,
       routes: selection.related,
       focusedRouteId: _focusedRouteId,
       showFocusHint: selection.related.length > 1,
       onRouteTap: _toggleRouteFocus,
-      onRouteEdit: widget.onEditRoute,
-      onEditService: widget.onEditService,
-      onAddAccess: (service) => widget.onAddAccess(
-        draft: ServiceAccessDraft(sourceServiceId: service.id),
-      ),
+      onRouteEdit: (route) => _openEditor(() => widget.onEditRoute(route)),
+      onEditService: (service) =>
+          _openEditor(() => widget.onEditService(service)),
+      actions: _nodeActions(selection.node),
+      onAction: (draft) => _openEditor(() => widget.onAddAccess(draft: draft)),
       onClose: _clearSelection,
     );
   }
@@ -1009,7 +1126,10 @@ class _TopologyNodeDetails extends StatelessWidget {
   final ValueChanged<ServiceRoute> onRouteTap;
   final ValueChanged<ServiceRoute>? onRouteEdit;
   final ValueChanged<ServiceNode> onEditService;
-  final ValueChanged<ServiceNode> onAddAccess;
+
+  /// The node's "add access path" actions, from `_nodeActions`.
+  final List<_NodeAction> actions;
+  final ValueChanged<ServiceAccessDraft> onAction;
   final VoidCallback? onClose;
 
   /// Purpose: Create the node details.
@@ -1017,8 +1137,8 @@ class _TopologyNodeDetails extends StatelessWidget {
   /// `routes` — the related routes; `focusedRouteId` — marked selected;
   /// `showFocusHint`; `shrinkWrap` — for the sheet; `onRouteTap`;
   /// `onRouteEdit` — adds an edit button per route (pane only);
-  /// `onEditService`, `onAddAccess`; `onClose` — adds a close button (pane
-  /// only).
+  /// `onEditService`; `actions`, `onAction` — the node's access-path
+  /// actions and what runs one; `onClose` — adds a close button (pane only).
   /// Returns: A new `_TopologyNodeDetails`.
   /// Side effects: None.
   /// Notes: None.
@@ -1030,7 +1150,8 @@ class _TopologyNodeDetails extends StatelessWidget {
     required this.routes,
     required this.onRouteTap,
     required this.onEditService,
-    required this.onAddAccess,
+    required this.actions,
+    required this.onAction,
     this.focusedRouteId,
     this.showFocusHint = false,
     this.shrinkWrap = false,
@@ -1043,7 +1164,9 @@ class _TopologyNodeDetails extends StatelessWidget {
   /// Returns: The widget tree.
   /// Side effects: None.
   /// Notes: Role, lane, device category and access levels are localized.
-  /// Route rows are keyed `topology-route-<id>`, their edit buttons
+  /// Under the node, its device and its service: "Edit service" when the node
+  /// has a service, then one button per action (keyed by the action). Route
+  /// rows are keyed `topology-route-<id>`, their edit buttons
   /// `topology-route-edit-<id>`.
   @override
   Widget build(BuildContext context) {
@@ -1100,23 +1223,27 @@ class _TopologyNodeDetails extends StatelessWidget {
                   .join(', '),
             ),
           ),
+        ],
+        if (service != null || actions.isNotEmpty)
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              FilledButton.icon(
-                onPressed: () => onEditService(service),
-                icon: const Icon(Icons.edit_outlined),
-                label: Text(l10n.editService),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => onAddAccess(service),
-                icon: const Icon(Icons.add_link),
-                label: Text(l10n.serviceAddAccess),
-              ),
+              if (service != null)
+                FilledButton.icon(
+                  onPressed: () => onEditService(service),
+                  icon: const Icon(Icons.edit_outlined),
+                  label: Text(l10n.editService),
+                ),
+              for (final action in actions)
+                OutlinedButton.icon(
+                  key: action.key,
+                  onPressed: () => onAction(action.draft),
+                  icon: Icon(action.icon),
+                  label: Text(action.label),
+                ),
             ],
           ),
-        ],
         if (routes.isNotEmpty) ...[
           const SizedBox(height: 16),
           Text(

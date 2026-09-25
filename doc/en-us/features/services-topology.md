@@ -64,7 +64,9 @@ to read at preview size. The full-screen topology (`service_topology_page.dart`)
   routes' nodes and edges stay at full strength, everything else fades. A tap on the empty
   canvas, or the × of the selection chip, clears it.
 - **Node details.** On a phone the tap also opens a bottom sheet: the node, its device and
-  service with "Edit service" and "Add access", and its routes, each opening its editor. On a
+  service with "Edit service" and the node's access-path actions (see
+  [Starting from the topology](#adding-an-access-path)), and its routes, each opening its editor.
+  The topology redraws after any of these editors closes. On a
   split window ([Adaptive Layout](../adaptive-layout.md#detail-pages-two-panes)) the same details
   sit in a pane beside the canvas; there a route row narrows the highlight to that one route (tap
   again for all) and its edit button opens the editor.
@@ -152,6 +154,26 @@ block saving. Missing required fields do, and are pointed out on the fields them
 
 Inline creation persists immediately: an endpoint or a service created from the page stays in the
 inventory even if the access path is then cancelled — both are valid inventory on their own.
+
+**Opening a saved route** — from a route card, a route group, the overview or the topology's
+details — uses one rule: the route opens in the guided page when the guided page can edit it
+without changing or losing anything (`serviceRouteOpensGuided`), and in the advanced editor
+otherwise. A route saved by the guided page therefore reopens there.
+
+**Starting from the topology.** A node's details offer the access path that fits the node, and
+open the guided page with it prefilled:
+
+| Node | Action | Prefilled |
+|---|---|---|
+| Service | Add access path from here | the source service |
+| Relay service on a VPS (FRP, Pangolin) | Expose a service through this relay | the pattern, public reachability, the relay and, for FRP, its default ingress |
+| Endpoint chip | Add access path from here | the source service and endpoint (for a relay's own port, the relay draft with that ingress) |
+| Domain | Add another service to this target | the target, and the pattern when every route to it has the same one |
+| Device | Add access path for a service on this device | the device's only service as the source; with several, the source picker offers the device's services first |
+
+After any editor the topology opened closes, the topology reads the inventory again and redraws,
+so the new or edited path shows without reopening it. The routes view's cards show each route's
+method icon and, under the path, its access level and lane.
 
 The **advanced route editor** remains for everything the patterns do not cover: three or more
 hops, hop notes, schemes and paths, a custom access level. The guided page hands its draft over

@@ -8,10 +8,12 @@
 - **图例。** 模式行下方可折叠的图例条（`ServiceTopologyLegend`），位于导出的画布之外。
 - **适应窗口与重置。** 在移动模式下，图标按钮把画布适配进查看器（`fitTransform`），或重置其变换。
 - **按设备分组。** 应用栏切换开关，在本次会话中默认打开，把 `groupByDevice` 传给布局：设备成为带标题标签页的设备分组框，设备到服务边被隐藏。它是布局请求的一部分，因此切换会重新布局同一个图。
+- **起点。** 详情提供每个节点的「添加访问路径」操作（`_nodeActions`，来自 `ServiceAccessDraft.forNode`）：从服务或端点添加访问路径、通过 VPS 上的中继公开服务、为域名添加其他服务、为设备上的服务添加访问路径。每个操作都以预填该节点的方式打开引导式页面。
+- **刷新。** 页面打开的每个编辑器——服务、路由、访问路径——都会被等待，之后页面经 `reload` 重新读取清单并重建其图（`_refresh`），因此编辑无需重新打开拓扑即可显示。
 
-页面负责模式、旋转、导出、分组、选择和筛选状态；视图负责延迟、缓存的布局（`_TopologyLayoutRequest` 是其缓存键）。节点卡片、边画家、图例以及图标、颜色和适配辅助来自 [`service_topology_widgets.md`](service_topology_widgets.md)；筛选和高亮逻辑来自 [`../services/service_analysis.md`](../services/service_analysis.md)；节点和边的放置来自 [`../services/service_topology_layout.md`](../services/service_topology_layout.md)。
+页面负责它自己的清单和图副本，以及模式、旋转、导出、分组、选择和筛选状态；视图负责延迟、缓存的布局（`_TopologyLayoutRequest` 是其缓存键）。节点卡片、边画家、图例以及图标、颜色和适配辅助来自 [`service_topology_widgets.md`](service_topology_widgets.md)；筛选和高亮逻辑来自 [`../services/service_analysis.md`](../services/service_analysis.md)；节点和边的放置来自 [`../services/service_topology_layout.md`](../services/service_topology_layout.md)。
 
-**行数说明：** `grep -c 'Purpose:' service_topology_page.dart` 返回 **36**，下面每个声明一块（**16 个 Tier A / 20 个 Tier B**）。`enum _TopologyInteractionMode { select, move }`（第 18 行）是无成员枚举，不单列：选择模式接上节点点击和背景点击，并滚动画布；移动模式去掉点击，并把画布包进 `InteractiveViewer`。私有常量 `_minScale`（0.35）、`_maxScale`（2.4）和 `_boundaryMargin`（180）是该查看器的限制，与 `fitTransform` 共用。
+**行数说明：** `grep -c 'Purpose:' service_topology_page.dart` 返回 **39**，下面每个声明一块（**18 个 Tier A / 21 个 Tier B**）。`_nodeActions` 的本地函数 `fromHere` 没有注释，也不占一行。类型别名 `ServiceTopologyInventory`（`reload` 返回的 `services`、`devices`、`routes` 记录）和 `_NodeAction`（操作的 `key`、`label`、`icon` 和 `draft`）同样不列出。`enum _TopologyInteractionMode { select, move }`（第 18 行）是无成员枚举，不单列：选择模式接上节点点击和背景点击，并滚动画布；移动模式去掉点击，并把画布包进 `InteractiveViewer`。私有常量 `_minScale`（0.35）、`_maxScale`（2.4）和 `_boundaryMargin`（180）是该查看器的限制，与 `fitTransform` 共用。
 
 ## 声明
 
@@ -29,7 +31,7 @@
 | [`_TopologyLayoutRequest`（构造函数）](#topologylayoutrequest-new) | 构造函数 | A | 创建布局缓存键值（图、路由、视口宽、布局选项）。 |
 | [`==`](#equals) | 运算符（`_TopologyLayoutRequest`） | A | 按图/路由身份、视口宽和选项比较两个请求。 |
 | [`hashCode`](#hashcode) | getter（`_TopologyLayoutRequest`） | A | 与其相等契约一致的请求哈希。 |
-| `ServiceTopologyPage`（构造函数） | 构造函数 | B | 创建全屏拓扑页组件。 |
+| `ServiceTopologyPage`（构造函数） | 构造函数 | B | 创建全屏拓扑页：清单、图、三个编辑器回调（各自在其编辑器关闭时完成）以及可选的 `reload`。 |
 | `createState` | 方法（`ServiceTopologyPage`） | B | 创建页面可变状态对象。 |
 | `dispose` | 方法（`_ServiceTopologyPageState`，组件生命周期） | B | 释放变换控制器。 |
 | [`_visible`](#visible) | 方法（`_ServiceTopologyPageState`） | A | 当前筛选显示的图和路由，按筛选记忆化。 |
@@ -40,14 +42,17 @@
 | `_setFilter` | 方法（`_ServiceTopologyPageState`） | B | 应用筛选并重置移动模式的变换。 |
 | `_openFilters` | 方法（`_ServiceTopologyPageState`） | B | 打开筛选面板，列出承载服务的设备。 |
 | [`_showDetailsSheet`](#showdetailssheet) | 方法（`_ServiceTopologyPageState`） | A | 在底部面板中显示节点详情，其操作调用各编辑器。 |
+| [`_nodeActions`](#nodeactions) | 方法（`_ServiceTopologyPageState`） | A | 节点提供的「添加访问路径」操作，连同各自的草稿。 |
+| `_openEditor` | 方法（`_ServiceTopologyPageState`） | B | 等待某个编辑器回调，然后 `_refresh`。 |
+| [`_refresh`](#refresh) | 方法（`_ServiceTopologyPageState`） | A | 经 `reload` 读取清单并重建图。 |
 | [`_exportTopologyImage`](#exporttopologyimage) | 方法（`_ServiceTopologyPageState`） | A | 把拓扑画布（含高亮）捕获为 PNG 并交给平台分享流程。 |
 | [`build`](#pagebuild) | 方法（组件，`_ServiceTopologyPageState`） | A | 构建脚手架：筛选/旋转/导出操作、模式行、图例条、画布、详情窗格。 |
 | `_buildModeRow` | 方法（组件辅助） | B | 选择 / 移动切换，移动模式下另加「适应窗口」和「重置」图标按钮。 |
 | `_buildLegendStrip` | 方法（组件辅助） | B | 图例开关、图例，以及可清除选择的选择 chip。 |
 | [`_buildDetailsPane`](#builddetailspane) | 方法（组件辅助） | A | 分栏窗口的详情窗格：一条提示，或选中节点的详情。 |
 | `_buildNoMatch` | 方法（组件辅助） | B | 「没有符合筛选条件的内容」消息，带「清除筛选」按钮。 |
-| `_TopologyNodeDetails`（构造函数） | 构造函数 | B | 为面板或窗格创建节点详情。 |
-| [`build`](#detailsbuild) | 方法（组件，`_TopologyNodeDetails`） | A | 渲染节点、其设备和服务（连同各自的操作）以及其路由。 |
+| `_TopologyNodeDetails`（构造函数） | 构造函数 | B | 为面板或窗格创建节点详情，连同节点的操作。 |
+| [`build`](#detailsbuild) | 方法（组件，`_TopologyNodeDetails`） | A | 渲染节点、其设备和服务、其操作以及其路由。 |
 | `_TopologyFilterSheet`（构造函数） | 构造函数 | B | 由一个筛选、设备 chip 和变更回调创建筛选面板。 |
 | `createState` | 方法（`_TopologyFilterSheet`） | B | 创建面板的可变状态对象。 |
 | `dispose` | 方法（`_TopologyFilterSheetState`，组件生命周期） | B | 释放搜索控制器。 |
@@ -58,7 +63,7 @@
 
 ### `void _ensureLayout(_TopologyLayoutRequest request)` <a id="ensurelayout"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 139 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 148 行）。
 - **用途：** 为请求安排延迟布局计算，除非相同请求已在途。
 - **输入：** `request`。
 - **返回：** 无。
@@ -69,7 +74,7 @@
 
 ### `Future<void> _calculateLayout(_TopologyLayoutRequest request, int generation)` <a id="calculatelayout"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 153 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 162 行）。
 - **用途：** 让出一帧后为一个请求运行拓扑布局引擎，仍是最新请求时缓存结果。
 - **输入：** `request`；`generation` — 此计算被安排时捕获的 `_layoutGeneration` 值。
 - **返回：** `Future<void>`。
@@ -80,7 +85,7 @@
 
 ### `void fitToViewport()` <a id="fittoviewport"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 216 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 225 行）。
 - **用途：** 把已布局的画布适配进视图。
 - **输入：** 无。
 - **返回：** `void`。
@@ -91,7 +96,7 @@
 
 ### `Widget _buildViewer(BuildContext context, ServiceTopologyLayout layout, int turns)` <a id="buildviewer"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法（组件辅助）。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 245 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 254 行）。
 - **用途：** 在查看器内构建画布——边和节点卡片。
 - **输入：** `context`；`layout` — 缓存的布局；`turns` — 旋转的四分之一圈数，0 到 3。
 - **返回：** `Widget`。
@@ -102,7 +107,7 @@
 
 ### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth, required this.options})` <a id="topologylayoutrequest-new"></a>
 - **种类：** 构造函数。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 332 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 341 行）。
 - **用途：** 创建用作拓扑布局缓存键的值。
 - **输入：** `graph`、`routes`、`viewportWidth`、`options` — 视图的 `ServiceTopologyLayoutOptions`。
 - **返回：** 新 `_TopologyLayoutRequest`。
@@ -113,7 +118,7 @@
 
 ### `bool operator ==(Object other)` <a id="equals"></a>
 - **种类：** `_TopologyLayoutRequest` 的运算符。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 345 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 354 行）。
 - **用途：** 为缓存复用目的比较两个布局请求。
 - **输入：** `other`。
 - **返回：** `bool`。
@@ -124,7 +129,7 @@
 
 ### `int get hashCode` <a id="hashcode"></a>
 - **种类：** `_TopologyLayoutRequest` 的 getter。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 360 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 369 行）。
 - **用途：** 产生与上面基于身份的 `==` 一致的哈希码。
 - **输入：** 无。
 - **返回：** `int`。
@@ -135,18 +140,18 @@
 
 ### `({ServiceTopologyGraph graph, List<ServiceRoute> routes}) _visible()` <a id="visible"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 464 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 491 行）。
 - **用途：** 返回当前筛选显示的图和路由。
 - **输入：** 无。
 - **返回：** 筛选什么都不收窄时，返回页面自己的 `graph` 和 `routes`；否则返回 `buildServiceTopology` 用 `filterServiceTopologyInput` 给出的服务和路由构建的图。
 - **副作用：** 把筛选后的图连同其筛选缓存到 `_filtered`。
-- **算法：** 1. 筛选未生效 ⇒ `(widget.graph, widget.routes)`。2. 已有针对相等筛选的缓存 ⇒ 缓存的图和路由。3. 否则用 [`filterServiceTopologyInput`](../services/service_analysis.md#filterservicetopologyinput) 收窄清单，构建图，缓存并返回。
+- **算法：** 1. 筛选未生效 ⇒ `(_graph, _routes)`。2. 已有针对相等筛选的缓存 ⇒ 缓存的图和路由。3. 否则用 [`filterServiceTopologyInput`](../services/service_analysis.md#filterservicetopologyinput) 收窄清单，构建图，缓存并返回。
 - **用法：** `build`、`_showDetailsSheet`。
 - **备注：** 筛选变化前一直返回相同的实例，正是这一点让视图以身份为键的布局缓存（[`==`](#equals)）在各次重建之间持续命中——每次 build 都新建图会导致每一帧都重新布局。
 
 ### `_selectionIn(ServiceTopologyGraph graph, List<ServiceRoute> routes)` <a id="selectionin"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 497 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 524 行）。
 - **用途：** 在可见图上解析选择。
 - **输入：** `graph`、`routes` — 来自 [`_visible`](#visible)。
 - **返回：** 一个记录，含选中节点、其相关路由和 `ServiceTopologyHighlight`；未选中任何节点或筛选隐藏了该节点时为 null。
@@ -157,7 +162,7 @@
 
 ### `void _selectNode(ServiceTopologyNode node)` <a id="selectnode"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 540 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 563 行）。
 - **用途：** 选中被点击的节点。
 - **输入：** `node`。
 - **返回：** `void`。
@@ -168,18 +173,40 @@
 
 ### `void _showDetailsSheet(ServiceTopologyNode node)` <a id="showdetailssheet"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 620 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 642 行）。
 - **用途：** 在底部面板中显示节点详情。
 - **输入：** `node`。
 - **返回：** `void`。
-- **副作用：** 显示模态底部面板；其操作会弹出面板并调用 `widget.onEditService`、`widget.onEditRoute` 或 `widget.onAddAccess`。
-- **算法：** 在可见路由上解析相关路由，并在带拖动手柄、滚动受控的面板中显示 [`_TopologyNodeDetails`](#detailsbuild)（键 `topology-details-sheet`，`shrinkWrap`）。路由行打开该路由的编辑器；「编辑服务」和「添加访问方式」分别打开服务编辑器和引导式访问路径页（以该服务为源）。
+- **副作用：** 显示模态底部面板；其操作会弹出面板并调用 `widget.onEditService`、`widget.onEditRoute` 或 `widget.onAddAccess`（经 `_openEditor`）。
+- **算法：** 在可见路由上解析相关路由，并在带拖动手柄、滚动受控的面板中显示 [`_TopologyNodeDetails`](#detailsbuild)（键 `topology-details-sheet`，`shrinkWrap`）。路由行打开该路由的编辑器；「编辑服务」打开服务编辑器；节点的每个操作（[`_nodeActions`](#nodeactions)）以其草稿打开引导式访问路径页。
 - **用法：** [`_selectNode`](#selectnode)，在没有详情窗格的窗口上。
 - **备注：** 取代 1.5.6 拆分时视图中的 `_showNodeDetails`；其内容是共享的详情组件，因此面板和窗格不会彼此漂移。
 
+### `List<_NodeAction> _nodeActions(ServiceTopologyNode node)` <a id="nodeactions"></a>
+- **种类：** `_ServiceTopologyPageState` 的方法。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 690 行）。
+- **用途：** 列出节点提供的「添加访问路径」操作。
+- **输入：** `node`。
+- **返回：** 按按钮顺序排列的操作；中继、远程入口以及服务已不存在的节点为空。
+- **副作用：** 无。
+- **算法：** 在页面的清单上取 `ServiceAccessDraft.forNode(node, …)`（[`service_access_patterns.md`](../services/service_access_patterns.md#fornode)）。服务节点提供「从这里添加访问路径」（键 `topology-action-from-here`，普通源草稿）。指明了中继的草稿再加上「通过此中继公开服务」（`topology-action-expose`）。否则，对于非服务节点：域名提供「为此目标添加其他服务」（`topology-action-target`），设备提供「为此设备上的服务添加访问路径」（`topology-action-device`），端点 chip 提供「从这里添加访问路径」。
+- **用法：** [`_showDetailsSheet`](#showdetailssheet) 和 [`_buildDetailsPane`](#builddetailspane)。
+- **备注：** VPS 上的中继服务同时显示两种服务操作：访问中继本身，以及通过它公开另一个服务。
+
+### `Future<void> _refresh()` <a id="refresh"></a>
+- **种类：** `_ServiceTopologyPageState` 的方法。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 755 行）。
+- **用途：** 用当前清单重建图。
+- **输入：** 无。
+- **返回：** `Future<void>`。
+- **副作用：** 调用 `widget.reload`；替换 `_services`、`_devices`、`_routes` 和 `_graph`；清除 `_filtered` 和 `_lit` 缓存。
+- **算法：** 没有 `reload` 时直接返回。否则等待它；若仍处于挂载状态，则以新列表及基于它们的 `buildServiceTopology` 调用 `setState`。
+- **用法：** `_openEditor`，在详情打开的每个编辑器——服务编辑器、路由的编辑器、引导式页面——之后调用。
+- **备注：** 选择和筛选保持不变；被编辑删除的节点只是不再被选中。新的图实例是一个新的布局请求，因此画布会重新布局。在 1.5.6 的第 5 阶段之前，拓扑一直保留打开时的那个图。
+
 ### `Future<void> _exportTopologyImage()` <a id="exporttopologyimage"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 664 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 781 行）。
 - **用途：** 把拓扑画布（经其 `RepaintBoundary`）捕获为 PNG 并交给平台适当分享/保存流程。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -190,7 +217,7 @@
 
 ### `Widget build(BuildContext context)` <a id="pagebuild"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法（组件构建）。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 715 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 832 行）。
 - **用途：** 构建拓扑页脚手架。
 - **输入：** `context`。
 - **返回：** 组件树。
@@ -201,29 +228,29 @@
 
 ### `Widget _buildDetailsPane(AppLocalizations l10n, ...? selection)` <a id="builddetailspane"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法（组件辅助）。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 933 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 1050 行）。
 - **用途：** 构建分栏窗口的详情窗格。
 - **输入：** `l10n`；`selection` — 来自 [`_selectionIn`](#selectionin)，或 null。
 - **返回：** `Widget`。
 - **副作用：** 无。
-- **算法：** 未选中任何节点 ⇒ 居中的提示（键 `topology-details-empty`）。否则是 [`_TopologyNodeDetails`](#detailsbuild)（键 `topology-details-pane`），带聚焦路由、多于一条路由时的聚焦提示、供路由行使用的 `_toggleRouteFocus`、供其编辑按钮使用的路由编辑器，以及供关闭按钮使用的 `_clearSelection`。
+- **算法：** 未选中任何节点 ⇒ 居中的提示（键 `topology-details-empty`）。否则是 [`_TopologyNodeDetails`](#detailsbuild)（键 `topology-details-pane`），带聚焦路由、多于一条路由时的聚焦提示、供路由行使用的 `_toggleRouteFocus`、供其编辑按钮使用的路由编辑器、节点的 [`_nodeActions`](#nodeactions)，以及供关闭按钮使用的 `_clearSelection`；编辑器经 `_openEditor` 打开。
 - **用法：** 分栏窗口上的 [`build`](#pagebuild)。
 - **备注：** 非模态：旁边的画布保持可交互，因此可以直接选中另一个节点。
 
 ### `Widget build(BuildContext context)` (`_TopologyNodeDetails`) <a id="detailsbuild"></a>
 - **种类：** `_TopologyNodeDetails` 的方法（组件构建）。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 1049 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 1172 行）。
 - **用途：** 渲染节点详情。
 - **输入：** `context`。
 - **返回：** 组件树。
 - **副作用：** 无。
-- **算法：** 一个 `ListView`，依次包含：节点块（图标、标签；角色、详情和车道作为副标题；设置了 `onClose` 时带键为 `topology-details-close` 的关闭按钮）；带本地化类别（`deviceCategoryLabel`）的设备块；带端点和「编辑服务」/「添加访问方式」按钮的服务块；然后是「链路」、按需显示的聚焦提示，以及每条相关路由一行（键 `topology-route-<id>`，聚焦时 `selected`）：方法图标、目标、目标摘要、本地化的访问级别和车道；设置了 `onRouteEdit` 时带编辑按钮（`topology-route-edit-<id>`），否则是右箭头。
+- **算法：** 一个 `ListView`，依次包含：节点块（图标、标签；角色、详情和车道作为副标题；设置了 `onClose` 时带键为 `topology-details-close` 的关闭按钮）；带本地化类别（`deviceCategoryLabel`）的设备块；带端点的服务块；一组换行排列的按钮：「编辑服务」（节点有服务时）以及每个操作一个描边按钮，按操作设键；然后是「链路」、按需显示的聚焦提示，以及每条相关路由一行（键 `topology-route-<id>`，聚焦时 `selected`）：方法图标、目标、目标摘要、本地化的访问级别和车道；设置了 `onRouteEdit` 时带编辑按钮（`topology-route-edit-<id>`），否则是右箭头。
 - **用法：** [`_showDetailsSheet`](#showdetailssheet) 和 [`_buildDetailsPane`](#builddetailspane)。
 - **备注：** 每个标签都已本地化（`serviceTopologyRoleLabel`、`serviceAccessLaneLabel`、`serviceAccessLevelLabel`、`deviceCategoryLabel`）；1.5.6 之前，角色、车道和设备类别以英文或原始枚举名显示。
 
 ### `Widget build(BuildContext context)` (`_TopologyFilterSheetState`) <a id="filterbuild"></a>
 - **种类：** `_TopologyFilterSheetState` 的方法（组件构建）。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 1230 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 1357 行）。
 - **用途：** 渲染筛选面板。
 - **输入：** `context`。
 - **返回：** 组件树。

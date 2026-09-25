@@ -908,6 +908,188 @@ void main() {
       },
     );
   });
+
+  group('drafts from topology nodes', () {
+    final frpRoute = _draftFor(
+      ServiceAccessPattern.frp,
+    ).toRoute(services: services);
+    final proxyRoute = _draftFor(
+      ServiceAccessPattern.reverseProxy,
+    ).toRoute(services: services);
+    final lanRoute = _draftFor(
+      ServiceAccessPattern.direct,
+      reachability: ServiceReachability.lan,
+    ).toRoute(services: services);
+    final routes = [frpRoute, proxyRoute, lanRoute];
+    final graph = buildServiceTopology(
+      services: services,
+      routes: routes,
+      devices: devices,
+    );
+    ServiceTopologyNode node(String id) =>
+        graph.nodes.singleWhere((node) => node.id == id);
+    ServiceAccessDraft? forNode(String id) => ServiceAccessDraft.forNode(
+      node(id),
+      services: services,
+      routes: routes,
+      devices: devices,
+    );
+
+    test('a service starts a path from itself', () {
+      expect(
+        forNode('service:jellyfin'),
+        const ServiceAccessDraft(sourceServiceId: 'jellyfin'),
+      );
+    });
+
+    test('a relay on a VPS exposes another service through it', () {
+      expect(
+        forNode('service:frps'),
+        const ServiceAccessDraft(
+          pattern: ServiceAccessPattern.frp,
+          reachability: ServiceReachability.public,
+          relayServiceId: 'frps',
+          relayEndpointId: 'alt',
+        ),
+        reason: 'the default ingress is the primary endpoint',
+      );
+      final pangolin = buildServiceTopology(
+        services: services,
+        routes: const [],
+        devices: devices,
+      ).nodes.singleWhere((node) => node.id == 'service:pangolin');
+      expect(
+        ServiceAccessDraft.forNode(
+          pangolin,
+          services: services,
+          routes: const [],
+          devices: devices,
+        ),
+        const ServiceAccessDraft(
+          pattern: ServiceAccessPattern.pangolin,
+          reachability: ServiceReachability.public,
+          relayServiceId: 'pangolin',
+        ),
+      );
+    });
+
+    test('an endpoint chip sets the endpoint, an FRP port the ingress', () {
+      expect(
+        forNode('endpoint:jellyfin:web'),
+        const ServiceAccessDraft(
+          sourceServiceId: 'jellyfin',
+          sourceEndpointId: 'web',
+        ),
+      );
+      expect(
+        forNode('endpoint:frps:bind'),
+        const ServiceAccessDraft(
+          pattern: ServiceAccessPattern.frp,
+          reachability: ServiceReachability.public,
+          relayServiceId: 'frps',
+          relayEndpointId: 'bind',
+        ),
+      );
+    });
+
+    test('a domain keeps its target and an unambiguous pattern', () {
+      final shared = graph.nodes.singleWhere(
+        (node) =>
+            node.kind == ServiceTopologyNodeKind.domain &&
+            node.label == 'media.example.com',
+      );
+      expect(
+        shared.routeIds.toSet(),
+        {frpRoute.id, proxyRoute.id},
+        reason: 'the FRP and the proxy route share this domain',
+      );
+      expect(
+        ServiceAccessDraft.forNode(
+          shared,
+          services: services,
+          routes: routes,
+          devices: devices,
+        ),
+        const ServiceAccessDraft(targets: ['https://media.example.com']),
+        reason: 'two patterns: no pattern is guessed',
+      );
+      expect(
+        ServiceAccessDraft.forNode(
+          shared,
+          services: services,
+          routes: [frpRoute],
+          devices: devices,
+        ),
+        const ServiceAccessDraft(
+          pattern: ServiceAccessPattern.frp,
+          reachability: ServiceReachability.public,
+          targets: ['https://media.example.com'],
+        ),
+      );
+    });
+
+    test('a device offers its services as the source', () {
+      final draft = forNode('device:home');
+      expect(draft, isNotNull);
+      expect(draft!.initialDeviceId, 'home');
+      expect(draft.sourceServiceId, isNull);
+      expect(
+        draft,
+        const ServiceAccessDraft(),
+        reason: 'the device hint is not form content',
+      );
+      expect(draft.copyWith(notes: 'x').initialDeviceId, 'home');
+    });
+
+    test('relays and remote entries offer nothing', () {
+      for (final other in graph.nodes.where(
+        (node) =>
+            node.kind == ServiceTopologyNodeKind.relay ||
+            node.kind == ServiceTopologyNodeKind.remoteEntry,
+      )) {
+        expect(forNode(other.id), isNull, reason: other.id);
+      }
+    });
+
+    test('only named relays on a VPS count as relays', () {
+      final byId = {for (final service in services) service.id: service};
+      expect(
+        serviceRelayPatternFor(byId['frps']!, devices),
+        ServiceAccessPattern.frp,
+      );
+      expect(
+        serviceRelayPatternFor(byId['pangolin']!, devices),
+        ServiceAccessPattern.pangolin,
+      );
+      expect(serviceRelayPatternFor(byId['cloudflared']!, devices), isNull);
+      expect(
+        serviceRelayPatternFor(
+          byId['frps']!.copyWith(deviceId: 'home'),
+          devices,
+        ),
+        isNull,
+        reason: 'not on a VPS',
+      );
+    });
+
+    test('a saved route opens where it fits', () {
+      expect(serviceRouteOpensGuided(frpRoute, services), isTrue);
+      expect(serviceRouteOpensGuided(lanRoute, services), isTrue);
+      final threeHops = frpRoute.copyWith(
+        hops: [
+          ServiceRouteHop(
+            type: ServiceRouteHopType.reverseProxy,
+            method: ServiceRouteMethod.caddy,
+            serviceId: 'caddy',
+            endpointId: 'https',
+          ),
+          ...frpRoute.hops,
+          ServiceRouteHop(type: ServiceRouteHopType.manual, label: 'CDN'),
+        ],
+      );
+      expect(serviceRouteOpensGuided(threeHops, services), isFalse);
+    });
+  });
 }
 
 /// Purpose: Build the services the pattern tests route through.

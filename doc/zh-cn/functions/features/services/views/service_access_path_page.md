@@ -4,7 +4,7 @@
 
 缺少的部分以内联方式创建并**立即持久化**：「添加端点」立即把端点保存到其服务上（经共享的 [`showServiceEndpointDialog`](service_endpoint_dialog.md)），「新建代理服务…」 / 「新建中继服务…」带模板压入 [`ServiceEditPage`](service_edit_page.md)，并选中它在 `ServiceEditOutcome` 中弹出的服务。之后取消访问路径时，这些内容会保留下来；它们本身就是有效的清单条目。实时预览卡片显示链（`serviceRouteChainPreview`）、车道和访问级别，以及建议性警告——这些警告从不阻塞保存。「高级编辑器」和「自定义 / 多跳」卡片把草稿移交给 [`ServiceRouteEditPage`](service_route_edit_page.md)。
 
-[service_list_page.md](service_list_page.md) 的每个「添加访问方式」入口——应用栏、总览、拓扑卡片、服务的路由组、服务块菜单和拓扑节点面板——以及高级编辑器的「引导式编辑器」操作，都会在根导航器上压入本页。保存或删除后它弹出 `true`，用户直接返回时什么也不弹出。
+[service_list_page.md](service_list_page.md) 的每个「添加访问方式」入口——应用栏、总览、拓扑卡片、服务的路由组、服务块菜单和拓扑的节点操作，后者从特定于节点的草稿（`ServiceAccessDraft.forNode`）启动本页——以及 `_editRoute`（对每条适合本页的已保存路由）和高级编辑器的「引导式编辑器」操作，都会在根导航器上压入本页。保存或删除后它弹出 `true`，用户直接返回时什么也不弹出。
 
 ## 声明
 
@@ -20,6 +20,7 @@
 | `_update` | 方法（`_ServiceAccessPathPageState`） | B | 替换草稿并重建。 |
 | `_serviceById` | 方法（`_ServiceAccessPathPageState`） | B | 按 id 查找服务。 |
 | `_deviceById` | 方法（`_ServiceAccessPathPageState`） | B | 按 id 查找设备。 |
+| `_servicesOnInitialDevice` | 方法（`_ServiceAccessPathPageState`） | B | 草稿 `initialDeviceId` 所指设备上的服务，按名称排序；只有一个时预选它，在源选择器中排在最前推荐。 |
 | [`_withDefaultSourceEndpoint`](#withdefaultsourceendpoint) | 方法（`_ServiceAccessPathPageState`） | A | 选择显而易见时预选源端点。 |
 | [`_pickSource`](#picksource) | 方法（`_ServiceAccessPathPageState`） | A | 在面板中选择源服务。 |
 | [`_selectPattern`](#selectpattern) | 方法（`_ServiceAccessPathPageState`） | A | 切换模式，并应用默认值和预选。 |
@@ -68,22 +69,22 @@
 
 ### `Future<void> _load({bool initial = false})` <a id="load"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 120 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 122 行）
 - **用途：** 加载服务、路由、设备、网络和网络分配；首次加载时解析页面起始所用的草稿。
 - **输入：** `initial` — 只有来自 `initState` 的调用为 true。
 - **返回：** `Future<void>`。
 - **副作用：** 读取 `ServiceStorage`、`DeviceStorage` 和 `NetworkStorage`；更新状态。
 - **算法：**
   1. 加载三个存储并替换清单列表。
-  2. 首次加载时：用 `ServiceAccessDraft.fromRoute` 读取 `widget.route`；否则使用 `widget.draft`，再否则使用空草稿。丢弃已不存在的源，预选显而易见的源端点，并把草稿复制进文本字段。读回的路由把可达范围标记为用户自己的选择，因此切换模式不会重置它。
+  2. 首次加载时：用 `ServiceAccessDraft.fromRoute` 读取 `widget.route`；否则使用 `widget.draft`，再否则使用空草稿。丢弃已不存在的源；从设备启动（`initialDeviceId`）且该设备恰好有一个服务的草稿以该服务为源（`_servicesOnInitialDevice`）；预选显而易见的源端点，并把草稿复制进文本字段。读回的路由把可达范围标记为用户自己的选择，因此切换模式不会重置它。
   3. 给定了路由但无法读入草稿时，在该帧之后打开高级编辑器（`_openAdvancedEditor`）；关闭它也会关闭本页。
-  4. 否则，在新路径的首次加载时预填直连访问建议（`_prefillDirectTarget`）——这样，从服务的路由组或服务块菜单带着源进来的草稿，打开时地址已经填好，与手动选择源时一样。
+  4. 否则，在新路径的首次加载时预填直连访问建议（`_prefillDirectTarget`）——这样，从服务的路由组或服务块菜单带着源进来的草稿，打开时地址已经填好，与手动选择源时一样——以及 FRP 公网主机建议（`_prefillPublicHost`），这样，从拓扑的「通过此中继公开服务」带着中继进来的草稿也会填好主机。
 - **用法：** `initState`，以及每次内联创建之后，使新端点或新服务可供选择。
 - **备注：** 之后的加载不改动草稿；它们只刷新草稿所指向的内容。
 
 ### `ServiceAccessDraft _withDefaultSourceEndpoint(ServiceAccessDraft draft)` <a id="withdefaultsourceendpoint"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 202 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 225 行）
 - **用途：** 选择显而易见时预选源端点。
 - **输入：** `draft`。**返回：** `ServiceAccessDraft`。**副作用：** 无。
 - **算法：** 保留已有的选择。否则，恰好有一个端点的源取该端点，有主端点的源取主端点，没有端点的源保持没有端点。
@@ -92,17 +93,17 @@
 
 ### `Future<void> _pickSource()` <a id="picksource"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 220 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 244 行）
 - **用途：** 让用户选择源服务。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 打开选择器面板；更新草稿；可能预填直连目标。
-- **算法：** 从所有服务中选择；清除端点并预选显而易见的那个；与新源相同的代理或中继会被清除，因为服务不能把流量转给自己。
+- **算法：** 从所有服务中选择，初始设备的服务（`_servicesOnInitialDevice`）排在最前推荐；清除端点并预选显而易见的那个；与新源相同的代理或中继会被清除，因为服务不能把流量转给自己。
 - **用法：** 源服务块的 `onTap`。
 - **备注：** 无。
 
 ### `void _selectPattern(ServiceAccessPattern pattern)` <a id="selectpattern"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 259 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 285 行）
 - **用途：** 把草稿切换到另一种访问模式。
 - **输入：** `pattern`。**返回：** `void`。**副作用：** 更新草稿和预填字段。
 - **算法：**
@@ -116,7 +117,7 @@
 
 ### `Future<void> _createService({required String templateId, String? deviceId, required bool asProxy})` <a id="createservice"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 458 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 484 行）
 - **用途：** 以内联方式创建代理或中继服务并选中它。
 - **输入：** `templateId` — 代理为 `caddy`，否则为该模式的中继模板；`deviceId` — 新服务的起始设备（源所在设备，FRP 和 Pangolin 则为第一台 VPS）；`asProxy`。
 - **返回：** `Future<void>`。
@@ -127,7 +128,7 @@
 
 ### `Future<void> _addEndpointTo(ServiceNode service, ServiceAccessDraft Function(ServiceAccessDraft, ServiceEndpoint) onAdded)` <a id="addendpointto"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 490 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 516 行）
 - **用途：** 立即给服务添加端点并选中它。
 - **输入：** `service`；`onAdded` — 返回选中了新端点的草稿。
 - **返回：** `Future<void>`。
@@ -138,7 +139,7 @@
 
 ### `Future<void> _save()` <a id="save"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 516 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 542 行）
 - **用途：** 把访问路径保存为一条路由并关闭页面。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 持久化路由并弹出 `true`；存在阻塞问题时改为显示这些问题和一条 snackbar。
@@ -148,7 +149,7 @@
 
 ### `Future<void> _openAdvancedEditor()` <a id="openadvancededitor"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 572 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 598 行）
 - **用途：** 把当前草稿移交给高级路由编辑器。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 压入 `ServiceRouteEditPage`；编辑器保存或删除后弹出 `true`。
@@ -158,7 +159,7 @@
 
 ### `Widget _buildBody(BuildContext context, AppLocalizations l10n)` <a id="buildbody"></a>
 - **种类：** 方法（组件辅助）
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 640 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 666 行）
 - **用途：** 把表单布局为单列或双栏。
 - **输入：** `context`、`l10n`。**返回：** `Widget`。**副作用：** 无。
 - **算法：** 没有 `useDetailTwoPane` 时，是一个 `ListView`（键 `access-single-pane`），依次包含源、模式和细节小节、预览卡片和操作。有它时，是一个 `Row`（键 `access-two-pane`）：宽 `editFormLeftPaneWidth` 的左窗格（pane）放各项选择——源和模式——右窗格放细节、预览和操作。两栏都滚动。
@@ -167,7 +168,7 @@
 
 ### `List<Widget> _buildDetailsSection(BuildContext context, AppLocalizations l10n)` <a id="builddetailssection"></a>
 - **种类：** 方法（组件辅助）
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 840 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 866 行）
 - **用途：** 构建所选模式需要的字段。
 - **输入：** `context`、`l10n`。**返回：** `List<Widget>`。**副作用：** 无。
 - **算法：** 总有可达范围 chip（局域网 · VPN · 公网 · 公网（需登录））。然后按模式需要依次是：「先经过反向代理」开关；带端点 chip 和「新建代理服务…」的代理服务块；带端点 chip 的中继服务块（FRP 必填，其他模式可清除）——FRP 时为**入口** chip，默认取中继的主端点——以及「新建中继服务…」；路由器选择器（路由器在前）；公网主机和必填的公网端口。路由器选择器是设置了 `isExpanded` 的下拉框，设备名以省略号截断，因此长名称不会撑破狭窄的窗格。然后是目标字段（端口映射时标为域名）、直连访问建议 chip 和备注。尝试保存过一次之后，阻塞问题显示为字段错误。
@@ -176,7 +177,7 @@
 
 ### `Widget _buildPreviewCard(BuildContext context, AppLocalizations l10n)` <a id="buildpreviewcard"></a>
 - **种类：** 方法（组件辅助）
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1167 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1193 行）
 - **用途：** 显示草稿的链、车道、访问级别和建议性警告。
 - **输入：** `context`、`l10n`。**返回：** `Widget`。**副作用：** 无。
 - **算法：** 构建草稿路由；以 `serviceHopFallbackLabel` 作为回退显示 `serviceRouteChainPreview`，使既没有服务也没有自身标签的跳先按其本地化方法（「直连」、「路由器端口转发」）命名，然后才按其类型命名；一个车道颜色的圆点，带车道和访问级别标签；然后 `_draftReferenceWarnings` 和 `serviceAccessDraftWarnings` 的每条警告各占一行。
@@ -185,7 +186,7 @@
 
 ### `List<ServiceWarning> _draftReferenceWarnings(ServiceRoute route)` <a id="draftreferencewarnings"></a>
 - **种类：** `_ServiceAccessPathPageState` 的方法
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1247 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1273 行）
 - **用途：** 找出与草稿路由相关的引用警告。
 - **输入：** `route` — 作为路由的草稿。**返回：** `List<ServiceWarning>`。
 - **副作用：** 无。
@@ -195,7 +196,7 @@
 
 ### `Widget build(BuildContext context)` (`_ServicePickerSheetState`) <a id="pickerbuild"></a>
 - **种类：** `_ServicePickerSheetState` 的方法（组件构建）
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1698 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1724 行）
 - **用途：** 渲染可搜索的服务选择器。
 - **输入：** `context`。**返回：** 组件树。**副作用：** 无。
 - **算法：** 按搜索文本（服务名、设备名、端口）过滤；先按设备、再按名称排序；推荐的服务先显示在自己的标题下，其余在后；没有推荐时其余按设备分组。点击某行会弹出其服务。

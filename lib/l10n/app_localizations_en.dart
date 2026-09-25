@@ -1729,6 +1729,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceTopologyGroupByDevice => 'Group by device';
 
   @override
+  String get serviceTopologyAddAccessFromHere => 'Add access path from here';
+
+  @override
+  String get serviceTopologyExposeThroughRelay =>
+      'Expose a service through this relay';
+
+  @override
+  String get serviceTopologyAddServiceToTarget =>
+      'Add another service to this target';
+
+  @override
+  String get serviceTopologyAddAccessOnDevice =>
+      'Add access path for a service on this device';
+
+  @override
   String get serviceTopologyRouteFocusHint =>
       'Tap a route to highlight only it; tap it again for all.';
 

@@ -21,8 +21,9 @@ saving. "Advanced editor" and the "Custom / multi-hop" card hand the draft to
 
 The page is pushed on the root navigator by every "Add access" entry point of
 [service_list_page.md](service_list_page.md) — the app bar, the overview, the topology card, a
-service's route group, the service tile menu and the topology node sheet — and by the advanced
-editor's "Guided editor" action. It pops `true` after a save or a delete and nothing when the
+service's route group, the service tile menu and the topology's node actions, which start it
+from a node-specific draft (`ServiceAccessDraft.forNode`) — by `_editRoute` for every saved route
+that fits it, and by the advanced editor's "Guided editor" action. It pops `true` after a save or a delete and nothing when the
 user backs out.
 
 ## Declarations
@@ -39,6 +40,7 @@ user backs out.
 | `_update` | method (`_ServiceAccessPathPageState`) | B | Replace the draft and rebuild. |
 | `_serviceById` | method (`_ServiceAccessPathPageState`) | B | Look up a service by id. |
 | `_deviceById` | method (`_ServiceAccessPathPageState`) | B | Look up a device by id. |
+| `_servicesOnInitialDevice` | method (`_ServiceAccessPathPageState`) | B | The services on the draft's `initialDeviceId`, by name; preselected when there is one, suggested first in the source picker. |
 | [`_withDefaultSourceEndpoint`](#withdefaultsourceendpoint) | method (`_ServiceAccessPathPageState`) | A | Preselect the source endpoint when the choice is obvious. |
 | [`_pickSource`](#picksource) | method (`_ServiceAccessPathPageState`) | A | Pick the source service in the sheet. |
 | [`_selectPattern`](#selectpattern) | method (`_ServiceAccessPathPageState`) | A | Switch the pattern, with defaults and preselection. |
@@ -87,7 +89,7 @@ user backs out.
 
 ### `Future<void> _load({bool initial = false})` <a id="load"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 120)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 122)
 - **Purpose:** Load services, routes, devices, networks and assignments; on the first load
   resolve the draft the page starts with.
 - **Inputs:** `initial` — true only for the call from `initState`.
@@ -96,21 +98,25 @@ user backs out.
 - **Algorithm:**
   1. Load the three stores and replace the inventory lists.
   2. On the first load: read `widget.route` with `ServiceAccessDraft.fromRoute`; else use
-     `widget.draft`, else an empty draft. Drop a source that no longer exists, preselect an
-     obvious source endpoint, and copy the draft into the text fields. A route read back marks
+     `widget.draft`, else an empty draft. Drop a source that no longer exists; a draft started
+     from a device (`initialDeviceId`) with exactly one service gets that service as its source
+     (`_servicesOnInitialDevice`); preselect an obvious source endpoint, and copy the draft into
+     the text fields. A route read back marks
      the reachability as the user's own choice, so switching patterns does not reset it.
   3. If a route was given but cannot be read into a draft, open the advanced editor after the
      frame (`_openAdvancedEditor`); closing it closes this page too.
   4. Otherwise, on the first load of a new path, prefill the direct-access suggestion
      (`_prefillDirectTarget`) — so a draft that arrives with its source set, from a service's
-     route group or tile menu, opens with the address filled in like a source picked by hand.
+     route group or tile menu, opens with the address filled in like a source picked by hand —
+     and the FRP public-host suggestion (`_prefillPublicHost`), so a draft that arrives with its
+     relay set, from the topology's "Expose a service through this relay", gets the host too.
 - **Usage:** `initState`, and after every inline creation so the new endpoint or service is
   there to select.
 - **Notes:** Later loads keep the draft untouched; they only refresh what it points into.
 
 ### `ServiceAccessDraft _withDefaultSourceEndpoint(ServiceAccessDraft draft)` <a id="withdefaultsourceendpoint"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 202)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 225)
 - **Purpose:** Preselect the source endpoint when the choice is obvious.
 - **Inputs:** `draft`. **Returns:** `ServiceAccessDraft`. **Side effects:** None.
 - **Algorithm:** Keep an existing choice. Otherwise a source with exactly one endpoint gets that
@@ -121,19 +127,20 @@ user backs out.
 
 ### `Future<void> _pickSource()` <a id="picksource"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 220)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 244)
 - **Purpose:** Let the user pick the source service.
 - **Inputs:** None. **Returns:** `Future<void>`.
 - **Side effects:** Opens the picker sheet; updates the draft; may prefill the direct target.
-- **Algorithm:** Pick from every service; clear the endpoint and preselect the obvious one; a
-  proxy or relay equal to the new source is cleared, since a service cannot pass traffic to
+- **Algorithm:** Pick from every service, the initial device's services
+  (`_servicesOnInitialDevice`) suggested first; clear the endpoint and preselect the obvious one;
+  a proxy or relay equal to the new source is cleared, since a service cannot pass traffic to
   itself.
 - **Usage:** The source tile's `onTap`.
 - **Notes:** None.
 
 ### `void _selectPattern(ServiceAccessPattern pattern)` <a id="selectpattern"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 259)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 285)
 - **Purpose:** Switch the draft to another access pattern.
 - **Inputs:** `pattern`. **Returns:** `void`. **Side effects:** Updates the draft and prefilled
   fields.
@@ -155,7 +162,7 @@ user backs out.
 
 ### `Future<void> _createService({required String templateId, String? deviceId, required bool asProxy})` <a id="createservice"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 458)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 484)
 - **Purpose:** Create a proxy or relay service inline and select it.
 - **Inputs:** `templateId` — `caddy` for the proxy, the pattern's relay template otherwise;
   `deviceId` — where the new service starts (the source's device, or the first VPS for FRP and
@@ -170,7 +177,7 @@ user backs out.
 
 ### `Future<void> _addEndpointTo(ServiceNode service, ServiceAccessDraft Function(ServiceAccessDraft, ServiceEndpoint) onAdded)` <a id="addendpointto"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 490)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 516)
 - **Purpose:** Add an endpoint to a service right away and select it.
 - **Inputs:** `service`; `onAdded` — returns the draft with the new endpoint selected.
 - **Returns:** `Future<void>`.
@@ -183,7 +190,7 @@ user backs out.
 
 ### `Future<void> _save()` <a id="save"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 516)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 542)
 - **Purpose:** Save the access path as one route and close the page.
 - **Inputs:** None. **Returns:** `Future<void>`.
 - **Side effects:** Persists the route and pops `true`; with blocking issues, shows them and a
@@ -195,7 +202,7 @@ user backs out.
 
 ### `Future<void> _openAdvancedEditor()` <a id="openadvancededitor"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 572)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 598)
 - **Purpose:** Hand the current draft over to the advanced route editor.
 - **Inputs:** None. **Returns:** `Future<void>`.
 - **Side effects:** Pushes `ServiceRouteEditPage`; pops `true` when the editor saved or deleted.
@@ -209,7 +216,7 @@ user backs out.
 
 ### `Widget _buildBody(BuildContext context, AppLocalizations l10n)` <a id="buildbody"></a>
 - **Kind:** method (widget helper)
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 640)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 666)
 - **Purpose:** Lay the form out in one column or two panes.
 - **Inputs:** `context`, `l10n`. **Returns:** `Widget`. **Side effects:** None.
 - **Algorithm:** Without `useDetailTwoPane`, one `ListView` (key `access-single-pane`) of the
@@ -223,7 +230,7 @@ user backs out.
 
 ### `List<Widget> _buildDetailsSection(BuildContext context, AppLocalizations l10n)` <a id="builddetailssection"></a>
 - **Kind:** method (widget helper)
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 840)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 866)
 - **Purpose:** Build the fields the selected pattern needs.
 - **Inputs:** `context`, `l10n`. **Returns:** `List<Widget>`. **Side effects:** None.
 - **Algorithm:** Always the reachability chips (LAN · VPN · Public · Public, login required).
@@ -241,7 +248,7 @@ user backs out.
 
 ### `Widget _buildPreviewCard(BuildContext context, AppLocalizations l10n)` <a id="buildpreviewcard"></a>
 - **Kind:** method (widget helper)
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1167)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1193)
 - **Purpose:** Show the chain, lane, access level and advisory warnings of the draft.
 - **Inputs:** `context`, `l10n`. **Returns:** `Widget`. **Side effects:** None.
 - **Algorithm:** Build the draft route; show `serviceRouteChainPreview` with
@@ -255,7 +262,7 @@ user backs out.
 
 ### `List<ServiceWarning> _draftReferenceWarnings(ServiceRoute route)` <a id="draftreferencewarnings"></a>
 - **Kind:** method of `_ServiceAccessPathPageState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1247)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1273)
 - **Purpose:** Find the reference warnings that concern the draft route.
 - **Inputs:** `route` — the draft as a route. **Returns:** `List<ServiceWarning>`.
 - **Side effects:** None.
@@ -270,7 +277,7 @@ user backs out.
 
 ### `Widget build(BuildContext context)` (`_ServicePickerSheetState`) <a id="pickerbuild"></a>
 - **Kind:** method (widget build) of `_ServicePickerSheetState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1698)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1724)
 - **Purpose:** Render the searchable service picker.
 - **Inputs:** `context`. **Returns:** The widget tree. **Side effects:** None.
 - **Algorithm:** Filter by the search text (service name, device name, ports); sort by device,

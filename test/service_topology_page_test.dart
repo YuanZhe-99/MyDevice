@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_device/l10n/app_localizations.dart';
 import 'package:my_device/features/devices/models/device.dart';
 import 'package:my_device/features/services/models/service.dart';
+import 'package:my_device/features/services/services/service_access_patterns.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
 import 'package:my_device/features/services/services/service_topology_layout.dart';
 import 'package:my_device/features/services/views/service_topology_page.dart';
@@ -118,7 +119,8 @@ void main() {
   /// Purpose: Pump the topology page over the fixture.
   /// Inputs: `tester`; `width`, `height` — the window in logical pixels;
   /// `editedServices`, `editedRoutes` — collect the ids the details' actions
-  /// pass back.
+  /// pass back; `drafts` — collects the drafts the access-path actions pass;
+  /// `reload` — the page's reload callback.
   /// Returns: `Future<void>` that completes once the node cards are laid out.
   /// Side effects: Pumps the widget tree.
   /// Notes: None.
@@ -128,6 +130,8 @@ void main() {
     double height = 915,
     List<String>? editedServices,
     List<String>? editedRoutes,
+    List<ServiceAccessDraft?>? drafts,
+    Future<ServiceTopologyInventory> Function()? reload,
   }) async {
     final f = topologyFixture();
     final graph = buildServiceTopology(
@@ -144,12 +148,27 @@ void main() {
         services: f.services,
         devices: f.devices,
         routes: f.routes,
-        onEditService: (service) => editedServices?.add(service.id),
-        onEditRoute: (route) => editedRoutes?.add(route.id),
-        onAddAccess: ({draft}) async {},
+        onEditService: (service) async => editedServices?.add(service.id),
+        onEditRoute: (route) async => editedRoutes?.add(route.id),
+        onAddAccess: ({draft}) async => drafts?.add(draft),
+        reload: reload,
       ),
       ready: find.byType(ServiceTopologyNodeCard),
     );
+  }
+
+  /// Purpose: Select a node by id on a split window and return the details
+  /// pane.
+  /// Inputs: `tester`, `id`.
+  /// Returns: `Finder` of the pane.
+  /// Side effects: Taps the node card.
+  /// Notes: Scrolls the card into view first.
+  Future<Finder> selectOnSplit(WidgetTester tester, String id) async {
+    final card = find.byKey(ValueKey('topology-node-$id'));
+    await tester.ensureVisible(card);
+    await tester.tap(card);
+    await settle(tester);
+    return find.byKey(const Key('topology-details-pane'));
   }
 
   /// Purpose: Find the node card that shows a label.
@@ -399,6 +418,107 @@ void main() {
       findsOneWidget,
     );
     semantics.dispose();
+  });
+
+  testWidgets('node actions open the guided page with the node prefilled', (
+    tester,
+  ) async {
+    final drafts = <ServiceAccessDraft?>[];
+    await pumpTopology(tester, width: 1280, height: 800, drafts: drafts);
+
+    Future<void> runAction(String nodeId, String actionKey) async {
+      final pane = await selectOnSplit(tester, nodeId);
+      final action = find.descendant(
+        of: pane,
+        matching: find.byKey(Key(actionKey)),
+      );
+      expect(action, findsOneWidget, reason: '$nodeId: $actionKey');
+      await tester.tap(action);
+      await settle(tester);
+    }
+
+    await runAction('service:frps', 'topology-action-from-here');
+    await runAction('service:frps', 'topology-action-expose');
+    await runAction('domain:media.example.com', 'topology-action-target');
+    await runAction('device:nas', 'topology-action-device');
+    await runAction('endpoint:jellyfin:web', 'topology-action-from-here');
+
+    expect(drafts, [
+      const ServiceAccessDraft(sourceServiceId: 'frps'),
+      const ServiceAccessDraft(
+        pattern: ServiceAccessPattern.frp,
+        reachability: ServiceReachability.public,
+        relayServiceId: 'frps',
+        relayEndpointId: 'bind',
+      ),
+      const ServiceAccessDraft(
+        pattern: ServiceAccessPattern.frp,
+        reachability: ServiceReachability.public,
+        targets: ['https://media.example.com'],
+      ),
+      const ServiceAccessDraft(),
+      const ServiceAccessDraft(
+        sourceServiceId: 'jellyfin',
+        sourceEndpointId: 'web',
+      ),
+    ]);
+    expect(drafts[3]!.initialDeviceId, 'nas');
+
+    final plain = await selectOnSplit(tester, 'service:jellyfin');
+    expect(
+      find.descendant(
+        of: plain,
+        matching: find.byKey(const Key('topology-action-expose')),
+      ),
+      findsNothing,
+      reason: 'Jellyfin is no relay',
+    );
+  });
+
+  testWidgets('the topology redraws after an editor it opened', (tester) async {
+    final f = topologyFixture();
+    final added = ServiceNode(
+      id: 'immich',
+      deviceId: 'nas',
+      name: 'Immich',
+      endpoints: [ServiceEndpoint(id: 'web', port: 2283, isPrimary: true)],
+    );
+    var reloads = 0;
+    await pumpTopology(
+      tester,
+      width: 1280,
+      height: 800,
+      reload: () async {
+        reloads++;
+        return (
+          services: [...f.services, added],
+          devices: f.devices,
+          routes: f.routes,
+        );
+      },
+    );
+    expect(
+      find.byKey(const ValueKey('topology-node-service:immich')),
+      findsNothing,
+    );
+
+    final pane = await selectOnSplit(tester, 'device:nas');
+    await tester.tap(
+      find.descendant(
+        of: pane,
+        matching: find.byKey(const Key('topology-action-device')),
+      ),
+    );
+    await pumpUntil(
+      tester,
+      find.byKey(const ValueKey('topology-node-service:immich')),
+    );
+    await settle(tester);
+    expect(reloads, 1);
+    expect(
+      find.byKey(const ValueKey('topology-node-service:immich')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a split window shows the details pane instead of a sheet', (

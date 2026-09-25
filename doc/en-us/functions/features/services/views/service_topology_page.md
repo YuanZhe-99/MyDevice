@@ -26,16 +26,27 @@ split out of `service_list_page.dart` in 1.5.6 and then gained the topology's in
   `groupByDevice` to the layout: devices become containers with a header tab and the
   device-to-service edges are hidden. Part of the layout request, so toggling re-lays out the
   same graph.
+- **Launchpad.** The details offer each node's "add access path" actions (`_nodeActions`, from
+  `ServiceAccessDraft.forNode`): add access from a service or endpoint, expose a service through
+  a relay on a VPS, add another service to a domain, add access for a service on a device. Each
+  opens the guided page with the node prefilled.
+- **Refresh.** Every editor the page opens — service, route, access path — is awaited, then the
+  page reads the inventory again through `reload` and rebuilds its graph (`_refresh`), so an
+  edit shows without reopening the topology.
 
-The page owns the mode, rotation, export, grouping, selection and filter state; the view owns the
+The page owns its copy of the inventory and graph, and the mode, rotation, export, grouping,
+selection and filter state; the view owns the
 deferred, cached layout (`_TopologyLayoutRequest` is its cache key). Node cards, the edge
 painter, the legend and the icon, colour and fit helpers come from
 [`service_topology_widgets.md`](service_topology_widgets.md); the filter and highlight logic
 from [`../services/service_analysis.md`](../services/service_analysis.md); node and edge
 placement from [`../services/service_topology_layout.md`](../services/service_topology_layout.md).
 
-**Row-count note:** `grep -c 'Purpose:' service_topology_page.dart` returns **36**, one per
-declaration below (**16 Tier A / 20 Tier B**). `enum _TopologyInteractionMode { select, move }`
+**Row-count note:** `grep -c 'Purpose:' service_topology_page.dart` returns **39**, one per
+declaration below (**18 Tier A / 21 Tier B**). The local `fromHere` of `_nodeActions` has no
+comment and no row. The typedefs `ServiceTopologyInventory` (the `services`, `devices`, `routes`
+record `reload` returns) and `_NodeAction` (an action's `key`, `label`, `icon` and `draft`) are
+not listed either. `enum _TopologyInteractionMode { select, move }`
 (line 18) is a member-less enum and is not listed: select mode wires node taps and the
 background tap and scrolls the canvas; move mode drops the taps and wraps the canvas in an
 `InteractiveViewer`. The private constants `_minScale` (0.35), `_maxScale` (2.4) and
@@ -57,7 +68,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 | [`_TopologyLayoutRequest` (constructor)](#topologylayoutrequest-new) | constructor | A | Create a layout cache-key value (graph, routes, viewport width, layout options). |
 | [`==`](#equals) | operator (`_TopologyLayoutRequest`) | A | Compare two requests by graph/route identity, viewport width and options. |
 | [`hashCode`](#hashcode) | getter (`_TopologyLayoutRequest`) | A | Hash a request consistently with its equality contract. |
-| `ServiceTopologyPage` (constructor) | constructor | B | Create the full-screen topology page widget. |
+| `ServiceTopologyPage` (constructor) | constructor | B | Create the full-screen topology page: inventory, graph, the three editor callbacks (each completing when its editor closed) and the optional `reload`. |
 | `createState` | method (`ServiceTopologyPage`) | B | Create the page's mutable state object. |
 | `dispose` | method (`_ServiceTopologyPageState`, widget lifecycle) | B | Dispose the transformation controller. |
 | [`_visible`](#visible) | method (`_ServiceTopologyPageState`) | A | The graph and routes the current filter shows, memoized per filter. |
@@ -68,14 +79,17 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 | `_setFilter` | method (`_ServiceTopologyPageState`) | B | Apply a filter and reset the move-mode transform. |
 | `_openFilters` | method (`_ServiceTopologyPageState`) | B | Open the filter sheet with the devices that host services. |
 | [`_showDetailsSheet`](#showdetailssheet) | method (`_ServiceTopologyPageState`) | A | Show a node's details in a bottom sheet whose actions call the editors. |
+| [`_nodeActions`](#nodeactions) | method (`_ServiceTopologyPageState`) | A | The "add access path" actions a node offers, with their drafts. |
+| `_openEditor` | method (`_ServiceTopologyPageState`) | B | Await one of the editor callbacks, then `_refresh`. |
+| [`_refresh`](#refresh) | method (`_ServiceTopologyPageState`) | A | Read the inventory through `reload` and rebuild the graph. |
 | [`_exportTopologyImage`](#exporttopologyimage) | method (`_ServiceTopologyPageState`) | A | Capture the topology canvas, highlight included, as a PNG and hand it to the platform share flow. |
 | [`build`](#pagebuild) | method (widget, `_ServiceTopologyPageState`) | A | Build the scaffold: filter/rotate/export actions, mode row, legend strip, canvas, details pane. |
 | `_buildModeRow` | method (widget helper) | B | The select / move switch, plus Fit and Reset icon buttons in move mode. |
 | `_buildLegendStrip` | method (widget helper) | B | The legend toggle, the legend, and the selection chip that clears it. |
 | [`_buildDetailsPane`](#builddetailspane) | method (widget helper) | A | The split window's details pane: a hint, or the selected node's details. |
 | `_buildNoMatch` | method (widget helper) | B | The "nothing matches" message with a "Clear filters" button. |
-| `_TopologyNodeDetails` (constructor) | constructor | B | Create the node details for the sheet or the pane. |
-| [`build`](#detailsbuild) | method (widget, `_TopologyNodeDetails`) | A | Render the node, its device and service with their actions, and its routes. |
+| `_TopologyNodeDetails` (constructor) | constructor | B | Create the node details for the sheet or the pane, with the node's actions. |
+| [`build`](#detailsbuild) | method (widget, `_TopologyNodeDetails`) | A | Render the node, its device and service, its actions, and its routes. |
 | `_TopologyFilterSheet` (constructor) | constructor | B | Create the filter sheet from a filter, the device chips and a change callback. |
 | `createState` | method (`_TopologyFilterSheet`) | B | Create the sheet's mutable state object. |
 | `dispose` | method (`_TopologyFilterSheetState`, widget lifecycle) | B | Dispose the search controller. |
@@ -86,7 +100,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void _ensureLayout(_TopologyLayoutRequest request)` <a id="ensurelayout"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 139).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 148).
 - **Purpose:** Schedule a deferred layout calculation for a request, unless an identical request is
   already pending.
 - **Inputs:** `request`.
@@ -109,7 +123,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Future<void> _calculateLayout(_TopologyLayoutRequest request, int generation)` <a id="calculatelayout"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 153).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 162).
 - **Purpose:** Run the topology layout engine for one request, after yielding a frame, and cache
   the result if it's still the current request.
 - **Inputs:** `request`; `generation` — the `_layoutGeneration` value captured when this
@@ -134,7 +148,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void fitToViewport()` <a id="fittoviewport"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 216).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 225).
 - **Purpose:** Fit the laid-out canvas into the view.
 - **Inputs:** None.
 - **Returns:** `void`.
@@ -152,7 +166,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget _buildViewer(BuildContext context, ServiceTopologyLayout layout, int turns)` <a id="buildviewer"></a>
 - **Kind:** method (widget helper) of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 245).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 254).
 - **Purpose:** Build the canvas — edges and node cards — inside its viewer.
 - **Inputs:** `context`; `layout` — the cached layout; `turns` — quarter turns, 0 to 3.
 - **Returns:** `Widget`.
@@ -172,7 +186,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth, required this.options})` <a id="topologylayoutrequest-new"></a>
 - **Kind:** constructor.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 332).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 341).
 - **Purpose:** Create the value used as a topology layout's cache key.
 - **Inputs:** `graph`, `routes`, `viewportWidth`, `options` — the view's `ServiceTopologyLayoutOptions`.
 - **Returns:** A new `_TopologyLayoutRequest`.
@@ -183,7 +197,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `bool operator ==(Object other)` <a id="equals"></a>
 - **Kind:** operator of `_TopologyLayoutRequest`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 345).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 354).
 - **Purpose:** Compare two layout requests for cache-reuse purposes.
 - **Inputs:** `other`.
 - **Returns:** `bool`.
@@ -202,7 +216,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `int get hashCode` <a id="hashcode"></a>
 - **Kind:** getter of `_TopologyLayoutRequest`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 360).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 369).
 - **Purpose:** Produce a hash code consistent with the identity-based `==` above.
 - **Inputs:** None.
 - **Returns:** `int`.
@@ -217,13 +231,13 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `({ServiceTopologyGraph graph, List<ServiceRoute> routes}) _visible()` <a id="visible"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 464).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 491).
 - **Purpose:** Return the graph and routes the current filter shows.
 - **Inputs:** None.
 - **Returns:** The page's own `graph` and `routes` when the filter narrows nothing; otherwise the
   graph `buildServiceTopology` builds from `filterServiceTopologyInput`'s services and routes.
 - **Side effects:** Caches the filtered graph with its filter in `_filtered`.
-- **Algorithm:** 1. Inactive filter ⇒ `(widget.graph, widget.routes)`. 2. A cache for an equal
+- **Algorithm:** 1. Inactive filter ⇒ `(_graph, _routes)`. 2. A cache for an equal
   filter ⇒ its graph and routes. 3. Otherwise narrow the inventory with
   [`filterServiceTopologyInput`](../services/service_analysis.md#filterservicetopologyinput),
   build the graph, cache and return it.
@@ -234,7 +248,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `_selectionIn(ServiceTopologyGraph graph, List<ServiceRoute> routes)` <a id="selectionin"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 497).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 524).
 - **Purpose:** Resolve the selection on the visible graph.
 - **Inputs:** `graph`, `routes` — from [`_visible`](#visible).
 - **Returns:** A record of the selected node, its related routes and the
@@ -253,7 +267,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void _selectNode(ServiceTopologyNode node)` <a id="selectnode"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 540).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 563).
 - **Purpose:** Select a tapped node.
 - **Inputs:** `node`.
 - **Returns:** `void`.
@@ -267,24 +281,59 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void _showDetailsSheet(ServiceTopologyNode node)` <a id="showdetailssheet"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 620).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 642).
 - **Purpose:** Show a node's details in a bottom sheet.
 - **Inputs:** `node`.
 - **Returns:** `void`.
 - **Side effects:** Shows a modal bottom sheet; its actions pop it and call
-  `widget.onEditService`, `widget.onEditRoute` or `widget.onAddAccess`.
+  `widget.onEditService`, `widget.onEditRoute` or `widget.onAddAccess` through `_openEditor`.
 - **Algorithm:** Resolve the related routes on the visible routes and show
   [`_TopologyNodeDetails`](#detailsbuild) (key `topology-details-sheet`, `shrinkWrap`) in a
   scroll-controlled sheet with a drag handle. A route row opens the route's editor; "Edit
-  service" and "Add access" open the service editor and the guided access-path page (with the
-  service as source).
+  service" opens the service editor; each of the node's actions
+  ([`_nodeActions`](#nodeactions)) opens the guided access-path page with its draft.
 - **Usage:** [`_selectNode`](#selectnode), on windows without the details pane.
 - **Notes:** Replaces the view's `_showNodeDetails` of 1.5.6's extraction; its content is the
   shared details widget, so the sheet and the pane cannot drift apart.
 
+### `List<_NodeAction> _nodeActions(ServiceTopologyNode node)` <a id="nodeactions"></a>
+- **Kind:** method of `_ServiceTopologyPageState`.
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 690).
+- **Purpose:** List the "add access path" actions a node offers.
+- **Inputs:** `node`.
+- **Returns:** The actions in button order; empty for relays, remote entries and nodes whose
+  service is gone.
+- **Side effects:** None.
+- **Algorithm:** Take `ServiceAccessDraft.forNode(node, …)` on the page's inventory
+  ([`service_access_patterns.md`](../services/service_access_patterns.md#fornode)). A service node
+  offers "Add access path from here" (key `topology-action-from-here`, the plain source draft).
+  A draft naming a relay adds "Expose a service through this relay" (`topology-action-expose`).
+  Otherwise, for a node that is not a service: a domain offers "Add another service to this
+  target" (`topology-action-target`), a device "Add access path for a service on this device"
+  (`topology-action-device`), an endpoint chip "Add access path from here".
+- **Usage:** [`_showDetailsSheet`](#showdetailssheet) and [`_buildDetailsPane`](#builddetailspane).
+- **Notes:** A relay service on a VPS shows both service actions: access to the relay itself,
+  and exposing another service through it.
+
+### `Future<void> _refresh()` <a id="refresh"></a>
+- **Kind:** method of `_ServiceTopologyPageState`.
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 755).
+- **Purpose:** Rebuild the graph from the current inventory.
+- **Inputs:** None.
+- **Returns:** `Future<void>`.
+- **Side effects:** Calls `widget.reload`; replaces `_services`, `_devices`, `_routes` and
+  `_graph`; clears the `_filtered` and `_lit` caches.
+- **Algorithm:** Without `reload`, return. Otherwise await it; if still mounted, `setState` with
+  the new lists and `buildServiceTopology` over them.
+- **Usage:** `_openEditor`, after every editor the details open — the service editor, a route's
+  editor, the guided page.
+- **Notes:** The selection and the filter stay; a node the edit removed is simply no longer
+  selected. The new graph instance is a new layout request, so the canvas lays out again. Before
+  Phase 5 of 1.5.6 the topology kept the graph it was opened with.
+
 ### `Future<void> _exportTopologyImage()` <a id="exporttopologyimage"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 664).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 781).
 - **Purpose:** Capture the topology canvas (via its `RepaintBoundary`) as a PNG and hand it to the
   platform-appropriate share/save flow.
 - **Inputs:** None.
@@ -312,7 +361,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget build(BuildContext context)` <a id="pagebuild"></a>
 - **Kind:** method (widget build) of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 715).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 832).
 - **Purpose:** Build the topology page scaffold.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
@@ -335,7 +384,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget _buildDetailsPane(AppLocalizations l10n, ...? selection)` <a id="builddetailspane"></a>
 - **Kind:** method (widget helper) of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 933).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1050).
 - **Purpose:** Build the details pane of a split window.
 - **Inputs:** `l10n`; `selection` — from [`_selectionIn`](#selectionin), or null.
 - **Returns:** `Widget`.
@@ -343,22 +392,24 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 - **Algorithm:** Nothing selected ⇒ a centred hint (key `topology-details-empty`). Otherwise
   [`_TopologyNodeDetails`](#detailsbuild) (key `topology-details-pane`) with the focused route,
   the focus hint when there is more than one route, `_toggleRouteFocus` for route rows, the
-  route editor for their edit buttons, and `_clearSelection` for the close button.
+  route editor for their edit buttons, the node's [`_nodeActions`](#nodeactions), and
+  `_clearSelection` for the close button; editors open through `_openEditor`.
 - **Usage:** [`build`](#pagebuild) on split windows.
 - **Notes:** Non-modal: the canvas stays interactive beside it, so another node can be selected
   directly.
 
 ### `Widget build(BuildContext context)` (`_TopologyNodeDetails`) <a id="detailsbuild"></a>
 - **Kind:** method (widget build) of `_TopologyNodeDetails`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1049).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1172).
 - **Purpose:** Render a node's details.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
 - **Side effects:** None.
 - **Algorithm:** A `ListView` of: the node tile (icon, label; role, detail and lane as subtitle;
   a close button keyed `topology-details-close` when `onClose` is set); the device tile with its
-  localized category (`deviceCategoryLabel`); the service tile with its endpoints and the "Edit
-  service" / "Add access" buttons; then "Routes", the focus hint when asked for, and one row per
+  localized category (`deviceCategoryLabel`); the service tile with its endpoints; a wrap of
+  "Edit service" (when the node has a service) and one outlined button per action, keyed by the
+  action; then "Routes", the focus hint when asked for, and one row per
   related route (key `topology-route-<id>`, `selected` when focused): method icon, target,
   targets summary, localized access level and lane, and an edit button
   (`topology-route-edit-<id>`) when `onRouteEdit` is set, else a chevron.
@@ -369,7 +420,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget build(BuildContext context)` (`_TopologyFilterSheetState`) <a id="filterbuild"></a>
 - **Kind:** method (widget build) of `_TopologyFilterSheetState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1230).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1357).
 - **Purpose:** Render the filter sheet.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.

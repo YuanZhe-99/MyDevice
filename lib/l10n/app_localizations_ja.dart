@@ -1704,6 +1704,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get serviceTopologyGroupByDevice => 'デバイスごとにまとめる';
 
   @override
+  String get serviceTopologyAddAccessFromHere => 'ここからアクセス経路を追加';
+
+  @override
+  String get serviceTopologyExposeThroughRelay => 'この中継でサービスを公開';
+
+  @override
+  String get serviceTopologyAddServiceToTarget => 'この宛先に別のサービスを追加';
+
+  @override
+  String get serviceTopologyAddAccessOnDevice => 'このデバイスのサービスにアクセス経路を追加';
+
+  @override
   String get serviceTopologyRouteFocusHint =>
       'ルートをタップするとそれだけを強調し、もう一度タップすると全体に戻ります。';
 

@@ -7,8 +7,10 @@ topology card opens the full-screen topology, which lives in
 [`service_topology_page.md`](service_topology_page.md) since 1.5.6, with its node card, edge
 painter and icon helpers in [`service_topology_widgets.md`](service_topology_widgets.md). Every
 "Add access" entry point pushes the guided access-path page
-([`service_access_path_page.md`](service_access_path_page.md)) through `_addAccessPath`; the
-quick-access route dialog this file held until 1.5.6 is gone. Graph construction,
+([`service_access_path_page.md`](service_access_path_page.md)) through `_addAccessPath`, and
+every saved route opens through `_editRoute` — in the guided page when it fits
+(`serviceRouteOpensGuided`), in the advanced editor otherwise; the quick-access route dialog this
+file held until 1.5.6 is gone. Graph construction,
 warning/conflict detection, and most route-formatting helpers are read from
 `service_analysis.dart` ([`../services/service_analysis.md`](../services/service_analysis.md));
 node/edge placement and edge routing come from `service_topology_layout.dart`
@@ -47,10 +49,10 @@ helpers that had no `/// Purpose:` block here.
 | `_serviceById` | method (`_ServiceListPageState`) | B | Look up a service by id in the loaded service list. |
 | `_endpointById` | method (`_ServiceListPageState`) | B | Look up an endpoint by id on a service, or its first endpoint if no id is given. |
 | `_addService` | method (`_ServiceListPageState`) | B | Push the blank service edit page, then reload when it pops a `ServiceEditOutcome`. |
-| `_editService` | method (`_ServiceListPageState`) | B | Push the service edit page for an existing service, then reload when it pops a `ServiceEditOutcome` (a save or a delete). |
+| `_editService` | method (`_ServiceListPageState`) | B | Push the service edit page for an existing service, then await a reload when it pops a `ServiceEditOutcome` (a save or a delete). |
 | `_addRoute` | method (`_ServiceListPageState`) | B | Push the advanced route editor, then reload if it reported a save. |
 | [`_addAccessPath`](#addaccesspath) | method (`_ServiceListPageState`) | A | Push the guided access-path page for a new access path; reload when it saved. |
-| `_editRoute` | method (`_ServiceListPageState`) | B | Push the advanced route editor for an existing route, then reload if it reported a save. |
+| `_editRoute` | method (`_ServiceListPageState`) | B | Open a saved route in the guided page when `serviceRouteOpensGuided` says it fits, else the advanced editor; await a reload when it saved or deleted. Every place that opens a saved route goes through it. |
 | `_viewLabel` | method (`_ServiceListPageState`) | B | Map a `_ServiceView` to its localized segmented-button label. |
 | `build` | method (widget, `_ServiceListPageState`) | B | Build the scaffold: app bar actions, FAB, view switcher, current view body. |
 | `_setColumnsPref` | method (`_ServiceListPageState`) | B | Store a new column preference (`DeviceStorage.setServiceListColumns`) and re-render. |
@@ -60,12 +62,12 @@ helpers that had no `/// Purpose:` block here.
 | `_buildRoutes` | method (widget helper, `_ServiceListPageState`) | B | Render the routes view: one card per route, in `adaptiveTileRows`. |
 | `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage cards, the cards in `adaptiveTileRows`. |
 | `_topologyCard` | method (widget helper) | B | Render the overview's topology summary card; the header/actions row is gated by `useTopologyActionsRow` from `adaptive_layout.dart`. |
-| `_openTopology` | method (`_ServiceListPageState`) | B | Push `ServiceTopologyPage` for a built graph. |
+| `_openTopology` | method (`_ServiceListPageState`) | B | Push `ServiceTopologyPage` for a built graph, with this page's editors and a `reload` that reloads and returns the inventory. |
 | [`_routesGroupedByService`](#routesgroupedbyservice) | method (`_ServiceListPageState`) | A | Group routes by source service id and sort the groups by service name. |
 | `_serviceRouteGroupCard` | method (widget helper) | B | Render one service's route group as an expandable card. |
 | `_metricCard` | method (widget helper) | B | Render one overview metric tile (icon, value, label). |
 | `_serviceTile` | method (widget helper) | B | Render one service's list tile (icon, device, endpoints, route count, menu). |
-| `_routeCard` | method (widget helper) | B | Render one route's summary card. |
+| `_routeCard` | method (widget helper) | B | Render one route's summary card, led by its primary method's icon (`iconForRouteMethod`). |
 | [`_hopLabel`](#hoplabel) | method (`_ServiceListPageState`) | A | Compute a display label for one route hop. |
 | [`_routeSummary`](#routesummary) | method (`_ServiceListPageState`) | A | Build the "source -> hops -> targets" summary line for a route. |
 | [`_routesForEndpoint`](#routesforendpoint) | method (`_ServiceListPageState`) | A | Find the display names of routes that use a given service endpoint. |
@@ -116,9 +118,10 @@ editor and the guided access-path page share.
   `setState` assigns all four lists and sets `_loading = false`.
 - **Usage:** Called from [`initState`](#initstate), `_handleLocalDataChanged` (auto-sync), and
   after every add/edit/access-path flow: `if (result != null) _load();` on the
-  `ServiceEditOutcome` of `_addService`/`_editService`, `if (result == true) _load();` in
-  `_addRoute`/`_editRoute`, and `await _load();` in [`_addAccessPath`](#addaccesspath) when the
-  page saved.
+  `ServiceEditOutcome` of `_addService` (awaited in `_editService`), `if (result == true)
+  _load();` in `_addRoute`, and `await _load();` in `_editRoute` and
+  [`_addAccessPath`](#addaccesspath) when the editor saved; and from the topology's `reload`
+  (`_openTopology`), which returns the reloaded lists.
 - **Notes:** The three storages are loaded sequentially rather than with `Future.wait`, so total
   load time is additive across them — acceptable given these are small local JSON files.
 
@@ -151,7 +154,7 @@ editor and the guided access-path page share.
 
 ### `List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService()` <a id="routesgroupedbyservice"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 743).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 759).
 - **Purpose:** Group all routes by their source service id, for the overview's per-service route
   cards.
 - **Inputs:** None.
@@ -168,7 +171,7 @@ editor and the guided access-path page share.
 
 ### `String _hopLabel(ServiceRouteHop hop)` <a id="hoplabel"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 922).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 943).
 - **Purpose:** Compute a short display label for one route hop, for the route summary line.
 - **Inputs:** `hop`.
 - **Returns:** `String`.
@@ -186,19 +189,21 @@ editor and the guided access-path page share.
 
 ### `String _routeSummary(ServiceRoute route, {ServiceNode? source, ServiceEndpoint? sourceEndpoint})` <a id="routesummary"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 939).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 962).
 - **Purpose:** Build the two-line textual summary shown under each route card: the source-to-target
-  path, then the access level.
+  path, then the access level and the lane.
 - **Inputs:** `route`; `source`/`sourceEndpoint` — already-resolved source service/endpoint (so this
   method doesn't have to re-resolve them).
-- **Returns:** `String` — the arrow-joined path and the localized access level
-  (`serviceAccessLevelLabel`) joined by `'\n'`.
+- **Returns:** `String` — the arrow-joined path, then the localized access level
+  (`serviceAccessLevelLabel`) and access lane (`serviceAccessLaneLabel` of
+  `serviceAccessLaneForRoute`) joined by `' · '`, the two lines joined by `'\n'`.
 - **Side effects:** None.
 - **Algorithm:** 1. Build a `parts` list: the source service's name (with its endpoint's port text
   appended if the endpoint has a port), then each hop's [`_hopLabel`](#hoplabel), then each access
   target (`serviceRouteAccessTargets(route)`) run through `compactAccessTargetLabel`. 2. Join
   non-empty `parts` with `' -> '`, or fall back to `route.name` if `parts` ended up empty.
-  3. Append the localized access level as a second line.
+  3. Append the localized access level and lane as a second line, so a lane override shows on
+     the card as it does on the topology.
 - **Usage:** `_routeSummary(route, source: source, sourceEndpoint: sourceEndpoint)` in
   `_routeCard`'s subtitle.
 - **Notes:** In practice `parts` can't actually be empty (a route always has at least one hop), so
@@ -206,7 +211,7 @@ editor and the guided access-path page share.
 
 ### `String? _routesForEndpoint(String serviceId, String endpointId)` <a id="routesforendpoint"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 964).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 991).
 - **Purpose:** Find the display names of every route that uses a given service endpoint, either as
   its source or via a hop, for the ports view's subtitle.
 - **Inputs:** `serviceId`, `endpointId`.

@@ -1698,6 +1698,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceTopologyGroupByDevice => '按设备分组';
 
   @override
+  String get serviceTopologyAddAccessFromHere => '从这里添加访问路径';
+
+  @override
+  String get serviceTopologyExposeThroughRelay => '通过此中继公开服务';
+
+  @override
+  String get serviceTopologyAddServiceToTarget => '为此目标添加其他服务';
+
+  @override
+  String get serviceTopologyAddAccessOnDevice => '为此设备上的服务添加访问路径';
+
+  @override
   String get serviceTopologyRouteFocusHint => '点按一条链路只高亮它，再点一次恢复全部。';
 
   @override
@@ -3413,6 +3425,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceTopologyGroupByDevice => '依裝置分組';
+
+  @override
+  String get serviceTopologyAddAccessFromHere => '從這裡新增存取路徑';
+
+  @override
+  String get serviceTopologyExposeThroughRelay => '透過此中繼公開服務';
+
+  @override
+  String get serviceTopologyAddServiceToTarget => '為此目標新增其他服務';
+
+  @override
+  String get serviceTopologyAddAccessOnDevice => '為此裝置上的服務新增存取路徑';
 
   @override
   String get serviceTopologyRouteFocusHint => '點按一條鏈路只醒目提示它，再點一次恢復全部。';

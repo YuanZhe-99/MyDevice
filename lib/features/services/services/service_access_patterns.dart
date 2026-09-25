@@ -197,6 +197,11 @@ class ServiceAccessDraft {
   /// fields; empty for a new access path.
   final List<ServiceRouteHop> baseHops;
 
+  /// A device whose services the source picker offers first — set when the
+  /// path is started from a device on the topology. A UI hint: it is not part
+  /// of the route and not compared by [operator ==].
+  final String? initialDeviceId;
+
   /// Purpose: Create an access-path draft.
   /// Inputs: Every field is optional except that [pattern] and
   /// [reachability] default to a direct LAN path.
@@ -222,6 +227,7 @@ class ServiceAccessDraft {
     this.notes,
     this.extraJson = const {},
     this.baseHops = const [],
+    this.initialDeviceId,
   });
 
   /// Purpose: Report whether the proxy prefix hop is in effect.
@@ -245,7 +251,7 @@ class ServiceAccessDraft {
   /// null.
   /// Returns: `ServiceAccessDraft`.
   /// Side effects: None.
-  /// Notes: [routeId] and [baseHops] always carry over.
+  /// Notes: [routeId], [baseHops] and [initialDeviceId] always carry over.
   ServiceAccessDraft copyWith({
     String? sourceServiceId,
     String? sourceEndpointId,
@@ -307,6 +313,7 @@ class ServiceAccessDraft {
       notes: clearNotes ? null : (notes ?? this.notes),
       extraJson: extraJson,
       baseHops: baseHops,
+      initialDeviceId: initialDeviceId,
     );
   }
 
@@ -541,11 +548,102 @@ class ServiceAccessDraft {
     return draft;
   }
 
+  /// Purpose: Build the draft a topology node's "add access path" action
+  /// starts from.
+  /// Inputs: `node`; `services`, `routes`, `devices` — the inventory the
+  /// graph was built from.
+  /// Returns: `ServiceAccessDraft?` — null for a node without such an action
+  /// (relays, remote entries, a node whose service is gone).
+  /// Side effects: None.
+  /// Notes: A service that relays on a VPS ([serviceRelayPatternFor]) gives
+  /// "expose a service through this relay": the pattern, public
+  /// reachability, the relay and, for FRP, its default ingress. Any other
+  /// service gives "add access from here" with the source set. An endpoint
+  /// chip does the same with the endpoint set too — or, for a relay's port
+  /// (the FRP ingress chip), the relay draft with that ingress. A domain
+  /// gives "add another service to this target": the target, and the pattern
+  /// of its routes when they all detect the same one. A device gives a draft
+  /// whose source picker offers that device's services
+  /// ([initialDeviceId]).
+  static ServiceAccessDraft? forNode(
+    ServiceTopologyNode node, {
+    required List<ServiceNode> services,
+    required List<ServiceRoute> routes,
+    required List<Device> devices,
+  }) {
+    final service = node.serviceId == null
+        ? null
+        : services.where((s) => s.id == node.serviceId).firstOrNull;
+
+    /// Purpose: Return the relay draft for a relay service, or null.
+    /// Inputs: `relay`; `ingressId` — an ingress endpoint to prefer.
+    /// Returns: `ServiceAccessDraft?`.
+    /// Side effects: None.
+    /// Notes: Local helper of [forNode].
+    ServiceAccessDraft? relayDraft(ServiceNode relay, {String? ingressId}) {
+      final pattern = serviceRelayPatternFor(relay, devices);
+      if (pattern == null) return null;
+      return ServiceAccessDraft(
+        pattern: pattern,
+        reachability: pattern.defaultReachability,
+        relayServiceId: relay.id,
+        relayEndpointId: pattern == ServiceAccessPattern.frp
+            ? (ingressId ?? serviceDefaultIngressEndpoint(relay)?.id)
+            : null,
+      );
+    }
+
+    switch (node.kind) {
+      case ServiceTopologyNodeKind.device:
+        final deviceId = node.deviceId;
+        return deviceId == null
+            ? null
+            : ServiceAccessDraft(initialDeviceId: deviceId);
+      case ServiceTopologyNodeKind.service:
+        if (service == null) return null;
+        return relayDraft(service) ??
+            ServiceAccessDraft(sourceServiceId: service.id);
+      case ServiceTopologyNodeKind.endpoint:
+        if (service == null) return null;
+        final endpoint = service.endpoints
+            .where((endpoint) => endpoint.id == node.endpointId)
+            .firstOrNull;
+        if (endpoint == null) return null;
+        if (node.role == ServiceTopologyNodeRole.remoteService) {
+          final relay = relayDraft(service, ingressId: endpoint.id);
+          if (relay != null) return relay;
+        }
+        return ServiceAccessDraft(
+          sourceServiceId: service.id,
+          sourceEndpointId: endpoint.id,
+        );
+      case ServiceTopologyNodeKind.domain:
+        final target = (node.detail ?? node.label).trim();
+        if (target.isEmpty) return null;
+        final patterns = {
+          for (final route in routes)
+            if (node.routeIds.contains(route.id))
+              detectServiceAccessPattern(route, services),
+        };
+        final pattern = patterns.length == 1 ? patterns.single : null;
+        final chosen = pattern ?? ServiceAccessPattern.direct;
+        return ServiceAccessDraft(
+          pattern: chosen,
+          reachability: chosen.defaultReachability,
+          targets: [target],
+        );
+      case ServiceTopologyNodeKind.relay:
+      case ServiceTopologyNodeKind.remoteEntry:
+        return null;
+    }
+  }
+
   /// Purpose: Compare two drafts by form content.
   /// Inputs: `other`.
   /// Returns: `bool`.
   /// Side effects: None.
-  /// Notes: Identity metadata — [routeId] and [baseHops] — is not compared,
+  /// Notes: Identity metadata — [routeId] and [baseHops] — and the UI hint
+  /// [initialDeviceId] are not compared,
   /// so a draft read back from the route it produced equals the original.
   /// [extraJson] and [targets] compare by value.
   @override
@@ -758,6 +856,45 @@ bool isFrpLikeService(ServiceNode service) {
   ].whereType<String>().join(' ').toLowerCase();
   return text.contains('frp') || service.kind == ServiceKind.tunnel;
 }
+
+/// Purpose: Name the relay pattern a VPS service offers other services.
+/// Inputs: `service`; `devices` — to find the service's device.
+/// Returns: [ServiceAccessPattern.pangolin] or [ServiceAccessPattern.frp],
+/// or null when the service is not such a relay.
+/// Side effects: None.
+/// Notes: Only a service on a `vps` device counts, and only when its name,
+/// template id or icon names the product (`pangolin`, then `frp`) — a bare
+/// `tunnel` kind is not enough, since Cloudflare and Tailscale tunnels are
+/// not relays another service is exposed through here.
+ServiceAccessPattern? serviceRelayPatternFor(
+  ServiceNode service,
+  List<Device> devices,
+) {
+  final device = devices
+      .where((device) => device.id == service.deviceId)
+      .firstOrNull;
+  if (device?.category != DeviceCategory.vps) return null;
+  final text = [
+    service.name,
+    service.templateId,
+    service.icon,
+  ].whereType<String>().join(' ').toLowerCase();
+  if (text.contains('pangolin')) return ServiceAccessPattern.pangolin;
+  if (text.contains('frp')) return ServiceAccessPattern.frp;
+  return null;
+}
+
+/// Purpose: Decide which editor a saved route opens in.
+/// Inputs: `route`; `services` — the current services.
+/// Returns: `bool` — true for the guided access-path page, false for the
+/// advanced editor.
+/// Side effects: None.
+/// Notes: The guided page only when [ServiceAccessDraft.fromRoute] can edit
+/// the route losslessly — the same test [detectServiceAccessPattern] uses —
+/// so the guided page never has to hand a route over on open. Every place
+/// that opens a saved route uses this rule.
+bool serviceRouteOpensGuided(ServiceRoute route, List<ServiceNode> services) =>
+    ServiceAccessDraft.fromRoute(route, services) != null;
 
 /// Purpose: List the services worth suggesting as a reverse proxy.
 /// Inputs: `services`; `sourceServiceId` — excluded, and its device's

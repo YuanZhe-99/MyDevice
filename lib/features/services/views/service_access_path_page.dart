@@ -114,7 +114,9 @@ class _ServiceAccessPathPageState extends State<ServiceAccessPathPage> {
   /// Returns: `Future<void>`.
   /// Side effects: Reads storage; updates state; may hand a route the form
   /// cannot represent over to the advanced editor; a new path whose draft
-  /// names a source gets the direct-access suggestion.
+  /// names a source gets the direct-access suggestion, one that names an FRP
+  /// relay the public-host suggestion, and one started from a device with a
+  /// single service gets that service as its source.
   /// Notes: Later loads (after inline creation) keep the user's draft and
   /// only refresh the inventory it points into.
   Future<void> _load({bool initial = false}) async {
@@ -141,6 +143,10 @@ class _ServiceAccessPathPageState extends State<ServiceAccessPathPage> {
             _serviceById(draft.sourceServiceId) == null) {
           draft = draft.copyWith(clearSourceServiceId: true);
         }
+        final onDevice = _servicesOnInitialDevice(draft);
+        if (draft.sourceServiceId == null && onDevice.length == 1) {
+          draft = draft.copyWith(sourceServiceId: onDevice.single.id);
+        }
         _draft = _withDefaultSourceEndpoint(draft);
         _syncControllers();
       }
@@ -152,6 +158,7 @@ class _ServiceAccessPathPageState extends State<ServiceAccessPathPage> {
       });
     } else if (initial && !_editing) {
       _prefillDirectTarget();
+      _prefillPublicHost();
     }
   }
 
@@ -193,6 +200,22 @@ class _ServiceAccessPathPageState extends State<ServiceAccessPathPage> {
       ? null
       : _devices.where((device) => device.id == id).firstOrNull;
 
+  /// Purpose: List the services on the draft's initial device.
+  /// Inputs: `draft`.
+  /// Returns: The services whose device is `draft.initialDeviceId`, by name;
+  /// empty without one.
+  /// Side effects: None.
+  /// Notes: A path started from a device on the topology preselects its only
+  /// service, and otherwise the source picker offers these first.
+  List<ServiceNode> _servicesOnInitialDevice(ServiceAccessDraft draft) {
+    final deviceId = draft.initialDeviceId;
+    if (deviceId == null) return const [];
+    return [
+      for (final service in _services)
+        if (service.deviceId == deviceId) service,
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  }
+
   /// Purpose: Preselect the source endpoint when the choice is obvious.
   /// Inputs: `draft`.
   /// Returns: The draft, with a source endpoint when there was none and the
@@ -216,13 +239,16 @@ class _ServiceAccessPathPageState extends State<ServiceAccessPathPage> {
   /// Returns: `Future<void>`.
   /// Side effects: Opens the service picker sheet; updates the draft.
   /// Notes: A proxy or relay equal to the new source is cleared, since a
-  /// service cannot pass traffic to itself.
+  /// service cannot pass traffic to itself. A path started from a device
+  /// suggests that device's services first.
   Future<void> _pickSource() async {
     final l10n = AppLocalizations.of(context)!;
     final picked = await _showServicePicker(
       title: l10n.serviceAccessPickService,
       services: _services,
-      suggestedIds: const {},
+      suggestedIds: {
+        for (final service in _servicesOnInitialDevice(_draft)) service.id,
+      },
       selectedId: _draft.sourceServiceId,
     );
     if (picked == null) return;

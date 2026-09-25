@@ -356,7 +356,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Kind:** top-level function. **Source:** line 857.
 - **Purpose:** Canonicalize any wildcard-meaning bind address form to the single sentinel `'*'`.
 - **Inputs:** `bindAddress` (nullable). **Returns:** `String`.
-- **Side effeffects:** None.
+- **Side effects:** None.
 - **Algorithm:** Trim; treat `null`/empty/`'0.0.0.0'`/`'::'` as `'*'`; otherwise return the
   trimmed value unchanged.
 - **Usage:** Called by `listServicePortUses` before comparing bind addresses across services.
@@ -685,7 +685,7 @@ all (**44 Tier A / 32 Tier B**).
   route in the same words.
 
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **Kind:** top-level function. **Source:** line 1551.
+- **Kind:** top-level function. **Source:** line 1632.
 - **Purpose:** Join a list of access targets into a compact, truncated summary string.
 - **Inputs:** `targets`; `maxItems` (default 3). **Returns:** `String` — empty if `targets` is
   empty.

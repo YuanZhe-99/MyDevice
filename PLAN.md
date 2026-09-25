@@ -53,11 +53,6 @@ local agent. Everything below is the state at the Phase 3 commit.
   full runs), the inline-width grep of `adaptive-layout.md` (empty), and a Linux desktop build.
   Nothing was run on Windows, macOS, iOS or Android: do a manual pass there before the release
   (Phase 6), at least the guided page and the topology on a phone and a split window.
-- **zh-cn mirror pending at the Phase 3 commit:** `features/services-topology.md`,
-  `functions/features/services/views/service_topology_page.md` and
-  `service_topology_widgets.md` were still being translated when Phase 3 was committed; a
-  follow-up commit adds them. If the branch has no such commit, mirror those three pages
-  from the English first (same headings, rows, anchors, links and citations).
 - **Names changed since this plan was written** (read them into Phases 4 and 5):
   `_ServiceTopologyPage` → `ServiceTopologyPage` and the view, `_TopologyLayoutRequest` and the
   node details (`_TopologyNodeDetails`) live in `service_topology_page.dart`;
@@ -90,6 +85,10 @@ local agent. Everything below is the state at the Phase 3 commit.
     `functions/features/devices/views/device_finance_overview_page.md` (citation lists).
   - `functions/features/services/services/service_topology_layout.md`: the zh page has one
     more line citation than the English (68 vs 69) — Phase 4 rewrites that page anyway.
+  - zh pages link English anchors (`#detail-pages-two-panes`, `#access-patterns`, …) while their
+    headings are Chinese, so those links land at the top of the page; `data-formats.md`,
+    `adaptive_tile_grid.md` and `shell_scaffold.md` use Chinese anchors instead. Explicit
+    `<a id="…"></a>` anchors in both trees would make them resolve and keep them identical.
   - The historical notes in `service_analysis.md` (en and zh) mention `layoutColumn`, so
     `grep -rn layoutColumn lib test doc` is not empty; `lib` and `test` are.
   - Glossary candidates the translators hit: "network assignment" (网络分配 vs the older

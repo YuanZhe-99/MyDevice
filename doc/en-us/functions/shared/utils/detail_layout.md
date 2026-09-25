@@ -95,7 +95,8 @@ the service, route and dataset edit pages and the guided access-path page for
 - **Notes:** The pane replaces the bottom sheet a phone shows, so it is capped at 380 — the
   sheet's content width on a 412 dp phone (412 less 2 × 16) — and never lays the details out wider
   than there. The 280 floor keeps a route row's two-line subtitle and the "Edit service" / "Add
-  access" buttons on one row in Chinese and English. The 0.3 share leaves the canvas at least
-  70 % of a large window: 319 at the 600 dp split floor, 652 on a Z Fold 8 in landscape (933).
+  access" buttons on one row in Chinese and English. The 0.3 share leaves the canvas 70 % of
+  any window from 934 dp up; below that the 280 floor binds, and the canvas keeps 319 at the
+  600 dp split floor and 652 on a Z Fold 8 in landscape (933).
   `test/detail_layout_test.dart` pins the named widths, the cap against the phone sheet across
   600–3000 dp, and the 0.3 share.

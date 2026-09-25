@@ -209,8 +209,8 @@ split window its node details move from the bottom sheet into a non-modal pane r
 canvas, `topologyDetailPaneWidth` wide: 0.3 of the window, clamped to 280–380. The cap is the
 sheet's content width on a 412 dp phone, so the details are never laid out wider than on the
 phone; the floor keeps a route row's two-line subtitle and the two service buttons on one line;
-the share leaves the canvas at least 70 % of the window — 319 at the 600 dp floor, 652 on a Z Fold
-8 in landscape.
+the share leaves the canvas 70 % of any window from 934 dp up; below that the floor binds and the
+canvas keeps 319 at the 600 dp floor, 652 on a Z Fold 8 in landscape.
 
 ## A pane that must not scroll: the device edit page
 

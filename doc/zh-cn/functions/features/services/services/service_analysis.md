@@ -460,7 +460,7 @@
 - **备注：** 1.5.6 中取代了高级编辑器的内联预览，使两种编辑器用相同的措辞描述路由。
 
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **种类：** 顶层函数。**来源：** 第 1551 行。
+- **种类：** 顶层函数。**来源：** 第 1632 行。
 - **用途：** 把访问目标列表连接为紧凑、截断摘要字符串。
 - **输入：** `targets`；`maxItems`（默认 3）。**返回：** `String` — `targets` 为空时空。
 - **副作用：** 无。

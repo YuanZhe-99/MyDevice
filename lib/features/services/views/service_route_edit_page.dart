@@ -4,6 +4,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/detail_layout.dart';
 import '../models/service.dart';
 import '../services/service_analysis.dart';
+import '../services/service_labels.dart';
 import '../services/service_storage.dart';
 
 class ServiceRouteEditPage extends StatefulWidget {
@@ -243,7 +244,7 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
                         .map(
                           (value) => DropdownMenuItem(
                             value: value,
-                            child: Text(value.name),
+                            child: Text(serviceHopTypeLabel(l10n, value)),
                           ),
                         )
                         .toList(),
@@ -261,7 +262,10 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
                         child: Text(l10n.optionalNone),
                       ),
                       for (final value in ServiceRouteMethod.values)
-                        DropdownMenuItem(value: value, child: Text(value.name)),
+                        DropdownMenuItem(
+                          value: value,
+                          child: Text(serviceRouteMethodUiLabel(l10n, value)),
+                        ),
                     ],
                     onChanged: (value) => setDialogState(() => method = value),
                   ),
@@ -544,8 +548,10 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
         decoration: InputDecoration(labelText: l10n.serviceAccessLevel),
         items: ServiceAccessLevel.values
             .map(
-              (value) =>
-                  DropdownMenuItem(value: value, child: Text(value.name)),
+              (value) => DropdownMenuItem(
+                value: value,
+                child: Text(serviceAccessLevelLabel(l10n, value)),
+              ),
             )
             .toList(),
         onChanged: (value) {
@@ -666,7 +672,7 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
     }
     if (hop.label != null && hop.label!.isNotEmpty) return hop.label!;
     if (hop.host != null && hop.host!.isNotEmpty) return hop.host!;
-    return hop.type.name;
+    return serviceHopTypeLabel(AppLocalizations.of(context)!, hop.type);
   }
 
   /// Purpose: Provide the internal hop subtitle helper for this file.
@@ -676,9 +682,10 @@ class _ServiceRouteEditPageState extends State<ServiceRouteEditPage> {
   /// Notes: Internal helper used within this file only.
   String _hopSubtitle(ServiceRouteHop hop) {
     final endpoint = _hopEndpoint(hop);
+    final l10n = AppLocalizations.of(context)!;
     return [
-      hop.type.name,
-      hop.method?.name,
+      serviceHopTypeLabel(l10n, hop.type),
+      if (hop.method != null) serviceRouteMethodUiLabel(l10n, hop.method!),
       if (endpoint != null) '${endpoint.protocol.name}/${endpoint.portText}',
       if (hop.host != null && hop.host!.isNotEmpty)
         '${hop.scheme != null ? '${hop.scheme}://' : ''}${hop.host}${hop.port != null ? ':${hop.port}' : ''}${hop.path ?? ''}',

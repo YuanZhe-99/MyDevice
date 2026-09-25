@@ -1451,6 +1451,124 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get serviceHopTypeOrigin => 'Origin';
+
+  @override
+  String get serviceHopTypeReverseProxy => 'Reverse proxy';
+
+  @override
+  String get serviceHopTypeTunnel => 'Tunnel';
+
+  @override
+  String get serviceHopTypePortForward => 'Port forward';
+
+  @override
+  String get serviceHopTypePublicEndpoint => 'Public endpoint';
+
+  @override
+  String get serviceHopTypeInternalEndpoint => 'Internal endpoint';
+
+  @override
+  String get serviceHopTypeDns => 'DNS';
+
+  @override
+  String get serviceHopTypeManual => 'Manual';
+
+  @override
+  String get serviceMethodDirect => 'Direct';
+
+  @override
+  String get serviceMethodCustom => 'Custom';
+
+  @override
+  String get serviceMethodRouterPortForward => 'Router port forward';
+
+  @override
+  String get serviceAccessLevelLan => 'LAN';
+
+  @override
+  String get serviceAccessLevelVpn => 'VPN';
+
+  @override
+  String get serviceAccessLevelPublic => 'Public';
+
+  @override
+  String get serviceAccessLevelAuthenticated => 'Public, login required';
+
+  @override
+  String get serviceAccessLevelCustom => 'Custom';
+
+  @override
+  String get serviceLaneLocal => 'LAN / WiFi';
+
+  @override
+  String get serviceLaneVpn => 'VPN / Tailscale';
+
+  @override
+  String get serviceLanePublic => 'Public / VPS';
+
+  @override
+  String get serviceRoleLocalDevice => 'Local device';
+
+  @override
+  String get serviceRoleRemoteDevice => 'Remote / VPS device';
+
+  @override
+  String get serviceRoleLocalService => 'Local service';
+
+  @override
+  String get serviceRoleRemoteService => 'Remote service';
+
+  @override
+  String get serviceRoleLocalEndpoint => 'Local endpoint';
+
+  @override
+  String get serviceRoleLanAccess => 'LAN / WiFi access';
+
+  @override
+  String get serviceRoleVpnAccess => 'VPN / Tailscale access';
+
+  @override
+  String get serviceRolePublicRelay => 'Public relay';
+
+  @override
+  String get serviceRoleRemotePublicEntry => 'Remote public entry';
+
+  @override
+  String get serviceRoleDomain => 'Domain / URL';
+
+  @override
+  String get servicePatternDirect => 'Direct (LAN / VPN)';
+
+  @override
+  String get servicePatternDirectDesc =>
+      'Open the service at its own address, at home or over a VPN.';
+
+  @override
+  String get servicePatternReverseProxyDesc =>
+      'Caddy, Nginx or Traefik serves it under a hostname.';
+
+  @override
+  String get servicePatternCloudflareTunnelDesc =>
+      'Published through a Cloudflare Tunnel connector, no open ports.';
+
+  @override
+  String get servicePatternPangolinDesc =>
+      'Exposed through a Pangolin server, usually on a VPS.';
+
+  @override
+  String get servicePatternFrpDesc =>
+      'An FRP server on a VPS forwards a public port to it.';
+
+  @override
+  String get servicePatternRouterPortForwardDesc =>
+      'The home router forwards a public port to it.';
+
+  @override
+  String get servicePatternTailscaleFunnelDesc =>
+      'Shared to the internet with Tailscale Funnel.';
+
+  @override
   String get backupModuleServices => 'Services';
 
   @override

@@ -140,6 +140,17 @@ Not copied to the other repos — no other app has these.
 | local API server | 本地 API 服务器 | |
 | trend chart | 趋势图 | |
 | metric | 指标 | a selectable series on a trend chart |
+| access path | 访问路径 | one `ServiceRoute`: a source endpoint through ordered hops to its targets |
+| access pattern | 访问模式 | a named setup in the guided flow: direct, reverse proxy, Cloudflare Tunnel, Pangolin, FRP, router port forward, Tailscale Funnel |
+| reachability | 可达范围 | LAN / VPN / public / public with login; saved as the access level plus the lane |
+| access lane | 访问车道 | the topology's LAN / VPN / public classification of a route |
+| lane override | 车道覆盖 | the route's `extraJson['accessLane']` |
+| ingress endpoint | 入口端点 | the FRP server endpoint the source connects to; "入口端口" where the text says ingress port |
+| public entry | 公网入口 | the public host and port of a port mapping |
+| relay / proxy service | 中继 / 代理服务 | a service a hop passes through |
+| guided editor / advanced editor | 引导式编辑器 / 高级编辑器 | the two route editors |
+| device container | 设备分组框 | the topology frame grouping a device's services and ports |
+| route highlight | 路由高亮 | the topology's emphasis of a selected node's routes |
 
 ## 6. Review checklist (run before committing a Chinese page)
 

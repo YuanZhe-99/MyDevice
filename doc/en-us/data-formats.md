@@ -101,6 +101,8 @@ source: its constructor takes only `networkId`, `deviceId`, `addressMode`, `ipAd
   `authenticated`, `public`, `custom`), `notes`, `modifiedAt`, `extraJson`. Additional
   grouped URLs/domains sharing the same access path are stored in
   `extraJson['publicTargets']` (see [Services and Topology](features/services-topology.md)).
+  Since 1.5.6 a route may also carry `extraJson['accessLane']`, which pins the lane the
+  topology draws it in (see [below](#app-written-extrajson-keys)).
 - **`ServiceRouteHop`:** one hop in a route — `id`, `type` (`ServiceRouteHopType`:
   `origin`, `reverseProxy`, `tunnel`, `portForward`, `publicEndpoint`,
   `internalEndpoint`, `dns`, `manual`), optional `serviceId`/`endpointId`/`deviceId`
@@ -155,6 +157,26 @@ own `mergeUnknownFieldsFrom(other, {base})` method (e.g. `Device.mergeUnknownFie
 `soldPrice`, and each `recurringCosts` entry). See
 [Three-Way Merge](algorithms/three-way-merge.md) for how this plugs into full-record
 merge.
+
+### App-written `extraJson` keys
+
+Two `ServiceRoute` keys are written by the app itself rather than being fields of the model.
+Both are optional and additive, so a build that does not know them keeps them through the
+mechanism above and behaves exactly as it did before they existed:
+
+| Key | Value | Written by | Meaning |
+|---|---|---|---|
+| `publicTargets` | list of strings | both route editors, when a route has more than one target | Every access target of the route, first one equal to `finalUrl`. |
+| `accessLane` | `"local"`, `"vpn"` or `"public"` | the guided access-path page (always, from the chosen reachability); the advanced editor's lane dropdown (removed again by *Auto*) | Pins the topology lane the route is drawn in. Added in 1.5.6. |
+
+`serviceAccessLaneForRoute` reads `accessLane` first and falls back to the pre-1.5.6
+inference — a public-style hop method (FRP, router port forward, Caddy, Nginx, Traefik,
+Cloudflare Tunnel, Pangolin) means public whatever the access level, then Tailscale Funnel or a
+`vpn` access level means VPN, then a `public` or `authenticated` access level means public, and
+anything else is local. An absent or unknown value means that inference, unchanged, so older
+routes and older builds keep drawing every route where they always did. The key exists because
+the inference cannot express a LAN-only reverse proxy (Caddy with split DNS): its method alone
+makes it public.
 
 ## Bundled device templates (`assets/presets/device_templates.json`)
 

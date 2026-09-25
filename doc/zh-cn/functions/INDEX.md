@@ -2,15 +2,15 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **943**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1132** 个声明——比 943 多 189——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，加 `device.dart` 和 `service_list_page.dart` 的尾部小节）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **1064**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1181** 个声明——比 1064 多 117——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，加 `device.dart` 和 `service_list_page.dart` 的尾部小节）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。
 
-`/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart` 对源码核验。声明总数是手工维护的，目前**已知存在两处偏差**。其一，对各文件页做行级统计约得到 1023 个声明行，而非 1132。其二，本表的 Tier A/B 拆分与下方「区域总计」表逐行相加得到的拆分相差 15（相加为 670/462，本表标称 685/447），尽管两者的 1132 总数一致。两处偏差都早于 `device_search_parsers.dart` 条目就已存在，此处原样保留而非掩盖，因为要对账它们需要重新审计每一页，而不是改动这两张表。在完成那次审计之前，请以各文件页的行为准，并把两个总数都视为近似值。
+`/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart`（排除 `lib/l10n/`）对源码核验。声明总数是手工维护的，且**已知存在偏差**：各文件行、「区域总计」表和下方的 Tier 表彼此并不完全一致，还有少数文件行与其自身页面的声明表也对不上。这些偏差早于 1.5.6 就已存在；1.5.6 的页面作为新行加入，各总数只按这些行的数量相应调整，并未重新审计。在完成全面核查之前，请以各文件行为准，并把所有总数都视为近似值。
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 685 |
-| Tier B（仅索引行） | 447 |
-| **总计** | **1132** |
+| Tier A（完整条目） | 711 |
+| Tier B（仅索引行） | 470 |
+| **总计** | **1181** |
 
 ## 根（`lib/`）
 
@@ -72,11 +72,14 @@
 | 源文件 | 页面 | 声明 | Tier A |
 |---|---|---|---|
 | `lib/features/services/models/service.dart` | [features/services/models/service.md](features/services/models/service.md) | 42 | 33 |
-| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 52 | 36 |
+| `lib/features/services/services/service_access_patterns.dart` | [features/services/services/service_access_patterns.md](features/services/services/service_access_patterns.md) | 33 | 18 |
+| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 57 | 40 |
+| `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 8 | 3 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 8 | 8 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
 | `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 87 | 34 |
-| `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 25 | 6 |
+| `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
+| `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 2 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 84 | 24 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 24 | 8 |
 
@@ -91,7 +94,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 943/1132 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1064/1181 手写声明）。
 
 ## shared/
 
@@ -127,7 +130,7 @@
 | `features/datasets/` | 4 | 49 | 30 | 19 |
 | `features/devices/` | 15 | 381 | 201 | 180 |
 | `features/network/` | 5 | 76 | 41 | 35 |
-| `features/services/` | 8 | 326 | 153 | 173 |
+| `features/services/` | 11 | 375 | 179 | 196 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 20 | 308 | 244 | 64 |
-| **总计** | **61** | **1196** | **710** | **486** |
+| **总计** | **64** | **1245** | **736** | **509** |

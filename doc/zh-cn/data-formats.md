@@ -42,7 +42,7 @@
 
 - **`ServiceNode`：** 设备上的服务实例——`id`、`deviceId`、`name`、`templateId`、`icon`、`kind`（`ServiceKind`：`web`、`reverseProxy`、`tunnel`、`media`、`storage`、`git`、`dev`、`game`、`network`、`database`、`monitoring`、`ai`、`custom`）、`runtime`（`ServiceRuntime`：`docker`、`compose`、`native`、`systemd`、`launchd`、`routerApp`、`container`、`custom`）、`state`（`ServiceState`：`active`、`paused`、`deprecated`、`unknown`）、`endpoints`（`List<ServiceEndpoint>`）、`tags`、`notes`、`dockerCompose`（纯文本）、`modifiedAt`、`extraJson`。
 - **`ServiceEndpoint`：** 手动记录的本地/监听端点——`id`、`label`、`protocol`（`ServiceProtocol`：`http`、`https`、`tcp`、`udp`、`ssh`、`minecraft`、`rtsp`、`vnc`、`custom`）、`transport`（`ServiceTransport`：`tcp`、`udp`、`tcpUdp`）、`bindAddress`、`port`、`portEnd`（端口范围用——不同时 `portText` getter 渲染 `"$port-$portEnd"`，否则 `"$port"`）、`path`、`networkId`、`scope`（`ServiceScope`：`localhost`、`lan`、`vpn`、`public`、`custom`）、`isPrimary`、`notes`、`extraJson`。
-- **`ServiceRoute`：** 手动记录的访问路径——`id`、`name`、`sourceServiceId`、`sourceEndpointId`、`hops`（`List<ServiceRouteHop>`）、`finalUrl`（第一/主目标，为向后兼容保留）、`accessLevel`（`ServiceAccessLevel`：`lan`、`vpn`、`authenticated`、`public`、`custom`）、`notes`、`modifiedAt`、`extraJson`。共享相同访问路径的额外分组 URL/域存储在 `extraJson['publicTargets']`（见 [服务与拓扑](features/services-topology.md)）。
+- **`ServiceRoute`：** 手动记录的访问路径——`id`、`name`、`sourceServiceId`、`sourceEndpointId`、`hops`（`List<ServiceRouteHop>`）、`finalUrl`（第一/主目标，为向后兼容保留）、`accessLevel`（`ServiceAccessLevel`：`lan`、`vpn`、`authenticated`、`public`、`custom`）、`notes`、`modifiedAt`、`extraJson`。共享相同访问路径的额外分组 URL/域存储在 `extraJson['publicTargets']`（见 [服务与拓扑](features/services-topology.md)）。自 1.5.6 起，路由还可带 `extraJson['accessLane']`，用于固定拓扑绘制该路由时所在的车道（见 [下文](#app-written-extrajson-keys)）。
 - **`ServiceRouteHop`：** 路由中的一跳——`id`、`type`（`ServiceRouteHopType`：`origin`、`reverseProxy`、`tunnel`、`portForward`、`publicEndpoint`、`internalEndpoint`、`dns`、`manual`）、可选 `serviceId`/`endpointId`/`deviceId` 回指清单，或自由形式 `label`/`scheme`/`host`/`port`/`path`、`method`（`ServiceRouteMethod`：`caddy`、`nginx`、`traefik`、`frp`、`cloudflareTunnel`、`pangolin`、`tailscaleFunnel`、`routerPortForward`、`direct`、`custom`）、`notes`、`extraJson`。
 
 `ServiceData`（顶层容器）持有 `services: List<ServiceNode>` 和 `routes: List<ServiceRoute>` 加 `extraJson`。
@@ -74,6 +74,17 @@ Map<String, dynamic> mergeUnknownJsonFields({
 ```
 
 对 `primary`/`secondary`/`base` 间每个键：只有 `secondary` 相对 `base` 改变键时其值胜出；否则 `primary` 胜出（包括都变时——primary 是调用方对该合并当作"获胜"记录的那侧）。`jsonValueEquals()` 经规范化（递归键排序）JSON 编码比较值，使映射键顺序绝不造成虚假"已变"检测。每个模型自己的 `mergeUnknownFieldsFrom(other, {base})` 方法（如 `Device.mergeUnknownFieldsFrom`、`ServiceNode.mergeUnknownFieldsFrom`）调用此辅助并递归进嵌套模型（如 `Device` 合并 `cpu`、`gpu`、每个 `storage` 槽按索引、`purchasePrice`、`soldPrice` 和每个 `recurringCosts` 条目）。这如何插入完整记录合并见 [三方合并](algorithms/three-way-merge.md)。
+
+### 应用写入的 `extraJson` 键
+
+有两个 `ServiceRoute` 键由应用自身写入，而不是模型字段。两者都可选且只做增量添加，因此不认识它们的构建会经上述机制保留它们，行为与这两个键出现之前完全相同：
+
+| 键 | 值 | 写入方 | 含义 |
+|---|---|---|---|
+| `publicTargets` | 字符串列表 | 两个路由编辑器，在路由有多个目标时 | 路由的每个访问目标，第一个等于 `finalUrl`。 |
+| `accessLane` | `"local"`、`"vpn"` 或 `"public"` | 引导式访问路径页（总是写入，取自所选的可达范围）；高级编辑器的车道下拉框（选*自动*时再次移除） | 固定拓扑绘制该路由时所在的车道。1.5.6 新增。 |
+
+`serviceAccessLaneForRoute` 先读取 `accessLane`，没有时回退到 1.5.6 之前的推断：公网风格的跳方法（FRP、路由器端口转发、Caddy、Nginx、Traefik、Cloudflare Tunnel、Pangolin）无论访问级别如何都意味着公网；其次，Tailscale Funnel 或 `vpn` 访问级别意味着 VPN；再次，`public` 或 `authenticated` 访问级别意味着公网；其余一律为本地。值缺失或未知就意味着原样沿用该推断，因此旧路由和旧构建会继续把每条路由画在它一贯所在的位置。设立此键是因为该推断无法表达仅限局域网的反向代理（使用分离 DNS 的 Caddy）：单凭它的方法就会被判为公网。
 
 ## 捆绑设备模板（`assets/presets/device_templates.json`）
 

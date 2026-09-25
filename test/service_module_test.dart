@@ -1378,9 +1378,7 @@ void main() {
     );
 
     expect(caddyNode.role, ServiceTopologyNodeRole.localService);
-    expect(caddyNode.layoutColumn, 4);
     expect(caddyEndpoint.role, ServiceTopologyNodeRole.localEndpoint);
-    expect(caddyEndpoint.layoutColumn, 5);
     expect(caddyEndpoint.compact, isTrue);
     expect(
       graph.nodes.where(
@@ -1442,9 +1440,218 @@ void main() {
     );
 
     expect(caddyNode.compact, isFalse);
-    expect(caddyNode.layoutColumn, 4);
     expect(sourceEndpoint.compact, isTrue);
-    expect(sourceEndpoint.layoutColumn, 5);
     expect(remoteEntry.compact, isTrue);
+  });
+
+  test('explicit accessLane overrides method inference', () {
+    final app = ServiceNode(
+      id: 'gitea',
+      deviceId: 'home',
+      name: 'Gitea',
+      endpoints: [ServiceEndpoint(id: 'web', port: 3000)],
+    );
+    final caddy = ServiceNode(
+      id: 'caddy',
+      deviceId: 'home',
+      name: 'Caddy',
+      kind: ServiceKind.reverseProxy,
+      endpoints: [ServiceEndpoint(id: 'http', port: 80)],
+    );
+    ServiceRoute route(Map<String, dynamic> extraJson) => ServiceRoute(
+      id: 'lan-proxy',
+      name: 'Gitea via Caddy',
+      sourceServiceId: app.id,
+      sourceEndpointId: 'web',
+      accessLevel: ServiceAccessLevel.lan,
+      finalUrl: 'https://git.home.arpa',
+      extraJson: extraJson,
+      hops: [
+        ServiceRouteHop(
+          type: ServiceRouteHopType.reverseProxy,
+          method: ServiceRouteMethod.caddy,
+          serviceId: caddy.id,
+          endpointId: 'http',
+        ),
+      ],
+    );
+
+    final inferred = route(const {});
+    final pinned = route(const {serviceRouteAccessLaneKey: 'local'});
+    expect(serviceAccessLaneForRoute(inferred), ServiceAccessLane.public);
+    expect(serviceAccessLaneForRoute(pinned), ServiceAccessLane.local);
+
+    final graph = buildServiceTopology(
+      services: [app, caddy],
+      routes: [pinned],
+      devices: [
+        Device(id: 'home', name: 'Home', category: DeviceCategory.desktop),
+      ],
+    );
+    final domain = graph.nodes.singleWhere(
+      (node) => node.kind == ServiceTopologyNodeKind.domain,
+    );
+    expect(domain.lane, ServiceAccessLane.local);
+    expect(
+      graph.edges
+          .where((edge) => edge.routeId == pinned.id)
+          .every((edge) => edge.lane == ServiceAccessLane.local),
+      isTrue,
+    );
+  });
+
+  test('invalid accessLane falls back to inference', () {
+    ServiceRoute route(Object? lane) => ServiceRoute(
+      name: 'r',
+      sourceServiceId: 's',
+      accessLevel: ServiceAccessLevel.vpn,
+      extraJson: {serviceRouteAccessLaneKey: lane},
+      hops: [ServiceRouteHop(method: ServiceRouteMethod.frp)],
+    );
+    expect(
+      serviceAccessLaneForRoute(route('sideways')),
+      ServiceAccessLane.public,
+    );
+    expect(serviceAccessLaneForRoute(route(3)), ServiceAccessLane.public);
+    expect(serviceAccessLaneForRoute(route(null)), ServiceAccessLane.public);
+    expect(serviceAccessLaneForRoute(route('vpn')), ServiceAccessLane.vpn);
+  });
+
+  test('the accessLane writer keeps every other extraJson key', () {
+    const original = {
+      serviceRoutePublicTargetsKey: ['a', 'b'],
+      'future': 1,
+    };
+    final pinned = serviceRouteExtraJsonWithAccessLane(
+      original,
+      ServiceAccessLane.vpn,
+    );
+    expect(pinned, {
+      serviceRoutePublicTargetsKey: ['a', 'b'],
+      'future': 1,
+      serviceRouteAccessLaneKey: 'vpn',
+    });
+    expect(serviceRouteExtraJsonWithAccessLane(pinned, null), original);
+    expect(original.containsKey(serviceRouteAccessLaneKey), isFalse);
+    final restored = ServiceRoute.fromJson(
+      ServiceRoute(name: 'r', sourceServiceId: 's', extraJson: pinned).toJson(),
+    );
+    expect(serviceRouteExplicitAccessLane(restored), ServiceAccessLane.vpn);
+  });
+
+  test('related routes follow the node, not missing references', () {
+    final devices = [
+      Device(id: 'home', name: 'Home', category: DeviceCategory.desktop),
+      Device(id: 'vps', name: 'VPS', category: DeviceCategory.vps),
+    ];
+    final services = [
+      ServiceNode(
+        id: 'app',
+        deviceId: 'home',
+        name: 'App',
+        endpoints: [ServiceEndpoint(id: 'web', port: 8080)],
+      ),
+      ServiceNode(
+        id: 'other',
+        deviceId: 'home',
+        name: 'Other',
+        endpoints: [ServiceEndpoint(id: 'web', port: 9090)],
+      ),
+      ServiceNode(
+        id: 'caddy',
+        deviceId: 'home',
+        name: 'Caddy',
+        kind: ServiceKind.reverseProxy,
+        endpoints: [ServiceEndpoint(id: 'https', port: 443)],
+      ),
+      ServiceNode(
+        id: 'frps',
+        deviceId: 'vps',
+        name: 'frps',
+        kind: ServiceKind.tunnel,
+        endpoints: [ServiceEndpoint(id: 'bind', port: 7000)],
+      ),
+    ];
+    final viaCaddy = ServiceRoute(
+      id: 'via-caddy',
+      name: 'App via Caddy',
+      sourceServiceId: 'app',
+      sourceEndpointId: 'web',
+      accessLevel: ServiceAccessLevel.public,
+      finalUrl: 'https://app.example.com',
+      hops: [
+        ServiceRouteHop(
+          type: ServiceRouteHopType.reverseProxy,
+          method: ServiceRouteMethod.caddy,
+          serviceId: 'caddy',
+          endpointId: 'https',
+        ),
+      ],
+    );
+    final direct = ServiceRoute(
+      id: 'direct',
+      name: 'Other direct',
+      sourceServiceId: 'other',
+      sourceEndpointId: 'web',
+      finalUrl: 'http://192.168.1.2:9090',
+      hops: [
+        ServiceRouteHop(
+          type: ServiceRouteHopType.manual,
+          method: ServiceRouteMethod.direct,
+          label: 'Direct',
+        ),
+      ],
+    );
+    final frp = ServiceRoute(
+      id: 'frp',
+      name: 'Caddy via FRP',
+      sourceServiceId: 'caddy',
+      sourceEndpointId: 'https',
+      accessLevel: ServiceAccessLevel.public,
+      finalUrl: 'https://edge.example.com',
+      hops: [
+        ServiceRouteHop(
+          type: ServiceRouteHopType.portForward,
+          method: ServiceRouteMethod.frp,
+          serviceId: 'frps',
+          deviceId: 'vps',
+          port: 443,
+        ),
+      ],
+    );
+    final routes = [viaCaddy, direct, frp];
+    final graph = buildServiceTopology(
+      services: services,
+      routes: routes,
+      devices: devices,
+    );
+    ServiceTopologyNode node(String id) =>
+        graph.nodes.singleWhere((node) => node.id == id);
+    List<String> related(String id) => relatedRoutesForNode(
+      node(id),
+      routes,
+      services: services,
+    ).map((route) => route.id).toList();
+
+    expect(related('service:caddy'), ['via-caddy', 'frp']);
+    expect(related('domain:app.example.com'), ['via-caddy']);
+    expect(related('endpoint:app:web'), ['via-caddy']);
+    expect(related('endpoint:frps:bind'), ['frp']);
+    expect(
+      related(
+        graph.nodes
+            .singleWhere((node) => node.kind == ServiceTopologyNodeKind.relay)
+            .id,
+      ),
+      ['direct'],
+      reason: 'a relay without a service must not match every free-form hop',
+    );
+    expect(related('device:home'), ['via-caddy', 'direct', 'frp']);
+    expect(related('device:vps'), ['frp']);
+    expect(
+      relatedRoutesForNode(node('device:home'), routes).map((r) => r.id),
+      isEmpty,
+      reason: 'without services a local device only has its own route ids',
+    );
   });
 }

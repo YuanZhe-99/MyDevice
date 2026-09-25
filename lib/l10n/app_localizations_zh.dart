@@ -1430,6 +1430,119 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get serviceHopTypeOrigin => '源站';
+
+  @override
+  String get serviceHopTypeReverseProxy => '反向代理';
+
+  @override
+  String get serviceHopTypeTunnel => '隧道';
+
+  @override
+  String get serviceHopTypePortForward => '端口转发';
+
+  @override
+  String get serviceHopTypePublicEndpoint => '公网端点';
+
+  @override
+  String get serviceHopTypeInternalEndpoint => '内网端点';
+
+  @override
+  String get serviceHopTypeDns => 'DNS';
+
+  @override
+  String get serviceHopTypeManual => '手动';
+
+  @override
+  String get serviceMethodDirect => '直连';
+
+  @override
+  String get serviceMethodCustom => '自定义';
+
+  @override
+  String get serviceMethodRouterPortForward => '路由器端口转发';
+
+  @override
+  String get serviceAccessLevelLan => '局域网';
+
+  @override
+  String get serviceAccessLevelVpn => 'VPN';
+
+  @override
+  String get serviceAccessLevelPublic => '公网';
+
+  @override
+  String get serviceAccessLevelAuthenticated => '公网（需登录）';
+
+  @override
+  String get serviceAccessLevelCustom => '自定义';
+
+  @override
+  String get serviceLaneLocal => '局域网 / WiFi';
+
+  @override
+  String get serviceLaneVpn => 'VPN / Tailscale';
+
+  @override
+  String get serviceLanePublic => '公网 / VPS';
+
+  @override
+  String get serviceRoleLocalDevice => '本地设备';
+
+  @override
+  String get serviceRoleRemoteDevice => '远端 / VPS 设备';
+
+  @override
+  String get serviceRoleLocalService => '本地服务';
+
+  @override
+  String get serviceRoleRemoteService => '远端服务';
+
+  @override
+  String get serviceRoleLocalEndpoint => '本地端点';
+
+  @override
+  String get serviceRoleLanAccess => '局域网 / WiFi 访问';
+
+  @override
+  String get serviceRoleVpnAccess => 'VPN / Tailscale 访问';
+
+  @override
+  String get serviceRolePublicRelay => '公网中继';
+
+  @override
+  String get serviceRoleRemotePublicEntry => '远端公网入口';
+
+  @override
+  String get serviceRoleDomain => '域名 / URL';
+
+  @override
+  String get servicePatternDirect => '直连（局域网 / VPN）';
+
+  @override
+  String get servicePatternDirectDesc => '在家中或通过 VPN 直接打开服务自身的地址。';
+
+  @override
+  String get servicePatternReverseProxyDesc =>
+      '由 Caddy、Nginx 或 Traefik 以域名对外提供。';
+
+  @override
+  String get servicePatternCloudflareTunnelDesc =>
+      '通过 Cloudflare Tunnel 连接器发布，无需开放端口。';
+
+  @override
+  String get servicePatternPangolinDesc => '通过 Pangolin 服务端暴露，通常部署在 VPS 上。';
+
+  @override
+  String get servicePatternFrpDesc => 'VPS 上的 FRP 服务端把公网端口转发过来。';
+
+  @override
+  String get servicePatternRouterPortForwardDesc => '家里的路由器把公网端口转发过来。';
+
+  @override
+  String get servicePatternTailscaleFunnelDesc => '通过 Tailscale Funnel 分享到公网。';
+
+  @override
   String get backupModuleServices => '服务';
 
   @override
@@ -2871,6 +2984,119 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String serviceRouteCount(int count) {
     return '$count 條鏈路';
   }
+
+  @override
+  String get serviceHopTypeOrigin => '來源站';
+
+  @override
+  String get serviceHopTypeReverseProxy => '反向代理';
+
+  @override
+  String get serviceHopTypeTunnel => '隧道';
+
+  @override
+  String get serviceHopTypePortForward => '連接埠轉送';
+
+  @override
+  String get serviceHopTypePublicEndpoint => '公網端點';
+
+  @override
+  String get serviceHopTypeInternalEndpoint => '內網端點';
+
+  @override
+  String get serviceHopTypeDns => 'DNS';
+
+  @override
+  String get serviceHopTypeManual => '手動';
+
+  @override
+  String get serviceMethodDirect => '直連';
+
+  @override
+  String get serviceMethodCustom => '自訂';
+
+  @override
+  String get serviceMethodRouterPortForward => '路由器連接埠轉送';
+
+  @override
+  String get serviceAccessLevelLan => '區域網路';
+
+  @override
+  String get serviceAccessLevelVpn => 'VPN';
+
+  @override
+  String get serviceAccessLevelPublic => '公網';
+
+  @override
+  String get serviceAccessLevelAuthenticated => '公網（需登入）';
+
+  @override
+  String get serviceAccessLevelCustom => '自訂';
+
+  @override
+  String get serviceLaneLocal => '區域網路 / Wi-Fi';
+
+  @override
+  String get serviceLaneVpn => 'VPN / Tailscale';
+
+  @override
+  String get serviceLanePublic => '公網 / VPS';
+
+  @override
+  String get serviceRoleLocalDevice => '本機裝置';
+
+  @override
+  String get serviceRoleRemoteDevice => '遠端 / VPS 裝置';
+
+  @override
+  String get serviceRoleLocalService => '本機服務';
+
+  @override
+  String get serviceRoleRemoteService => '遠端服務';
+
+  @override
+  String get serviceRoleLocalEndpoint => '本機端點';
+
+  @override
+  String get serviceRoleLanAccess => '區域網路 / Wi-Fi 存取';
+
+  @override
+  String get serviceRoleVpnAccess => 'VPN / Tailscale 存取';
+
+  @override
+  String get serviceRolePublicRelay => '公網中繼';
+
+  @override
+  String get serviceRoleRemotePublicEntry => '遠端公網入口';
+
+  @override
+  String get serviceRoleDomain => '網域 / URL';
+
+  @override
+  String get servicePatternDirect => '直連（區域網路 / VPN）';
+
+  @override
+  String get servicePatternDirectDesc => '在家中或透過 VPN 直接開啟服務本身的位址。';
+
+  @override
+  String get servicePatternReverseProxyDesc =>
+      '由 Caddy、Nginx 或 Traefik 以網域對外提供。';
+
+  @override
+  String get servicePatternCloudflareTunnelDesc =>
+      '透過 Cloudflare Tunnel 連接器發布，無需開放連接埠。';
+
+  @override
+  String get servicePatternPangolinDesc => '透過 Pangolin 伺服器公開，通常部署在 VPS 上。';
+
+  @override
+  String get servicePatternFrpDesc => 'VPS 上的 FRP 伺服器把公網連接埠轉送過來。';
+
+  @override
+  String get servicePatternRouterPortForwardDesc => '家中的路由器把公網連接埠轉送過來。';
+
+  @override
+  String get servicePatternTailscaleFunnelDesc => '透過 Tailscale Funnel 分享到公網。';
 
   @override
   String get backupModuleServices => '服務';

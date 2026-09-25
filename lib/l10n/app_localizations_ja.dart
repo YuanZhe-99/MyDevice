@@ -1435,6 +1435,120 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get serviceHopTypeOrigin => 'オリジン';
+
+  @override
+  String get serviceHopTypeReverseProxy => 'リバースプロキシ';
+
+  @override
+  String get serviceHopTypeTunnel => 'トンネル';
+
+  @override
+  String get serviceHopTypePortForward => 'ポート転送';
+
+  @override
+  String get serviceHopTypePublicEndpoint => '公開エンドポイント';
+
+  @override
+  String get serviceHopTypeInternalEndpoint => '内部エンドポイント';
+
+  @override
+  String get serviceHopTypeDns => 'DNS';
+
+  @override
+  String get serviceHopTypeManual => '手動';
+
+  @override
+  String get serviceMethodDirect => '直接接続';
+
+  @override
+  String get serviceMethodCustom => 'カスタム';
+
+  @override
+  String get serviceMethodRouterPortForward => 'ルーターのポート転送';
+
+  @override
+  String get serviceAccessLevelLan => 'LAN';
+
+  @override
+  String get serviceAccessLevelVpn => 'VPN';
+
+  @override
+  String get serviceAccessLevelPublic => '公開';
+
+  @override
+  String get serviceAccessLevelAuthenticated => '公開（ログイン必須）';
+
+  @override
+  String get serviceAccessLevelCustom => 'カスタム';
+
+  @override
+  String get serviceLaneLocal => 'LAN / Wi-Fi';
+
+  @override
+  String get serviceLaneVpn => 'VPN / Tailscale';
+
+  @override
+  String get serviceLanePublic => '公開 / VPS';
+
+  @override
+  String get serviceRoleLocalDevice => 'ローカルデバイス';
+
+  @override
+  String get serviceRoleRemoteDevice => 'リモート / VPS デバイス';
+
+  @override
+  String get serviceRoleLocalService => 'ローカルサービス';
+
+  @override
+  String get serviceRoleRemoteService => 'リモートサービス';
+
+  @override
+  String get serviceRoleLocalEndpoint => 'ローカルエンドポイント';
+
+  @override
+  String get serviceRoleLanAccess => 'LAN / Wi-Fi アクセス';
+
+  @override
+  String get serviceRoleVpnAccess => 'VPN / Tailscale アクセス';
+
+  @override
+  String get serviceRolePublicRelay => '公開リレー';
+
+  @override
+  String get serviceRoleRemotePublicEntry => 'リモート公開エントリ';
+
+  @override
+  String get serviceRoleDomain => 'ドメイン / URL';
+
+  @override
+  String get servicePatternDirect => '直接接続（LAN / VPN）';
+
+  @override
+  String get servicePatternDirectDesc => '自宅や VPN 経由で、サービス自身のアドレスに直接アクセスします。';
+
+  @override
+  String get servicePatternReverseProxyDesc =>
+      'Caddy・Nginx・Traefik がホスト名で公開します。';
+
+  @override
+  String get servicePatternCloudflareTunnelDesc =>
+      'Cloudflare Tunnel のコネクタ経由で公開し、ポート開放は不要です。';
+
+  @override
+  String get servicePatternPangolinDesc => '通常は VPS 上の Pangolin サーバー経由で公開します。';
+
+  @override
+  String get servicePatternFrpDesc => 'VPS 上の FRP サーバーが公開ポートを転送します。';
+
+  @override
+  String get servicePatternRouterPortForwardDesc => '自宅のルーターが公開ポートを転送します。';
+
+  @override
+  String get servicePatternTailscaleFunnelDesc =>
+      'Tailscale Funnel でインターネットに共有します。';
+
+  @override
   String get backupModuleServices => 'サービス';
 
   @override

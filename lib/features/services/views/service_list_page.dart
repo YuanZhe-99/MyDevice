@@ -15,7 +15,9 @@ import '../../devices/widgets/device_category_icon.dart';
 import '../../network/models/network.dart';
 import '../../network/services/network_storage.dart';
 import '../models/service.dart';
+import '../services/service_access_patterns.dart';
 import '../services/service_analysis.dart';
+import '../services/service_labels.dart';
 import '../services/service_topology_layout.dart';
 import '../services/service_storage.dart';
 import 'service_edit_page.dart';
@@ -185,11 +187,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
   /// Side effects: Opens or updates routes, dialogs, or other UI flows.
   /// Notes: Internal helper used within this file only.
   Future<void> _addService() async {
-    final result = await Navigator.of(
-      context,
-      rootNavigator: true,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const ServiceEditPage()));
-    if (result == true) _load();
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<ServiceEditOutcome>(
+          MaterialPageRoute(builder: (_) => const ServiceEditPage()),
+        );
+    if (result != null) _load();
   }
 
   /// Purpose: Edit service and refresh local state when needed.
@@ -198,10 +200,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
   /// Side effects: Opens or updates routes, dialogs, or other UI flows.
   /// Notes: Internal helper used within this file only.
   Future<void> _editService(ServiceNode service) async {
-    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
-      MaterialPageRoute(builder: (_) => ServiceEditPage(service: service)),
-    );
-    if (result == true) _load();
+    final result = await Navigator.of(context, rootNavigator: true)
+        .push<ServiceEditOutcome>(
+          MaterialPageRoute(builder: (_) => ServiceEditPage(service: service)),
+        );
+    if (result != null) _load();
   }
 
   /// Purpose: Add route through the current flow.
@@ -968,7 +971,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (hop.host != null && hop.host!.isNotEmpty) {
       return '${hop.scheme != null ? '${hop.scheme}://' : ''}${hop.host}${hop.port != null ? ':${hop.port}' : ''}${hop.path ?? ''}';
     }
-    return hop.type.name;
+    return serviceHopTypeLabel(AppLocalizations.of(context)!, hop.type);
   }
 
   /// Purpose: Provide the internal route summary helper for this file.
@@ -990,7 +993,10 @@ class _ServiceListPageState extends State<ServiceListPage> {
       ...serviceRouteAccessTargets(route).map(compactAccessTargetLabel),
     ];
     final path = parts.isEmpty ? route.name : parts.join(' -> ');
-    return [path, route.accessLevel.name].join('\n');
+    return [
+      path,
+      serviceAccessLevelLabel(AppLocalizations.of(context)!, route.accessLevel),
+    ].join('\n');
   }
 
   /// Purpose: Provide the internal routes for endpoint helper for this file.
@@ -1479,28 +1485,13 @@ class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
         .toList();
     candidates.sort((a, b) {
       if (_method.isPortMapping) {
-        final aPreferred = _isFrpLikeService(a) ? 0 : 1;
-        final bPreferred = _isFrpLikeService(b) ? 0 : 1;
+        final aPreferred = isFrpLikeService(a) ? 0 : 1;
+        final bPreferred = isFrpLikeService(b) ? 0 : 1;
         if (aPreferred != bPreferred) return aPreferred.compareTo(bPreferred);
       }
       return a.name.toLowerCase().compareTo(b.name.toLowerCase());
     });
     return candidates;
-  }
-
-  /// Purpose: Provide the internal is frp like service helper for this file.
-  /// Inputs: `service`.
-  /// Returns: `bool`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  bool _isFrpLikeService(ServiceNode service) {
-    final text = [
-      service.name,
-      service.templateId,
-      service.icon,
-      service.kind.name,
-    ].whereType<String>().join(' ').toLowerCase();
-    return text.contains('frp') || service.kind == ServiceKind.tunnel;
   }
 
   /// Purpose: Provide the internal device name helper for this file.
@@ -1749,14 +1740,11 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
         : widget.services
               .where((service) => service.id == node.serviceId)
               .firstOrNull;
-    final relatedRoutes = widget.routes
-        .where(
-          (route) =>
-              node.routeIds.contains(route.id) ||
-              route.sourceServiceId == node.serviceId ||
-              route.hops.any((hop) => hop.serviceId == node.serviceId),
-        )
-        .toList();
+    final relatedRoutes = relatedRoutesForNode(
+      node,
+      widget.routes,
+      services: widget.services,
+    );
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -1840,7 +1828,10 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
                     subtitle: Text(
                       [
                         serviceRouteTargetsSummary(route),
-                        route.accessLevel.name,
+                        serviceAccessLevelLabel(
+                          AppLocalizations.of(context)!,
+                          route.accessLevel,
+                        ),
                         _laneLabel(serviceAccessLaneForRoute(route)),
                       ].where((part) => part.isNotEmpty).join(' · '),
                     ),
@@ -2178,13 +2169,12 @@ class _TopologyNodeCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      if (node.detail?.trim().isNotEmpty == true ||
+                      if (_nodeSubtitle(context, node) != null ||
                           node.lane != null) ...[
                         const SizedBox(height: 2),
                         Text(
                           [
-                            if (node.detail?.trim().isNotEmpty == true)
-                              node.detail,
+                            _nodeSubtitle(context, node),
                             if (node.lane != null) _laneLabel(node.lane!),
                           ].whereType<String>().join(' · '),
                           maxLines: 1,
@@ -2298,6 +2288,27 @@ class _ServiceTopologyEdgePainter extends CustomPainter {
       oldDelegate.graph != graph ||
       oldDelegate.layout != layout ||
       oldDelegate.colorScheme != colorScheme;
+}
+
+/// Purpose: Return the subtitle a topology node card shows under its label.
+/// Inputs: `context`, `node`.
+/// Returns: `String?` — null when there is nothing to show.
+/// Side effects: None.
+/// Notes: A relay node shows its localized route method, or its localized hop
+/// type when the builder only recorded the raw type name; every other node
+/// shows the builder's `detail` unchanged.
+String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node) {
+  final detail = node.detail?.trim();
+  if (node.kind == ServiceTopologyNodeKind.relay) {
+    final l10n = AppLocalizations.of(context)!;
+    final method = node.method;
+    if (method != null) return serviceRouteMethodUiLabel(l10n, method);
+    final type = ServiceRouteHopType.values
+        .where((value) => value.name == detail)
+        .firstOrNull;
+    if (type != null) return serviceHopTypeLabel(l10n, type);
+  }
+  return detail == null || detail.isEmpty ? null : detail;
 }
 
 List<String> _splitTargets(String value) => value

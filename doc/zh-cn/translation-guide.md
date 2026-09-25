@@ -116,6 +116,17 @@
 | local API server | 本地 API 服务器 | |
 | trend chart | 趋势图 | |
 | metric | 指标 | a selectable series on a trend chart |
+| access path | 访问路径 | 一个 `ServiceRoute`：从源端点经有序跳到达其目标 |
+| access pattern | 访问模式 | 引导流程中的具名方案：直连、反向代理、Cloudflare Tunnel、Pangolin、FRP、路由器端口转发、Tailscale Funnel |
+| reachability | 可达范围 | 局域网 / VPN / 公网 / 公网（需登录）；保存为访问级别加车道 |
+| access lane | 访问车道 | 拓扑对路由的局域网 / VPN / 公网分类 |
+| lane override | 车道覆盖 | 路由的 `extraJson['accessLane']` |
+| ingress endpoint | 入口端点 | 源所连接的 FRP 服务端端点；原文写 ingress port 时译作「入口端口」 |
+| public entry | 公网入口 | 端口映射的公网主机和端口 |
+| relay / proxy service | 中继 / 代理服务 | 跳所经过的服务 |
+| guided editor / advanced editor | 引导式编辑器 / 高级编辑器 | 两种路由编辑器 |
+| device container | 设备分组框 | 拓扑中把一台设备的服务和端口框在一起的分组框 |
+| route highlight | 路由高亮 | 拓扑对所选节点相关路由的强调显示 |
 
 ## 6. 复核清单（提交中文页前运行）
 

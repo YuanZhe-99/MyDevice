@@ -4,6 +4,14 @@ import '../models/service.dart';
 
 const serviceRoutePublicTargetsKey = 'publicTargets';
 
+/// Key in a route's `extraJson` that pins the route's topology access lane.
+///
+/// The value is a [ServiceAccessLane] name: `local`, `vpn` or `public`. The
+/// key is optional and additive: builds older than 1.5.6 keep it through the
+/// `extraJson` unknown-field pattern and go on inferring the lane, and an
+/// absent or unknown value falls back to that same inference here.
+const serviceRouteAccessLaneKey = 'accessLane';
+
 enum ServiceTopologyNodeKind {
   device,
   service,
@@ -39,7 +47,6 @@ class ServiceTopologyNode {
   final String? endpointId;
   final ServiceAccessLane? lane;
   final ServiceRouteMethod? method;
-  final int? layoutColumn;
   final bool compact;
   final List<String> routeIds;
 
@@ -59,7 +66,6 @@ class ServiceTopologyNode {
     this.endpointId,
     this.lane,
     this.method,
-    this.layoutColumn,
     this.compact = false,
     this.routeIds = const [],
   });
@@ -102,7 +108,6 @@ class ServiceTopologyNode {
       endpointId: endpointId,
       lane: lane ?? other.lane,
       method: method ?? other.method,
-      layoutColumn: layoutColumn ?? other.layoutColumn,
       compact: compact || other.compact,
       routeIds: routes.toList(),
     );
@@ -310,6 +315,16 @@ List<ServicePortConflict> findServicePortConflicts(List<ServiceNode> services) {
   return conflicts;
 }
 
+/// Purpose: Build the semantic topology graph from saved services and routes.
+/// Inputs: `services`, `routes`, `devices`.
+/// Returns: A `ServiceTopologyGraph` whose nodes are sorted by kind, then
+/// label.
+/// Side effects: None.
+/// Notes: Every service gets a device-to-service edge whether or not a route
+/// uses it. Port-mapping hops (FRP, router port forward) render the relay
+/// service with its ingress endpoint and the public entry as sibling chips.
+/// The layout engine consumes this graph unchanged; it never re-derives
+/// modeling rules.
 ServiceTopologyGraph buildServiceTopology({
   required List<ServiceNode> services,
   required List<ServiceRoute> routes,
@@ -440,7 +455,6 @@ ServiceTopologyGraph buildServiceTopology({
     bool remote = false,
     String? routeId,
     String? detailOverride,
-    int? layoutColumn,
   }) {
     final deviceId = remote
         ? addRemoteDeviceNode(service.deviceId, routeId: routeId)
@@ -465,7 +479,6 @@ ServiceTopologyGraph buildServiceTopology({
                       .join(', ')),
         deviceId: service.deviceId,
         serviceId: service.id,
-        layoutColumn: layoutColumn,
       ),
       routeId: routeId,
     );
@@ -487,7 +500,6 @@ ServiceTopologyGraph buildServiceTopology({
     ServiceEndpoint endpoint, {
     bool remote = false,
     String? routeId,
-    int? layoutColumn,
   }) {
     final id = endpointNodeId(service.id, endpoint.id);
     addNode(
@@ -509,7 +521,6 @@ ServiceTopologyGraph buildServiceTopology({
         deviceId: service.deviceId,
         serviceId: service.id,
         endpointId: endpoint.id,
-        layoutColumn: layoutColumn,
         compact: true,
       ),
       routeId: routeId,
@@ -525,20 +536,13 @@ ServiceTopologyGraph buildServiceTopology({
   for (final route in routes) {
     final source = serviceMap[route.sourceServiceId];
     if (source == null) continue;
-    final routeLane = serviceAccessLaneForRoute(route);
-    final sourceProxyColumn =
-        source.kind == ServiceKind.reverseProxy &&
-            routeLane == ServiceAccessLane.public
-        ? 4
-        : null;
-    var currentId = addServiceNode(source, layoutColumn: sourceProxyColumn);
+    var currentId = addServiceNode(source);
     final sourceEndpoint = _endpointForRoute(source, route.sourceEndpointId);
     if (sourceEndpoint != null) {
       final endpointId = addEndpointNode(
         source,
         sourceEndpoint,
         routeId: route.id,
-        layoutColumn: sourceProxyColumn == null ? null : sourceProxyColumn + 1,
       );
       addEdge(currentId, endpointId, routeId: route.id);
       currentId = endpointId;
@@ -633,12 +637,6 @@ ServiceTopologyGraph buildServiceTopology({
           hopService,
           remote: hopIsRemote,
           routeId: route.id,
-          layoutColumn:
-              !hopIsRemote &&
-                  routeLane == ServiceAccessLane.public &&
-                  hopService.kind == ServiceKind.reverseProxy
-              ? 4
-              : null,
         );
         addEdge(currentId, hopServiceId, routeId: route.id);
         currentId = hopServiceId;
@@ -649,12 +647,6 @@ ServiceTopologyGraph buildServiceTopology({
             hopEndpoint,
             remote: hopIsRemote,
             routeId: route.id,
-            layoutColumn:
-                !hopIsRemote &&
-                    routeLane == ServiceAccessLane.public &&
-                    hopService.kind == ServiceKind.reverseProxy
-                ? 5
-                : null,
           );
           addEdge(currentId, endpointId, routeId: route.id);
           currentId = endpointId;
@@ -938,7 +930,19 @@ bool _isRemoteHopService({
   return deviceMap[hopService.deviceId]?.category == DeviceCategory.vps;
 }
 
+/// Purpose: Classify a route into the local, VPN or public access lane.
+/// Inputs: `route`.
+/// Returns: `ServiceAccessLane`.
+/// Side effects: None.
+/// Notes: A valid `extraJson['accessLane']` (see [serviceRouteAccessLaneKey])
+/// wins. Otherwise the lane is inferred exactly as before 1.5.6: a
+/// public-style hop method (FRP, router port forward, Caddy, Nginx, Traefik,
+/// Cloudflare Tunnel, Pangolin) means public regardless of the access level;
+/// then Tailscale Funnel or a VPN access level means VPN; then a public or
+/// authenticated access level means public; anything else is local.
 ServiceAccessLane serviceAccessLaneForRoute(ServiceRoute route) {
+  final explicit = serviceRouteExplicitAccessLane(route);
+  if (explicit != null) return explicit;
   final methods = route.hops
       .map((hop) => hop.method)
       .whereType<ServiceRouteMethod>();
@@ -979,16 +983,124 @@ ServiceEndpoint? _endpointForRoute(ServiceNode service, String? endpointId) {
       .firstOrNull;
 }
 
+/// Purpose: Resolve the ingress endpoint a port-mapping hop connects to.
+/// Inputs: `service` — the hop's relay service; `hop`.
+/// Returns: The hop's explicit endpoint when it resolves, else the service's
+/// default ingress, else null.
+/// Side effects: None.
+/// Notes: The default is [serviceDefaultIngressEndpoint], which the guided
+/// access-path flow also uses, so a draft the user does not touch records the
+/// same ingress this inference would pick.
 ServiceEndpoint? _portMappingIngressEndpoint(
   ServiceNode service,
   ServiceRouteHop hop,
 ) {
   final explicit = _endpointForRoute(service, hop.endpointId);
   if (explicit != null) return explicit;
-  return service.endpoints
-          .where((endpoint) => endpoint.isPrimary)
-          .firstOrNull ??
-      service.endpoints.firstOrNull;
+  return serviceDefaultIngressEndpoint(service);
+}
+
+/// Purpose: Pick the endpoint a relay service receives tunnelled traffic on
+/// when a route does not name one.
+/// Inputs: `service`.
+/// Returns: The primary endpoint, else the first endpoint, else null.
+/// Side effects: None.
+/// Notes: Shared by the topology builder's FRP inference and the guided
+/// access-path flow's ingress default.
+ServiceEndpoint? serviceDefaultIngressEndpoint(ServiceNode service) =>
+    service.endpoints.where((endpoint) => endpoint.isPrimary).firstOrNull ??
+    service.endpoints.firstOrNull;
+
+/// Purpose: Read a route's explicit access-lane override.
+/// Inputs: `route`.
+/// Returns: The lane named by `extraJson['accessLane']`, or null when the key
+/// is absent or holds an unknown value.
+/// Side effects: None.
+/// Notes: Unknown values are ignored rather than rejected, so a newer build's
+/// value cannot break an older reader.
+ServiceAccessLane? serviceRouteExplicitAccessLane(ServiceRoute route) {
+  final value = route.extraJson[serviceRouteAccessLaneKey];
+  if (value is! String) return null;
+  return ServiceAccessLane.values
+      .where((lane) => lane.name == value)
+      .firstOrNull;
+}
+
+/// Purpose: Write or remove the access-lane override in a route's
+/// `extraJson`.
+/// Inputs: `extraJson` — the route's existing map; `lane` — the lane to pin,
+/// or null to return to inference.
+/// Returns: A new map; the input is not modified.
+/// Side effects: None.
+/// Notes: Every other key, known or unknown, is carried over unchanged.
+Map<String, dynamic> serviceRouteExtraJsonWithAccessLane(
+  Map<String, dynamic> extraJson,
+  ServiceAccessLane? lane,
+) {
+  final next = Map<String, dynamic>.of(extraJson)
+    ..remove(serviceRouteAccessLaneKey);
+  if (lane != null) next[serviceRouteAccessLaneKey] = lane.name;
+  return next;
+}
+
+/// Purpose: List the routes a topology node takes part in, for selection
+/// highlighting and the node details.
+/// Inputs: `node`; `routes` — the routes the graph was built from;
+/// `services` — optional, lets a device node find the services it hosts.
+/// Returns: The matching routes, in their original order.
+/// Side effects: None.
+/// Notes: Every node matches the routes recorded on it (`routeIds`), which is
+/// all an endpoint chip, relay, remote entry or domain needs. A service node
+/// also matches the routes it is the source or a hop of. A device node also
+/// matches routes whose source or hop service runs on it, or whose hop names
+/// it as the device. A missing id never matches a missing reference, so a
+/// node without a service does not pick up every free-form hop.
+List<ServiceRoute> relatedRoutesForNode(
+  ServiceTopologyNode node,
+  List<ServiceRoute> routes, {
+  List<ServiceNode> services = const [],
+}) {
+  final routeIds = node.routeIds.toSet();
+  final serviceId = node.serviceId;
+  final deviceId = node.deviceId;
+  final hosted = <String>{
+    if (node.kind == ServiceTopologyNodeKind.device && deviceId != null)
+      for (final service in services)
+        if (service.deviceId == deviceId) service.id,
+  };
+
+  /// Purpose: Decide whether one route belongs to the node.
+  /// Inputs: `route`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [relatedRoutesForNode].
+  bool matches(ServiceRoute route) {
+    if (routeIds.contains(route.id)) return true;
+    switch (node.kind) {
+      case ServiceTopologyNodeKind.service:
+        if (serviceId == null) return false;
+        return route.sourceServiceId == serviceId ||
+            route.hops.any((hop) => hop.serviceId == serviceId);
+      case ServiceTopologyNodeKind.device:
+        if (deviceId == null) return false;
+        return hosted.contains(route.sourceServiceId) ||
+            route.hops.any(
+              (hop) =>
+                  hop.deviceId == deviceId ||
+                  (hop.serviceId != null && hosted.contains(hop.serviceId)),
+            );
+      case ServiceTopologyNodeKind.endpoint:
+      case ServiceTopologyNodeKind.relay:
+      case ServiceTopologyNodeKind.remoteEntry:
+      case ServiceTopologyNodeKind.domain:
+        return false;
+    }
+  }
+
+  return [
+    for (final route in routes)
+      if (matches(route)) route,
+  ];
 }
 
 bool _isPortMappingHop(ServiceRouteHop hop) =>

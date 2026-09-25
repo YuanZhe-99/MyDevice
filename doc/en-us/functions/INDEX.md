@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **943** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1064** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1132** declarations — 189 more than
-943 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1181** declarations — 117 more than
+1064 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus tail
 sections of `device.dart` and `service_list_page.dart`) have no `/// Purpose:` doc comment in
 source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
@@ -16,20 +16,18 @@ its file page with a reconciling row-count note; nothing is silently invented to
 number.
 
 The `/// Purpose:` figure is verified against source with
-`grep -r '/// Purpose:' lib --include=*.dart`. The declaration total is hand-maintained and is
-currently **known to be drifted** in two ways. First, a row-level sweep of the per-file pages
-counts roughly 1023 declaration rows, not 1132. Second, the Tier A/B split in this table and the
-split summed from the Area totals table below disagree by 15 (670/462 summed versus 685/447
-stated), even though both agree on the 1132 grand total. Both gaps predate the
-`device_search_parsers.dart` entry and were carried forward unchanged rather than papered over,
-because reconciling them means re-auditing every page rather than editing these tables. Treat the
-per-file rows as authoritative and both totals as approximate until that sweep happens.
+`grep -r '/// Purpose:' lib --include=*.dart` (excluding `lib/l10n/`). The declaration totals are
+hand-maintained and **known to be drifted**: the per-file rows, the Area totals table and the Tier
+table below do not all agree with each other, and a handful of per-file rows do not match the
+Declarations table on their own page either. The drift predates 1.5.6; the 1.5.6 pages were added
+as rows and the totals were moved by exactly those rows' amounts rather than re-audited. Treat the
+per-file rows as authoritative and every total as approximate until a full sweep happens.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 685 |
-| Tier B (index row only) | 447 |
-| **Total** | **1132** |
+| Tier A (full entry) | 711 |
+| Tier B (index row only) | 470 |
+| **Total** | **1181** |
 
 ## Root (`lib/`)
 
@@ -91,11 +89,14 @@ per-file rows as authoritative and both totals as approximate until that sweep h
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
 | `lib/features/services/models/service.dart` | [features/services/models/service.md](features/services/models/service.md) | 42 | 33 |
-| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 52 | 36 |
+| `lib/features/services/services/service_access_patterns.dart` | [features/services/services/service_access_patterns.md](features/services/services/service_access_patterns.md) | 33 | 18 |
+| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 57 | 40 |
+| `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 8 | 3 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 8 | 8 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
 | `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 87 | 34 |
-| `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 25 | 6 |
+| `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
+| `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 2 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 84 | 24 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 24 | 8 |
 
@@ -111,7 +112,7 @@ per-file rows as authoritative and both totals as approximate until that sweep h
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 943/1132 hand-documented declarations above).
+the 1064/1181 hand-documented declarations above).
 
 ## shared/
 
@@ -147,7 +148,7 @@ the 943/1132 hand-documented declarations above).
 | `features/datasets/` | 4 | 49 | 30 | 19 |
 | `features/devices/` | 15 | 381 | 201 | 180 |
 | `features/network/` | 5 | 76 | 41 | 35 |
-| `features/services/` | 8 | 326 | 153 | 173 |
+| `features/services/` | 11 | 375 | 179 | 196 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 20 | 308 | 244 | 64 |
-| **Total** | **61** | **1196** | **710** | **486** |
+| **Total** | **64** | **1245** | **736** | **509** |

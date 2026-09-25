@@ -17,7 +17,7 @@
 
 | Phase | Scope | Status | Commits / notes |
 |---|---|---|---|
-| 1 | Foundations: access patterns, lane override, labels, dead code, shared dialogs | todo | |
+| 1 | Foundations: access patterns, lane override, labels, dead code, shared dialogs | done | Deviations: `fromRoute`/detection accept a route only when the guided form reproduces it field for field (hop notes, paths, a custom access level → advanced editor), and an `accessLane` that disagrees with the access level is not a reachability (stricter than "lane wins"). `relatedRoutesForNode` takes optional `services` and matches per node kind; it no longer matches null service ids. Also fixed pre-existing doc drift found on the way (list page row-count note, stale line citations). |
 | 2 | Guided "Add access path" page replaces the quick dialog | todo | |
 | 3 | Topology extraction + selection highlighting, legend, filters, fit/reset | todo | |
 | 4 | Layout engine: row stride, domain alignment, crossing sweep, device containers | todo | |

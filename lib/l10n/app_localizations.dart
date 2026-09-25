@@ -2789,6 +2789,228 @@ abstract class AppLocalizations {
   /// **'{count} route(s)'**
   String serviceRouteCount(int count);
 
+  /// No description provided for @serviceHopTypeOrigin.
+  ///
+  /// In en, this message translates to:
+  /// **'Origin'**
+  String get serviceHopTypeOrigin;
+
+  /// No description provided for @serviceHopTypeReverseProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverse proxy'**
+  String get serviceHopTypeReverseProxy;
+
+  /// No description provided for @serviceHopTypeTunnel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tunnel'**
+  String get serviceHopTypeTunnel;
+
+  /// No description provided for @serviceHopTypePortForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Port forward'**
+  String get serviceHopTypePortForward;
+
+  /// No description provided for @serviceHopTypePublicEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Public endpoint'**
+  String get serviceHopTypePublicEndpoint;
+
+  /// No description provided for @serviceHopTypeInternalEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Internal endpoint'**
+  String get serviceHopTypeInternalEndpoint;
+
+  /// No description provided for @serviceHopTypeDns.
+  ///
+  /// In en, this message translates to:
+  /// **'DNS'**
+  String get serviceHopTypeDns;
+
+  /// No description provided for @serviceHopTypeManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get serviceHopTypeManual;
+
+  /// No description provided for @serviceMethodDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get serviceMethodDirect;
+
+  /// No description provided for @serviceMethodCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get serviceMethodCustom;
+
+  /// No description provided for @serviceMethodRouterPortForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Router port forward'**
+  String get serviceMethodRouterPortForward;
+
+  /// No description provided for @serviceAccessLevelLan.
+  ///
+  /// In en, this message translates to:
+  /// **'LAN'**
+  String get serviceAccessLevelLan;
+
+  /// No description provided for @serviceAccessLevelVpn.
+  ///
+  /// In en, this message translates to:
+  /// **'VPN'**
+  String get serviceAccessLevelVpn;
+
+  /// No description provided for @serviceAccessLevelPublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get serviceAccessLevelPublic;
+
+  /// No description provided for @serviceAccessLevelAuthenticated.
+  ///
+  /// In en, this message translates to:
+  /// **'Public, login required'**
+  String get serviceAccessLevelAuthenticated;
+
+  /// No description provided for @serviceAccessLevelCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get serviceAccessLevelCustom;
+
+  /// No description provided for @serviceLaneLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'LAN / WiFi'**
+  String get serviceLaneLocal;
+
+  /// No description provided for @serviceLaneVpn.
+  ///
+  /// In en, this message translates to:
+  /// **'VPN / Tailscale'**
+  String get serviceLaneVpn;
+
+  /// No description provided for @serviceLanePublic.
+  ///
+  /// In en, this message translates to:
+  /// **'Public / VPS'**
+  String get serviceLanePublic;
+
+  /// No description provided for @serviceRoleLocalDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Local device'**
+  String get serviceRoleLocalDevice;
+
+  /// No description provided for @serviceRoleRemoteDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote / VPS device'**
+  String get serviceRoleRemoteDevice;
+
+  /// No description provided for @serviceRoleLocalService.
+  ///
+  /// In en, this message translates to:
+  /// **'Local service'**
+  String get serviceRoleLocalService;
+
+  /// No description provided for @serviceRoleRemoteService.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote service'**
+  String get serviceRoleRemoteService;
+
+  /// No description provided for @serviceRoleLocalEndpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Local endpoint'**
+  String get serviceRoleLocalEndpoint;
+
+  /// No description provided for @serviceRoleLanAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'LAN / WiFi access'**
+  String get serviceRoleLanAccess;
+
+  /// No description provided for @serviceRoleVpnAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'VPN / Tailscale access'**
+  String get serviceRoleVpnAccess;
+
+  /// No description provided for @serviceRolePublicRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Public relay'**
+  String get serviceRolePublicRelay;
+
+  /// No description provided for @serviceRoleRemotePublicEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Remote public entry'**
+  String get serviceRoleRemotePublicEntry;
+
+  /// No description provided for @serviceRoleDomain.
+  ///
+  /// In en, this message translates to:
+  /// **'Domain / URL'**
+  String get serviceRoleDomain;
+
+  /// No description provided for @servicePatternDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct (LAN / VPN)'**
+  String get servicePatternDirect;
+
+  /// No description provided for @servicePatternDirectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the service at its own address, at home or over a VPN.'**
+  String get servicePatternDirectDesc;
+
+  /// No description provided for @servicePatternReverseProxyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Caddy, Nginx or Traefik serves it under a hostname.'**
+  String get servicePatternReverseProxyDesc;
+
+  /// No description provided for @servicePatternCloudflareTunnelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Published through a Cloudflare Tunnel connector, no open ports.'**
+  String get servicePatternCloudflareTunnelDesc;
+
+  /// No description provided for @servicePatternPangolinDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Exposed through a Pangolin server, usually on a VPS.'**
+  String get servicePatternPangolinDesc;
+
+  /// No description provided for @servicePatternFrpDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'An FRP server on a VPS forwards a public port to it.'**
+  String get servicePatternFrpDesc;
+
+  /// No description provided for @servicePatternRouterPortForwardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The home router forwards a public port to it.'**
+  String get servicePatternRouterPortForwardDesc;
+
+  /// No description provided for @servicePatternTailscaleFunnelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared to the internet with Tailscale Funnel.'**
+  String get servicePatternTailscaleFunnelDesc;
+
   /// No description provided for @backupModuleServices.
   ///
   /// In en, this message translates to:

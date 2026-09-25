@@ -11,7 +11,10 @@ multi-target parsing to helpers in `service_analysis.dart`
 (`serviceRouteGeneratedName`, `serviceRouteAccessTargets`,
 `serviceRouteExtraJsonWithTargets`, `compactAccessTargetLabel`) — route names are
 generated internally and hidden from the user, matching the concept doc's statement that
-user-facing descriptions belong in `notes` instead. The page is pushed from
+user-facing descriptions belong in `notes` instead. Hop types, route methods and access levels
+are shown through the localized helpers in [service_labels.md](../services/service_labels.md)
+(`serviceHopTypeLabel`, `serviceRouteMethodUiLabel`, `serviceAccessLevelLabel`) rather than raw
+enum names; the saved values are the enums themselves, unchanged. The page is pushed from
 `lib/features/services/views/service_list_page.dart`.
 
 ## Declarations
@@ -33,10 +36,10 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 | [`_showHopDialog`](#showhopdialog) | method (`_ServiceRouteEditPageState`) | A | Show the add/edit modal dialog for one `ServiceRouteHop` and build the result. |
 | `build` | method (widget build, `_ServiceRouteEditPageState`) | B | Render the scaffold (save/delete actions) around `_buildFormBody`. |
 | `_buildFormBody` | method (widget helper) | B | Choose the layout inside the one `Form`: a single `ListView` of both halves, or — when `useDetailTwoPane` passes — a `Row` of an `editFormLeftPaneWidth`-wide scrolling source pane and a right `ListView` of the hops. Both panes scroll. |
-| `_buildSourceFields` | method (widget helper) | B | Source/endpoint pickers, access level, targets field and the preview card — extracted from `build` unchanged. |
+| `_buildSourceFields` | method (widget helper) | B | Source/endpoint pickers, access level (localized labels), targets field and the preview card. |
 | `_buildHopFields` | method (widget helper) | B | The hop list, notes and the save button — extracted from `build` unchanged. |
-| [`_hopTitle`](#hoptitle) | method (`_ServiceRouteEditPageState`) | A | Compute the display title for one hop, preferring its linked service name, then label, then host, then hop type. |
-| [`_hopSubtitle`](#hopsubtitle) | method (`_ServiceRouteEditPageState`) | A | Compose the multi-part subtitle line for one hop (type, method, endpoint, host/scheme/port/path, notes). |
+| [`_hopTitle`](#hoptitle) | method (`_ServiceRouteEditPageState`) | A | Compute the display title for one hop, preferring its linked service name, then label, then host, then the localized hop type. |
+| [`_hopSubtitle`](#hopsubtitle) | method (`_ServiceRouteEditPageState`) | A | Compose the multi-part subtitle line for one hop (localized type and method, endpoint, host/scheme/port/path, notes). |
 | `_hopEndpoint` | method (`_ServiceRouteEditPageState`) | B | Look up the `ServiceEndpoint` a hop references, if any. |
 | `_moveHop` | method (`_ServiceRouteEditPageState`) | B | Reorder the hops list by moving one hop from one index to another. |
 | [`_routePreview`](#routepreview) | method (`_ServiceRouteEditPageState`) | A | Build the human-readable "source -> hop -> ... -> target" preview string shown above the hop list. |
@@ -47,7 +50,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `bool get _editing` <a id="editing"></a>
 - **Kind:** getter of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 44)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 46)
 - **Purpose:** Report whether `widget.route` is non-null, i.e. whether the page is editing an existing route rather than creating a new one.
 - **Inputs:** None.
 - **Returns:** `bool` — `true` when `widget.route != null`.
@@ -61,7 +64,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `Future<void> _load()` <a id="load"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 85, called from `initState` at line 65)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 87, called from `initState` at line 65)
 - **Purpose:** Load all services (for the source-service dropdown and hop-service pickers) and default the selected source service/endpoint if not already set.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -83,7 +86,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `Future<void> _save()` <a id="save"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 125)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 127)
 - **Purpose:** Validate the form, assemble a `ServiceRoute` (with an internally generated name and parsed target list) from the current draft state, persist it, and close the page.
 - **Inputs:** None (reads form/controller/field state).
 - **Returns:** `Future<void>`.
@@ -102,7 +105,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `Future<void> _delete()` <a id="delete"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 158)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 160)
 - **Purpose:** Ask the user to confirm, then delete the route being edited.
 - **Inputs:** None (uses `widget.route`).
 - **Returns:** `Future<void>`.
@@ -120,14 +123,14 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `Future<ServiceRouteHop?> _showHopDialog({ServiceRouteHop? initial})` <a id="showhopdialog"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 210)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 212)
 - **Purpose:** Show a modal dialog for creating or editing one `ServiceRouteHop` (type, method, optional linked service/endpoint, label, scheme/host/port/path, notes) and return the resulting object.
 - **Inputs:** `initial` — an existing `ServiceRouteHop` to prefill for editing, or `null` to create a new one.
 - **Returns:** `Future<ServiceRouteHop?>` — the built hop if Save was tapped, or `null` if cancelled/dismissed.
 - **Side effects:** Shows an `AlertDialog` via `showDialog`; disposes its six local text controllers after the dialog closes.
 - **Algorithm:**
   1. Seed local controllers/state from `initial` (or blank/defaults: `ServiceRouteHopType.manual`, no method, no linked service/endpoint).
-  2. Build a `StatefulBuilder`-backed `AlertDialog` with: hop-type dropdown, optional route-method dropdown, a "linked service" dropdown (`null` = manual/free-form hop) whose `onChanged` also resets `endpointId` to the newly-selected service's first endpoint, a conditional endpoint dropdown (only shown when a service is linked), and free-form label/scheme/port/host/path/notes fields.
+  2. Build a `StatefulBuilder`-backed `AlertDialog` with: hop-type dropdown (localized with `serviceHopTypeLabel`), optional route-method dropdown (`serviceRouteMethodUiLabel`), a "linked service" dropdown (`null` = manual/free-form hop) whose `onChanged` also resets `endpointId` to the newly-selected service's first endpoint, a conditional endpoint dropdown (only shown when a service is linked), and free-form label/scheme/port/host/path/notes fields.
   3. On Save, pop the dialog with a new `ServiceRouteHop` built from dialog state: text fields pass through `_emptyToNull`; `port` is parsed with `int.tryParse`; `serviceId`/`endpointId`/`method` are taken as-is; `extraJson` carries over from `initial`.
   4. Dispose all six local controllers regardless of outcome, then return the dialog result.
 - **Usage:**
@@ -141,8 +144,8 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `String _hopTitle(ServiceRouteHop hop)` <a id="hoptitle"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 603)
-- **Purpose:** Pick the best available display title for a hop: the linked service's name if resolvable, else the hop's own label, else its host, else its type name.
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 668)
+- **Purpose:** Pick the best available display title for a hop: the linked service's name if resolvable, else the hop's own label, else its host, else its localized type label.
 - **Inputs:** `hop` — the `ServiceRouteHop` to title.
 - **Returns:** `String`.
 - **Side effects:** None.
@@ -150,7 +153,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
   1. If `hop.serviceId` is set, look it up in `_services`; if found, return that service's `name`.
   2. Otherwise, if `hop.label` is set and non-empty, return it.
   3. Otherwise, if `hop.host` is set and non-empty, return it.
-  4. Otherwise, fall back to `hop.type.name` (e.g. `manual`, `reverseProxy`).
+  4. Otherwise, fall back to `serviceHopTypeLabel(l10n, hop.type)` (e.g. "Manual", "Reverse proxy" in English).
 - **Usage:**
   ```dart
   title: Text(_hopTitle(_hops[i])),
@@ -160,14 +163,14 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `String _hopSubtitle(ServiceRouteHop hop)` <a id="hopsubtitle"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 618)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 683)
 - **Purpose:** Build the secondary detail line for a hop's list card, combining its type, method, linked endpoint (if any), free-form host/scheme/port/path, and notes.
 - **Inputs:** `hop` — the `ServiceRouteHop` to describe.
 - **Returns:** `String` — the parts joined with `' · '`, omitting any empty/null parts.
 - **Side effects:** None (calls the sibling `_hopEndpoint` lookup).
 - **Algorithm:**
   1. Resolve the hop's linked endpoint via `_hopEndpoint(hop)`.
-  2. Assemble a list of candidate strings: `hop.type.name`; `hop.method?.name`; if an endpoint was resolved, `'<protocol>/<portText>'`; if `hop.host` is set, a formatted `scheme://host:port/path` string built only from the parts that are present; `hop.notes`.
+  2. Assemble a list of candidate strings: `serviceHopTypeLabel(l10n, hop.type)`; the method through `serviceRouteMethodUiLabel` when set; if an endpoint was resolved, `'<protocol>/<portText>'`; if `hop.host` is set, a formatted `scheme://host:port/path` string built only from the parts that are present; `hop.notes`.
   3. Filter to non-null, non-empty strings and join with `' · '`.
 - **Usage:**
   ```dart
@@ -177,7 +180,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `String _routePreview()` <a id="routepreview"></a>
 - **Kind:** method of `_ServiceRouteEditPageState`
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 660)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 726)
 - **Purpose:** Build the one-line "source -> hop -> ... -> target" preview shown in the card above the hop list, reflecting the full route chain as currently drafted.
 - **Inputs:** None (reads `_selectedSource`, `_selectedEndpoint`, `_hops`, and the final-URL text field).
 - **Returns:** `String` — the arrow-joined chain, or `'-'` if there is nothing to show yet.
@@ -195,7 +198,7 @@ user-facing descriptions belong in `notes` instead. The page is pushed from
 
 ### `List<String> _splitTargets(String value)` <a id="splittargets"></a>
 - **Kind:** top-level function
-- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 680)
+- **Source:** `lib/features/services/views/service_route_edit_page.dart` (line 746)
 - **Purpose:** Parse the raw text of the final-URL/targets field into a clean list of individual target strings, supporting one target per line or comma-separated targets.
 - **Inputs:** `value` — the raw text from `_finalUrlCtrl`.
 - **Returns:** `List<String>` — trimmed, non-empty targets in original order.

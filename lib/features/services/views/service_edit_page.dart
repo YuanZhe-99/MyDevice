@@ -9,18 +9,47 @@ import '../../devices/services/device_storage.dart';
 import '../models/service.dart';
 import '../services/service_storage.dart';
 import '../services/service_template_service.dart';
+import 'service_endpoint_dialog.dart';
 import 'service_list_page.dart';
+
+/// What the service edit page did, returned when it pops.
+///
+/// Callers that only reload can test for a non-null result; the guided
+/// access-path page uses [saved] to select a service it just created inline.
+class ServiceEditOutcome {
+  /// The service as saved, or null when the page deleted it.
+  final ServiceNode? saved;
+
+  /// Whether the page deleted the service.
+  final bool deleted;
+
+  /// Purpose: Create an edit-page result.
+  /// Inputs: `saved` — the saved service; `deleted` — true after a delete.
+  /// Returns: A new `ServiceEditOutcome`.
+  /// Side effects: None.
+  /// Notes: Exactly one of the two is set by the page.
+  const ServiceEditOutcome({this.saved, this.deleted = false});
+}
 
 class ServiceEditPage extends StatefulWidget {
   final ServiceNode? service;
   final String? deviceId;
+  final ServiceTemplate? template;
 
   /// Purpose: Create a service edit page instance.
-  /// Inputs: None.
+  /// Inputs: `service` — the service to edit, or null to add one;
+  /// `deviceId` — the device a new service starts on; `template` — a template
+  /// a new service starts from.
   /// Returns: A new `ServiceEditPage` instance.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: None.
-  const ServiceEditPage({super.key, this.service, this.deviceId});
+  /// Side effects: None.
+  /// Notes: Pops a [ServiceEditOutcome] after a save or a delete, and nothing
+  /// when the user backs out. `template` is ignored when editing.
+  const ServiceEditPage({
+    super.key,
+    this.service,
+    this.deviceId,
+    this.template,
+  });
 
   /// Purpose: Create the mutable state object for this widget.
   /// Inputs: None.
@@ -74,6 +103,8 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     _runtime = service?.runtime;
     _state = service?.state ?? ServiceState.active;
     _endpoints = List<ServiceEndpoint>.of(service?.endpoints ?? const []);
+    final template = widget.template;
+    if (service == null && template != null) _assignTemplate(template);
     _loadDevices();
   }
 
@@ -107,39 +138,49 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     });
   }
 
-  /// Purpose: Provide the internal apply template helper for this file.
+  /// Purpose: Apply a picked template to the form and rebuild.
   /// Inputs: `template`.
   /// Returns: `void`.
   /// Side effects: Updates widget state and triggers a rebuild.
   /// Notes: Internal helper used within this file only.
   void _applyTemplate(ServiceTemplate template) {
-    setState(() {
-      _templateId = template.id;
-      _nameCtrl.text = template.name;
-      _icon = template.icon;
-      _iconCtrl.text = template.icon;
-      _kind = template.kind;
-      _runtime = template.runtime;
-      _endpoints = [
-        for (final endpoint in template.endpoints)
-          ServiceEndpoint(
-            label: endpoint.label,
-            protocol: endpoint.protocol,
-            transport: endpoint.transport,
-            bindAddress: endpoint.bindAddress,
-            port: endpoint.port,
-            portEnd: endpoint.portEnd,
-            path: endpoint.path,
-            networkId: endpoint.networkId,
-            scope: endpoint.scope,
-            isPrimary: endpoint.isPrimary,
-            notes: endpoint.notes,
-          ),
-      ];
-      if ((template.dockerCompose ?? '').isNotEmpty) {
-        _composeCtrl.text = template.dockerCompose!;
-      }
-    });
+    setState(() => _assignTemplate(template));
+  }
+
+  /// Purpose: Copy a template's name, icon, kind, runtime, endpoints and
+  /// Compose example into the form fields.
+  /// Inputs: `template`.
+  /// Returns: `void`.
+  /// Side effects: Mutates the form state without rebuilding; callers wrap it
+  /// in `setState` unless they run before the first build.
+  /// Notes: Internal helper used within this file only. Endpoints get fresh
+  /// ids, so two services made from one template never share endpoint ids.
+  void _assignTemplate(ServiceTemplate template) {
+    _templateId = template.id;
+    _nameCtrl.text = template.name;
+    _icon = template.icon;
+    _iconCtrl.text = template.icon;
+    _kind = template.kind;
+    _runtime = template.runtime;
+    _endpoints = [
+      for (final endpoint in template.endpoints)
+        ServiceEndpoint(
+          label: endpoint.label,
+          protocol: endpoint.protocol,
+          transport: endpoint.transport,
+          bindAddress: endpoint.bindAddress,
+          port: endpoint.port,
+          portEnd: endpoint.portEnd,
+          path: endpoint.path,
+          networkId: endpoint.networkId,
+          scope: endpoint.scope,
+          isPrimary: endpoint.isPrimary,
+          notes: endpoint.notes,
+        ),
+    ];
+    if ((template.dockerCompose ?? '').isNotEmpty) {
+      _composeCtrl.text = template.dockerCompose!;
+    }
   }
 
   /// Purpose: Provide the internal template name helper for this file.
@@ -193,7 +234,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       extraJson: existing?.extraJson ?? const {},
     );
     await ServiceStorage.addOrUpdateService(service);
-    if (mounted) Navigator.of(context).pop(true);
+    if (mounted) Navigator.of(context).pop(ServiceEditOutcome(saved: service));
   }
 
   /// Purpose: Delete the relevant data from the relevant storage or state.
@@ -224,7 +265,9 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     );
     if (ok == true) {
       await ServiceStorage.deleteService(service.id);
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) {
+        Navigator.of(context).pop(const ServiceEditOutcome(deleted: true));
+      }
     }
   }
 
@@ -249,7 +292,10 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   /// Side effects: Updates widget state and triggers a rebuild.
   /// Notes: Internal helper used within this file only.
   Future<void> _addEndpoint() async {
-    final endpoint = await _showEndpointDialog();
+    final endpoint = await showServiceEndpointDialog(
+      context,
+      defaultPrimary: _endpoints.isEmpty,
+    );
     if (endpoint != null) setState(() => _endpoints.add(endpoint));
   }
 
@@ -259,187 +305,12 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   /// Side effects: Updates widget state and triggers a rebuild.
   /// Notes: Internal helper used within this file only.
   Future<void> _editEndpoint(int index) async {
-    final endpoint = await _showEndpointDialog(initial: _endpoints[index]);
+    final endpoint = await showServiceEndpointDialog(
+      context,
+      initial: _endpoints[index],
+      defaultPrimary: _endpoints.isEmpty,
+    );
     if (endpoint != null) setState(() => _endpoints[index] = endpoint);
-  }
-
-  /// Purpose: Show endpoint dialog in the current UI flow.
-  /// Inputs: None.
-  /// Returns: `Future<ServiceEndpoint?>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  Future<ServiceEndpoint?> _showEndpointDialog({
-    ServiceEndpoint? initial,
-  }) async {
-    final l10n = AppLocalizations.of(context)!;
-    final labelCtrl = TextEditingController(text: initial?.label ?? '');
-    final bindCtrl = TextEditingController(text: initial?.bindAddress ?? '');
-    final portCtrl = TextEditingController(
-      text: initial?.port?.toString() ?? '',
-    );
-    final portEndCtrl = TextEditingController(
-      text: initial?.portEnd?.toString() ?? '',
-    );
-    final pathCtrl = TextEditingController(text: initial?.path ?? '');
-    var protocol = initial?.protocol ?? ServiceProtocol.http;
-    var transport = initial?.transport ?? ServiceTransport.tcp;
-    var scope = initial?.scope ?? ServiceScope.lan;
-    var primary = initial?.isPrimary ?? _endpoints.isEmpty;
-
-    final result = await showDialog<ServiceEndpoint>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(
-            initial == null
-                ? l10n.addServiceEndpoint
-                : l10n.editServiceEndpoint,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: labelCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.serviceEndpointLabel,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<ServiceProtocol>(
-                  initialValue: protocol,
-                  decoration: InputDecoration(labelText: l10n.serviceProtocol),
-                  items: ServiceProtocol.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) setDialogState(() => protocol = value);
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<ServiceTransport>(
-                  initialValue: transport,
-                  decoration: InputDecoration(labelText: l10n.serviceTransport),
-                  items: ServiceTransport.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) setDialogState(() => transport = value);
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: portCtrl,
-                        decoration: InputDecoration(
-                          labelText: l10n.servicePort,
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: portEndCtrl,
-                        decoration: InputDecoration(
-                          labelText: l10n.servicePortEnd,
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: bindCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.serviceBindAddress,
-                    hintText: '0.0.0.0',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: pathCtrl,
-                  decoration: InputDecoration(
-                    labelText: l10n.servicePath,
-                    hintText: '/',
-                  ),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<ServiceScope>(
-                  initialValue: scope,
-                  decoration: InputDecoration(labelText: l10n.serviceScope),
-                  items: ServiceScope.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.name),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value != null) setDialogState(() => scope = value);
-                  },
-                ),
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: primary,
-                  title: Text(l10n.servicePrimaryEndpoint),
-                  onChanged: (value) =>
-                      setDialogState(() => primary = value ?? false),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(
-                  ctx,
-                  ServiceEndpoint(
-                    id: initial?.id,
-                    label: _emptyToNull(labelCtrl.text),
-                    protocol: protocol,
-                    transport: transport,
-                    bindAddress: _emptyToNull(bindCtrl.text),
-                    port: int.tryParse(portCtrl.text.trim()),
-                    portEnd: int.tryParse(portEndCtrl.text.trim()),
-                    path: _emptyToNull(pathCtrl.text),
-                    scope: scope,
-                    isPrimary: primary,
-                    extraJson: initial?.extraJson ?? const {},
-                  ),
-                );
-              },
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    labelCtrl.dispose();
-    bindCtrl.dispose();
-    portCtrl.dispose();
-    portEndCtrl.dispose();
-    pathCtrl.dispose();
-    return result;
   }
 
   /// Purpose: Build the current widget subtree for the active UI state.

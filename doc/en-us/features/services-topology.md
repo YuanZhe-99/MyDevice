@@ -91,6 +91,50 @@ editor** remains available for manual multi-hop chains that don't fit one of tho
 templates. Route *names* are generated internally (hidden from the user); user-facing
 route descriptions belong in `notes` instead.
 
+## Access patterns
+
+`lib/features/services/services/service_access_patterns.dart` names the self-hosting setups a
+single access path usually follows, so a route can be described the way the user thinks about
+it rather than as a list of hops. Each pattern produces exactly one `ServiceRoute` whose hops the
+topology builder already understands:
+
+| Pattern | Hop(s) |
+|---|---|
+| Direct (LAN / VPN) | one `manual` hop, method `direct` |
+| Reverse proxy | one `reverseProxy` hop through the proxy service and its endpoint; method Caddy, Nginx or Traefik from the service, else custom |
+| Cloudflare Tunnel, Pangolin, Tailscale Funnel | one `tunnel` hop with that method, through a relay service when one is chosen |
+| FRP | one `portForward` hop, method `frp`, through the FRP server service, with its **ingress endpoint chosen explicitly**, the server's device, and the public host/port |
+| Router port forward | one `portForward` hop, method `routerPortForward`, on the router device, with the public host/port |
+
+The five tunnel and port-mapping patterns can add **a reverse-proxy hop first** — the chain
+*app → Caddy on the same machine → FRP or a tunnel → domain* that used to need the advanced
+editor. The FRP ingress defaults to the relay's primary endpoint, else its first — exactly the
+endpoint the topology inferred before 1.5.6 for a hop that named none — so a path the user does
+not touch renders the same graph.
+
+A pattern is never stored. A saved route is classified again whenever it opens, and it counts as
+a pattern only if the guided form can reproduce it field for field: one or two hops, the
+optional proxy hop first, a recognised last hop, an access level and lane that form one
+*reachability*, and no hop notes, schemes, paths or other details the form does not show.
+Everything else — three hops, a custom access level, hand-edited hop fields — belongs to the
+advanced editor, which keeps it intact.
+
+## Lane override
+
+The topology colours and orders every route by its **access lane** — LAN / WiFi, VPN /
+Tailscale, or Public / VPS. Before 1.5.6 the lane was always inferred, method first: any hop
+through FRP, a router port forward, Caddy, Nginx, Traefik, Cloudflare Tunnel or Pangolin made a
+route public, whatever its access level said. That cannot express a LAN-only reverse proxy
+(Caddy with split DNS), which was always drawn in the public lane.
+
+A route can now pin its lane in `extraJson['accessLane']` (`local`, `vpn` or `public`; see
+[Data Formats](../data-formats.md#app-written-extrajson-keys)). The key is optional and additive:
+without it the old inference applies unchanged, so existing routes draw exactly as before, and
+older builds keep the key and keep inferring. A route's **reachability** — LAN, VPN, Public, or
+Public with login — is the pair of its access level and this lane: LAN pins the local lane, VPN
+the VPN lane, and both public choices the public lane (the login variant saves the
+`authenticated` access level).
+
 ## FRP-style ingress/public port modeling
 
 For FRP-style access, the path is modeled as: VPS/remote device → FRP service on that

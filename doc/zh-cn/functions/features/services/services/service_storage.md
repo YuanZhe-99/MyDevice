@@ -100,7 +100,7 @@
   ```dart
   await ServiceStorage.addOrUpdateRoute(route);
   ```
-  （来自 `service_list_page.dart` 的快速访问路由流程和 `service_route_edit_page.dart` 的高级路由编辑器保存处理器——两个流程见 [服务与拓扑 — 快速访问路由创建 vs 高级编辑器](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor)）
+  （来自 `service_access_path_page.dart` 的引导式访问路径保存和 `service_route_edit_page.dart` 的高级路由编辑器保存处理器——两个流程见 [服务与拓扑 — 添加访问路径](../../../../features/services-topology.md#adding-an-access-path)）
 - **备注：** 无。
 
 ### `static Future<void> deleteRoute(String id)` <a id="deleteroute"></a>

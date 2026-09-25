@@ -20,48 +20,13 @@ import '../services/service_analysis.dart';
 import '../services/service_labels.dart';
 import '../services/service_topology_layout.dart';
 import '../services/service_storage.dart';
+import 'service_access_path_page.dart';
 import 'service_edit_page.dart';
 import 'service_route_edit_page.dart';
 
 enum _ServiceView { overview, devices, routes, ports }
 
 enum _TopologyInteractionMode { select, move }
-
-enum _QuickAccessMethod {
-  /// Purpose: Implement the direct behavior for this file.
-  /// Inputs: `custom`.
-  /// Returns: `dynamic`.
-  /// Side effects: Implementation-dependent.
-  /// Notes: Implementations should preserve this contract.
-  direct(ServiceRouteMethod.direct),
-  caddy(ServiceRouteMethod.caddy),
-  nginx(ServiceRouteMethod.nginx),
-  traefik(ServiceRouteMethod.traefik),
-  frp(ServiceRouteMethod.frp),
-  pangolin(ServiceRouteMethod.pangolin),
-  cloudflareTunnel(ServiceRouteMethod.cloudflareTunnel),
-  tailscaleFunnel(ServiceRouteMethod.tailscaleFunnel),
-  routerPortForward(ServiceRouteMethod.routerPortForward),
-  custom(ServiceRouteMethod.custom);
-
-  final ServiceRouteMethod routeMethod;
-
-  /// Purpose: Create a quick access method instance.
-  /// Inputs: `routeMethod`.
-  /// Returns: A new `_QuickAccessMethod` instance.
-  /// Side effects: Implementation-dependent.
-  /// Notes: Implementations should preserve this contract.
-  const _QuickAccessMethod(this.routeMethod);
-
-  /// Purpose: Return whether port mapping is true.
-  /// Inputs: None.
-  /// Returns: `bool`.
-  /// Side effects: None.
-  /// Notes: None.
-  bool get isPortMapping =>
-      routeMethod == ServiceRouteMethod.frp ||
-      routeMethod == ServiceRouteMethod.routerPortForward;
-}
 
 class ServiceListPage extends StatefulWidget {
   /// Purpose: Create a service list page instance.
@@ -221,25 +186,18 @@ class _ServiceListPageState extends State<ServiceListPage> {
     if (result == true) _load();
   }
 
-  /// Purpose: Add access route through the current flow.
-  /// Inputs: None.
+  /// Purpose: Open the guided access-path page for a new access path.
+  /// Inputs: `draft` — the starting draft, e.g. with the source prefilled.
   /// Returns: `Future<void>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  Future<void> _addAccessRoute({ServiceNode? source}) async {
-    final routes = await showDialog<List<ServiceRoute>>(
-      context: context,
-      builder: (context) => _QuickAccessRouteDialog(
-        services: _services,
-        devices: _devices,
-        initialService: source,
-      ),
+  /// Side effects: Pushes `ServiceAccessPathPage` on the root navigator;
+  /// reloads when it saved.
+  /// Notes: Every "Add access" entry point on this page and in the topology
+  /// comes through here.
+  Future<void> _addAccessPath({ServiceAccessDraft? draft}) async {
+    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
+      MaterialPageRoute(builder: (_) => ServiceAccessPathPage(draft: draft)),
     );
-    if (routes == null || routes.isEmpty) return;
-    for (final route in routes) {
-      await ServiceStorage.addOrUpdateRoute(route);
-    }
-    await _load();
+    if (saved == true) await _load();
   }
 
   /// Purpose: Edit route and refresh local state when needed.
@@ -304,7 +262,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
           IconButton(
             icon: const Icon(Icons.add_link),
             tooltip: l10n.serviceAddAccess,
-            onPressed: _services.isEmpty ? null : () => _addAccessRoute(),
+            onPressed: _services.isEmpty ? null : () => _addAccessPath(),
           ),
           IconButton(
             icon: const Icon(Icons.alt_route),
@@ -470,7 +428,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
                       ),
                     ),
                   for (final warning in warnings.take(3))
-                    Text(_warningText(l10n, warning)),
+                    Text(serviceWarningLabel(l10n, warning)),
                 ],
               ),
             ),
@@ -481,7 +439,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
-            onPressed: () => _addAccessRoute(),
+            onPressed: () => _addAccessPath(),
             icon: const Icon(Icons.add_link),
             label: Text(l10n.serviceAddAccess),
           ),
@@ -701,7 +659,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
                     maxWidth: math.max(0.0, constraints.maxWidth),
                   ),
                   child: TextButton.icon(
-                    onPressed: () => _addAccessRoute(),
+                    onPressed: () => _addAccessPath(),
                     icon: const Icon(Icons.add_link),
                     label: Text(
                       l10n.serviceAddAccess,
@@ -776,7 +734,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
           routes: _routes,
           onEditService: _editService,
           onEditRoute: _editRoute,
-          onAddAccess: _addAccessRoute,
+          onAddAccess: _addAccessPath,
         ),
       ),
     );
@@ -841,7 +799,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
               child: TextButton.icon(
                 onPressed: service == null
                     ? null
-                    : () => _addAccessRoute(source: service),
+                    : () => _addAccessPath(
+                        draft: ServiceAccessDraft(sourceServiceId: service.id),
+                      ),
                 icon: const Icon(Icons.add_link),
                 label: Text(l10n.serviceAddAccess),
               ),
@@ -922,7 +882,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
         ],
         onSelected: (value) {
           if (value == 'route') {
-            _addAccessRoute(source: service);
+            _addAccessPath(
+              draft: ServiceAccessDraft(sourceServiceId: service.id),
+            );
           } else {
             _editService(service);
           }
@@ -1021,41 +983,6 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return routeNames.join(', ');
   }
 
-  /// Purpose: Provide the internal warning text helper for this file.
-  /// Inputs: `l10n`, `warning`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  String _warningText(AppLocalizations l10n, ServiceWarning warning) {
-    return switch (warning.kind) {
-      ServiceWarningKind.missingDevice => l10n.serviceWarningMissingDevice(
-        warning.name,
-      ),
-      ServiceWarningKind.inactiveDevice => l10n.serviceWarningInactiveDevice(
-        warning.name,
-      ),
-      ServiceWarningKind.missingEndpointNetwork =>
-        l10n.serviceWarningMissingNetwork(warning.name),
-      ServiceWarningKind.missingSourceService =>
-        l10n.serviceWarningMissingSource(warning.name),
-      ServiceWarningKind.missingSourceEndpoint =>
-        l10n.serviceWarningMissingSourceEndpoint(warning.name),
-      ServiceWarningKind.missingHopService =>
-        l10n.serviceWarningMissingHopService(warning.name),
-      ServiceWarningKind.missingHopEndpoint =>
-        l10n.serviceWarningMissingHopEndpoint(warning.name),
-      ServiceWarningKind.missingHopDevice =>
-        l10n.serviceWarningMissingHopDevice(warning.name),
-      ServiceWarningKind.emptyRoute => l10n.serviceWarningEmptyRoute(
-        warning.name,
-      ),
-      ServiceWarningKind.publicRouteMissingUrl =>
-        l10n.serviceWarningPublicRouteMissingUrl(warning.name),
-      ServiceWarningKind.duplicateFinalUrl =>
-        l10n.serviceWarningDuplicateFinalUrl(warning.name),
-    };
-  }
-
   /// Purpose: Provide the internal empty state helper for this file.
   /// Inputs: `message`.
   /// Returns: `Widget`.
@@ -1092,417 +1019,6 @@ class _ServiceListPageState extends State<ServiceListPage> {
   }
 }
 
-class _QuickAccessRouteDialog extends StatefulWidget {
-  final List<ServiceNode> services;
-  final List<Device> devices;
-  final ServiceNode? initialService;
-
-  /// Purpose: Create a quick access route dialog instance.
-  /// Inputs: None.
-  /// Returns: A new `_QuickAccessRouteDialog` instance.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: None.
-  const _QuickAccessRouteDialog({
-    required this.services,
-    required this.devices,
-    this.initialService,
-  });
-
-  /// Purpose: Create the mutable state object for this widget.
-  /// Inputs: None.
-  /// Returns: A new `State` instance.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: None.
-  @override
-  State<_QuickAccessRouteDialog> createState() =>
-      _QuickAccessRouteDialogState();
-}
-
-class _QuickAccessRouteDialogState extends State<_QuickAccessRouteDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _targetsCtrl;
-  late final TextEditingController _remoteHostCtrl;
-  late final TextEditingController _remotePortCtrl;
-  late final TextEditingController _notesCtrl;
-  String? _sourceServiceId;
-  String? _sourceEndpointId;
-  String? _relayServiceId;
-  String? _remoteDeviceId;
-  _QuickAccessMethod _method = _QuickAccessMethod.cloudflareTunnel;
-  ServiceAccessLevel _accessLevel = ServiceAccessLevel.public;
-
-  /// Purpose: Initialize listeners, controllers, and first-load work for this state object.
-  /// Inputs: None.
-  /// Returns: None.
-  /// Side effects: Registers listeners and may kick off asynchronous loading.
-  /// Notes: Guard any post-await UI updates with `mounted` when needed.
-  @override
-  void initState() {
-    super.initState();
-    _targetsCtrl = TextEditingController();
-    _remoteHostCtrl = TextEditingController();
-    _remotePortCtrl = TextEditingController();
-    _notesCtrl = TextEditingController();
-    _sourceServiceId =
-        widget.initialService?.id ?? widget.services.firstOrNull?.id;
-    _sourceEndpointId = _selectedSource?.endpoints.firstOrNull?.id;
-  }
-
-  /// Purpose: Release listeners, controllers, and other owned resources.
-  /// Inputs: None.
-  /// Returns: None.
-  /// Side effects: Releases owned resources and unregisters listeners.
-  /// Notes: Call the superclass implementation in the expected lifecycle order.
-  @override
-  void dispose() {
-    _targetsCtrl.dispose();
-    _remoteHostCtrl.dispose();
-    _remotePortCtrl.dispose();
-    _notesCtrl.dispose();
-    super.dispose();
-  }
-
-  /// Purpose: Provide the internal selected source helper for this file.
-  /// Inputs: None.
-  /// Returns: `ServiceNode?`.
-  /// Side effects: None.
-  /// Notes: Internal helper used within this file only.
-  ServiceNode? get _selectedSource => _sourceServiceId == null
-      ? null
-      : widget.services
-            .where((service) => service.id == _sourceServiceId)
-            .firstOrNull;
-
-  /// Purpose: Build and return routes for the current context.
-  /// Inputs: None.
-  /// Returns: `List<ServiceRoute>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  List<ServiceRoute> _buildRoutes() {
-    final source = _selectedSource;
-    if (source == null) return const [];
-    final method = _method.routeMethod;
-    final targets = _splitTargets(_targetsCtrl.text);
-    final hop = _buildHop(method);
-    final routeTargets = targets;
-    return [
-      ServiceRoute(
-        name: serviceRouteGeneratedName(
-          sourceName: source.name,
-          hops: [hop],
-          targets: routeTargets,
-        ),
-        sourceServiceId: source.id,
-        sourceEndpointId: _sourceEndpointId,
-        hops: [hop],
-        finalUrl: routeTargets.firstOrNull,
-        accessLevel: _accessLevel,
-        notes: _emptyToNull(_notesCtrl.text),
-        extraJson: serviceRouteExtraJsonWithTargets(const {}, routeTargets),
-      ),
-    ];
-  }
-
-  /// Purpose: Build and return hop for the current context.
-  /// Inputs: `method`.
-  /// Returns: `ServiceRouteHop`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  ServiceRouteHop _buildHop(ServiceRouteMethod method) {
-    if (_method.isPortMapping) {
-      return ServiceRouteHop(
-        type: ServiceRouteHopType.portForward,
-        method: method,
-        serviceId: _relayServiceId,
-        deviceId: _remoteDeviceId,
-        label: _relayServiceId == null ? serviceRouteMethodLabel(method) : null,
-        host: _emptyToNull(_remoteHostCtrl.text),
-        port: int.tryParse(_remotePortCtrl.text.trim()),
-      );
-    }
-    return ServiceRouteHop(
-      type: switch (method) {
-        ServiceRouteMethod.direct => ServiceRouteHopType.manual,
-        ServiceRouteMethod.caddy ||
-        ServiceRouteMethod.nginx ||
-        ServiceRouteMethod.traefik => ServiceRouteHopType.reverseProxy,
-        ServiceRouteMethod.routerPortForward => ServiceRouteHopType.portForward,
-        _ => ServiceRouteHopType.tunnel,
-      },
-      method: method,
-      serviceId: _relayServiceId,
-      label: _relayServiceId == null ? serviceRouteMethodLabel(method) : null,
-    );
-  }
-
-  /// Purpose: Provide the internal submit helper for this file.
-  /// Inputs: None.
-  /// Returns: `void`.
-  /// Side effects: Opens or updates routes, dialogs, or other UI flows.
-  /// Notes: Internal helper used within this file only.
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    Navigator.of(context).pop(_buildRoutes());
-  }
-
-  /// Purpose: Build the current widget subtree for the active UI state.
-  /// Inputs: `context`.
-  /// Returns: The widget tree for the current state.
-  /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
-  /// Notes: Keep this method cheap because Flutter may call it often.
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final source = _selectedSource;
-    return AlertDialog(
-      title: Text(l10n.serviceAddAccess),
-      content: SizedBox(
-        width: dialogMaxWidth,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: _sourceServiceId,
-                  decoration: InputDecoration(
-                    labelText: l10n.routeSourceService,
-                  ),
-                  items: [
-                    for (final service in widget.services)
-                      DropdownMenuItem(
-                        value: service.id,
-                        child: Text(service.name),
-                      ),
-                  ],
-                  validator: (value) =>
-                      value == null ? l10n.serviceNameRequired : null,
-                  onChanged: (value) => setState(() {
-                    _sourceServiceId = value;
-                    _sourceEndpointId =
-                        _selectedSource?.endpoints.firstOrNull?.id;
-                    if (_relayServiceId == value) _relayServiceId = null;
-                  }),
-                ),
-                if (source != null) ...[
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _sourceEndpointId,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceEndpoint,
-                    ),
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(l10n.optionalNone),
-                      ),
-                      for (final endpoint in source.endpoints)
-                        DropdownMenuItem(
-                          value: endpoint.id,
-                          child: Text(
-                            '${endpoint.label ?? endpoint.protocol.name} · ${endpoint.portText}',
-                          ),
-                        ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _sourceEndpointId = value),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                DropdownButtonFormField<_QuickAccessMethod>(
-                  initialValue: _method,
-                  decoration: InputDecoration(
-                    labelText: l10n.serviceAccessMethod,
-                  ),
-                  items: [
-                    for (final method in _QuickAccessMethod.values)
-                      DropdownMenuItem(
-                        value: method,
-                        child: Text(
-                          serviceRouteMethodLabel(method.routeMethod),
-                        ),
-                      ),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _method = value;
-                      _accessLevel = value == _QuickAccessMethod.direct
-                          ? ServiceAccessLevel.lan
-                          : ServiceAccessLevel.public;
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<ServiceAccessLevel>(
-                  initialValue: _accessLevel,
-                  decoration: InputDecoration(
-                    labelText: l10n.serviceAccessLevel,
-                  ),
-                  items: [
-                    for (final level in ServiceAccessLevel.values)
-                      DropdownMenuItem(value: level, child: Text(level.name)),
-                  ],
-                  onChanged: (value) {
-                    if (value != null) setState(() => _accessLevel = value);
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: _relayServiceId,
-                  decoration: InputDecoration(
-                    labelText: l10n.serviceRelayService,
-                  ),
-                  items: [
-                    DropdownMenuItem<String>(
-                      value: null,
-                      child: Text(l10n.optionalNone),
-                    ),
-                    for (final service in _relayServiceOptions())
-                      DropdownMenuItem(
-                        value: service.id,
-                        child: Text(
-                          _method.isPortMapping
-                              ? '${service.name} · ${_deviceName(service.deviceId)}'
-                              : service.name,
-                        ),
-                      ),
-                  ],
-                  onChanged: (value) => setState(() {
-                    _relayServiceId = value;
-                    if (_method.isPortMapping && value != null) {
-                      final service = widget.services
-                          .where((service) => service.id == value)
-                          .firstOrNull;
-                      _remoteDeviceId = service?.deviceId ?? _remoteDeviceId;
-                    }
-                  }),
-                ),
-                if (_method.isPortMapping) ...[
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _remoteDeviceId,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceRemoteDevice,
-                    ),
-                    items: [
-                      DropdownMenuItem<String>(
-                        value: null,
-                        child: Text(l10n.optionalNone),
-                      ),
-                      for (final device in widget.devices)
-                        DropdownMenuItem(
-                          value: device.id,
-                          child: Text(device.name),
-                        ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _remoteDeviceId = value),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _remoteHostCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceRemoteHost,
-                      hintText: '203.0.113.10 or vps.example.com',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _remotePortCtrl,
-                    decoration: InputDecoration(
-                      labelText: l10n.serviceRemotePort,
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (!_method.isPortMapping) return null;
-                      final port = int.tryParse(value?.trim() ?? '');
-                      if (port == null || port <= 0 || port > 65535) {
-                        return l10n.serviceRemotePortRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                ],
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _targetsCtrl,
-                  decoration: InputDecoration(
-                    labelText: _method.isPortMapping
-                        ? l10n.serviceDomains
-                        : l10n.serviceFinalUrl,
-                    hintText: _method.isPortMapping
-                        ? 'domain1.com\ndomain2.com'
-                        : 'https://app.example.com',
-                    helperText: _method.isPortMapping
-                        ? l10n.serviceDomainsHint
-                        : l10n.serviceAccessTargetsHint,
-                  ),
-                  minLines: 2,
-                  maxLines: 4,
-                  validator: (value) {
-                    if (_method.isPortMapping) return null;
-                    if (_splitTargets(value ?? '').isEmpty) {
-                      return l10n.serviceAccessTargetRequired;
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _notesCtrl,
-                  decoration: InputDecoration(labelText: l10n.deviceNotes),
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton.icon(
-          onPressed: _submit,
-          icon: const Icon(Icons.add_link),
-          label: Text(l10n.save),
-        ),
-      ],
-    );
-  }
-
-  /// Purpose: Provide the internal relay service options helper for this file.
-  /// Inputs: None.
-  /// Returns: `List<ServiceNode>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  List<ServiceNode> _relayServiceOptions() {
-    final candidates = widget.services
-        .where((service) => service.id != _sourceServiceId)
-        .toList();
-    candidates.sort((a, b) {
-      if (_method.isPortMapping) {
-        final aPreferred = isFrpLikeService(a) ? 0 : 1;
-        final bPreferred = isFrpLikeService(b) ? 0 : 1;
-        if (aPreferred != bPreferred) return aPreferred.compareTo(bPreferred);
-      }
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
-    return candidates;
-  }
-
-  /// Purpose: Provide the internal device name helper for this file.
-  /// Inputs: `id`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  String _deviceName(String id) =>
-      widget.devices.where((device) => device.id == id).firstOrNull?.name ?? id;
-}
-
 class _ServiceTopologyView extends StatefulWidget {
   final ServiceTopologyGraph graph;
   final List<ServiceNode> services;
@@ -1510,7 +1026,7 @@ class _ServiceTopologyView extends StatefulWidget {
   final List<ServiceRoute> routes;
   final ValueChanged<ServiceNode> onEditService;
   final ValueChanged<ServiceRoute> onEditRoute;
-  final Future<void> Function({ServiceNode? source}) onAddAccess;
+  final Future<void> Function({ServiceAccessDraft? draft}) onAddAccess;
   final _TopologyInteractionMode mode;
   final int quarterTurns;
   final GlobalKey? repaintBoundaryKey;
@@ -1805,7 +1321,11 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
                     OutlinedButton.icon(
                       onPressed: () {
                         Navigator.pop(sheetContext);
-                        widget.onAddAccess(source: service);
+                        widget.onAddAccess(
+                          draft: ServiceAccessDraft(
+                            sourceServiceId: service.id,
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.add_link),
                       label: Text(
@@ -1899,7 +1419,7 @@ class _ServiceTopologyPage extends StatefulWidget {
   final List<ServiceRoute> routes;
   final ValueChanged<ServiceNode> onEditService;
   final ValueChanged<ServiceRoute> onEditRoute;
-  final Future<void> Function({ServiceNode? source}) onAddAccess;
+  final Future<void> Function({ServiceAccessDraft? draft}) onAddAccess;
 
   /// Purpose: Create a service topology page instance.
   /// Inputs: None.
@@ -2309,17 +1829,6 @@ String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node) {
     if (type != null) return serviceHopTypeLabel(l10n, type);
   }
   return detail == null || detail.isEmpty ? null : detail;
-}
-
-List<String> _splitTargets(String value) => value
-    .split(RegExp(r'[\n,]+'))
-    .map((item) => item.trim())
-    .where((item) => item.isNotEmpty)
-    .toList();
-
-String? _emptyToNull(String value) {
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? null : trimmed;
 }
 
 String _compactTopologyLabel(ServiceTopologyNode node) {

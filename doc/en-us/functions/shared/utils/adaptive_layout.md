@@ -11,9 +11,10 @@ summary card; and `dialogInsetHorizontal`, `dialogInsetVertical`, `dialogMaxWidt
 `dataSetTileMinWidth` and `serviceCardMinWidth` for the four multi-column lists; and
 `financeSummaryPaneMinWidth` and `financeChartMinWidth` for the finance overview's side-by-side
 row; `formMaxWidth` for the network edit form; `emojiCellMinWidth`, `emojiCellGap` and
-`emojiMaxColumns` for the emoji picker; `sheetCompactHeight` and `sheetMaxSize` for the
+`emojiMaxColumns` for the emoji picker; `accessPatternCardMinWidth` and `accessPatternMaxColumns`
+for the guided access-path page's pattern cards; `sheetCompactHeight` and `sheetMaxSize` for the
 draggable sheets; and `settingsRightPaneMinWidth` and `readingMaxWidth` for the settings family.
-Fourteen pure helpers sit on top of them.
+Sixteen pure functions sit on top of them.
 
 The module deliberately depends on nothing but `dart:core` — it holds no Flutter imports, and
 `canSplitLayout` takes two doubles rather than a `Size` for exactly that reason — so every helper
@@ -30,9 +31,10 @@ Consumers: `shell_scaffold.dart` for `useNavigationRail`; the four list pages fo
 `listColumnCount`, `columnCapacity`, `shellContentWidth` and their tile minimums, and
 `device_storage.dart` for `listColumnsAuto` and `listMaxColumns` when validating the stored
 preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
-`service_list_page.dart` for `serviceMetricColumns`, `useTopologyActionsRow` and `dialogMaxWidth`;
+`service_list_page.dart` for `serviceMetricColumns` and `useTopologyActionsRow`;
 `device_finance_overview_page.dart` for `financeSummaryColumns`, `canSplitLayout`,
-`useFinanceSideBySide` and `financeSummaryPaneWidth`; `detail_layout.dart` (see
+`useFinanceSideBySide` and `financeSummaryPaneWidth`; `service_access_path_page.dart` for
+`accessPatternColumns`, `listTileGap`, `sheetInitialSize` and `sheetMaxSize`; `detail_layout.dart` (see
 [detail_layout.md](detail_layout.md)), whose `useDetailTwoPane` is a one-line delegate to
 `canSplitLayout`; `device_search_dialog.dart` and
 `chip_search_dialog.dart` for `dialogBodyHeight`, `dialogMaxWidth` and the two inset constants.
@@ -54,10 +56,11 @@ preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
 | [`useFinanceSideBySide`](#usefinancesidebyside) | top-level function | A | Report whether the finance summary fits beside the chart. |
 | [`financeSummaryPaneWidth`](#financesummarypanewidth) | top-level function | A | Return the width of the finance summary's metric column. |
 | [`emojiGridColumns`](#emojigridcolumns) | top-level function | A | Return how many columns the emoji picker lays its cells in. |
+| [`accessPatternColumns`](#accesspatterncolumns) | top-level function | A | Return how many access-pattern cards share a row. |
 | [`sheetInitialSize`](#sheetinitialsize) | top-level function | A | Return the fraction of the window a draggable sheet opens to. |
 | [`settingsLeftPaneWidth`](#settingsleftpanewidth) | top-level function | A | Return the width of the settings page's fixed left pane. |
 
-The thirty-three constants are documented in source with the reason for each value and are not
+The thirty-five constants are documented in source with the reason for each value and are not
 repeated as rows here.
 
 ## Documentation
@@ -239,6 +242,22 @@ repeated as rows here.
 - **Notes:** 328 (a 360 dp phone less the sheet's padding) → 8, the count the picker hardcoded
   before 1.5.4; 412 → 9; 608 → 12. The last hardcoded count in `lib/` retired.
 
+### `int accessPatternColumns(double sectionWidth)` <a id="accesspatterncolumns"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Return how many access-pattern cards share a row on the guided access-path page.
+- **Inputs:** `sectionWidth` — the pattern section's `LayoutBuilder` constraint.
+- **Returns:** `int`, 1 to `accessPatternMaxColumns` (3).
+- **Side effects:** None.
+- **Algorithm:** `columnCapacity(sectionWidth, minItemWidth: 150, gap: listTileGap (12),
+  maxColumns: 3)`.
+- **Usage:** `_ServiceAccessPathPageState._buildPatternSection`, which lays the eight cards (seven
+  patterns and "Custom / multi-hop") in rows of this many.
+- **Notes:** 328 (a 360 dp phone less the page padding) → 2 cards of 158; 380 (412 dp) → 2; 672
+  (704 dp) → 3; the two-pane left pane at the 600 dp split floor, 268 inside its padding → 1; the
+  desktop left pane, capped at 480 (448 inside) → 2. The cap of three keeps the descriptions from
+  breaking into a word per line on a wide window.
+
 ### `double sheetInitialSize(double screenHeight, {required double preferred})` <a id="sheetinitialsize"></a>
 - **Kind:** top-level function.
 - **Source:** `lib/shared/utils/adaptive_layout.dart`.
@@ -249,10 +268,12 @@ repeated as rows here.
   `preferred`, never above `sheetMaxSize`.
 - **Side effects:** None.
 - **Usage:** The device template, CPU preset, GPU preset and service template pickers'
-  `initialChildSize`, whose `maxChildSize` is `sheetMaxSize`.
-- **Notes:** All four sheets are `isScrollControlled` with an autofocused search field; on a
-  412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. Capped so the
-  initial size can never exceed the maximum, which would assert.
+  `initialChildSize`, whose `maxChildSize` is `sheetMaxSize`, and the guided access-path page's
+  service picker (`preferred: 0.82`).
+- **Notes:** All five sheets are `isScrollControlled` with a search field — autofocused in the
+  four template and preset pickers; on a 412 dp window with the keyboard up a 0.6 sheet left about
+  100 dp of results. Capped so the initial size can never exceed the maximum, which would
+  assert.
 
 ### `double settingsLeftPaneWidth(double contentWidth)` <a id="settingsleftpanewidth"></a>
 - **Kind:** top-level function.

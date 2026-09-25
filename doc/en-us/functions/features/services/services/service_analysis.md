@@ -11,16 +11,16 @@ override (`extraJson['accessLane']`, see
 FRP ingress shared with [service_access_patterns.md](service_access_patterns.md), and
 `relatedRoutesForNode`, which the topology uses for node details.
 
-**Row-count note:** `grep -c 'Purpose:' service_analysis.dart` returns **35**, but 2 of those
+**Row-count note:** `grep -c 'Purpose:' service_analysis.dart` returns **37**, but 2 of those
 blocks are misattached to non-declarations by the doc-comment tool that authored them — one sits
 above a call `uses.sort(...)` inside `listServicePortUses` (not a declaration), and one sits above
 a call `addTarget(route.finalUrl);` inside `serviceRouteAccessTargets` (the real declaration of
-`addTarget`, a few lines above, already carries its own correct block). So only **33** blocks
-document real declarations. This file has **57** real declarations total (10 class
-members + 47 top-level/nested functions), so **24** are undocumented — the same arithmetic
-reconciles (33 documented + 24 undocumented = 57; 33 documented + 2 misattached = 35 raw grep
-matches). 1.5.6 added eight blocks: `buildServiceTopology`, `serviceAccessLaneForRoute` and
-`_portMappingIngressEndpoint` gained theirs, and the five new declarations below came with
+`addTarget`, a few lines above, already carries its own correct block). So only **35** blocks
+document real declarations. This file has **59** real declarations total (10 class
+members + 49 top-level/nested functions), so **24** are undocumented — the same arithmetic
+reconciles (35 documented + 24 undocumented = 59; 35 documented + 2 misattached = 37 raw grep
+matches). 1.5.6 added ten blocks: `buildServiceTopology`, `serviceAccessLaneForRoute` and
+`_portMappingIngressEndpoint` gained theirs, and the seven new declarations below came with
 theirs.
 
 ## Declarations
@@ -80,6 +80,8 @@ theirs.
 | [`serviceRouteExtraJsonWithTargets`](#servicerouteextrajsonwithtargets) | top-level function | A | Write grouped targets back into a route's `extraJson`. |
 | [`serviceRouteDisplayTarget`](#serviceroutedisplaytarget) | top-level function | A | Pick a route's primary display string. |
 | [`serviceRouteGeneratedName`](#serviceroutegeneratedname) | top-level function | A | Generate a route's internal display name. |
+| [`serviceRouteChainPreview`](#serviceroutechainpreview) | top-level function | A | Describe a route's whole chain on one line, for the two editors' previews. |
+| `withPort` (nested in `serviceRouteChainPreview`) | local function | B | Append an endpoint's port to a name. |
 | `serviceRouteTargetsSummary` | top-level function | B | Thin wrapper over `_targetsSummary` for a route. |
 | [`_targetsSummary`](#targetssummary) | top-level function | A | Join target labels with a "+N more" truncation. |
 | [`compactAccessTargetLabel`](#compactaccesstargetlabel) | top-level function | A | Shorten a URL/target to a compact host[:port][path] label. |
@@ -576,8 +578,27 @@ theirs.
 - **Notes:** Per this repo's documented convention, route names are internally generated —
   user-facing route descriptions belong in `notes`, not this generated name.
 
+### `String serviceRouteChainPreview(ServiceRoute route, {required List<ServiceNode> services, List<Device> devices = const [], String Function(ServiceRouteHop hop)? hopFallback})` <a id="serviceroutechainpreview"></a>
+- **Kind:** top-level function. **Source:** line 1263.
+- **Purpose:** Describe a route's whole chain on one line.
+- **Inputs:** `route`; `services`; `devices` — optional, names the device of a hop service that
+  runs somewhere other than the source; `hopFallback` — names a hop that has neither a service
+  nor a label of its own.
+- **Returns:** The steps joined with `' -> '`, or `'-'` when there are none.
+- **Side effects:** None.
+- **Algorithm:** The source service with its endpoint's port; then per hop: its service with the
+  endpoint's port — for a port-mapping hop the ingress `_portMappingIngressEndpoint` picks, so the
+  preview matches the topology — and `(device)` when that service runs elsewhere; else the hop's
+  label; else `hopFallback` (default: the method label, else the raw type name). A label equal to
+  the hop method's generated English label counts as no label, so a caller can localize it. A
+  port mapping's public `host:port` follows as its own step; the access targets close the chain.
+- **Usage:** The guided access-path page's preview card and the advanced route editor's
+  `_routePreview`, both passing `serviceHopFallbackLabel`.
+- **Notes:** Replaced the advanced editor's inline preview in 1.5.6 so both editors describe a
+  route in the same words.
+
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **Kind:** top-level function. **Source:** line 1240.
+- **Kind:** top-level function. **Source:** line 1321.
 - **Purpose:** Join a list of access targets into a compact, truncated summary string.
 - **Inputs:** `targets`; `maxItems` (default 3). **Returns:** `String` — empty if `targets` is
   empty.
@@ -588,7 +609,7 @@ theirs.
 - **Notes:** None.
 
 ### `String compactAccessTargetLabel(String target)` <a id="compactaccesstargetlabel"></a>
-- **Kind:** top-level function. **Source:** line 1262.
+- **Kind:** top-level function. **Source:** line 1329.
 - **Purpose:** Shorten a URL-like access target to a compact `host[:port][path]` label for
   display, or return it unchanged if it isn't a parseable absolute URL.
 - **Inputs:** `target`. **Returns:** `String`.

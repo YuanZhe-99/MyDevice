@@ -8,6 +8,71 @@ import 'service_analysis.dart';
 // `serviceRouteMethodLabel` and `serviceRouteGeneratedName`, so nothing a
 // sync partner reads changes with the viewer's language.
 
+/// Purpose: Return the localized text of a reference warning.
+/// Inputs: `l10n`, `warning`.
+/// Returns: `String`.
+/// Side effects: None.
+/// Notes: Moved from the services overview in 1.5.6 so the guided
+/// access-path page shows its advisory warnings in the same words.
+String serviceWarningLabel(AppLocalizations l10n, ServiceWarning warning) =>
+    switch (warning.kind) {
+      ServiceWarningKind.missingDevice => l10n.serviceWarningMissingDevice(
+        warning.name,
+      ),
+      ServiceWarningKind.inactiveDevice => l10n.serviceWarningInactiveDevice(
+        warning.name,
+      ),
+      ServiceWarningKind.missingEndpointNetwork =>
+        l10n.serviceWarningMissingNetwork(warning.name),
+      ServiceWarningKind.missingSourceService =>
+        l10n.serviceWarningMissingSource(warning.name),
+      ServiceWarningKind.missingSourceEndpoint =>
+        l10n.serviceWarningMissingSourceEndpoint(warning.name),
+      ServiceWarningKind.missingHopService =>
+        l10n.serviceWarningMissingHopService(warning.name),
+      ServiceWarningKind.missingHopEndpoint =>
+        l10n.serviceWarningMissingHopEndpoint(warning.name),
+      ServiceWarningKind.missingHopDevice =>
+        l10n.serviceWarningMissingHopDevice(warning.name),
+      ServiceWarningKind.emptyRoute => l10n.serviceWarningEmptyRoute(
+        warning.name,
+      ),
+      ServiceWarningKind.publicRouteMissingUrl =>
+        l10n.serviceWarningPublicRouteMissingUrl(warning.name),
+      ServiceWarningKind.duplicateFinalUrl =>
+        l10n.serviceWarningDuplicateFinalUrl(warning.name),
+    };
+
+/// Purpose: Return the localized text of a guided-draft warning.
+/// Inputs: `l10n`, `warning`.
+/// Returns: `String`.
+/// Side effects: None.
+/// Notes: Advisory only, like the reference warnings.
+String serviceAccessDraftWarningLabel(
+  AppLocalizations l10n,
+  ServiceAccessDraftWarning warning,
+) => switch (warning) {
+  ServiceAccessDraftWarning.relayWithoutIngress =>
+    l10n.serviceAccessWarningNoIngress,
+  ServiceAccessDraftWarning.relayOnSourceDevice =>
+    l10n.serviceAccessWarningSameDevice,
+};
+
+/// Purpose: Name a hop that has neither a service nor a label of its own.
+/// Inputs: `l10n`, `hop`.
+/// Returns: The localized method when the hop has one, else the localized
+/// hop type.
+/// Side effects: None.
+/// Notes: The `hopFallback` both route editors hand to
+/// `serviceRouteChainPreview`, so a direct hop previews as "Direct" rather
+/// than as its "Manual" hop type.
+String serviceHopFallbackLabel(AppLocalizations l10n, ServiceRouteHop hop) {
+  final method = hop.method;
+  return method != null
+      ? serviceRouteMethodUiLabel(l10n, method)
+      : serviceHopTypeLabel(l10n, hop.type);
+}
+
 /// Purpose: Return the localized label for a route hop type.
 /// Inputs: `l10n`, `type`.
 /// Returns: `String`.

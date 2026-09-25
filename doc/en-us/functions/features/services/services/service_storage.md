@@ -157,9 +157,9 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
   ```dart
   await ServiceStorage.addOrUpdateRoute(route);
   ```
-  (from both `service_list_page.dart`'s quick access-route flow and
+  (from both `service_access_path_page.dart`'s guided access-path save and
   `service_route_edit_page.dart`'s advanced route editor save handler — see
-  [Services and Topology](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor)
+  [Services and Topology](../../../../features/services-topology.md#adding-an-access-path)
   for the two flows)
 - **Notes:** None.
 

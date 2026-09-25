@@ -1246,6 +1246,73 @@ String serviceRouteGeneratedName({
   ].join(' ');
 }
 
+/// Purpose: Describe a route's whole chain on one line, for previews.
+/// Inputs: `route`; `services`; `devices` — optional, names the device of a
+/// hop service that runs somewhere other than the source; `hopFallback` —
+/// labels a hop that has neither a service nor a label of its own.
+/// Returns: The steps joined with ` -> `, or `-` when there are none.
+/// Side effects: None.
+/// Notes: Steps are the source (with its endpoint's port), each hop (a
+/// service with its endpoint's port — for a port mapping, the ingress the
+/// topology would pick — else the hop's label, else `hopFallback`), each
+/// port mapping's public host and port, then the access targets. A label
+/// equal to the hop method's generated English label counts as no label, so
+/// a caller can localize it through `hopFallback`; without one the method
+/// label, else the raw type name, is used. Shared by the guided access-path
+/// page and the advanced route editor.
+String serviceRouteChainPreview(
+  ServiceRoute route, {
+  required List<ServiceNode> services,
+  List<Device> devices = const [],
+  String Function(ServiceRouteHop hop)? hopFallback,
+}) {
+  final serviceMap = {for (final service in services) service.id: service};
+  final deviceMap = {for (final device in devices) device.id: device};
+  final source = serviceMap[route.sourceServiceId];
+
+  /// Purpose: Append an endpoint's port to a name.
+  /// Inputs: `name`, `endpoint`.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: Local helper of [serviceRouteChainPreview].
+  String withPort(String name, ServiceEndpoint? endpoint) =>
+      endpoint?.port == null ? name : '$name ${endpoint!.portText}';
+
+  final parts = <String>[
+    if (source != null)
+      withPort(source.name, _endpointForRoute(source, route.sourceEndpointId)),
+  ];
+  for (final hop in route.hops) {
+    final service = hop.serviceId == null ? null : serviceMap[hop.serviceId];
+    final label = hop.label?.trim() ?? '';
+    final generatedLabel =
+        hop.method != null && label == serviceRouteMethodLabel(hop.method!);
+    if (service != null) {
+      final endpoint = _isPortMappingHop(hop)
+          ? _portMappingIngressEndpoint(service, hop)
+          : _endpointForRoute(service, hop.endpointId);
+      var text = withPort(service.name, endpoint);
+      final device = deviceMap[service.deviceId];
+      if (device != null && service.deviceId != source?.deviceId) {
+        text = '$text (${device.name})';
+      }
+      parts.add(text);
+    } else if (label.isNotEmpty && !generatedLabel) {
+      parts.add(label);
+    } else if (!_hasRemoteEntry(hop) || generatedLabel) {
+      parts.add(
+        hopFallback?.call(hop) ??
+            (hop.method != null
+                ? serviceRouteMethodLabel(hop.method!)
+                : hop.type.name),
+      );
+    }
+    if (_hasRemoteEntry(hop)) parts.add(_remoteEntryLabel(hop));
+  }
+  parts.addAll(serviceRouteAccessTargets(route).map(compactAccessTargetLabel));
+  return parts.isEmpty ? '-' : parts.join(' -> ');
+}
+
 String serviceRouteTargetsSummary(ServiceRoute route, {int maxItems = 3}) {
   final targets = serviceRouteAccessTargets(route);
   return _targetsSummary(targets, maxItems: maxItems);

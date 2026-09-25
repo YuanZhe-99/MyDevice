@@ -395,6 +395,35 @@ int emojiGridColumns(double sheetWidth) => columnCapacity(
   maxColumns: emojiMaxColumns,
 );
 
+/// Narrowest, in logical pixels, an access-pattern card may be on the guided
+/// access-path page.
+///
+/// The cards stack an icon row, a title of at most two lines and a
+/// three-line description, so they read at this width in every language;
+/// 150 is what lets a 360 dp phone (328 inside the page padding) keep two
+/// cards per row, which halves the scroll through the eight cards.
+const accessPatternCardMinWidth = 150.0;
+
+/// Most access-pattern cards on one row: past three the descriptions turn
+/// into single words per line on a desktop window.
+const accessPatternMaxColumns = 3;
+
+/// Purpose: Return how many access-pattern cards share a row.
+/// Inputs: `sectionWidth` — the width the pattern section gets, in logical
+/// pixels.
+/// Returns: `int`, 1 to [accessPatternMaxColumns].
+/// Side effects: None.
+/// Notes: [columnCapacity] at [accessPatternCardMinWidth] with the list tile
+/// gap. A 360 dp phone → 2 (158 each), a 412 dp phone → 2 (184), the
+/// two-pane left pane at the 600 dp floor (268) → 1, a desktop left pane
+/// (448) → 2, a phone in landscape (ca. 850) → 3.
+int accessPatternColumns(double sectionWidth) => columnCapacity(
+  sectionWidth,
+  minItemWidth: accessPatternCardMinWidth,
+  gap: listTileGap,
+  maxColumns: accessPatternMaxColumns,
+);
+
 /// Purpose: Return the fraction of the window a draggable sheet opens to.
 /// Inputs: `screenHeight` — the window height in logical pixels;
 /// `preferred` — the fraction the sheet wants when the window is tall.

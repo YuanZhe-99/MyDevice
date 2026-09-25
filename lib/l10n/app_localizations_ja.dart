@@ -1533,7 +1533,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get servicePatternCloudflareTunnelDesc =>
-      'Cloudflare Tunnel のコネクタ経由で公開し、ポート開放は不要です。';
+      'Cloudflare Tunnel で公開し、ポート開放は不要です。';
 
   @override
   String get servicePatternPangolinDesc => '通常は VPS 上の Pangolin サーバー経由で公開します。';
@@ -1547,6 +1547,119 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get servicePatternTailscaleFunnelDesc =>
       'Tailscale Funnel でインターネットに共有します。';
+
+  @override
+  String get serviceAccessPathAdd => 'アクセス経路を追加';
+
+  @override
+  String get serviceAccessPathEdit => 'アクセス経路を編集';
+
+  @override
+  String get serviceAccessStepSource => 'サービスとポート';
+
+  @override
+  String get serviceAccessStepPattern => 'どのようにアクセスしますか？';
+
+  @override
+  String get serviceAccessStepDetails => '詳細';
+
+  @override
+  String get serviceAccessPickService => 'サービスを選択';
+
+  @override
+  String get serviceAccessSearchServices => 'サービス・デバイス・ポートを検索';
+
+  @override
+  String get serviceAccessSuggested => 'おすすめ';
+
+  @override
+  String get serviceAccessOtherServices => 'その他のサービス';
+
+  @override
+  String get serviceAccessNoEndpointsHint => 'ポートが未登録です。追加してください';
+
+  @override
+  String get serviceAccessCustomPattern => 'カスタム / 複数ホップ';
+
+  @override
+  String get serviceAccessCustomPatternDesc => '詳細エディターで任意のチェーンを1ホップずつ組み立てます。';
+
+  @override
+  String get serviceAccessReachability => 'アクセスできる範囲';
+
+  @override
+  String get serviceAccessViaProxy => '先にリバースプロキシを経由';
+
+  @override
+  String get serviceAccessViaProxyHint => '例：同じマシンの Caddy を経由してからトンネルへ。';
+
+  @override
+  String get serviceAccessProxyService => 'プロキシサービス';
+
+  @override
+  String get serviceAccessCreateProxy => 'プロキシサービスを作成…';
+
+  @override
+  String get serviceAccessFrpServer => 'FRP サーバー';
+
+  @override
+  String get serviceAccessRelayOptional => '中継サービス（任意）';
+
+  @override
+  String get serviceAccessCreateRelay => '中継サービスを作成…';
+
+  @override
+  String get serviceAccessIngress => '受信ポート';
+
+  @override
+  String get serviceAccessIngressHint => 'FRP クライアントが接続するポートです。';
+
+  @override
+  String get serviceAccessRouter => 'ルーター機器（任意）';
+
+  @override
+  String get serviceAccessPublicHost => '公開ホスト / DDNS（任意）';
+
+  @override
+  String get serviceAccessPublicPort => '公開ポート';
+
+  @override
+  String serviceAccessUseSuggestion(String target) {
+    return '$target を使う';
+  }
+
+  @override
+  String get serviceAccessMissingSource => 'アクセスするサービスを選んでください。';
+
+  @override
+  String get serviceAccessMissingProxy => 'リバースプロキシのサービスを選んでください。';
+
+  @override
+  String get serviceAccessMissingRelay => '中継サービスを選んでください。';
+
+  @override
+  String get serviceAccessInvalidPort => '1〜65535 の公開ポートを入力してください。';
+
+  @override
+  String get serviceAccessSaveFirst => '強調表示された項目を先に入力してください。';
+
+  @override
+  String get serviceAccessWarningNoIngress => 'この FRP サーバーには受信用のエンドポイントがありません。';
+
+  @override
+  String get serviceAccessWarningSameDevice => 'FRP サーバーがサービスと同じデバイスで動いています。';
+
+  @override
+  String get serviceAccessAdvancedEditor => '詳細エディター';
+
+  @override
+  String get serviceAccessGuidedEditor => 'ガイド付きエディター';
+
+  @override
+  String get serviceAccessLaneField => 'トポロジーのレーン';
+
+  @override
+  String get serviceAccessLaneAuto => '自動（方式から判断）';
 
   @override
   String get backupModuleServices => 'サービス';

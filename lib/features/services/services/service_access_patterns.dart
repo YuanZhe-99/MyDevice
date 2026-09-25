@@ -1,3 +1,5 @@
+import '../../devices/models/device.dart';
+import '../../network/models/network.dart';
 import '../models/service.dart';
 import 'service_analysis.dart';
 
@@ -659,6 +661,12 @@ List<ServiceAccessDraftIssue> serviceAccessDraftIssues(
   List<ServiceNode> services,
 ) {
   final ids = {for (final service in services) service.id};
+
+  /// Purpose: Report whether an id names an existing service.
+  /// Inputs: `id`.
+  /// Returns: `bool` — false for null.
+  /// Side effects: None.
+  /// Notes: Local helper of [serviceAccessDraftIssues].
   bool present(String? id) => id != null && ids.contains(id);
   final port = draft.publicPort;
   final pattern = draft.pattern;
@@ -749,6 +757,217 @@ bool isFrpLikeService(ServiceNode service) {
     service.kind.name,
   ].whereType<String>().join(' ').toLowerCase();
   return text.contains('frp') || service.kind == ServiceKind.tunnel;
+}
+
+/// Purpose: List the services worth suggesting as a reverse proxy.
+/// Inputs: `services`; `sourceServiceId` — excluded, and its device's
+/// proxies come first.
+/// Returns: Service ids, same-device proxies first, then by name.
+/// Side effects: None.
+/// Notes: Uses [isReverseProxyLikeService]. The picker still lists every
+/// other service below the suggestions.
+List<String> serviceAccessProxySuggestions(
+  List<ServiceNode> services, {
+  String? sourceServiceId,
+}) {
+  final source = services
+      .where((service) => service.id == sourceServiceId)
+      .firstOrNull;
+  final candidates = [
+    for (final service in services)
+      if (service.id != sourceServiceId && isReverseProxyLikeService(service))
+        service,
+  ];
+  candidates.sort((a, b) {
+    final aLocal = a.deviceId == source?.deviceId ? 0 : 1;
+    final bLocal = b.deviceId == source?.deviceId ? 0 : 1;
+    if (aLocal != bLocal) return aLocal.compareTo(bLocal);
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+  return [for (final service in candidates) service.id];
+}
+
+/// Purpose: List the services worth suggesting as the relay of a pattern.
+/// Inputs: `pattern`, `services`, `devices`; `sourceServiceId` — excluded.
+/// Returns: Service ids, services on VPS devices first, then by name; empty
+/// for patterns without a relay.
+/// Side effects: None.
+/// Notes: FRP suggests services with "frp" in their name, template or icon,
+/// falling back to [isFrpLikeService]; Pangolin, Cloudflare Tunnel and
+/// Tailscale Funnel suggest services whose name, template or icon names the
+/// product (`cloudflare`/`cloudflared` for the tunnel).
+List<String> serviceAccessRelaySuggestions(
+  ServiceAccessPattern pattern,
+  List<ServiceNode> services,
+  List<Device> devices, {
+  String? sourceServiceId,
+}) {
+  final keywords = switch (pattern) {
+    ServiceAccessPattern.frp => const ['frp'],
+    ServiceAccessPattern.pangolin => const ['pangolin'],
+    ServiceAccessPattern.cloudflareTunnel => const ['cloudflare'],
+    ServiceAccessPattern.tailscaleFunnel => const ['tailscale'],
+    _ => const <String>[],
+  };
+  if (keywords.isEmpty) return const [];
+  final others = [
+    for (final service in services)
+      if (service.id != sourceServiceId) service,
+  ];
+
+  /// Purpose: Report whether a service's name, template or icon names the
+  /// pattern's product.
+  /// Inputs: `service`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [serviceAccessRelaySuggestions].
+  bool named(ServiceNode service) {
+    final text = [
+      service.name,
+      service.templateId,
+      service.icon,
+    ].whereType<String>().join(' ').toLowerCase();
+    return keywords.any(text.contains);
+  }
+
+  var candidates = others.where(named).toList();
+  if (candidates.isEmpty && pattern == ServiceAccessPattern.frp) {
+    candidates = others.where(isFrpLikeService).toList();
+  }
+  final vps = {
+    for (final device in devices)
+      if (device.category == DeviceCategory.vps) device.id,
+  };
+  candidates.sort((a, b) {
+    final aVps = vps.contains(a.deviceId) ? 0 : 1;
+    final bVps = vps.contains(b.deviceId) ? 0 : 1;
+    if (aVps != bVps) return aVps.compareTo(bVps);
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+  return [for (final service in candidates) service.id];
+}
+
+/// Purpose: Return the template "Create relay service…" starts from.
+/// Inputs: `pattern`.
+/// Returns: A template id, or null for patterns without a relay.
+/// Side effects: None.
+/// Notes: `frp`, `pangolin`, `cloudflare-tunnel` and `tailscale` are ids
+/// from `service_template_service.dart`.
+String? serviceAccessRelayTemplateId(ServiceAccessPattern pattern) =>
+    switch (pattern) {
+      ServiceAccessPattern.frp => 'frp',
+      ServiceAccessPattern.pangolin => 'pangolin',
+      ServiceAccessPattern.cloudflareTunnel => 'cloudflare-tunnel',
+      ServiceAccessPattern.tailscaleFunnel => 'tailscale',
+      _ => null,
+    };
+
+/// Purpose: Order devices for the router picker of a router port forward.
+/// Inputs: `devices`.
+/// Returns: Every device, routers first, then by name.
+/// Side effects: None.
+/// Notes: Any device may still be picked; the router is optional.
+List<Device> serviceAccessRouterCandidates(List<Device> devices) {
+  final ordered = [...devices];
+  ordered.sort((a, b) {
+    final aRouter = a.category == DeviceCategory.router ? 0 : 1;
+    final bRouter = b.category == DeviceCategory.router ? 0 : 1;
+    if (aRouter != bRouter) return aRouter.compareTo(bRouter);
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+  return ordered;
+}
+
+/// Purpose: Suggest the address a direct access path opens.
+/// Inputs: `source`; `endpoint` — the chosen source endpoint, if any;
+/// `assignments`, `networks` — where the source's device sits;
+/// `reachability`.
+/// Returns: `scheme://host:port/path` built from what is known, or null.
+/// Side effects: None.
+/// Notes: VPN reachability prefers the device's Tailscale / ZeroTier /
+/// EasyTier / WireGuard assignment and its host name (MagicDNS); LAN prefers a
+/// LAN assignment and its IP address. Public reachability gets no
+/// suggestion — a direct public address is not something the inventory can
+/// guess. The scheme comes from an http/https endpoint; other protocols get
+/// none. With several endpoints and none chosen, the port is left out.
+String? suggestedDirectTarget({
+  required ServiceNode source,
+  ServiceEndpoint? endpoint,
+  required List<NetworkDevice> assignments,
+  required List<Network> networks,
+  required ServiceReachability reachability,
+}) {
+  if (reachability != ServiceReachability.lan &&
+      reachability != ServiceReachability.vpn) {
+    return null;
+  }
+  final vpn = reachability == ServiceReachability.vpn;
+  final types = {for (final network in networks) network.id: network.type};
+
+  /// Purpose: Report whether an assignment records an IP address or a host
+  /// name.
+  /// Inputs: `assignment`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [suggestedDirectTarget].
+  bool hasAddress(NetworkDevice assignment) =>
+      (assignment.ipAddress?.trim().isNotEmpty ?? false) ||
+      (assignment.hostname?.trim().isNotEmpty ?? false);
+
+  /// Purpose: Report whether an assignment's network suits the
+  /// reachability: a LAN network for LAN, an overlay network for VPN.
+  /// Inputs: `assignment`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [suggestedDirectTarget].
+  bool matches(NetworkDevice assignment) {
+    final type = types[assignment.networkId];
+    return vpn
+        ? type != null && type != NetworkType.lan && type != NetworkType.other
+        : type == NetworkType.lan;
+  }
+
+  final own = [
+    for (final assignment in assignments)
+      if (assignment.deviceId == source.deviceId && hasAddress(assignment))
+        assignment,
+  ];
+  final pick = own.where(matches).firstOrNull ?? own.firstOrNull;
+  if (pick == null) return null;
+  final ip = _trimmedOrNull(pick.ipAddress);
+  final name = _trimmedOrNull(pick.hostname);
+  final host = vpn ? (name ?? ip) : (ip ?? name);
+  if (host == null) return null;
+  final chosen =
+      endpoint ??
+      (source.endpoints.length == 1 ? source.endpoints.single : null);
+  final scheme = switch (chosen?.protocol) {
+    ServiceProtocol.https => 'https://',
+    ServiceProtocol.http => 'http://',
+    _ => '',
+  };
+  final port = chosen?.port == null ? '' : ':${chosen!.port}';
+  final path = _trimmedOrNull(chosen?.path) ?? '';
+  return '$scheme$host$port$path';
+}
+
+/// Purpose: Suggest the public host of an FRP relay.
+/// Inputs: `relay`; `assignments`.
+/// Returns: The host name, else the IP address, of the relay device's only
+/// network assignment; null when it has none or several.
+/// Side effects: None.
+/// Notes: Several assignments make the guess ambiguous, so none is made.
+String? suggestedPublicHost(
+  ServiceNode relay,
+  List<NetworkDevice> assignments,
+) {
+  final own = [
+    for (final assignment in assignments)
+      if (assignment.deviceId == relay.deviceId) assignment,
+  ];
+  if (own.length != 1) return null;
+  return _trimmedOrNull(own.single.hostname) ??
+      _trimmedOrNull(own.single.ipAddress);
 }
 
 /// Purpose: Report whether a hop can be the reverse-proxy prefix or the

@@ -1,18 +1,20 @@
 # lib/features/services/views/service_list_page.dart
 
 The Services tab's top-level page and its entire topology sub-flow, described conceptually in
-[Services and Topology](../../../../features/services-topology.md). This one file owns three
+[Services and Topology](../../../../features/services-topology.md). This one file owns two
 layers: (1) the main list page (`ServiceListPage`/`_ServiceListPageState`) with its four views
-(overview/by-device/routes/ports); (2) the quick-access route dialog
-(`_QuickAccessRouteDialog`/`_QuickAccessRouteDialogState`), the simple/default flow for adding a
-direct/reverse-proxy/tunnel/FRP/router-port-forward access path; and (3) the full-screen topology
-page and its rendering (`_ServiceTopologyPage`, `_ServiceTopologyView`, `_TopologyNodeCard`,
-`_ServiceTopologyEdgePainter`, and the `_TopologyLayoutRequest` layout-cache key). Graph
-construction, warning/conflict detection, and most route-formatting helpers are read from
+(overview/by-device/routes/ports); and (2) the full-screen topology page and its rendering
+(`_ServiceTopologyPage`, `_ServiceTopologyView`, `_TopologyNodeCard`,
+`_ServiceTopologyEdgePainter`, and the `_TopologyLayoutRequest` layout-cache key). Every "Add
+access" entry point pushes the guided access-path page
+([`service_access_path_page.md`](service_access_path_page.md)) through `_addAccessPath`; the
+quick-access route dialog this file held until 1.5.6 is gone. Graph construction,
+warning/conflict detection, and most route-formatting helpers are read from
 `service_analysis.dart` ([`../services/service_analysis.md`](../services/service_analysis.md));
 node/edge placement and edge routing come from `service_topology_layout.dart`
-([`../services/service_topology_layout.md`](../services/service_topology_layout.md)). Persistence
-goes through `ServiceStorage`/`DeviceStorage`/`NetworkStorage`
+([`../services/service_topology_layout.md`](../services/service_topology_layout.md)); warning
+texts and other UI labels come from [`../services/service_labels.md`](../services/service_labels.md).
+Persistence goes through `ServiceStorage`/`DeviceStorage`/`NetworkStorage`
 ([`../services/service_storage.md`](../services/service_storage.md)); the add/edit forms this page
 pushes to live in [`service_edit_page.md`](service_edit_page.md) and
 [`service_route_edit_page.md`](service_route_edit_page.md). Like the app's other list pages,
@@ -20,30 +22,21 @@ pushes to live in [`service_edit_page.md`](service_edit_page.md) and
 [`AutoSyncService`](../../../shared/services/auto_sync_service.md) so a background sync reloads the
 list automatically.
 
-**Row-count note:** `grep -c 'Purpose:' service_list_page.dart` returns **73**. Unlike
-`service_analysis.dart` (see [`service_analysis.md`](../services/service_analysis.md)), none of
-these 73 blocks are misattached to a call-site statement — every single one sits directly above a
-real declaration (verified by reading the line immediately following each block). However, one of
-the 73 (the block above `direct(ServiceRouteMethod.direct),`) documents an **enum
-constant**, not a function/method/constructor/getter — it's the first of `_QuickAccessMethod`'s ten
-values, and the other nine (`caddy` through `custom`) have no doc block at all. Consistent with
-this doc set's convention of listing only behavior-bearing declarations (plain data fields are
-likewise omitted; see `service_analysis.md`'s field-exclusion precedent), that one enum-constant
-block is described here in prose rather than as its own Declarations-table row. So **72** of the 73
-blocks document genuine declarations. Separately, this file has **12 undocumented top-level helper
-functions** at its tail (lines 2314–2499: `_splitTargets` through `_iconForService`) with no
-`/// Purpose:` block at all. That gives **72 + 12 = 84** real declarations total, split **24 Tier A
-/ 60 Tier B** below. (Before 1.5.6 this note said 72 / 83 although the table already held 84
-rows; the prose had drifted, not the table. In 1.5.6 `_isFrpLikeService` moved to
-[`service_access_patterns.md`](../services/service_access_patterns.md) as `isFrpLikeService`,
-and `_nodeSubtitle` was added, so the totals are unchanged.)
+**Row-count note:** `grep -c 'Purpose:' service_list_page.dart` returns **58**, and every block
+sits directly above a real declaration. The file also has **10 undocumented top-level helper
+functions** at its tail (lines 1834–2008: `_compactTopologyLabel` through `_iconForService`) with
+no `/// Purpose:` block at all. That gives **58 + 10 = 68** real declarations, split **19 Tier A /
+49 Tier B** below. 1.5.6 removed the quick-access dialog (`_QuickAccessMethod`, whose first enum
+constant carried the one block that documented no declaration, `_QuickAccessRouteDialog` and its
+state), `_warningText` (now `serviceWarningLabel` in `service_labels.dart`), and the two tail
+helpers only the dialog used (`_splitTargets`, `_emptyToNull`); `_isFrpLikeService` moved to
+[`service_access_patterns.md`](../services/service_access_patterns.md) and `_nodeSubtitle` was
+added.
 
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| `_QuickAccessMethod` (constructor) | constructor | B | Create an enum value wrapping the underlying `ServiceRouteMethod`. |
-| `isPortMapping` | getter (`_QuickAccessMethod`) | B | Whether this quick-access method is FRP or router port-forward (vs. a proxy/tunnel/direct). |
 | `ServiceListPage` (constructor) | constructor | B | Create the page widget (no parameters). |
 | `createState` | method (`ServiceListPage`) | B | Create the page's mutable state object. |
 | [`initState`](#initstate) | method (`_ServiceListPageState`, widget lifecycle) | A | Register the auto-sync listener and kick off the initial services/routes/devices/networks load. |
@@ -56,7 +49,7 @@ and `_nodeSubtitle` was added, so the totals are unchanged.)
 | `_addService` | method (`_ServiceListPageState`) | B | Push the blank service edit page, then reload when it pops a `ServiceEditOutcome`. |
 | `_editService` | method (`_ServiceListPageState`) | B | Push the service edit page for an existing service, then reload when it pops a `ServiceEditOutcome` (a save or a delete). |
 | `_addRoute` | method (`_ServiceListPageState`) | B | Push the advanced route editor, then reload if it reported a save. |
-| [`_addAccessRoute`](#addaccessroute) | method (`_ServiceListPageState`) | A | Show the quick-access dialog and persist every route it returns. |
+| [`_addAccessPath`](#addaccesspath) | method (`_ServiceListPageState`) | A | Push the guided access-path page for a new access path; reload when it saved. |
 | `_editRoute` | method (`_ServiceListPageState`) | B | Push the advanced route editor for an existing route, then reload if it reported a save. |
 | `_viewLabel` | method (`_ServiceListPageState`) | B | Map a `_ServiceView` to its localized segmented-button label. |
 | `build` | method (widget, `_ServiceListPageState`) | B | Build the scaffold: app bar actions, FAB, view switcher, current view body. |
@@ -76,20 +69,8 @@ and `_nodeSubtitle` was added, so the totals are unchanged.)
 | [`_hopLabel`](#hoplabel) | method (`_ServiceListPageState`) | A | Compute a display label for one route hop. |
 | [`_routeSummary`](#routesummary) | method (`_ServiceListPageState`) | A | Build the "source -> hops -> targets" summary line for a route. |
 | [`_routesForEndpoint`](#routesforendpoint) | method (`_ServiceListPageState`) | A | Find the display names of routes that use a given service endpoint. |
-| `_warningText` | method (`_ServiceListPageState`) | B | Map a `ServiceWarning` to its localized message. |
 | `_emptyState` | method (widget helper) | B | Render a centered empty-state message. |
 | `_emptyInline` | method (widget helper) | B | Render a padded inline empty-state message. |
-| `_QuickAccessRouteDialog` (constructor) | constructor | B | Create the dialog widget (services, devices, optional initial service). |
-| `createState` | method (`_QuickAccessRouteDialog`) | B | Create the dialog's mutable state object. |
-| [`initState`](#initstate-quickaccessroutedialogstate) | method (`_QuickAccessRouteDialogState`, widget lifecycle) | A | Create the text controllers and seed the default source service/endpoint. |
-| `dispose` | method (`_QuickAccessRouteDialogState`, widget lifecycle) | B | Dispose the four text controllers. |
-| `_selectedSource` | getter (`_QuickAccessRouteDialogState`) | B | Resolve the currently selected source `ServiceNode`, if any. |
-| [`_buildRoutes`](#buildroutes) | method (`_QuickAccessRouteDialogState`) | A | Assemble the single `ServiceRoute` described by the current form state. |
-| [`_buildHop`](#buildhop) | method (`_QuickAccessRouteDialogState`) | A | Build the one `ServiceRouteHop` matching the selected quick-access method. |
-| `_submit` | method (`_QuickAccessRouteDialogState`) | B | Validate the form and pop the dialog with the built route list. |
-| `build` | method (widget, `_QuickAccessRouteDialogState`) | B | Render the quick-access form (source/endpoint/method/relay/access-level fields) at `dialogMaxWidth`. |
-| [`_relayServiceOptions`](#relayserviceoptions) | method (`_QuickAccessRouteDialogState`) | A | List candidate relay services, preferring FRP-like ones for port-mapping methods. |
-| `_deviceName` | method (`_QuickAccessRouteDialogState`) | B | Resolve a device id to its name, or the id itself if unresolved. |
 | `_ServiceTopologyView` (constructor) | constructor | B | Create the topology view widget (graph, data, callbacks, mode, rotation, capture/layout callbacks). |
 | `createState` | method (`_ServiceTopologyView`) | B | Create the topology view's mutable state object. |
 | `build` | method (widget, `_ServiceTopologyViewState`) | B | Lay out the topology canvas inside a `LayoutBuilder`, requesting/showing the cached layout. |
@@ -114,8 +95,6 @@ and `_nodeSubtitle` was added, so the totals are unchanged.)
 | `_edgeColor` | method (`_ServiceTopologyEdgePainter`) | B | Map an edge's access lane to a color-scheme color. |
 | `shouldRepaint` | method (`_ServiceTopologyEdgePainter`) | B | Repaint only when the graph, layout, or color scheme changed. |
 | [`_nodeSubtitle`](#nodesubtitle) | top-level function | A | The subtitle a topology node card shows: a relay's localized method or hop type, else the builder's detail. |
-| [`_splitTargets`](#splittargets) | top-level function | A | Split a newline/comma-separated string into trimmed, non-empty target strings. |
-| `_emptyToNull` | top-level function | B | Trim a string and convert an empty result to `null`. |
 | [`_compactTopologyLabel`](#compacttopologylabel) | top-level function | A | Shorten a topology node's label/detail to a compact chip-sized string. |
 | [`_iconForTopologyNode`](#iconfortopologynode) | top-level function | A | Resolve the icon for a topology node, by kind and its resolved device/service. |
 | `_iconForMethod` | top-level function | B | Map a `ServiceRouteMethod` to its display icon. |
@@ -127,15 +106,13 @@ and `_nodeSubtitle` was added, so the totals are unchanged.)
 | `iconForServiceIcon` | top-level function | B | Map a service's stored icon key to its `IconData`. |
 | `_iconForService` | top-level function | B | Resolve a service's icon via `iconForServiceIcon`. |
 
-`_QuickAccessMethod`'s other nine enum values (`caddy`, `nginx`, `traefik`, `frp`, `pangolin`,
-`cloudflareTunnel`, `tailscaleFunnel`, `routerPortForward`, `custom`) are plain data, like `direct`,
-and are likewise not given their own table rows. `enum _ServiceView { overview, devices, routes,
-ports }` and `enum _TopologyInteractionMode { select, move }` (lines 26/28) are simple, member-less
+`enum _ServiceView { overview, devices, routes,
+ports }` and `enum _TopologyInteractionMode { select, move }` (lines 27/29) are simple, member-less
 enums with no constructor/methods of their own, so they aren't listed either — they only appear as
 the parameter/return types of the methods above (`_viewLabel`, `_buildCurrentView`, the
 `SegmentedButton`s in `build`).
 
-`iconForServiceIcon` (line 2452) is the one **public** (non-underscore) top-level declaration in
+`iconForServiceIcon` (line 1961) is the one **public** (non-underscore) top-level declaration in
 this file; it's also called from `service_edit_page.dart` (see
 [`service_edit_page.md`](service_edit_page.md)) to render the icon preview next to the service
 name/icon field and the template picker's per-template icon.
@@ -144,7 +121,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_ServiceListPageState` (widget lifecycle override).
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 98).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 63).
 - **Purpose:** Wire this page into the auto-sync notification system and kick off the initial
   services/routes/devices/networks load.
 - **Inputs:** None.
@@ -162,7 +139,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `Future<void> _load()` <a id="load"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 129).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 94).
 - **Purpose:** Reload services, routes, devices, and networks from their respective storages and
   refresh the page's state.
 - **Inputs:** None.
@@ -174,43 +151,42 @@ name/icon field and the template picker's per-template icon.
   then `NetworkStorage.load()`, sequentially (not in parallel); returns early if unmounted; one
   `setState` assigns all four lists and sets `_loading = false`.
 - **Usage:** Called from [`initState`](#initstate), `_handleLocalDataChanged` (auto-sync), and
-  after every add/edit/access-route flow (the `if (result == true) _load();` pattern in
-  `_addService`/`_editService`/`_addRoute`/`_editRoute`, and `await _load();` in
-  [`_addAccessRoute`](#addaccessroute)).
+  after every add/edit/access-path flow: `if (result != null) _load();` on the
+  `ServiceEditOutcome` of `_addService`/`_editService`, `if (result == true) _load();` in
+  `_addRoute`/`_editRoute`, and `await _load();` in [`_addAccessPath`](#addaccesspath) when the
+  page saved.
 - **Notes:** The three storages are loaded sequentially rather than with `Future.wait`, so total
   load time is additive across them — acceptable given these are small local JSON files.
 
-### `Future<void> _addAccessRoute({ServiceNode? source})` <a id="addaccessroute"></a>
+### `Future<void> _addAccessPath({ServiceAccessDraft? draft})` <a id="addaccesspath"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 229).
-- **Purpose:** Open the quick-access route dialog and persist every route it returns.
-- **Inputs:** `source` — optional service to preselect as the dialog's source service.
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 196).
+- **Purpose:** Open the guided access-path page for a new access path.
+- **Inputs:** `draft` — optional starting draft, e.g. `ServiceAccessDraft(sourceServiceId: ...)`
+  to preselect the source service.
 - **Returns:** `Future<void>`.
-- **Side effects:** Shows `_QuickAccessRouteDialog`; calls `ServiceStorage.addOrUpdateRoute` once
-  per returned route; reloads.
-- **Algorithm:** 1. `showDialog<List<ServiceRoute>>` with
-  `_QuickAccessRouteDialog(services: _services, devices: _devices, initialService: source)`.
-  2. Return early if the result is `null` or empty (dialog cancelled). 3. For each returned route,
-  `await ServiceStorage.addOrUpdateRoute(route)`, sequentially. 4. `await _load()`.
+- **Side effects:** Pushes [`ServiceAccessPathPage`](service_access_path_page.md) on the root
+  navigator; reloads when it pops `true` (the page itself saved the route).
+- **Algorithm:** `push<bool>` the page with `draft`; `await _load()` when the result is `true`.
 - **Usage:**
   ```dart
   IconButton(
     icon: const Icon(Icons.add_link),
     tooltip: l10n.serviceAddAccess,
-    onPressed: _services.isEmpty ? null : () => _addAccessRoute(),
+    onPressed: _services.isEmpty ? null : () => _addAccessPath(),
   ),
   ```
-  Also called (with a specific `source`) from `_buildOverview`'s add-access button,
-  `_serviceRouteGroupCard`, `_serviceTile`'s popup menu, `_topologyCard`'s action row, and passed
-  through as the `onAddAccess` callback to `_ServiceTopologyPage`/`_ServiceTopologyView`/
-  [`_showNodeDetails`](#shownodedetails).
-- **Notes:** [`_QuickAccessRouteDialogState._buildRoutes`](#buildroutes) currently always returns a
-  single-element (or empty) list, but this method is written to loop over an arbitrary list, so a
-  future dialog variant that submits multiple routes at once needs no change here.
+  Also called from `_buildOverview`'s add-access button and `_topologyCard`'s action row
+  (without a draft), from `_serviceRouteGroupCard` and `_serviceTile`'s popup menu (with the
+  service as source), and passed through as the `onAddAccess` callback to
+  `_ServiceTopologyPage`/`_ServiceTopologyView`/[`_showNodeDetails`](#shownodedetails), whose
+  type is `Future<void> Function({ServiceAccessDraft? draft})`.
+- **Notes:** Replaced `_addAccessRoute` and the `_QuickAccessRouteDialog` it opened in 1.5.6. The
+  page persists the route itself, so this method only reloads.
 
 ### `List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService()` <a id="routesgroupedbyservice"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 790).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 748).
 - **Purpose:** Group all routes by their source service id, for the overview's per-service route
   cards.
 - **Inputs:** None.
@@ -227,7 +203,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `String _hopLabel(ServiceRouteHop hop)` <a id="hoplabel"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 965).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 927).
 - **Purpose:** Compute a short display label for one route hop, for the route summary line.
 - **Inputs:** `hop`.
 - **Returns:** `String`.
@@ -245,7 +221,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `String _routeSummary(ServiceRoute route, {ServiceNode? source, ServiceEndpoint? sourceEndpoint})` <a id="routesummary"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 982).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 944).
 - **Purpose:** Build the two-line textual summary shown under each route card: the source-to-target
   path, then the access level.
 - **Inputs:** `route`; `source`/`sourceEndpoint` — already-resolved source service/endpoint (so this
@@ -265,7 +241,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `String? _routesForEndpoint(String serviceId, String endpointId)` <a id="routesforendpoint"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1007).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 969).
 - **Purpose:** Find the display names of every route that uses a given service endpoint, either as
   its source or via a hop, for the ports view's subtitle.
 - **Inputs:** `serviceId`, `endpointId`.
@@ -280,86 +256,9 @@ name/icon field and the template picker's per-template icon.
 - **Notes:** Matches on the *combination* of service id and endpoint id — a route referencing the
   same service but a different one of its endpoints does not match.
 
-### `void initState()` <a id="initstate-quickaccessroutedialogstate"></a>
-- **Kind:** method of `_QuickAccessRouteDialogState` (widget lifecycle override). Disambiguated
-  from [`_ServiceListPageState.initState`](#initstate) above since both are named `initState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1140).
-- **Purpose:** Create the dialog's text controllers and seed the default source service/endpoint
-  selection.
-- **Inputs:** None.
-- **Returns:** None.
-- **Side effects:** Instantiates four `TextEditingController`s; sets `_sourceServiceId`/
-  `_sourceEndpointId`.
-- **Algorithm:** 1. `super.initState()`. 2. Create `_targetsCtrl`/`_remoteHostCtrl`/
-  `_remotePortCtrl`/`_notesCtrl`. 3. Default `_sourceServiceId` to `widget.initialService?.id`,
-  falling back to the first entry of `widget.services`. 4. Default `_sourceEndpointId` to the
-  resolved source's first endpoint id.
-- **Usage:** Invoked automatically when `_QuickAccessRouteDialog`'s state is created, e.g. from the
-  `showDialog(... builder: (context) => _QuickAccessRouteDialog(...))` call in
-  [`_addAccessRoute`](#addaccessroute).
-- **Notes:** The counterpart `dispose()` (line 1157) disposes all four controllers. Unlike the outer
-  page, this dialog does not register with `AutoSyncService` — it's a short-lived modal form, not a
-  persistent page.
-
-### `List<ServiceRoute> _buildRoutes()` <a id="buildroutes"></a>
-- **Kind:** method of `_QuickAccessRouteDialogState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1181).
-- **Purpose:** Assemble the single `ServiceRoute` described by the current form state, ready to
-  hand back to the caller.
-- **Inputs:** None (reads the dialog's form-state fields).
-- **Returns:** `List<ServiceRoute>` — empty if no source service is selected, otherwise a
-  single-element list.
-- **Side effects:** None (pure construction).
-- **Algorithm:** 1. Resolve `_selectedSource`; return `const []` if `null`. 2. Split
-  `_targetsCtrl.text` into targets via [`_splitTargets`](#splittargets). 3. Build the one hop via
-  [`_buildHop`](#buildhop)`(_method.routeMethod)`. 4. Construct one `ServiceRoute` whose `name`
-  comes from `serviceRouteGeneratedName`, `finalUrl` is the first target, and `extraJson` carries
-  any remaining targets via `serviceRouteExtraJsonWithTargets`.
-- **Usage:** `Navigator.of(context).pop(_buildRoutes());` in `_submit`.
-- **Notes:** Despite the plural name/return type, this always builds **at most one** `ServiceRoute`
-  — the quick-access flow only ever creates a single route with a single hop per submission, per
-  [Quick access-route creation vs. the advanced editor](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor).
-
-### `ServiceRouteHop _buildHop(ServiceRouteMethod method)` <a id="buildhop"></a>
-- **Kind:** method of `_QuickAccessRouteDialogState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1211).
-- **Purpose:** Build the one `ServiceRouteHop` matching the currently selected quick-access method.
-- **Inputs:** `method`.
-- **Returns:** `ServiceRouteHop`.
-- **Side effects:** None.
-- **Algorithm:** If `_method.isPortMapping` (FRP or router port-forward): build a
-  `ServiceRouteHopType.portForward` hop carrying `_relayServiceId`/`_remoteDeviceId` plus the
-  parsed `_remoteHostCtrl`/`_remotePortCtrl` text (falling back to a method-name label when no
-  relay service is chosen). Otherwise: pick the hop type by a `switch` on `method` (`direct` →
-  `manual`; `caddy`/`nginx`/`traefik` → `reverseProxy`; `routerPortForward` → `portForward`;
-  everything else, i.e. the tunnel-style methods `frp`/`pangolin`/`cloudflareTunnel`/
-  `tailscaleFunnel`/`custom` → `tunnel`), with `serviceId: _relayServiceId` and the same label
-  fallback.
-- **Usage:** `_buildHop(method)` in [`_buildRoutes`](#buildroutes).
-- **Notes:** Implements the FRP ingress/public-port modeling split described in
-  [Services and Topology](../../../../features/services-topology.md#frp-style-ingresspublic-port-modeling)
-  — the port-mapping branch here produces the *ingress*-port hop; the paired public remote-entry
-  port comes from the separate `_remoteHostCtrl`/`_remotePortCtrl` fields, not a second hop.
-
-### `List<ServiceNode> _relayServiceOptions()` <a id="relayserviceoptions"></a>
-- **Kind:** method of `_QuickAccessRouteDialogState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1482).
-- **Purpose:** List candidate relay services for the "via" dropdown, preferring FRP-like services
-  first when the selected method is a port-mapping method.
-- **Inputs:** None (reads `widget.services`, `_sourceServiceId`, `_method`).
-- **Returns:** `List<ServiceNode>` — every service except the selected source, sorted.
-- **Side effects:** None.
-- **Algorithm:** 1. Filter out the currently selected source service. 2. Sort: when
-  `_method.isPortMapping`, services where `isFrpLikeService`
-  ([`service_access_patterns.md`](../services/service_access_patterns.md#isfrplikeservice)) is `true` sort
-  before those where it's `false`; otherwise (or as a tiebreak), compare names case-insensitively.
-- **Usage:** Populates the relay-service dropdown's `items` in `build`.
-- **Notes:** The FRP-preference sort is a UX convenience only (surfacing the likely-right relay
-  first) — it does not filter out non-FRP-like services; any service remains selectable.
-
 ### `void _ensureLayout(_TopologyLayoutRequest request)` <a id="ensurelayout"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1595).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1111).
 - **Purpose:** Schedule a deferred layout calculation for a request, unless an identical request is
   already pending.
 - **Inputs:** `request`.
@@ -382,7 +281,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `Future<void> _calculateLayout(_TopologyLayoutRequest request, int generation)` <a id="calculatelayout"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1609).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1125).
 - **Purpose:** Run the topology layout engine for one request, after yielding a frame, and cache
   the result if it's still the current request.
 - **Inputs:** `request`; `generation` — the `_layoutGeneration` value captured when this
@@ -407,7 +306,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `void _showNodeDetails(BuildContext context, ServiceTopologyNode node)` <a id="shownodedetails"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1732).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1248).
 - **Purpose:** Resolve a tapped topology node's device/service/related routes and show them in a
   bottom sheet with edit/add-access actions.
 - **Inputs:** `context`, `node`.
@@ -431,7 +330,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth})` <a id="topologylayoutrequest-new"></a>
 - **Kind:** constructor.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1863).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1383).
 - **Purpose:** Create the value used as a topology layout's cache key.
 - **Inputs:** `graph`, `routes`, `viewportWidth`.
 - **Returns:** A new `_TopologyLayoutRequest`.
@@ -442,7 +341,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `bool operator ==(Object other)` <a id="equals"></a>
 - **Kind:** operator of `_TopologyLayoutRequest`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1875).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1395).
 - **Purpose:** Compare two layout requests for cache-reuse purposes.
 - **Inputs:** `other`.
 - **Returns:** `bool`.
@@ -460,7 +359,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `int get hashCode` <a id="hashcode"></a>
 - **Kind:** getter of `_TopologyLayoutRequest`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1888).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1408).
 - **Purpose:** Produce a hash code consistent with the identity-based `==` above.
 - **Inputs:** None.
 - **Returns:** `int`.
@@ -475,7 +374,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `Future<void> _exportTopologyImage()` <a id="exporttopologyimage"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 1940).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1460).
 - **Purpose:** Capture the topology canvas (via its `RepaintBoundary`) as a PNG and hand it to the
   platform-appropriate share/save flow.
 - **Inputs:** None.
@@ -500,7 +399,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `void paint(Canvas canvas, Size size)` <a id="paint"></a>
 - **Kind:** method of `_ServiceTopologyEdgePainter` (`CustomPainter` override).
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 2220).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1740).
 - **Purpose:** Draw every graph edge's routed polyline and arrowhead onto the canvas.
 - **Inputs:** `canvas`; `size` (not used directly — the layout already carries absolute
   coordinates).
@@ -518,7 +417,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points)` <a id="drawpolyline"></a>
 - **Kind:** method of `_ServiceTopologyEdgePainter`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 2239).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1759).
 - **Purpose:** Draw one edge's multi-segment path plus a triangular arrowhead at its end.
 - **Inputs:** `canvas`, `paint`, `points` — the routed polyline (2 or more points).
 - **Returns:** `void`.
@@ -535,7 +434,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node)` <a id="nodesubtitle"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 2300).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1820).
 - **Purpose:** Return the subtitle a topology node card shows under its label.
 - **Inputs:** `context`, `node`.
 - **Returns:** `String?` — null when there is nothing to show.
@@ -547,23 +446,9 @@ name/icon field and the template picker's per-template icon.
 - **Notes:** The graph builder stores raw enum names in a relay's `detail`; localizing at render
   time keeps [`service_analysis.dart`](../services/service_analysis.md) language-free.
 
-### `List<String> _splitTargets(String value)` <a id="splittargets"></a>
-- **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 2314).
-- **Purpose:** Split a free-form, newline/comma-separated string of access targets into a clean
-  list.
-- **Inputs:** `value` — raw text from the quick-access dialog's targets field.
-- **Returns:** `List<String>` — trimmed, non-empty entries.
-- **Side effects:** None.
-- **Algorithm:** Split on the regex `[\n,]+`; trim each piece; drop empty results.
-- **Usage:** `_splitTargets(_targetsCtrl.text)` in
-  [`_QuickAccessRouteDialogState._buildRoutes`](#buildroutes).
-- **Notes:** Accepts either newline- or comma-separated input (or a mix), so a user can paste a list
-  of domains either way.
-
 ### `String _compactTopologyLabel(ServiceTopologyNode node)` <a id="compacttopologylabel"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 2325).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1834).
 - **Purpose:** Shorten a topology node's label/detail to a short string that fits inside a compact
   port-chip.
 - **Inputs:** `node`.
@@ -583,7 +468,7 @@ name/icon field and the template picker's per-template icon.
 
 ### `IconData _iconForTopologyNode(ServiceTopologyNode node, List<ServiceNode> services, List<Device> devices)` <a id="iconfortopologynode"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 2341).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1850).
 - **Purpose:** Resolve the icon to show for a topology node, based on its kind and, when
   resolvable, its underlying device/service.
 - **Inputs:** `node`, `services`, `devices`.

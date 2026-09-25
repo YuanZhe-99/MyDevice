@@ -1,12 +1,12 @@
 # lib/shared/utils/adaptive_layout.dart
 
-全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`；网络编辑表单用的 `formMaxWidth`；emoji 选择器用的 `emojiCellMinWidth`、`emojiCellGap` 和 `emojiMaxColumns`；可拖拽表单用的 `sheetCompactHeight` 和 `sheetMaxSize`；以及设置家族用的 `settingsRightPaneMinWidth` 和 `readingMaxWidth`。其上有十四个纯函数助手。
+全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`；网络编辑表单用的 `formMaxWidth`；emoji 选择器用的 `emojiCellMinWidth`、`emojiCellGap` 和 `emojiMaxColumns`；引导式访问路径页的模式卡片用的 `accessPatternCardMinWidth` 和 `accessPatternMaxColumns`；可拖拽表单用的 `sheetCompactHeight` 和 `sheetMaxSize`；以及设置家族用的 `settingsRightPaneMinWidth` 和 `readingMaxWidth`。其上有十六个纯函数。
 
 该模块刻意只依赖 `dart:core`——不含 Flutter import，`canSplitLayout` 正因此接收两个 double 而非 `Size`——所以每个助手都能直接单元测试（`test/adaptive_layout_test.dart`），渲染结果则由 `test/shell_nav_ui_test.dart`、`test/dialog_layout_ui_test.dart`、`test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart` 和 `test/service_columns_ui_test.dart` 在真实设备几何上单独覆盖。
 
 这些数字的散文推导、折叠屏设备表以及与 Google 指南的对照见 [../../../adaptive-layout.md](../../../adaptive-layout.md)。本页记录声明。
 
-使用方：`shell_scaffold.dart` 用 `useNavigationRail`；四个列表页用 `listColumnCount`、`columnCapacity`、`shellContentWidth` 及各自的 tile 最小值，`device_storage.dart` 校验已存偏好时用 `listColumnsAuto` 和 `listMaxColumns`；`adaptive_tile_grid.dart` 用 `listRowCount` 和 `listTileGap`；`service_list_page.dart` 用 `serviceMetricColumns`、`useTopologyActionsRow` 和 `dialogMaxWidth`；`device_finance_overview_page.dart` 用 `financeSummaryColumns`、`canSplitLayout`、`useFinanceSideBySide` 和 `financeSummaryPaneWidth`；`detail_layout.dart`（见 [detail_layout.md](detail_layout.md)）的 `useDetailTwoPane` 是 `canSplitLayout` 的一行委托；`device_search_dialog.dart` 和 `chip_search_dialog.dart` 用 `dialogBodyHeight`、`dialogMaxWidth` 和两个内缩常量。
+使用方：`shell_scaffold.dart` 用 `useNavigationRail`；四个列表页用 `listColumnCount`、`columnCapacity`、`shellContentWidth` 及各自的 tile 最小值，`device_storage.dart` 校验已存偏好时用 `listColumnsAuto` 和 `listMaxColumns`；`adaptive_tile_grid.dart` 用 `listRowCount` 和 `listTileGap`；`service_list_page.dart` 用 `serviceMetricColumns` 和 `useTopologyActionsRow`；`device_finance_overview_page.dart` 用 `financeSummaryColumns`、`canSplitLayout`、`useFinanceSideBySide` 和 `financeSummaryPaneWidth`；`service_access_path_page.dart` 用 `accessPatternColumns`、`listTileGap`、`sheetInitialSize` 和 `sheetMaxSize`；`detail_layout.dart`（见 [detail_layout.md](detail_layout.md)）的 `useDetailTwoPane` 是 `canSplitLayout` 的一行委托；`device_search_dialog.dart` 和 `chip_search_dialog.dart` 用 `dialogBodyHeight`、`dialogMaxWidth` 和两个内缩常量。
 
 ## 声明
 
@@ -25,10 +25,11 @@
 | [`useFinanceSideBySide`](#usefinancesidebyside) | 顶层函数 | A | 报告财务摘要是否放得下在图表旁边。 |
 | [`financeSummaryPaneWidth`](#financesummarypanewidth) | 顶层函数 | A | 返回财务摘要指标列的宽度。 |
 | [`emojiGridColumns`](#emojigridcolumns) | 顶层函数 | A | 返回 emoji 选择器把格子排成多少列。 |
+| [`accessPatternColumns`](#accesspatterncolumns) | 顶层函数 | A | 返回一行放几张访问模式卡片。 |
 | [`sheetInitialSize`](#sheetinitialsize) | 顶层函数 | A | 返回可拖拽表单打开时占窗口的比例。 |
 | [`settingsLeftPaneWidth`](#settingsleftpanewidth) | 顶层函数 | A | 返回设置页固定左窗格的宽度。 |
 
-三十三个常量在源码中连同每个值的理由一起记录，此处不重复成行。
+三十五个常量在源码中连同每个值的理由一起记录，此处不重复成行。
 
 ## 文档
 
@@ -169,6 +170,17 @@
 - **用法：** `_DeviceEditPageState._showEmojiPicker`。
 - **备注：** 328（360 dp 手机减表单内边距）→ 8，即选择器在 1.5.4 之前硬编码的数量；412 → 9；608 → 12。`lib/` 里最后一个硬编码数量由此退役。
 
+### `int accessPatternColumns(double sectionWidth)` <a id="accesspatterncolumns"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/adaptive_layout.dart`。
+- **用途：** 返回引导式访问路径页上一行放几张访问模式卡片。
+- **输入：** `sectionWidth` — 模式小节的 `LayoutBuilder` 约束。
+- **返回：** `int`，1 到 `accessPatternMaxColumns`（3）。
+- **副作用：** 无。
+- **算法：** `columnCapacity(sectionWidth, minItemWidth: 150, gap: listTileGap (12), maxColumns: 3)`。
+- **用法：** `_ServiceAccessPathPageState._buildPatternSection`，它把八张卡片（七种模式加「自定义 / 多跳」）按这个数量排成行。
+- **备注：** 328（360 dp 手机减页面内边距）→ 2 张 158 宽的卡片；380（412 dp）→ 2；672（704 dp）→ 3；600 dp 分栏下限处的双栏左窗格，内边距内 268 → 1；桌面左窗格封顶 480（内部 448）→ 2。三列上限让描述在宽窗口上不至于断成每行一个词。
+
 ### `double sheetInitialSize(double screenHeight, {required double preferred})` <a id="sheetinitialsize"></a>
 - **种类：** 顶层函数。
 - **来源：** `lib/shared/utils/adaptive_layout.dart`。
@@ -176,8 +188,8 @@
 - **输入：** `screenHeight` — 窗口高度；`preferred` — 表单在高窗口上想要的比例。
 - **返回：** `double` — 低于 `sheetCompactHeight`（480）时为 `sheetMaxSize`（0.95），否则为 `preferred`，永不超过 `sheetMaxSize`。
 - **副作用：** 无。
-- **用法：** 设备模板、CPU 预设、GPU 预设和服务模板选择器的 `initialChildSize`，其 `maxChildSize` 为 `sheetMaxSize`。
-- **备注：** 四个表单都是 `isScrollControlled` 且搜索框自动聚焦；在 412 dp 窗口上弹出键盘后 0.6 的表单只剩约 100 dp 结果。封顶让初始尺寸永不超过最大值，否则会 assert。
+- **用法：** 设备模板、CPU 预设、GPU 预设和服务模板选择器的 `initialChildSize`，其 `maxChildSize` 为 `sheetMaxSize`；以及引导式访问路径页的服务选择器（`preferred: 0.82`）。
+- **备注：** 五个表单都是 `isScrollControlled` 且带搜索框——四个模板与预设选择器中搜索框自动聚焦；在 412 dp 窗口上弹出键盘后 0.6 的表单只剩约 100 dp 结果。封顶让初始尺寸永不超过最大值，否则会 assert。
 
 ### `double settingsLeftPaneWidth(double contentWidth)` <a id="settingsleftpanewidth"></a>
 - **种类：** 顶层函数。

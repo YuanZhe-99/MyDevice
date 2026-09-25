@@ -419,7 +419,8 @@ landscape (657 × 416) they were taller than the window. They now take
 (40) above and below, never exceeds the preferred height, and never drops below
 `dialogMinBodyHeight` (240 — a header, a query field and two result rows). `availableHeight` is the
 window less the soft-keyboard inset. Width is capped at `dialogMaxWidth` (560, Material's dialog
-maximum); the quick-access route dialog on the services page uses the same constant.
+maximum). (Until 1.5.6 the services page's quick-access route dialog used the same constant; the
+guided access-path page that replaced it is a pushed page.)
 
 | Window | Device search | Chip search |
 |---|---|---|
@@ -449,14 +450,14 @@ to save and restore.
 | `service_list_page.dart` (devices / routes / ports views) | `listColumnCount` | As above at `serviceCardMinWidth`; one preference serves the three views and the overview stays single-column. |
 | `service_list_page.dart` (overview metric grid) | `serviceMetricColumns` | Width only, from the overview list's `LayoutBuilder`. |
 | `service_list_page.dart` (topology card header) | `useTopologyActionsRow` | Width only. The value is the 680 the card used inline before 1.5.0; the card is now handed the width left after the rail, so a Pixel 10 Pro Fold in portrait stacks the actions under the title where it used to row them. |
-| `service_list_page.dart` (quick-access route dialog) | `dialogMaxWidth` | A constant, not a rule. |
 | `device_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Plus a third gate: at least one spec section. Pushed outside the shell: measures the raw window. |
 | `network_detail_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth` | Pushed outside the shell. |
 | `device_edit_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth`, `editAvatarSize` | The left pane is non-scrolling by construction; see above. Pushed outside the shell. |
-| `service_edit_page.dart`, `service_route_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | Two panes that **both scroll**: the identity / source half (seven and five blocks, ~476 and ~340 dp) is too tall to pin at the 480 dp floor the way the device edit page pins its three, so the left pane is a plain scroll view. The pane is 0.42 of the window clamped 300–480, wider than a detail pane because it holds dropdowns whose longest Japanese label needs 268 inside 32 of padding; at the 600 dp floor the right pane keeps 299 for the Docker Compose editor. Pushed outside the shell. |
+| `service_edit_page.dart`, `service_route_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | Two panes that **both scroll**: the identity / source half (seven and six blocks, ~476 and ~410 dp — the route editor gained its lane dropdown in 1.5.6) is too tall to pin at the 480 dp floor the way the device edit page pins its three, so the left pane is a plain scroll view. The pane is 0.42 of the window clamped 300–480, wider than a detail pane because it holds dropdowns whose longest Japanese label needs 268 inside 32 of padding; at the 600 dp floor the right pane keeps 299 for the Docker Compose editor. Pushed outside the shell. |
+| `service_access_path_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth`, `accessPatternColumns` | Two panes that both scroll, split by role rather than by half of the form: the left pane (0.42 of the window, 300–480) holds the choices — the source tile and the pattern cards — and the right pane the details, the preview with its warnings, and the actions. The whole form on the left would leave the right pane holding only a short preview card. The pattern cards come `accessPatternColumns` to a row: `columnCapacity` at 150 dp, at most 3, so a 360 dp phone keeps two cards per row and the left pane at the 600 dp floor (268 inside its padding) one. Each row is an `IntrinsicHeight`, so its cards share a height. Pushed outside the shell. |
 | `dataset_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | A fixed left pane (the 56 dp emoji tile and the name field, 88 dp with padding — no arithmetic needed under the 424 a pane has at the floor) with the same scroll-view fallback; the storage checklist scrolls on the right. Pushed outside the shell. |
 | `network_edit_page.dart` | `formMaxWidth` | Width only, not the split rule: a lone column of six fields is capped at 600 dp and centred, so a desktop window stops stretching each field across its whole width and a phone is unchanged. |
-| The four `DraggableScrollableSheet` pickers (device template, CPU and GPU presets, service template) | `sheetInitialSize`, `sheetMaxSize` | Under 480 dp of height a sheet opens at 0.95 instead of its preferred 0.6 / 0.82: all four are `isScrollControlled` with an autofocused search field, and on a 412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. |
+| The five `DraggableScrollableSheet` pickers (device template, CPU and GPU presets, service template, the access-path page's service picker) | `sheetInitialSize`, `sheetMaxSize` | Under 480 dp of height a sheet opens at 0.95 instead of its preferred 0.6 / 0.82: all five are `isScrollControlled` with a search field, and on a 412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. |
 | `settings_page.dart` | `canSplitLayout`, `settingsLeftPaneWidth` | List on the left, the chosen page hosted in a nested `Navigator` on the right; pushed full-screen otherwise. Inside the shell: the body's `LayoutBuilder` already excludes the rail. |
 | `license_page.dart`, `privacy_policy_page.dart` | `readingMaxWidth` | Width only: prose capped at 680 and centred. |
 | `backup_page.dart`, `webdav_config_page.dart` | `formMaxWidth` | Width only: forms capped at 600 and centred. |
@@ -492,7 +493,7 @@ verbatim.
 
 - `test/adaptive_layout_test.dart` — the gate, the rail rule, the content width, the capacity and
   row math, the four lists' column counts and preference clamping, the two overview rules, the
-  finance floor and the dialog height, pinned at the real logical-pixel geometry of every device in
+  access-pattern card columns, the finance floor and the dialog height, pinned at the real logical-pixel geometry of every device in
   the tables above, with the device named in a comment so a regression names the device it would
   break. It also asserts that `serviceMetricColumns` still agrees with the inline arithmetic it
   replaced.
@@ -506,6 +507,9 @@ verbatim.
 - `test/settings_two_pane_ui_test.dart` — the settings page at a Z Fold 8 both ways and a phone:
   the placeholder beside the list, a row hosting its page beside the list with no back arrow, the
   same row pushing full-screen with one, and the license page's prose capped on a desktop window.
+- `test/service_access_path_page_test.dart` — the guided access-path page at a phone (one
+  column) and a Z Fold 8 unfolded in landscape (two panes, the preview in the right pane), besides
+  its behaviour tests.
 - `test/edit_pages_two_pane_ui_test.dart` — the service, route, dataset and network edit pages at
   a Z Fold 8 both ways, a phone, the floor and a desktop: which half lands where, the dataset
   pane at the floor, and the network form's 600 dp cap against a phone's full width. The emoji

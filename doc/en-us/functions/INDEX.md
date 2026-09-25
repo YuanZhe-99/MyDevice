@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1064** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1133** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1181** declarations — 117 more than
-1064 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1249** declarations — 116 more than
+1133 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus tail
 sections of `device.dart` and `service_list_page.dart`) have no `/// Purpose:` doc comment in
 source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
@@ -25,9 +25,9 @@ per-file rows as authoritative and every total as approximate until a full sweep
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 711 |
-| Tier B (index row only) | 470 |
-| **Total** | **1181** |
+| Tier A (full entry) | 730 |
+| Tier B (index row only) | 519 |
+| **Total** | **1249** |
 
 ## Root (`lib/`)
 
@@ -89,16 +89,17 @@ per-file rows as authoritative and every total as approximate until a full sweep
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
 | `lib/features/services/models/service.dart` | [features/services/models/service.md](features/services/models/service.md) | 42 | 33 |
-| `lib/features/services/services/service_access_patterns.dart` | [features/services/services/service_access_patterns.md](features/services/services/service_access_patterns.md) | 33 | 18 |
-| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 57 | 40 |
-| `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 8 | 3 |
+| `lib/features/services/services/service_access_patterns.dart` | [features/services/services/service_access_patterns.md](features/services/services/service_access_patterns.md) | 43 | 22 |
+| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 59 | 41 |
+| `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 11 | 5 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 8 | 8 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
 | `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 87 | 34 |
+| `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 54 | 13 |
 | `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
-| `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 2 | 1 |
-| `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 84 | 24 |
-| `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 24 | 8 |
+| `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
+| `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 68 | 19 |
+| `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
 
 ## features/settings/
 
@@ -112,7 +113,7 @@ per-file rows as authoritative and every total as approximate until a full sweep
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1064/1181 hand-documented declarations above).
+the 1133/1249 hand-documented declarations above).
 
 ## shared/
 
@@ -130,7 +131,7 @@ the 1064/1181 hand-documented declarations above).
 | `lib/shared/services/sync_wake_lock.dart` | [shared/services/sync_wake_lock.md](shared/services/sync_wake_lock.md) | 0 | 0 |
 | `lib/shared/services/tray_service.dart` | [shared/services/tray_service.md](shared/services/tray_service.md) | 16 | 12 |
 | `lib/shared/services/webdav_service.dart` | [shared/services/webdav_service.md](shared/services/webdav_service.md) | 12 | 12 |
-| `lib/shared/utils/adaptive_layout.dart` | [shared/utils/adaptive_layout.md](shared/utils/adaptive_layout.md) | 15 | 15 |
+| `lib/shared/utils/adaptive_layout.dart` | [shared/utils/adaptive_layout.md](shared/utils/adaptive_layout.md) | 16 | 16 |
 | `lib/shared/utils/detail_layout.dart` | [shared/utils/detail_layout.md](shared/utils/detail_layout.md) | 4 | 4 |
 | `lib/shared/utils/json_preservation.dart` | [shared/utils/json_preservation.md](shared/utils/json_preservation.md) | 0 | 0 |
 | `lib/shared/views/device_map_page.dart` | [shared/views/device_map_page.md](shared/views/device_map_page.md) | 5 | 2 |
@@ -148,7 +149,7 @@ the 1064/1181 hand-documented declarations above).
 | `features/datasets/` | 4 | 49 | 30 | 19 |
 | `features/devices/` | 15 | 381 | 201 | 180 |
 | `features/network/` | 5 | 76 | 41 | 35 |
-| `features/services/` | 11 | 375 | 179 | 196 |
+| `features/services/` | 12 | 442 | 197 | 245 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 20 | 308 | 244 | 64 |
-| **Total** | **64** | **1245** | **736** | **509** |
+| `shared/` | 20 | 309 | 245 | 64 |
+| **Total** | **65** | **1313** | **755** | **558** |

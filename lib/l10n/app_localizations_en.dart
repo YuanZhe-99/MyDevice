@@ -1550,7 +1550,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get servicePatternCloudflareTunnelDesc =>
-      'Published through a Cloudflare Tunnel connector, no open ports.';
+      'Published through a Cloudflare Tunnel, no open ports.';
 
   @override
   String get servicePatternPangolinDesc =>
@@ -1567,6 +1567,125 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get servicePatternTailscaleFunnelDesc =>
       'Shared to the internet with Tailscale Funnel.';
+
+  @override
+  String get serviceAccessPathAdd => 'Add access path';
+
+  @override
+  String get serviceAccessPathEdit => 'Edit access path';
+
+  @override
+  String get serviceAccessStepSource => 'Service and port';
+
+  @override
+  String get serviceAccessStepPattern => 'How is it reached?';
+
+  @override
+  String get serviceAccessStepDetails => 'Details';
+
+  @override
+  String get serviceAccessPickService => 'Choose a service';
+
+  @override
+  String get serviceAccessSearchServices => 'Search services, devices or ports';
+
+  @override
+  String get serviceAccessSuggested => 'Suggested';
+
+  @override
+  String get serviceAccessOtherServices => 'Other services';
+
+  @override
+  String get serviceAccessNoEndpointsHint => 'No ports recorded yet — add one';
+
+  @override
+  String get serviceAccessCustomPattern => 'Custom / multi-hop';
+
+  @override
+  String get serviceAccessCustomPatternDesc =>
+      'Build any chain hop by hop in the advanced editor.';
+
+  @override
+  String get serviceAccessReachability => 'Who can reach it';
+
+  @override
+  String get serviceAccessViaProxy => 'Through a reverse proxy first';
+
+  @override
+  String get serviceAccessViaProxyHint =>
+      'For example Caddy on the same machine, then the tunnel.';
+
+  @override
+  String get serviceAccessProxyService => 'Proxy service';
+
+  @override
+  String get serviceAccessCreateProxy => 'Create proxy service…';
+
+  @override
+  String get serviceAccessFrpServer => 'FRP server';
+
+  @override
+  String get serviceAccessRelayOptional => 'Relay service (optional)';
+
+  @override
+  String get serviceAccessCreateRelay => 'Create relay service…';
+
+  @override
+  String get serviceAccessIngress => 'Ingress port';
+
+  @override
+  String get serviceAccessIngressHint =>
+      'The port your FRP client connects to.';
+
+  @override
+  String get serviceAccessRouter => 'Router device (optional)';
+
+  @override
+  String get serviceAccessPublicHost => 'Public host / DDNS (optional)';
+
+  @override
+  String get serviceAccessPublicPort => 'Public port';
+
+  @override
+  String serviceAccessUseSuggestion(String target) {
+    return 'Use $target';
+  }
+
+  @override
+  String get serviceAccessMissingSource => 'Choose the service to reach.';
+
+  @override
+  String get serviceAccessMissingProxy => 'Choose the reverse proxy service.';
+
+  @override
+  String get serviceAccessMissingRelay => 'Choose the relay service.';
+
+  @override
+  String get serviceAccessInvalidPort =>
+      'Enter a public port between 1 and 65535.';
+
+  @override
+  String get serviceAccessSaveFirst => 'Fill in the highlighted fields first.';
+
+  @override
+  String get serviceAccessWarningNoIngress =>
+      'This FRP server has no endpoint to use as its ingress.';
+
+  @override
+  String get serviceAccessWarningSameDevice =>
+      'The FRP server runs on the same device as the service.';
+
+  @override
+  String get serviceAccessAdvancedEditor => 'Advanced editor';
+
+  @override
+  String get serviceAccessGuidedEditor => 'Guided editor';
+
+  @override
+  String get serviceAccessLaneField => 'Topology lane';
+
+  @override
+  String get serviceAccessLaneAuto => 'Auto (from the method)';
 
   @override
   String get backupModuleServices => 'Services';

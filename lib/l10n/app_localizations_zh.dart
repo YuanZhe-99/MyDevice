@@ -1528,7 +1528,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get servicePatternCloudflareTunnelDesc =>
-      '通过 Cloudflare Tunnel 连接器发布，无需开放端口。';
+      '通过 Cloudflare Tunnel 发布，无需开放端口。';
 
   @override
   String get servicePatternPangolinDesc => '通过 Pangolin 服务端暴露，通常部署在 VPS 上。';
@@ -1541,6 +1541,119 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get servicePatternTailscaleFunnelDesc => '通过 Tailscale Funnel 分享到公网。';
+
+  @override
+  String get serviceAccessPathAdd => '添加访问路径';
+
+  @override
+  String get serviceAccessPathEdit => '编辑访问路径';
+
+  @override
+  String get serviceAccessStepSource => '服务与端口';
+
+  @override
+  String get serviceAccessStepPattern => '通过什么方式访问？';
+
+  @override
+  String get serviceAccessStepDetails => '详细设置';
+
+  @override
+  String get serviceAccessPickService => '选择服务';
+
+  @override
+  String get serviceAccessSearchServices => '搜索服务、设备或端口';
+
+  @override
+  String get serviceAccessSuggested => '推荐';
+
+  @override
+  String get serviceAccessOtherServices => '其他服务';
+
+  @override
+  String get serviceAccessNoEndpointsHint => '还没有记录端口——添加一个';
+
+  @override
+  String get serviceAccessCustomPattern => '自定义 / 多跳';
+
+  @override
+  String get serviceAccessCustomPatternDesc => '在高级编辑器中逐跳搭建任意链路。';
+
+  @override
+  String get serviceAccessReachability => '可达范围';
+
+  @override
+  String get serviceAccessViaProxy => '先经过反向代理';
+
+  @override
+  String get serviceAccessViaProxyHint => '例如先到同一台机器上的 Caddy，再进入隧道。';
+
+  @override
+  String get serviceAccessProxyService => '代理服务';
+
+  @override
+  String get serviceAccessCreateProxy => '新建代理服务…';
+
+  @override
+  String get serviceAccessFrpServer => 'FRP 服务端';
+
+  @override
+  String get serviceAccessRelayOptional => '中继服务（可选）';
+
+  @override
+  String get serviceAccessCreateRelay => '新建中继服务…';
+
+  @override
+  String get serviceAccessIngress => '入口端口';
+
+  @override
+  String get serviceAccessIngressHint => 'FRP 客户端连接的端口。';
+
+  @override
+  String get serviceAccessRouter => '路由器设备（可选）';
+
+  @override
+  String get serviceAccessPublicHost => '公网主机 / DDNS（可选）';
+
+  @override
+  String get serviceAccessPublicPort => '公网端口';
+
+  @override
+  String serviceAccessUseSuggestion(String target) {
+    return '使用 $target';
+  }
+
+  @override
+  String get serviceAccessMissingSource => '请选择要访问的服务。';
+
+  @override
+  String get serviceAccessMissingProxy => '请选择反向代理服务。';
+
+  @override
+  String get serviceAccessMissingRelay => '请选择中继服务。';
+
+  @override
+  String get serviceAccessInvalidPort => '请输入 1–65535 之间的公网端口。';
+
+  @override
+  String get serviceAccessSaveFirst => '请先填写标出的字段。';
+
+  @override
+  String get serviceAccessWarningNoIngress => '该 FRP 服务端没有可作为入口的端点。';
+
+  @override
+  String get serviceAccessWarningSameDevice => 'FRP 服务端与该服务在同一台设备上。';
+
+  @override
+  String get serviceAccessAdvancedEditor => '高级编辑器';
+
+  @override
+  String get serviceAccessGuidedEditor => '引导式编辑器';
+
+  @override
+  String get serviceAccessLaneField => '拓扑车道';
+
+  @override
+  String get serviceAccessLaneAuto => '自动（按方式推断）';
 
   @override
   String get backupModuleServices => '服务';
@@ -3084,7 +3197,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get servicePatternCloudflareTunnelDesc =>
-      '透過 Cloudflare Tunnel 連接器發布，無需開放連接埠。';
+      '透過 Cloudflare Tunnel 發布，無需開放連接埠。';
 
   @override
   String get servicePatternPangolinDesc => '透過 Pangolin 伺服器公開，通常部署在 VPS 上。';
@@ -3097,6 +3210,119 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get servicePatternTailscaleFunnelDesc => '透過 Tailscale Funnel 分享到公網。';
+
+  @override
+  String get serviceAccessPathAdd => '新增存取路徑';
+
+  @override
+  String get serviceAccessPathEdit => '編輯存取路徑';
+
+  @override
+  String get serviceAccessStepSource => '服務與連接埠';
+
+  @override
+  String get serviceAccessStepPattern => '透過什麼方式存取？';
+
+  @override
+  String get serviceAccessStepDetails => '詳細設定';
+
+  @override
+  String get serviceAccessPickService => '選擇服務';
+
+  @override
+  String get serviceAccessSearchServices => '搜尋服務、裝置或連接埠';
+
+  @override
+  String get serviceAccessSuggested => '推薦';
+
+  @override
+  String get serviceAccessOtherServices => '其他服務';
+
+  @override
+  String get serviceAccessNoEndpointsHint => '尚未記錄連接埠——新增一個';
+
+  @override
+  String get serviceAccessCustomPattern => '自訂 / 多跳';
+
+  @override
+  String get serviceAccessCustomPatternDesc => '在進階編輯器中逐跳建立任意鏈路。';
+
+  @override
+  String get serviceAccessReachability => '可達範圍';
+
+  @override
+  String get serviceAccessViaProxy => '先經過反向代理';
+
+  @override
+  String get serviceAccessViaProxyHint => '例如先到同一台機器上的 Caddy，再進入隧道。';
+
+  @override
+  String get serviceAccessProxyService => '代理服務';
+
+  @override
+  String get serviceAccessCreateProxy => '新增代理服務…';
+
+  @override
+  String get serviceAccessFrpServer => 'FRP 伺服器';
+
+  @override
+  String get serviceAccessRelayOptional => '中繼服務（選填）';
+
+  @override
+  String get serviceAccessCreateRelay => '新增中繼服務…';
+
+  @override
+  String get serviceAccessIngress => '入口連接埠';
+
+  @override
+  String get serviceAccessIngressHint => 'FRP 用戶端連線的連接埠。';
+
+  @override
+  String get serviceAccessRouter => '路由器裝置（選填）';
+
+  @override
+  String get serviceAccessPublicHost => '公網主機 / DDNS（選填）';
+
+  @override
+  String get serviceAccessPublicPort => '公網連接埠';
+
+  @override
+  String serviceAccessUseSuggestion(String target) {
+    return '使用 $target';
+  }
+
+  @override
+  String get serviceAccessMissingSource => '請選擇要存取的服務。';
+
+  @override
+  String get serviceAccessMissingProxy => '請選擇反向代理服務。';
+
+  @override
+  String get serviceAccessMissingRelay => '請選擇中繼服務。';
+
+  @override
+  String get serviceAccessInvalidPort => '請輸入 1–65535 之間的公網連接埠。';
+
+  @override
+  String get serviceAccessSaveFirst => '請先填寫標示的欄位。';
+
+  @override
+  String get serviceAccessWarningNoIngress => '此 FRP 伺服器沒有可作為入口的端點。';
+
+  @override
+  String get serviceAccessWarningSameDevice => 'FRP 伺服器與該服務在同一台裝置上。';
+
+  @override
+  String get serviceAccessAdvancedEditor => '進階編輯器';
+
+  @override
+  String get serviceAccessGuidedEditor => '引導式編輯器';
+
+  @override
+  String get serviceAccessLaneField => '拓撲車道';
+
+  @override
+  String get serviceAccessLaneAuto => '自動（依方式推斷）';
 
   @override
   String get backupModuleServices => '服務';

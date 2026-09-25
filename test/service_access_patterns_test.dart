@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_device/features/devices/models/device.dart';
+import 'package:my_device/features/network/models/network.dart';
 import 'package:my_device/features/services/models/service.dart';
 import 'package:my_device/features/services/services/service_access_patterns.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
@@ -556,6 +557,336 @@ void main() {
     );
     expect(isFrpLikeService(named('frps')), isTrue);
     expect(isFrpLikeService(named('Jellyfin')), isFalse);
+  });
+
+  group('suggestions', () {
+    final networks = [
+      Network(id: 'lan', name: 'LAN', type: NetworkType.lan),
+      Network(id: 'ts', name: 'Tailnet', type: NetworkType.tailscale),
+      Network(id: 'net', name: 'Internet', type: NetworkType.other),
+    ];
+    const assignments = [
+      NetworkDevice(
+        networkId: 'lan',
+        deviceId: 'home',
+        ipAddress: '192.168.1.10',
+      ),
+      NetworkDevice(
+        networkId: 'ts',
+        deviceId: 'home',
+        ipAddress: '100.64.0.2',
+        hostname: 'home.tailnet.ts.net',
+      ),
+      NetworkDevice(
+        networkId: 'net',
+        deviceId: 'vps',
+        ipAddress: '203.0.113.10',
+        hostname: 'vps.example.net',
+      ),
+    ];
+    final jellyfin = services.first;
+
+    test('direct targets follow the reachability and the endpoint', () {
+      String? suggest(
+        ServiceReachability reachability, {
+        ServiceEndpoint? endpoint,
+      }) => suggestedDirectTarget(
+        source: jellyfin,
+        endpoint: endpoint,
+        assignments: assignments,
+        networks: networks,
+        reachability: reachability,
+      );
+      expect(suggest(ServiceReachability.lan), 'http://192.168.1.10:8096');
+      expect(
+        suggest(ServiceReachability.vpn),
+        'http://home.tailnet.ts.net:8096',
+      );
+      expect(suggest(ServiceReachability.public), isNull);
+      expect(
+        suggest(
+          ServiceReachability.lan,
+          endpoint: ServiceEndpoint(
+            port: 443,
+            protocol: ServiceProtocol.https,
+            path: '/app',
+          ),
+        ),
+        'https://192.168.1.10:443/app',
+      );
+      expect(
+        suggest(
+          ServiceReachability.lan,
+          endpoint: ServiceEndpoint(port: 22, protocol: ServiceProtocol.ssh),
+        ),
+        '192.168.1.10:22',
+      );
+      final caddy = services[1];
+      expect(
+        suggestedDirectTarget(
+          source: caddy,
+          assignments: assignments,
+          networks: networks,
+          reachability: ServiceReachability.lan,
+        ),
+        '192.168.1.10',
+        reason: 'several endpoints and none chosen: no port is guessed',
+      );
+    });
+
+    test('the FRP public host comes from a single assignment only', () {
+      final frps = services[2];
+      expect(suggestedPublicHost(frps, assignments), 'vps.example.net');
+      expect(
+        suggestedPublicHost(frps, [
+          ...assignments,
+          const NetworkDevice(
+            networkId: 'lan',
+            deviceId: 'vps',
+            ipAddress: '10.0.0.2',
+          ),
+        ]),
+        isNull,
+      );
+      expect(suggestedPublicHost(jellyfin, const []), isNull);
+    });
+
+    test('relay suggestions follow the pattern and prefer VPS devices', () {
+      final extra = [
+        ...services,
+        ServiceNode(id: 'frpc', deviceId: 'home', name: 'frpc'),
+        ServiceNode(
+          id: 'ts',
+          deviceId: 'home',
+          name: 'Tailscale',
+          templateId: 'tailscale',
+        ),
+      ];
+      expect(
+        serviceAccessRelaySuggestions(
+          ServiceAccessPattern.frp,
+          extra,
+          devices,
+          sourceServiceId: 'jellyfin',
+        ),
+        ['frps', 'frpc'],
+      );
+      expect(
+        serviceAccessRelaySuggestions(
+          ServiceAccessPattern.cloudflareTunnel,
+          extra,
+          devices,
+        ),
+        ['cloudflared'],
+      );
+      expect(
+        serviceAccessRelaySuggestions(
+          ServiceAccessPattern.tailscaleFunnel,
+          extra,
+          devices,
+        ),
+        ['ts'],
+      );
+      expect(
+        serviceAccessRelaySuggestions(
+          ServiceAccessPattern.direct,
+          extra,
+          devices,
+        ),
+        isEmpty,
+      );
+      expect(
+        serviceAccessRelaySuggestions(ServiceAccessPattern.frp, [
+          ServiceNode(
+            id: 'tunnel',
+            deviceId: 'vps',
+            name: 'Relay',
+            kind: ServiceKind.tunnel,
+          ),
+        ], devices),
+        ['tunnel'],
+        reason: 'without an FRP-named service, tunnel-kind services count',
+      );
+    });
+
+    test('proxy suggestions put the source device first', () {
+      final remoteProxy = ServiceNode(
+        id: 'edge',
+        deviceId: 'vps',
+        name: 'A Nginx edge',
+        templateId: 'nginx',
+      );
+      expect(
+        serviceAccessProxySuggestions([
+          ...services,
+          remoteProxy,
+        ], sourceServiceId: 'jellyfin'),
+        ['caddy', 'edge'],
+      );
+    });
+
+    test('router candidates list routers first', () {
+      expect(
+        serviceAccessRouterCandidates(devices).map((device) => device.id),
+        ['router', 'home', 'vps'],
+      );
+      expect(serviceAccessRelayTemplateId(ServiceAccessPattern.frp), 'frp');
+      expect(
+        serviceAccessRelayTemplateId(ServiceAccessPattern.cloudflareTunnel),
+        'cloudflare-tunnel',
+      );
+      expect(serviceAccessRelayTemplateId(ServiceAccessPattern.direct), isNull);
+    });
+  });
+
+  test('the chain preview names every step once', () {
+    final route = _draftFor(
+      ServiceAccessPattern.frp,
+      viaProxy: true,
+    ).toRoute(services: services);
+    expect(
+      serviceRouteChainPreview(route, services: services, devices: devices),
+      'Jellyfin 8096 -> Caddy 443 -> FRP Server 7000 (VPS) -> '
+      'vps.example.com:443 -> media.example.com',
+    );
+    final direct = _draftFor(
+      ServiceAccessPattern.direct,
+    ).toRoute(services: services);
+    expect(
+      serviceRouteChainPreview(
+        direct,
+        services: services,
+        hopFallback: (hop) => '直连',
+      ),
+      'Jellyfin 8096 -> 直连 -> 192.168.1.10:8096',
+      reason: 'a generated method label is replaced by the fallback',
+    );
+    expect(
+      serviceRouteChainPreview(
+        ServiceRoute(name: 'r', sourceServiceId: 'missing'),
+        services: services,
+      ),
+      '-',
+    );
+  });
+
+  test('the documented walkthrough is exactly what the guided draft saves', () {
+    // doc/en-us/examples/service-topology-walkthrough.md
+    final walkDevices = [
+      Device(
+        id: 'dev-home',
+        name: 'dev-home',
+        category: DeviceCategory.desktop,
+      ),
+      Device(id: 'dev-vps', name: 'dev-vps', category: DeviceCategory.vps),
+    ];
+    final walkServices = [
+      ServiceNode(
+        id: 'svc-jellyfin',
+        deviceId: 'dev-home',
+        name: 'Jellyfin',
+        kind: ServiceKind.media,
+        endpoints: [ServiceEndpoint(id: 'ep-jellyfin', port: 8096)],
+      ),
+      ServiceNode(
+        id: 'svc-caddy',
+        deviceId: 'dev-home',
+        name: 'Caddy',
+        templateId: 'caddy',
+        kind: ServiceKind.reverseProxy,
+        endpoints: [
+          ServiceEndpoint(
+            id: 'ep-caddy',
+            port: 443,
+            protocol: ServiceProtocol.https,
+            isPrimary: true,
+          ),
+        ],
+      ),
+      ServiceNode(
+        id: 'svc-frp',
+        deviceId: 'dev-vps',
+        name: 'FRP',
+        templateId: 'frp',
+        kind: ServiceKind.tunnel,
+        endpoints: [
+          ServiceEndpoint(id: 'ep-frp-ingress', port: 57000, isPrimary: true),
+        ],
+      ),
+    ];
+    final route = const ServiceAccessDraft(
+      sourceServiceId: 'svc-jellyfin',
+      sourceEndpointId: 'ep-jellyfin',
+      pattern: ServiceAccessPattern.frp,
+      reachability: ServiceReachability.public,
+      viaProxy: true,
+      proxyServiceId: 'svc-caddy',
+      proxyEndpointId: 'ep-caddy',
+      relayServiceId: 'svc-frp',
+      publicHost: 'vps.example.com',
+      publicPort: 443,
+      targets: ['https://media.example.com'],
+    ).toRoute(services: walkServices);
+
+    expect(route.name, 'Jellyfin via Caddy - media.example.com');
+    expect(route.finalUrl, 'https://media.example.com');
+    expect(route.accessLevel, ServiceAccessLevel.public);
+    expect(route.extraJson, {serviceRouteAccessLaneKey: 'public'});
+    final proxy = route.hops.first;
+    expect(proxy.type, ServiceRouteHopType.reverseProxy);
+    expect(proxy.method, ServiceRouteMethod.caddy);
+    expect(proxy.serviceId, 'svc-caddy');
+    expect(proxy.endpointId, 'ep-caddy');
+    final frp = route.hops.last;
+    expect(frp.type, ServiceRouteHopType.portForward);
+    expect(frp.method, ServiceRouteMethod.frp);
+    expect(frp.serviceId, 'svc-frp');
+    expect(frp.endpointId, 'ep-frp-ingress');
+    expect(frp.deviceId, 'dev-vps');
+    expect(frp.host, 'vps.example.com');
+    expect(frp.port, 443);
+    expect(
+      serviceRouteChainPreview(
+        route,
+        services: walkServices,
+        devices: walkDevices,
+      ),
+      'Jellyfin 8096 -> Caddy 443 -> FRP 57000 (dev-vps) -> '
+      'vps.example.com:443 -> media.example.com',
+    );
+
+    final graph = buildServiceTopology(
+      services: walkServices,
+      routes: [route],
+      devices: walkDevices,
+    );
+    bool edge(String from, String to) =>
+        graph.edges.any((e) => e.from == from && e.to == to);
+    expect(
+      edge('endpoint:svc-jellyfin:ep-jellyfin', 'service:svc-caddy'),
+      isTrue,
+    );
+    expect(edge('service:svc-caddy', 'endpoint:svc-caddy:ep-caddy'), isTrue);
+    expect(
+      edge('endpoint:svc-caddy:ep-caddy', 'endpoint:svc-frp:ep-frp-ingress'),
+      isTrue,
+    );
+    expect(
+      edge('service:svc-frp', 'remote:dev-vps:vps.example.com:443'),
+      isTrue,
+    );
+    expect(
+      edge('remote:dev-vps:vps.example.com:443', 'domain:media.example.com'),
+      isTrue,
+    );
+    expect(
+      edge(
+        'endpoint:svc-frp:ep-frp-ingress',
+        'remote:dev-vps:vps.example.com:443',
+      ),
+      isFalse,
+      reason: 'ingress and public entry are siblings, not a chain',
+    );
   });
 
   test('pattern defaults', () {

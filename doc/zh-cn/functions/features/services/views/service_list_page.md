@@ -1,15 +1,13 @@
 # lib/features/services/views/service_list_page.dart
 
-服务标签的顶层页面和其整个拓扑子流程，概念上描述于 [服务与拓扑](../../../../features/services-topology.md)。此单文件拥有三层：(1) 主列表页（`ServiceListPage`/`_ServiceListPageState`）带四个视图（总览/按设备/路由/端口）；(2) 快速访问路由对话框（`_QuickAccessRouteDialog`/`_QuickAccessRouteDialogState`），添加直接/反向代理/隧道/FRP/路由器端口转发访问路径的简单/默认流程；和 (3) 全屏拓扑页及其渲染（`_ServiceTopologyPage`、`_ServiceTopologyView`、`_TopologyNodeCard`、`_ServiceTopologyEdgePainter` 和 `_TopologyLayoutRequest` 布局缓存键）。图构建、警告/冲突检测和大多数路由格式化辅助从 `service_analysis.dart`（[`service_analysis.md`](../services/service_analysis.md)）读取；节点/边放置和边路由来自 `service_topology_layout.dart`（[`service_topology_layout.md`](../services/service_topology_layout.md)）。持久化经 `ServiceStorage`/`DeviceStorage`/`NetworkStorage`（[`service_storage.md`](../services/service_storage.md)）；此页压入的增/改表单住在 [`service_edit_page.md`](service_edit_page.md) 和 [`service_route_edit_page.md`](service_route_edit_page.md)。像应用其他列表页一样，`_ServiceListPageState` 注册到 [`AutoSyncService`](../../../shared/services/auto_sync_service.md)，使后台同步自动重载列表。
+服务标签的顶层页面及其整个拓扑子流程，概念上描述于 [服务与拓扑](../../../../features/services-topology.md)。此单文件拥有两层：(1) 主列表页（`ServiceListPage`/`_ServiceListPageState`）带四个视图（总览/按设备/路由/端口）；(2) 全屏拓扑页及其渲染（`_ServiceTopologyPage`、`_ServiceTopologyView`、`_TopologyNodeCard`、`_ServiceTopologyEdgePainter` 和 `_TopologyLayoutRequest` 布局缓存键）。每个「添加访问方式」入口都经 `_addAccessPath` 压入引导式访问路径页（[`service_access_path_page.md`](service_access_path_page.md)）；本文件在 1.5.6 之前持有的快速访问路由对话框已被移除。图构建、警告/冲突检测和大多数路由格式化辅助从 `service_analysis.dart`（[`service_analysis.md`](../services/service_analysis.md)）读取；节点/边放置和边路由来自 `service_topology_layout.dart`（[`service_topology_layout.md`](../services/service_topology_layout.md)）；警告文本和其他 UI 标签来自 [`service_labels.md`](../services/service_labels.md)。持久化经 `ServiceStorage`/`DeviceStorage`/`NetworkStorage`（[`service_storage.md`](../services/service_storage.md)）；此页压入的增/改表单住在 [`service_edit_page.md`](service_edit_page.md) 和 [`service_route_edit_page.md`](service_route_edit_page.md)。像应用其他列表页一样，`_ServiceListPageState` 注册到 [`AutoSyncService`](../../../shared/services/auto_sync_service.md)，使后台同步自动重载列表。
 
-**行数说明：** `grep -c 'Purpose:' service_list_page.dart` 返回 **73**。与 `service_analysis.dart`（见 [`service_analysis.md`](../services/service_analysis.md)）不同，这 73 个块没有一个错附到调用点语句——每个都恰好坐在真实声明正上方（读每块后紧跟行验证）。然而 73 中有一个（`direct(ServiceRouteMethod.direct),` 上方的块）文档化**枚举常量**，非函数/方法/构造函数/getter——它是 `_QuickAccessMethod` 十个值中的第一个，其他九个（`caddy` 到 `custom`）完全无文档块。与本文档集只列行为承载声明（普通数据字段同样省略；见 `service_analysis.md` 字段排除先例）的约定一致，那个枚举常量块在此散文描述而非作为自己的声明表行。因此 73 个块中 **72** 个文档化真实声明。另外，本文件尾部有 **12 个未文档化顶层辅助函数**（第 2314–2499 行：`_splitTargets` 到 `_iconForService`）完全无 `/// Purpose:` 块。那得 **72 + 12 = 84** 个真实声明总计，下面分 **24 个 Tier A / 60 个 Tier B**。（1.5.6 之前此说明写的是 72 / 83，尽管表格当时已有 84 行；偏离的是文字，而非表格。1.5.6 中 `_isFrpLikeService` 以 `isFrpLikeService` 之名移到 [`service_access_patterns.md`](../services/service_access_patterns.md)，并新增了 `_nodeSubtitle`，因此总数不变。）
+**行数说明：** `grep -c 'Purpose:' service_list_page.dart` 返回 **58**，每个块都恰好坐在真实声明正上方。本文件尾部另有 **10 个未文档化顶层辅助函数**（第 1834–2008 行：`_compactTopologyLabel` 到 `_iconForService`），完全无 `/// Purpose:` 块。因此共 **58 + 10 = 68** 个真实声明，下面分 **19 个 Tier A / 49 个 Tier B**。1.5.6 移除了快速访问对话框（`_QuickAccessMethod`——其第一个枚举常量携带着唯一一个不文档化任何声明的块——以及 `_QuickAccessRouteDialog` 及其状态）、`_warningText`（现为 `service_labels.dart` 中的 `serviceWarningLabel`），以及只有该对话框使用的两个尾部辅助（`_splitTargets`、`_emptyToNull`）；`_isFrpLikeService` 移到了 [`service_access_patterns.md`](../services/service_access_patterns.md)，并新增了 `_nodeSubtitle`。
 
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
-| `_QuickAccessMethod`（构造函数） | 构造函数 | B | 创建包装底层 `ServiceRouteMethod` 的枚举值。 |
-| `isPortMapping` | getter（`_QuickAccessMethod`） | B | 此快速访问方法是否为 FRP 或路由器端口转发（vs 代理/隧道/直接）。 |
 | `ServiceListPage`（构造函数） | 构造函数 | B | 创建页面组件（无参数）。 |
 | `createState` | 方法（`ServiceListPage`） | B | 创建页面可变状态对象。 |
 | [`initState`](#initstate) | 方法（`_ServiceListPageState`，组件生命周期） | A | 注册自动同步监听器并启动初始服务/路由/设备/网络加载。 |
@@ -22,7 +20,7 @@
 | `_addService` | 方法（`_ServiceListPageState`） | B | 压入空白服务编辑页，弹出 `ServiceEditOutcome` 时重载。 |
 | `_editService` | 方法（`_ServiceListPageState`） | B | 为既有服务压入服务编辑页，弹出 `ServiceEditOutcome`（保存或删除）时重载。 |
 | `_addRoute` | 方法（`_ServiceListPageState`） | B | 压入高级路由编辑器，报告保存后重载。 |
-| [`_addAccessRoute`](#addaccessroute) | 方法（`_ServiceListPageState`） | A | 显示快速访问对话框并持久化其返回的每条路由。 |
+| [`_addAccessPath`](#addaccesspath) | 方法（`_ServiceListPageState`） | A | 为新访问路径压入引导式访问路径页；页面保存后重载。 |
 | `_editRoute` | 方法（`_ServiceListPageState`） | B | 为既有路由压入高级路由编辑器，报告保存后重载。 |
 | `_viewLabel` | 方法（`_ServiceListPageState`） | B | 把 `_ServiceView` 映射到其本地化分段按钮标签。 |
 | `build` | 方法（组件，`_ServiceListPageState`） | B | 构建脚手架：应用栏操作、FAB、视图切换器、当前视图主体。 |
@@ -42,20 +40,8 @@
 | [`_hopLabel`](#hoplabel) | 方法（`_ServiceListPageState`） | A | 为一个路由跳计算显示标签。 |
 | [`_routeSummary`](#routesummary) | 方法（`_ServiceListPageState`） | A | 为路由构建"源 -> 跳 -> 目标"摘要行。 |
 | [`_routesForEndpoint`](#routesforendpoint) | 方法（`_ServiceListPageState`） | A | 找使用给定服务端点的路由显示名。 |
-| `_warningText` | 方法（`_ServiceListPageState`） | B | 把 `ServiceWarning` 映射到其本地化消息。 |
 | `_emptyState` | 方法（组件辅助） | B | 渲染居中空状态消息。 |
 | `_emptyInline` | 方法（组件辅助） | B | 渲染填充内联空状态消息。 |
-| `_QuickAccessRouteDialog`（构造函数） | 构造函数 | B | 创建对话框组件（服务、设备、可选初始服务）。 |
-| `createState` | 方法（`_QuickAccessRouteDialog`） | B | 创建对话框可变状态对象。 |
-| [`initState`](#initstate-quickaccessroutedialogstate) | 方法（`_QuickAccessRouteDialogState`，组件生命周期） | A | 创建文本控制器并播种默认源服务/端点。 |
-| `dispose` | 方法（`_QuickAccessRouteDialogState`，组件生命周期） | B | 释放四个文本控制器。 |
-| `_selectedSource` | getter（`_QuickAccessRouteDialogState`） | B | 解析当前所选源 `ServiceNode`（如有）。 |
-| [`_buildRoutes`](#buildroutes) | 方法（`_QuickAccessRouteDialogState`） | A | 组装当前表单状态描述的单个 `ServiceRoute`。 |
-| [`_buildHop`](#buildhop) | 方法（`_QuickAccessRouteDialogState`） | A | 构建匹配所选快速访问方法的单跳 `ServiceRouteHop`。 |
-| `_submit` | 方法（`_QuickAccessRouteDialogState`） | B | 验证表单并带构建路由列表弹出对话框。 |
-| `build` | 方法（组件，`_QuickAccessRouteDialogState`） | B | 以 `dialogMaxWidth` 渲染快速访问表单（源/端点/方法/中继/访问级别字段）。 |
-| [`_relayServiceOptions`](#relayserviceoptions) | 方法（`_QuickAccessRouteDialogState`） | A | 列出候选中继服务，端口映射方法偏好 FRP 类。 |
-| `_deviceName` | 方法（`_QuickAccessRouteDialogState`） | B | 把设备 id 解析为其名，无法解析时 id 本身。 |
 | `_ServiceTopologyView`（构造函数） | 构造函数 | B | 创建拓扑视图组件（图、数据、回调、模式、旋转、捕获/布局回调）。 |
 | `createState` | 方法（`_ServiceTopologyView`） | B | 创建拓扑视图可变状态对象。 |
 | `build` | 方法（组件，`_ServiceTopologyViewState`） | B | 在 `LayoutBuilder` 内布局拓扑画布，请求/显示缓存布局。 |
@@ -80,8 +66,6 @@
 | `_edgeColor` | 方法（`_ServiceTopologyEdgePainter`） | B | 把边访问车道映射到配色方案颜色。 |
 | `shouldRepaint` | 方法（`_ServiceTopologyEdgePainter`） | B | 只在图、布局或配色方案变化时重绘。 |
 | [`_nodeSubtitle`](#nodesubtitle) | 顶层函数 | A | 拓扑节点卡片显示的副标题：中继显示本地化方法或跳类型，否则显示构建器的 detail。 |
-| [`_splitTargets`](#splittargets) | 顶层函数 | A | 把换行/逗号分隔字符串拆分为修剪、非空目标字符串。 |
-| `_emptyToNull` | 顶层函数 | B | 修剪字符串并把空结果转换为 `null`。 |
 | [`_compactTopologyLabel`](#compacttopologylabel) | 顶层函数 | A | 把拓扑节点标签/详情缩短为紧凑 chip 尺寸字符串。 |
 | [`_iconForTopologyNode`](#iconfortopologynode) | 顶层函数 | A | 按 kind 及其解析设备/服务解析拓扑节点图标。 |
 | `_iconForMethod` | 顶层函数 | B | 把 `ServiceRouteMethod` 映射到其显示图标。 |
@@ -93,15 +77,15 @@
 | `iconForServiceIcon` | 顶层函数 | B | 把服务存储图标键映射到其 `IconData`。 |
 | `_iconForService` | 顶层函数 | B | 经 `iconForServiceIcon` 解析服务图标。 |
 
-`_QuickAccessMethod` 其他九个枚举值（`caddy`、`nginx`、`traefik`、`frp`、`pangolin`、`cloudflareTunnel`、`tailscaleFunnel`、`routerPortForward`、`custom`）是普通数据，像 `direct` 一样，同样不给自己的表格行。`enum _ServiceView { overview, devices, routes, ports }` 和 `enum _TopologyInteractionMode { select, move }`（第 26/28 行）是简单、无成员枚举，无自己构造函数/方法，因此也不列出——它们只作为上面方法的参数/返回类型出现（`_viewLabel`、`_buildCurrentView`、`build` 中 `SegmentedButton`）。
+`enum _ServiceView { overview, devices, routes, ports }` 和 `enum _TopologyInteractionMode { select, move }`（第 27/29 行）是简单、无成员枚举，无自己构造函数/方法，因此也不列出——它们只作为上面方法的参数/返回类型出现（`_viewLabel`、`_buildCurrentView`、`build` 中 `SegmentedButton`）。
 
-`iconForServiceIcon`（第 2452 行）是本文件唯一**公共**（非下划线）顶层声明；它也被 `service_edit_page.dart`（见 [`service_edit_page.md`](service_edit_page.md)）调用渲染服务名/图标字段旁和模板选择器逐模板图标的图标预览。
+`iconForServiceIcon`（第 1961 行）是本文件唯一**公共**（非下划线）顶层声明；它也被 `service_edit_page.dart`（见 [`service_edit_page.md`](service_edit_page.md)）调用渲染服务名/图标字段旁和模板选择器逐模板图标的图标预览。
 
 ## 文档
 
 ### `void initState()` <a id="initstate"></a>
 - **种类：** `_ServiceListPageState` 的方法（组件生命周期覆盖）。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 98 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 63 行）。
 - **用途：** 把本页接入自动同步通知系统并启动初始服务/路由/设备/网络加载。
 - **输入：** 无。
 - **返回：** 无。
@@ -112,37 +96,37 @@
 
 ### `Future<void> _load()` <a id="load"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 129 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 94 行）。
 - **用途：** 从各自存储重载服务、路由、设备和网络并刷新页面状态。
 - **输入：** 无。
 - **返回：** `Future<void>`。
 - **副作用：** 经 `ServiceStorage.load()`、`DeviceStorage.load()`、`NetworkStorage.load()` 读取；`setState` 更新 `_services`/`_routes`/`_devices`/`_networks` 并清除 `_loading`。
 - **算法：** Await `ServiceStorage.load()`（服务 + 路由），然后 `DeviceStorage.load()`，然后 `NetworkStorage.load()`，顺序（非并行）；未挂载提前返回；一次 `setState` 分配全部四个列表并设 `_loading = false`。
-- **用法：** 从 [`initState`](#initstate)、`_handleLocalDataChanged`（自动同步）和每个增/改/访问路由流程后（`_addService`/`_editService`/`_addRoute`/`_editRoute` 的 `if (result == true) _load();` 模式和 [`_addAccessRoute`](#addaccessroute) 的 `await _load();`）调用。
+- **用法：** 从 [`initState`](#initstate)、`_handleLocalDataChanged`（自动同步）和每个增/改/访问路径流程后调用：`_addService`/`_editService` 对 `ServiceEditOutcome` 的 `if (result != null) _load();`，`_addRoute`/`_editRoute` 的 `if (result == true) _load();`，以及页面保存后 [`_addAccessPath`](#addaccesspath) 的 `await _load();`。
 - **备注：** 三个存储顺序加载而非 `Future.wait`，因此总加载时间跨它们相加——鉴于这些是小本地 JSON 文件可接受。
 
-### `Future<void> _addAccessRoute({ServiceNode? source})` <a id="addaccessroute"></a>
+### `Future<void> _addAccessPath({ServiceAccessDraft? draft})` <a id="addaccesspath"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 229 行）。
-- **用途：** 打开快速访问路由对话框并持久化其返回的每条路由。
-- **输入：** `source` — 预选为对话框源服务的可选服务。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 196 行）。
+- **用途：** 为新访问路径打开引导式访问路径页。
+- **输入：** `draft` — 可选的起始草稿，如用 `ServiceAccessDraft(sourceServiceId: ...)` 预选源服务。
 - **返回：** `Future<void>`。
-- **副作用：** 显示 `_QuickAccessRouteDialog`；对每条返回路由调用一次 `ServiceStorage.addOrUpdateRoute`；重载。
-- **算法：** 1. 用 `_QuickAccessRouteDialog(services: _services, devices: _devices, initialService: source)` 做 `showDialog<List<ServiceRoute>>`。2. 结果为 `null` 或空（对话框取消）提前返回。3. 对每条返回路由顺序 `await ServiceStorage.addOrUpdateRoute(route)`。4. `await _load()`。
+- **副作用：** 在根导航器上压入 [`ServiceAccessPathPage`](service_access_path_page.md)；它弹出 `true`（页面自己已保存路由）时重载。
+- **算法：** 带 `draft` 以 `push<bool>` 压入页面；结果为 `true` 时 `await _load()`。
 - **用法：**
   ```dart
   IconButton(
     icon: const Icon(Icons.add_link),
     tooltip: l10n.serviceAddAccess,
-    onPressed: _services.isEmpty ? null : () => _addAccessRoute(),
+    onPressed: _services.isEmpty ? null : () => _addAccessPath(),
   ),
   ```
-  也（带特定 `source`）从 `_buildOverview` 的添加访问按钮、`_serviceRouteGroupCard`、`_serviceTile` 弹出菜单、`_topologyCard` 操作行调用，并作为 `onAddAccess` 回调传给 `_ServiceTopologyPage`/`_ServiceTopologyView`/[`_showNodeDetails`](#shownodedetails)。
-- **备注：** [`_QuickAccessRouteDialogState._buildRoutes`](#buildroutes) 当前总是返回单元素（或空）列表，但此方法写成循环任意列表，因此未来一次提交多条路由的对话框变体这里无需更改。
+  也（不带草稿）从 `_buildOverview` 的添加访问按钮和 `_topologyCard` 的操作行调用，（以该服务为源）从 `_serviceRouteGroupCard` 和 `_serviceTile` 的弹出菜单调用，并作为 `onAddAccess` 回调传给 `_ServiceTopologyPage`/`_ServiceTopologyView`/[`_showNodeDetails`](#shownodedetails)，其类型为 `Future<void> Function({ServiceAccessDraft? draft})`。
+- **备注：** 1.5.6 中取代了 `_addAccessRoute` 及其打开的 `_QuickAccessRouteDialog`。页面自己持久化路由，因此此方法只负责重载。
 
 ### `List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService()` <a id="routesgroupedbyservice"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 790 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 748 行）。
 - **用途：** 按源服务 id 分组所有路由，供总览逐服务路由卡片。
 - **输入：** 无。
 - **返回：** `List<MapEntry<String, List<ServiceRoute>>>`，按解析服务名（不区分大小写）排序；无法解析 id 按其自己原始文本排序。
@@ -153,7 +137,7 @@
 
 ### `String _hopLabel(ServiceRouteHop hop)` <a id="hoplabel"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 965 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 927 行）。
 - **用途：** 为一个路由跳计算短显示标签，供路由摘要行。
 - **输入：** `hop`。
 - **返回：** `String`。
@@ -164,7 +148,7 @@
 
 ### `String _routeSummary(ServiceRoute route, {ServiceNode? source, ServiceEndpoint? sourceEndpoint})` <a id="routesummary"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 982 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 944 行）。
 - **用途：** 构建每条路由卡片下显示的两行文本摘要：源到目标路径，然后访问级别。
 - **输入：** `route`；`source`/`sourceEndpoint` — 已解析源服务/端点（使此方法不必重新解析）。
 - **返回：** `String` — 箭头连接路径和本地化访问级别（`serviceAccessLevelLabel`）用 `'\n'` 连接。
@@ -175,7 +159,7 @@
 
 ### `String? _routesForEndpoint(String serviceId, String endpointId)` <a id="routesforendpoint"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1007 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 969 行）。
 - **用途：** 找使用给定服务端点（作为源或经跳）的每条路由显示名，供端口视图副标题。
 - **输入：** `serviceId`、`endpointId`。
 - **返回：** `String?` — 逗号连接路由显示目标列表，无路由引用此端点时 `null`。
@@ -184,53 +168,9 @@
 - **用法：** `_buildPorts` 逐端口副标题内 `_routesForEndpoint(use.service.id, use.endpoint.id)`（与其他 `whereType<String>()` 过滤部分连接）。
 - **备注：** 按*组合*服务 id 和端点 id 匹配——引用相同服务但不同端点的路由不匹配。
 
-### `void initState()` <a id="initstate-quickaccessroutedialogstate"></a>
-- **种类：** `_QuickAccessRouteDialogState` 的方法（组件生命周期覆盖）。因两者都命名 `initState`，与上面 [`_ServiceListPageState.initState`](#initstate) 消歧。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1140 行）。
-- **用途：** 创建对话框文本控制器并播种默认源服务/端点选择。
-- **输入：** 无。
-- **返回：** 无。
-- **副作用：** 实例化四个 `TextEditingController`；设置 `_sourceServiceId`/`_sourceEndpointId`。
-- **算法：** 1. `super.initState()`。2. 创建 `_targetsCtrl`/`_remoteHostCtrl`/`_remotePortCtrl`/`_notesCtrl`。3. 默认 `_sourceServiceId` 为 `widget.initialService?.id`，回退 `widget.services` 第一条目。4. 默认 `_sourceEndpointId` 为解析源第一端点 id。
-- **用法：** `_QuickAccessRouteDialog` 状态创建时自动调用，如 [`_addAccessRoute`](#addaccessroute) 的 `showDialog(... builder: (context) => _QuickAccessRouteDialog(...))` 调用。
-- **备注：** 对应 `dispose()`（第 1157 行）释放全部四个控制器。与外层页面不同，此对话框不注册 `AutoSyncService`——它是短命模态表单，非持久页面。
-
-### `List<ServiceRoute> _buildRoutes()` <a id="buildroutes"></a>
-- **种类：** `_QuickAccessRouteDialogState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1181 行）。
-- **用途：** 组装当前表单状态描述的单个 `ServiceRoute`，准备好交回调用方。
-- **输入：** 无（读取对话框表单状态字段）。
-- **返回：** `List<ServiceRoute>` — 未选源服务时空，否则单元素列表。
-- **副作用：** 无（纯构造）。
-- **算法：** 1. 解析 `_selectedSource`；`null` 返回 `const []`。2. 经 [`_splitTargets`](#splittargets) 把 `_targetsCtrl.text` 拆分为目标。3. 经 [`_buildHop`](#buildhop)`(_method.routeMethod)` 构建单跳。4. 构造一个 `name` 来自 `serviceRouteGeneratedName`、`finalUrl` 是第一目标、`extraJson` 经 `serviceRouteExtraJsonWithTargets` 携带任何剩余目标的 `ServiceRoute`。
-- **用法：** `_submit` 中 `Navigator.of(context).pop(_buildRoutes());`。
-- **备注：** 尽管名字/返回类型复数，这总是构建**至多一个** `ServiceRoute`——快速访问流程每次提交只创建一个带单跳的路由，按 [快速访问路由创建 vs 高级编辑器](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor)。
-
-### `ServiceRouteHop _buildHop(ServiceRouteMethod method)` <a id="buildhop"></a>
-- **种类：** `_QuickAccessRouteDialogState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1211 行）。
-- **用途：** 构建匹配当前所选快速访问方法的单跳 `ServiceRouteHop`。
-- **输入：** `method`。
-- **返回：** `ServiceRouteHop`。
-- **副作用：** 无。
-- **算法：** `_method.isPortMapping`（FRP 或路由器端口转发）时：构建带 `_relayServiceId`/`_remoteDeviceId` 加解析 `_remoteHostCtrl`/`_remotePortCtrl` 文本（未选中继服务时回退方法名标签）的 `ServiceRouteHopType.portForward` 跳。否则：按对 `method` 的 `switch` 挑跳类型（`direct` → `manual`；`caddy`/`nginx`/`traefik` → `reverseProxy`；`routerPortForward` → `portForward`；其他一切，即隧道风格方法 `frp`/`pangolin`/`cloudflareTunnel`/`tailscaleFunnel`/`custom` → `tunnel`），带 `serviceId: _relayServiceId` 和相同标签回退。
-- **用法：** [`_buildRoutes`](#buildroutes) 中 `_buildHop(method)`。
-- **备注：** 实现 [服务与拓扑 — FRP 风格入口/公共端口建模](../../../../features/services-topology.md#frp-style-ingresspublic-port-modeling) 描述的 FRP 入口/公共端口建模拆分——这里端口映射分支产生*入口*端口跳；配对的公共远程入口端口来自单独 `_remoteHostCtrl`/`_remotePortCtrl` 字段，非第二个跳。
-
-### `List<ServiceNode> _relayServiceOptions()` <a id="relayserviceoptions"></a>
-- **种类：** `_QuickAccessRouteDialogState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1482 行）。
-- **用途：** 列出"经由"下拉候选中继服务，所选方法是端口映射方法时偏好 FRP 类服务在前。
-- **输入：** 无（读取 `widget.services`、`_sourceServiceId`、`_method`）。
-- **返回：** `List<ServiceNode>` — 除所选源外的每个服务，排序。
-- **副作用：** 无。
-- **算法：** 1. 过滤掉当前所选源服务。2. 排序：`_method.isPortMapping` 时 `isFrpLikeService`（[`service_access_patterns.md`](../services/service_access_patterns.md#isfrplikeservice)）为 `true` 的服务排在 `false` 前；否则（或作为打破平局）不区分大小写比较名。
-- **用法：** 填充 `build` 中继服务下拉 `items`。
-- **备注：** FRP 偏好排序只是 UX 便利（先浮出可能正确的中继）——不过滤非 FRP 类服务；任何服务仍可选。
-
 ### `void _ensureLayout(_TopologyLayoutRequest request)` <a id="ensurelayout"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1595 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1111 行）。
 - **用途：** 为请求安排延迟布局计算，除非相同请求已在途。
 - **输入：** `request`。
 - **返回：** 无。
@@ -241,7 +181,7 @@
 
 ### `Future<void> _calculateLayout(_TopologyLayoutRequest request, int generation)` <a id="calculatelayout"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1609 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1125 行）。
 - **用途：** 让出一帧后为一个请求运行拓扑布局引擎，仍是最新请求时缓存结果。
 - **输入：** `request`；`generation` — 此计算被安排时捕获的 `_layoutGeneration` 值。
 - **返回：** `Future<void>`。
@@ -252,7 +192,7 @@
 
 ### `void _showNodeDetails(BuildContext context, ServiceTopologyNode node)` <a id="shownodedetails"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1732 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1248 行）。
 - **用途：** 解析点击拓扑节点的设备/服务/相关路由并在带编辑/添加访问操作的底部面板显示。
 - **输入：** `context`、`node`。
 - **返回：** `void`。
@@ -263,7 +203,7 @@
 
 ### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth})` <a id="topologylayoutrequest-new"></a>
 - **种类：** 构造函数。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1863 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1383 行）。
 - **用途：** 创建用作拓扑布局缓存键的值。
 - **输入：** `graph`、`routes`、`viewportWidth`。
 - **返回：** 新 `_TopologyLayoutRequest`。
@@ -274,7 +214,7 @@
 
 ### `bool operator ==(Object other)` <a id="equals"></a>
 - **种类：** `_TopologyLayoutRequest` 的运算符。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1875 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1395 行）。
 - **用途：** 为缓存复用目的比较两个布局请求。
 - **输入：** `other`。
 - **返回：** `bool`。
@@ -285,7 +225,7 @@
 
 ### `int get hashCode` <a id="hashcode"></a>
 - **种类：** `_TopologyLayoutRequest` 的 getter。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1888 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1408 行）。
 - **用途：** 产生与上面基于身份的 `==` 一致的哈希码。
 - **输入：** 无。
 - **返回：** `int`。
@@ -296,7 +236,7 @@
 
 ### `Future<void> _exportTopologyImage()` <a id="exporttopologyimage"></a>
 - **种类：** `_ServiceTopologyPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 1940 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1460 行）。
 - **用途：** 把拓扑画布（经其 `RepaintBoundary`）捕获为 PNG 并交给平台适当分享/保存流程。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -307,7 +247,7 @@
 
 ### `void paint(Canvas canvas, Size size)` <a id="paint"></a>
 - **种类：** `_ServiceTopologyEdgePainter` 的方法（`CustomPainter` 覆盖）。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 2220 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1740 行）。
 - **用途：** 把每条图边路由折线和箭头绘制到画布。
 - **输入：** `canvas`；`size`（不直接使用——布局已带绝对坐标）。
 - **返回：** 无。
@@ -318,7 +258,7 @@
 
 ### `void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points)` <a id="drawpolyline"></a>
 - **种类：** `_ServiceTopologyEdgePainter` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 2239 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1759 行）。
 - **用途：** 绘制一条边多段路径加其末端三角箭头。
 - **输入：** `canvas`、`paint`、`points` — 路由折线（2 个或更多点）。
 - **返回：** `void`。
@@ -329,7 +269,7 @@
 
 ### `String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node)` <a id="nodesubtitle"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 2300 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1820 行）。
 - **用途：** 返回拓扑节点卡片在其标签下显示的副标题。
 - **输入：** `context`、`node`。
 - **返回：** `String?` — 无可显示内容时为 null。
@@ -338,20 +278,9 @@
 - **用法：** `_TopologyNodeCard.build` 的完整卡片副标题，与车道标签连接。
 - **备注：** 图构建器在中继的 `detail` 中存储原始枚举名；在渲染时再本地化，使 [`service_analysis.dart`](../services/service_analysis.md) 保持与语言无关。
 
-### `List<String> _splitTargets(String value)` <a id="splittargets"></a>
-- **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 2314 行）。
-- **用途：** 把自由形式、换行/逗号分隔访问目标字符串拆分为干净列表。
-- **输入：** `value` — 快速访问对话框目标字段原始文本。
-- **返回：** `List<String>` — 修剪、非空条目。
-- **副作用：** 无。
-- **算法：** 按正则 `[\n,]+` 拆分；修剪每块；丢弃空结果。
-- **用法：** [`_QuickAccessRouteDialogState._buildRoutes`](#buildroutes) 中 `_splitTargets(_targetsCtrl.text)`。
-- **备注：** 接受换行或逗号分隔输入（或混合），因此用户可任一种方式粘贴域列表。
-
 ### `String _compactTopologyLabel(ServiceTopologyNode node)` <a id="compacttopologylabel"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 2325 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1834 行）。
 - **用途：** 把拓扑节点标签/详情缩短为适合紧凑端口 chip 的短字符串。
 - **输入：** `node`。
 - **返回：** `String`。
@@ -362,7 +291,7 @@
 
 ### `IconData _iconForTopologyNode(ServiceTopologyNode node, List<ServiceNode> services, List<Device> devices)` <a id="iconfortopologynode"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 2341 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1850 行）。
 - **用途：** 基于 kind 和（可解析时）其底层设备/服务解析拓扑节点要显示的图标。
 - **输入：** `node`、`services`、`devices`。
 - **返回：** `IconData`。

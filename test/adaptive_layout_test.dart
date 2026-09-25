@@ -136,6 +136,23 @@ void main() {
     });
   });
 
+  group('access pattern cards', () {
+    test('phones keep two cards per row, wide sections three', () {
+      expect(accessPatternColumns(328), 2); // 360 dp phone, 360 − 32
+      expect(accessPatternColumns(380), 2); // Pixel 9, 412 − 32
+      expect(accessPatternColumns(672), 3); // Z Fold 8 portrait, 704 − 32
+      expect(accessPatternColumns(883), 3); // Pixel 9 landscape, 915 − 32
+      expect(accessPatternColumns(0), 1);
+    });
+
+    test('the two-pane left pane holds one or two cards', () {
+      // The guided page's left pane is editFormLeftPaneWidth less 32 padding.
+      expect(accessPatternColumns(268), 1); // 600 × 480 split floor
+      expect(accessPatternColumns(360), 2); // Z Fold 8 landscape, 933 wide
+      expect(accessPatternColumns(448), 2); // desktop, pane capped at 480
+    });
+  });
+
   group('topology card actions row', () {
     test('is exclusive at its boundary', () {
       expect(useTopologyActionsRow(679), isFalse);

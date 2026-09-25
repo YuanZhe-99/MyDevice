@@ -167,23 +167,23 @@
 - **用法：**
   ```dart
   Navigator.pop(
-    ctx,
+    context,
     ServiceEndpoint(
       id: initial?.id,
-      label: _emptyToNull(labelCtrl.text),
-      protocol: protocol,
-      transport: transport,
-      bindAddress: _emptyToNull(bindCtrl.text),
-      port: int.tryParse(portCtrl.text.trim()),
-      portEnd: int.tryParse(portEndCtrl.text.trim()),
-      path: _emptyToNull(pathCtrl.text),
-      scope: scope,
-      isPrimary: primary,
+      label: _emptyToNull(_labelCtrl.text),
+      protocol: _protocol,
+      transport: _transport,
+      bindAddress: _emptyToNull(_bindCtrl.text),
+      port: int.tryParse(_portCtrl.text.trim()),
+      portEnd: int.tryParse(_portEndCtrl.text.trim()),
+      path: _emptyToNull(_pathCtrl.text),
+      scope: _scope,
+      isPrimary: _primary,
       extraJson: initial?.extraJson ?? const {},
     ),
   );
   ```
-  （来自 `service_edit_page.dart` 的端点增/改对话框；也 `_applyTemplate` 复制 [`ServiceTemplate`](../services/service_template_service.md#servicetemplate-new) 端点时构造）
+  （来自 `service_endpoint_dialog.dart` 的 `_submit`——服务编辑器和引导式访问路径页共用的端点增/改对话框；也由 `service_edit_page.dart` 的 `_assignTemplate` 复制 [`ServiceTemplate`](../services/service_template_service.md#servicetemplate-new) 端点时构造）
 - **备注：** 传 `id: initial?.id`（既有端点 id，或新端点 `null`）正是让编辑端点在原处更新、而非对按 id 匹配端点的东西看起来像删除-加-添加的东西。
 
 ### `ServiceEndpoint copyWith({...})` <a id="serviceendpoint-copywith"></a>
@@ -339,16 +339,21 @@
 - **用法：**
   ```dart
   return ServiceRouteHop(
+    id: base?.id,
     type: ServiceRouteHopType.portForward,
-    method: method,
-    serviceId: _relayServiceId,
-    deviceId: _remoteDeviceId,
-    label: _relayServiceId == null ? serviceRouteMethodLabel(method) : null,
-    host: _emptyToNull(_remoteHostCtrl.text),
-    port: int.tryParse(_remotePortCtrl.text.trim()),
+    method: ServiceRouteMethod.frp,
+    serviceId: relayServiceId,
+    endpointId: ingress?.id,
+    deviceId: relay?.deviceId,
+    label: relayServiceId == null
+        ? serviceRouteMethodLabel(ServiceRouteMethod.frp)
+        : null,
+    host: _trimmedOrNull(publicHost),
+    port: publicPort,
+    extraJson: hopExtra,
   );
   ```
-  （来自 `service_list_page.dart` 的 `_buildHop`，快速访问路由创建流程的单跳构建器——见 [服务与拓扑 — 快速访问路由创建 vs 高级编辑器](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor)；也由 `service_route_edit_page.dart` 的高级多跳编辑器对话框直接构造）
+  （来自 `service_access_patterns.dart` 中的 `ServiceAccessDraft._accessHop`，即引导式访问路径流程的跳构建器——见 [服务与拓扑 — 添加访问路径](../../../../features/services-topology.md#adding-an-access-path)；也由 `service_route_edit_page.dart` 的高级多跳编辑器对话框直接构造）
 - **备注：** 无。
 
 ### `ServiceRouteHop copyWith({...})` <a id="serviceroutehop-copywith"></a>
@@ -421,7 +426,7 @@
     extraJson: serviceRouteExtraJsonWithTargets(existing?.extraJson ?? const {}, targets),
   );
   ```
-  （来自 `service_route_edit_page.dart` 的保存处理器；路由 `name` 总是经 [`serviceRouteGeneratedName`](../services/service_analysis.md#serviceroutegeneratedname) 机器生成而非用户输入——见 [服务与拓扑 — 快速访问路由创建 vs 高级编辑器](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor)）
+  （来自 `service_route_edit_page.dart` 的保存处理器；路由 `name` 总是经 [`serviceRouteGeneratedName`](../services/service_analysis.md#serviceroutegeneratedname) 机器生成而非用户输入——见 [服务与拓扑 — 添加访问路径](../../../../features/services-topology.md#adding-an-access-path)）
 - **备注：** `finalUrl` 只为向后兼容存储第一/主目标；共享相同访问路径的额外分组 URL 住在 `extraJson['publicTargets']`，由 [`serviceRouteExtraJsonWithTargets`](../services/service_analysis.md#servicerouteextrajsonwithtargets) 写入而非此构造函数直接。
 
 ### `ServiceRoute copyWith({...})` <a id="serviceroute-copywith"></a>

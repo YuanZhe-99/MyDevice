@@ -2,7 +2,7 @@
 
 [服务与拓扑](../../../../features/services-topology.md) 描述的服务功能的纯计算伴生和 [service_topology_layout.md](service_topology_layout.md) 的布局引擎：从保存的服务/路由构建 `ServiceTopologyGraph`（节点/边）、检测端口冲突和悬空引用，并提供 UI 和 `import_export_service.dart` 的 Markdown 导出共享的访问目标/路由命名辅助。自 1.5.6 起，它还负责路由访问车道覆盖（`extraJson['accessLane']`，见 [数据格式](../../../../data-formats.md#extrajson-unknown-field-preservation)）、与 [service_access_patterns.md](service_access_patterns.md) 共享的默认 FRP 入口，以及拓扑用于节点详情的 `relatedRoutesForNode`。
 
-**行数说明：** `grep -c 'Purpose:' service_analysis.dart` 返回 **35**，但其中 2 个块被编写它们的文档注释工具错附到非声明——一个坐在 `listServicePortUses` 内调用 `uses.sort(...)` 上方（非声明），一个坐在 `serviceRouteAccessTargets` 内调用 `addTarget(route.finalUrl);` 上方（`addTarget` 的真实声明在几行上方，已带自己正确块）。因此只有 **33** 个块文档化真实声明。本文件共 **57** 个真实声明（10 个类成员 + 47 个顶层/嵌套函数），因此 **24** 个未文档化——同样的算术也对账（33 文档化 + 24 未文档化 = 57；33 文档化 + 2 错附 = 35 原始 grep 匹配）。1.5.6 新增了八个块：`buildServiceTopology`、`serviceAccessLaneForRoute` 和 `_portMappingIngressEndpoint` 补上了各自的块，下面五个新声明也自带块。
+**行数说明：** `grep -c 'Purpose:' service_analysis.dart` 返回 **37**，但其中 2 个块被编写它们的文档注释工具错附到非声明——一个坐在 `listServicePortUses` 内调用 `uses.sort(...)` 上方（非声明），一个坐在 `serviceRouteAccessTargets` 内调用 `addTarget(route.finalUrl);` 上方（`addTarget` 的真实声明在几行上方，已带自己正确块）。因此只有 **35** 个块文档化真实声明。本文件共 **59** 个真实声明（10 个类成员 + 49 个顶层/嵌套函数），因此 **24** 个未文档化——同样的算术也对账（35 文档化 + 24 未文档化 = 59；35 文档化 + 2 错附 = 37 原始 grep 匹配）。1.5.6 新增了十个块：`buildServiceTopology`、`serviceAccessLaneForRoute` 和 `_portMappingIngressEndpoint` 补上了各自的块，下面七个新声明也自带块。
 
 ## 声明
 
@@ -61,6 +61,8 @@
 | [`serviceRouteExtraJsonWithTargets`](#servicerouteextrajsonwithtargets) | 顶层函数 | A | 把分组目标写回路由 `extraJson`。 |
 | [`serviceRouteDisplayTarget`](#serviceroutedisplaytarget) | 顶层函数 | A | 挑路由主显示字符串。 |
 | [`serviceRouteGeneratedName`](#serviceroutegeneratedname) | 顶层函数 | A | 生成路由内部显示名。 |
+| [`serviceRouteChainPreview`](#serviceroutechainpreview) | 顶层函数 | A | 用一行描述路由的整条链，供两种编辑器的预览使用。 |
+| `withPort`（嵌套于 `serviceRouteChainPreview`） | 本地函数 | B | 把端点的端口追加到名称后。 |
 | `serviceRouteTargetsSummary` | 顶层函数 | B | 对路由的 `_targetsSummary` 薄包装。 |
 | [`_targetsSummary`](#targetssummary) | 顶层函数 | A | 用"+N more"截断连接目标标签。 |
 | [`compactAccessTargetLabel`](#compactaccesstargetlabel) | 顶层函数 | A | 缩短 URL/目标为紧凑 `host[:port][path]` 标签。 |
@@ -401,8 +403,18 @@
 - **用法：** 被路由编辑器自动生成路由名调用。
 - **备注：** 按本仓库文档化约定，路由名内部生成——面向用户的路由描述属于 `notes`，非此生成名。
 
+### `String serviceRouteChainPreview(ServiceRoute route, {required List<ServiceNode> services, List<Device> devices = const [], String Function(ServiceRouteHop hop)? hopFallback})` <a id="serviceroutechainpreview"></a>
+- **种类：** 顶层函数。**来源：** 第 1263 行。
+- **用途：** 用一行描述路由的整条链。
+- **输入：** `route`；`services`；`devices` — 可选，为运行在源以外位置的跳服务标出其设备；`hopFallback` — 为既没有服务也没有自身标签的跳命名。
+- **返回：** 用 `' -> '` 连接的各步；没有任何一步时为 `'-'`。
+- **副作用：** 无。
+- **算法：** 先是源服务及其端点的端口；然后逐跳：跳的服务及其端点的端口——端口映射跳取 `_portMappingIngressEndpoint` 选出的入口，使预览与拓扑一致——该服务运行在别处时追加 `(device)`；否则取跳的标签；再否则取 `hopFallback`（默认：方法标签，否则原始类型名）。与跳方法生成的英语标签相同的标签视为没有标签，使调用方可以将其本地化。端口映射的公网 `host:port` 作为独立一步紧随其后；访问目标收尾整条链。
+- **用法：** 引导式访问路径页的预览卡片和高级路由编辑器的 `_routePreview`，两者都传入 `serviceHopFallbackLabel`。
+- **备注：** 1.5.6 中取代了高级编辑器的内联预览，使两种编辑器用相同的措辞描述路由。
+
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **种类：** 顶层函数。**来源：** 第 1240 行。
+- **种类：** 顶层函数。**来源：** 第 1321 行。
 - **用途：** 把访问目标列表连接为紧凑、截断摘要字符串。
 - **输入：** `targets`；`maxItems`（默认 3）。**返回：** `String` — `targets` 为空时空。
 - **副作用：** 无。
@@ -411,7 +423,7 @@
 - **备注：** 无。
 
 ### `String compactAccessTargetLabel(String target)` <a id="compactaccesstargetlabel"></a>
-- **种类：** 顶层函数。**来源：** 第 1262 行。
+- **种类：** 顶层函数。**来源：** 第 1329 行。
 - **用途：** 把 URL 类访问目标缩短为紧凑 `host[:port][path]` 标签供显示，或非可解析绝对 URL 时原样返回。
 - **输入：** `target`。**返回：** `String`。
 - **副作用：** 无。

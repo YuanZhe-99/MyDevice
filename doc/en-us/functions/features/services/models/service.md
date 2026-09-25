@@ -231,24 +231,25 @@ getter and a `fromJson` parser, so all nine appear.
 - **Usage:**
   ```dart
   Navigator.pop(
-    ctx,
+    context,
     ServiceEndpoint(
       id: initial?.id,
-      label: _emptyToNull(labelCtrl.text),
-      protocol: protocol,
-      transport: transport,
-      bindAddress: _emptyToNull(bindCtrl.text),
-      port: int.tryParse(portCtrl.text.trim()),
-      portEnd: int.tryParse(portEndCtrl.text.trim()),
-      path: _emptyToNull(pathCtrl.text),
-      scope: scope,
-      isPrimary: primary,
+      label: _emptyToNull(_labelCtrl.text),
+      protocol: _protocol,
+      transport: _transport,
+      bindAddress: _emptyToNull(_bindCtrl.text),
+      port: int.tryParse(_portCtrl.text.trim()),
+      portEnd: int.tryParse(_portEndCtrl.text.trim()),
+      path: _emptyToNull(_pathCtrl.text),
+      scope: _scope,
+      isPrimary: _primary,
       extraJson: initial?.extraJson ?? const {},
     ),
   );
   ```
-  (from `service_edit_page.dart`'s endpoint add/edit dialog; also constructed by
-  `_applyTemplate` when copying a
+  (from `service_endpoint_dialog.dart`'s `_submit` — the endpoint add/edit dialog shared by the
+  service editor and the guided access-path page; also constructed by `service_edit_page.dart`'s
+  `_assignTemplate` when copying a
   [`ServiceTemplate`](../services/service_template_service.md#servicetemplate-new)'s
   endpoints)
 - **Notes:** Passing `id: initial?.id` (the existing endpoint's id, or `null` for a new
@@ -501,18 +502,23 @@ getter and a `fromJson` parser, so all nine appear.
 - **Usage:**
   ```dart
   return ServiceRouteHop(
+    id: base?.id,
     type: ServiceRouteHopType.portForward,
-    method: method,
-    serviceId: _relayServiceId,
-    deviceId: _remoteDeviceId,
-    label: _relayServiceId == null ? serviceRouteMethodLabel(method) : null,
-    host: _emptyToNull(_remoteHostCtrl.text),
-    port: int.tryParse(_remotePortCtrl.text.trim()),
+    method: ServiceRouteMethod.frp,
+    serviceId: relayServiceId,
+    endpointId: ingress?.id,
+    deviceId: relay?.deviceId,
+    label: relayServiceId == null
+        ? serviceRouteMethodLabel(ServiceRouteMethod.frp)
+        : null,
+    host: _trimmedOrNull(publicHost),
+    port: publicPort,
+    extraJson: hopExtra,
   );
   ```
-  (from `service_list_page.dart`'s `_buildHop`, the quick access-route creation flow's
-  single-hop builder — see
-  [Services and Topology](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor);
+  (from `ServiceAccessDraft._accessHop` in `service_access_patterns.dart`, the guided
+  access-path flow's hop builder — see
+  [Services and Topology](../../../../features/services-topology.md#adding-an-access-path);
   also constructed directly by `service_route_edit_page.dart`'s advanced multi-hop editor
   dialog)
 - **Notes:** None.
@@ -615,11 +621,11 @@ getter and a `fromJson` parser, so all nine appear.
   machine-generated via
   [`serviceRouteGeneratedName`](../services/service_analysis.md#serviceroutegeneratedname)
   rather than user-typed — see
-  [Services and Topology](../../../../features/services-topology.md#quick-access-route-creation-vs-the-advanced-editor))
+  [Services and Topology](../../../../features/services-topology.md#adding-an-access-path))
 - **Notes:** `finalUrl` stores only the first/primary target for backward compatibility;
   additional grouped URLs sharing the same access path live in
   `extraJson['publicTargets']`, written by
-  [`serviceRouteExtraJsonWithTargets`](../services/service_analysis.md#serviceRouteExtraJsonWithTargets)
+  [`serviceRouteExtraJsonWithTargets`](../services/service_analysis.md#servicerouteextrajsonwithtargets)
   rather than by this constructor directly.
 
 ### `ServiceRoute copyWith({...})` <a id="serviceroute-copywith"></a>

@@ -2984,7 +2984,7 @@ abstract class AppLocalizations {
   /// No description provided for @servicePatternCloudflareTunnelDesc.
   ///
   /// In en, this message translates to:
-  /// **'Published through a Cloudflare Tunnel connector, no open ports.'**
+  /// **'Published through a Cloudflare Tunnel, no open ports.'**
   String get servicePatternCloudflareTunnelDesc;
 
   /// No description provided for @servicePatternPangolinDesc.
@@ -3010,6 +3010,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shared to the internet with Tailscale Funnel.'**
   String get servicePatternTailscaleFunnelDesc;
+
+  /// No description provided for @serviceAccessPathAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add access path'**
+  String get serviceAccessPathAdd;
+
+  /// No description provided for @serviceAccessPathEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit access path'**
+  String get serviceAccessPathEdit;
+
+  /// No description provided for @serviceAccessStepSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Service and port'**
+  String get serviceAccessStepSource;
+
+  /// No description provided for @serviceAccessStepPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'How is it reached?'**
+  String get serviceAccessStepPattern;
+
+  /// No description provided for @serviceAccessStepDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get serviceAccessStepDetails;
+
+  /// No description provided for @serviceAccessPickService.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a service'**
+  String get serviceAccessPickService;
+
+  /// No description provided for @serviceAccessSearchServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Search services, devices or ports'**
+  String get serviceAccessSearchServices;
+
+  /// No description provided for @serviceAccessSuggested.
+  ///
+  /// In en, this message translates to:
+  /// **'Suggested'**
+  String get serviceAccessSuggested;
+
+  /// No description provided for @serviceAccessOtherServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Other services'**
+  String get serviceAccessOtherServices;
+
+  /// No description provided for @serviceAccessNoEndpointsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No ports recorded yet — add one'**
+  String get serviceAccessNoEndpointsHint;
+
+  /// No description provided for @serviceAccessCustomPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom / multi-hop'**
+  String get serviceAccessCustomPattern;
+
+  /// No description provided for @serviceAccessCustomPatternDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Build any chain hop by hop in the advanced editor.'**
+  String get serviceAccessCustomPatternDesc;
+
+  /// No description provided for @serviceAccessReachability.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can reach it'**
+  String get serviceAccessReachability;
+
+  /// No description provided for @serviceAccessViaProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Through a reverse proxy first'**
+  String get serviceAccessViaProxy;
+
+  /// No description provided for @serviceAccessViaProxyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For example Caddy on the same machine, then the tunnel.'**
+  String get serviceAccessViaProxyHint;
+
+  /// No description provided for @serviceAccessProxyService.
+  ///
+  /// In en, this message translates to:
+  /// **'Proxy service'**
+  String get serviceAccessProxyService;
+
+  /// No description provided for @serviceAccessCreateProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Create proxy service…'**
+  String get serviceAccessCreateProxy;
+
+  /// No description provided for @serviceAccessFrpServer.
+  ///
+  /// In en, this message translates to:
+  /// **'FRP server'**
+  String get serviceAccessFrpServer;
+
+  /// No description provided for @serviceAccessRelayOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Relay service (optional)'**
+  String get serviceAccessRelayOptional;
+
+  /// No description provided for @serviceAccessCreateRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Create relay service…'**
+  String get serviceAccessCreateRelay;
+
+  /// No description provided for @serviceAccessIngress.
+  ///
+  /// In en, this message translates to:
+  /// **'Ingress port'**
+  String get serviceAccessIngress;
+
+  /// No description provided for @serviceAccessIngressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The port your FRP client connects to.'**
+  String get serviceAccessIngressHint;
+
+  /// No description provided for @serviceAccessRouter.
+  ///
+  /// In en, this message translates to:
+  /// **'Router device (optional)'**
+  String get serviceAccessRouter;
+
+  /// No description provided for @serviceAccessPublicHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Public host / DDNS (optional)'**
+  String get serviceAccessPublicHost;
+
+  /// No description provided for @serviceAccessPublicPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Public port'**
+  String get serviceAccessPublicPort;
+
+  /// No description provided for @serviceAccessUseSuggestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {target}'**
+  String serviceAccessUseSuggestion(String target);
+
+  /// No description provided for @serviceAccessMissingSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the service to reach.'**
+  String get serviceAccessMissingSource;
+
+  /// No description provided for @serviceAccessMissingProxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the reverse proxy service.'**
+  String get serviceAccessMissingProxy;
+
+  /// No description provided for @serviceAccessMissingRelay.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the relay service.'**
+  String get serviceAccessMissingRelay;
+
+  /// No description provided for @serviceAccessInvalidPort.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a public port between 1 and 65535.'**
+  String get serviceAccessInvalidPort;
+
+  /// No description provided for @serviceAccessSaveFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the highlighted fields first.'**
+  String get serviceAccessSaveFirst;
+
+  /// No description provided for @serviceAccessWarningNoIngress.
+  ///
+  /// In en, this message translates to:
+  /// **'This FRP server has no endpoint to use as its ingress.'**
+  String get serviceAccessWarningNoIngress;
+
+  /// No description provided for @serviceAccessWarningSameDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'The FRP server runs on the same device as the service.'**
+  String get serviceAccessWarningSameDevice;
+
+  /// No description provided for @serviceAccessAdvancedEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced editor'**
+  String get serviceAccessAdvancedEditor;
+
+  /// No description provided for @serviceAccessGuidedEditor.
+  ///
+  /// In en, this message translates to:
+  /// **'Guided editor'**
+  String get serviceAccessGuidedEditor;
+
+  /// No description provided for @serviceAccessLaneField.
+  ///
+  /// In en, this message translates to:
+  /// **'Topology lane'**
+  String get serviceAccessLaneField;
+
+  /// No description provided for @serviceAccessLaneAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto (from the method)'**
+  String get serviceAccessLaneAuto;
 
   /// No description provided for @backupModuleServices.
   ///

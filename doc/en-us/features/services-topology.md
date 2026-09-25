@@ -82,14 +82,55 @@ after the source endpoint rather than a single chain, and same-device public rev
 proxy services (e.g. Caddy) stay local but can be placed later in routed paths so
 arrows keep moving left-to-right.
 
-## Quick access-route creation vs. the advanced editor
+## Adding an access path
 
-**Quick access-route creation** is the default, simple flow for adding direct,
-reverse-proxy, tunnel, FRP, and router port-forward access paths — it covers the common
-cases without asking the user to build a multi-hop chain by hand. The **advanced route
-editor** remains available for manual multi-hop chains that don't fit one of those
-templates. Route *names* are generated internally (hidden from the user); user-facing
-route descriptions belong in `notes` instead.
+Every "Add access" button — the services app bar, the overview, the topology card, a service's
+route group and tile menu, and a topology node's details — opens the **guided access-path page**
+(`service_access_path_page.dart`, since 1.5.6; it replaced a one-hop dialog). It is one scrolling
+form in three steps, and saves exactly one route:
+
+1. **Service and port** — the source service, picked in a searchable sheet grouped by device,
+   and one of its endpoints as a chip. A service with a single or a primary endpoint has it
+   preselected; "Add endpoint" saves a new endpoint onto the service at once.
+2. **How is it reached?** — one card per [access pattern](#access-patterns), plus "Custom /
+   multi-hop", which opens the advanced editor.
+3. **Details** — only what the chosen pattern needs:
+   - **Who can reach it** — LAN, VPN, Public, or Public with login: the *reachability*, which
+     sets the access level and pins the [lane](#lane-override). Choosing a pattern applies its
+     default (direct ⇒ LAN, everything else ⇒ public) until the user picks one.
+   - **Through a reverse proxy first** — for the tunnel and port-mapping patterns, puts the proxy
+     hop in front: the two-hop chain *app → Caddy → tunnel or FRP*.
+   - **Proxy and relay services** — picked in the same sheet with likely candidates first
+     (proxy-like services on the source's machine first; FRP-named services, on VPS devices
+     first, for FRP; Pangolin, Cloudflare and Tailscale services by name). A single obvious
+     candidate is preselected. "Create proxy service…" and "Create relay service…" open the
+     service editor on the Caddy or the pattern's own template and select what it saves.
+   - **Ingress port** (FRP) — the relay's endpoints as chips. The primary endpoint is
+     preselected, which is the ingress the topology inferred before the choice existed.
+   - **Public host and port** (FRP, router port forward) — the port is required. An FRP relay
+     whose device has exactly one network assignment prefills the host.
+   - **URL / domains** — required for the reverse proxy and the three tunnels, optional for port
+     mappings and for direct access, which is offered an address built from the source device's
+     LAN or VPN assignment and the endpoint (and takes it back out, untouched, if the user
+     switches to another pattern).
+
+A **preview card** shows the chain as it will be saved — e.g. `Jellyfin 8096 -> Caddy 443 -> FRP
+Server 7000 (Tokyo VPS) -> vps.example.com:443 -> media.example.com` — with its lane and access
+level, and **advisory warnings**: the overview's reference warnings that concern this route (a
+duplicate target, a public route without one) plus two FRP checks (a relay with no endpoint to
+act as the ingress, a relay on the source's own machine). Like port conflicts, warnings never
+block saving. Missing required fields do, and are pointed out on the fields themselves.
+
+Inline creation persists immediately: an endpoint or a service created from the page stays in the
+inventory even if the access path is then cancelled — both are valid inventory on their own.
+
+The **advanced route editor** remains for everything the patterns do not cover: three or more
+hops, hop notes, schemes and paths, a custom access level. The guided page hands its draft over
+with "Advanced editor"; the advanced editor offers "Guided editor" whenever its form fits a
+pattern, and its **Topology lane** dropdown writes or clears the lane override (*Auto* keeps the
+inference). Route *names* are still generated internally and hidden from the user — always in
+English, so a stored name never changes with the language of the device that saved it;
+user-facing descriptions belong in `notes`.
 
 ## Access patterns
 

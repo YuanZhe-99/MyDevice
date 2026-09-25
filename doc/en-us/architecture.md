@@ -45,7 +45,7 @@ overall repository layout of MyDevice!!!!!. For data-level details see
   `FlexSurfaceMode.levelSurfacesLowScaffold`, Material 3, and
   `NavigationDestinationLabelBehavior.onlyShowSelected` for the bottom nav bar. Light uses
   `blendLevel: 7` / `blendOnLevel: 10`; dark uses `blendLevel: 13` / `blendOnLevel: 20`.
-- **`flavor.dart`** — `AppFlavor` reads a compile-time `FLAVOR` dart-define
+- <a id="appflavor"></a>**`flavor.dart`** — `AppFlavor` reads a compile-time `FLAVOR` dart-define
   (`String.fromEnvironment('FLAVOR', defaultValue: 'full')`). `AppFlavor.isStore` is true
   only when the define is exactly `'store'`; `AppFlavor.isFull` is its negation. See
   [Online Search and Presets](features/online-search-and-presets.md) for how this gates

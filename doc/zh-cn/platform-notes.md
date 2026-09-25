@@ -38,7 +38,7 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - 本地经 `key.properties` 签名可选；CI 用 GitHub Secrets。
 - 拓扑 PNG 导出 iOS 用 `share_plus`、Android 用 `com.yuanzhe.my_device/share` 方法通道加 `FileProvider`、桌面用带复制/保存操作的预览（见 [服务与拓扑](features/services-topology.md)）。
 
-## 桌面本地 API 服务器
+## 桌面本地 API 服务器 <a id="desktop-local-api-server"></a>
 
 `lib/shared/services/local_api_server.dart`（`LocalApiServer`）只在桌面平台（Windows/macOS/Linux，从 `main()` 启动——见 [架构 — 入口点](architecture.md#entry-point-libmaindart)）运行基于 Shelf 的 HTTP 服务器。
 

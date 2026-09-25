@@ -43,7 +43,7 @@ DeviceLifecycleStatus get lifecycleStatus {
 (`BillingCycle.monthly` → `price.convertedAmount * 12`, `yearly` → `price.convertedAmount`
 directly) divided by 365.
 
-### Cascade rules on retire/sell/delete
+### Cascade rules on retire/sell/delete <a id="cascade-rules-on-retiresell-delete"></a>
 
 - Retired or sold devices must be removed from network assignments and dataset storage
   links, and excluded from network/storage pickers.

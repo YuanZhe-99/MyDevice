@@ -17,14 +17,19 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| `DeviceStorage` | class | B | Static-only storage hub: the device list, the app directory, and `storage_config.json`. |
+| `_dataFileName` | static const (private) | B | `'device_data.json'`, the device list's file name. |
+| `_configFileName` | static const (private) | B | `'storage_config.json'`, the local settings file name. |
+| `_customPath` | static field (private) | B | Cached custom storage path; `null` means the default directory. |
+| `_configLoaded` | static field (private) | B | Whether `_loadCustomPath` already ran in this process. |
 | [`_getDefaultAppDir`](#_getdefaultappdir) | static method (private) | A | Resolve (and create) the default `~/Documents/MyDevice` directory. |
 | [`_getConfigFile`](#_getconfigfile) | static method (private) | A | Resolve the `storage_config.json` file, always in the default directory. |
 | [`_loadCustomPath`](#_loadcustompath) | static method (private) | A | Load the custom storage path from config, once per process. |
 | [`getAppDir`](#getappdir) | static method | A | Resolve the app's data directory (custom path if configured, else default). |
 | [`getStoragePath`](#getstoragepath) | static method | A | Return the current storage directory's display path. |
-| [`setStoragePath`](#setstoragepath) | static method | A | Change the storage location, migrating data/backups/images if needed. |
+| [`setStoragePath`](#setstoragepath) | static method | A | Change the storage location and move the whole storage folder to it. |
 | [`_readConfigFromDefault`](#_readconfigfromdefault) | static method (private) | A | Read `storage_config.json` from the default (not custom) directory. |
-| [`_writeConfigToDefault`](#_writeconfigfromdefault) | static method (private) | A | Write `storage_config.json` to the default directory. |
+| [`_writeConfigToDefault`](#_writeconfigtodefault) | static method (private) | A | Write `storage_config.json` to the default directory. |
 | [`_getFile`](#_getfile) | static method (private) | A | Resolve a named file inside the current app directory. |
 | [`load`](#load) | static method | A | Load the persisted `DeviceData` (device list). |
 | [`save`](#save) | static method | A | Persist `DeviceData` and notify the auto-sync service. |
@@ -37,20 +42,29 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`setThemeMode`](#setthememode) | static method | A | Persist (or clear) the theme mode string. |
 | [`getLocaleTag`](#getlocaletag) | static method | A | Read the persisted locale tag. |
 | [`setLocaleTag`](#setlocaletag) | static method | A | Persist (or clear) the locale tag. |
-| [`_getListColumns`](#getlistcolumns) | static method | A | Read one list page's column preference from `storage_config.json`. |
-| [`_setListColumns`](#setlistcolumns) | static method | A | Persist one list page's column preference, removing the key for auto. |
-| `getDeviceListColumns` / `setDeviceListColumns` | static methods | B | `_getListColumns` / `_setListColumns` at `deviceListColumns`. |
-| `getNetworkListColumns` / `setNetworkListColumns` | static methods | B | The same at `networkListColumns`. |
-| `getDataSetListColumns` / `setDataSetListColumns` | static methods | B | The same at `dataSetListColumns`. |
-| `getServiceListColumns` / `setServiceListColumns` | static methods | B | The same at `serviceListColumns`; one preference serves the devices, routes and ports views. |
+| [`_getListColumns`](#getlistcolumns) | static method (private) | A | Read one list page's column preference from `storage_config.json`. |
+| [`_setListColumns`](#setlistcolumns) | static method (private) | A | Persist one list page's column preference, removing the key for auto. |
+| `getDeviceListColumns` | static method | B | `_getListColumns('deviceListColumns')`: the device list's column preference. |
+| `setDeviceListColumns` | static method | B | `_setListColumns('deviceListColumns', columns)`. |
+| `getNetworkListColumns` | static method | B | `_getListColumns('networkListColumns')`: the network list's column preference. |
+| `setNetworkListColumns` | static method | B | `_setListColumns('networkListColumns', columns)`. |
+| `getDataSetListColumns` | static method | B | `_getListColumns('dataSetListColumns')`: the dataset list's column preference. |
+| `setDataSetListColumns` | static method | B | `_setListColumns('dataSetListColumns', columns)`. |
+| `getServiceListColumns` | static method | B | `_getListColumns('serviceListColumns')`: one preference serves the devices, routes and ports views; the overview is always one column. |
+| `setServiceListColumns` | static method | B | `_setListColumns('serviceListColumns', columns)`. |
 
-Row count (26 rows, 30 declarations — the four paired accessor rows hold two each) matches `grep -c 'Purpose:' device_storage.dart` (30) exactly.
+Row count (35) is five more than `grep -c '/// Purpose:' device_storage.dart` (30). Each of the 30
+static methods, including each of the eight list-column accessors, has its own row and its own
+`Purpose:` block. The five extra rows are the `DeviceStorage` class itself, the private static
+consts `_dataFileName` and `_configFileName`, and the private static fields `_customPath` and
+`_configLoaded`, which carry an ordinary `///` description or none and are listed because every
+declaration appears in the table. Tier A: 22 rows.
 
 ## Documentation
 
 ### `static Future<Directory> _getDefaultAppDir()` <a id="_getdefaultappdir"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 29).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 31).
 - **Purpose:** Resolve the default `<Documents>/MyDevice` directory, creating it if missing.
 - **Inputs:** None.
 - **Returns:** `Future<Directory>`.
@@ -63,7 +77,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<File> _getConfigFile()` <a id="_getconfigfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 44).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 46).
 - **Purpose:** Resolve the `storage_config.json` file path, which always lives in the *default*
   app directory regardless of any configured custom storage path.
 - **Inputs:** None.
@@ -71,14 +85,14 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 - **Side effects:** None (does not create the file).
 - **Algorithm:** Join `_getDefaultAppDir()`'s path with `_configFileName`.
 - **Usage:** Called by [`_loadCustomPath`](#_loadcustompath), [`_readConfigFromDefault`](#_readconfigfromdefault),
-  and [`_writeConfigToDefault`](#_writeconfigfromdefault).
+  and [`_writeConfigToDefault`](#_writeconfigtodefault).
 - **Notes:** Deliberately bypasses `getAppDir()`/any custom path — this file must be discoverable
   even if the custom path it names is itself invalid or on unmounted storage, otherwise the app
   could never recover the storage path setting.
 
 ### `static Future<void> _loadCustomPath()` <a id="_loadcustompath"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 55).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 57).
 - **Purpose:** Load the custom storage path (if any) from `storage_config.json` into the static
   `_customPath` cache, exactly once per process.
 - **Inputs:** None.
@@ -96,7 +110,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<Directory> getAppDir()` <a id="getappdir"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 75).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 77).
 - **Purpose:** Resolve the app's current data directory — the configured custom path if one is
   set and non-empty, otherwise the default `<Documents>/MyDevice` directory.
 - **Inputs:** None.
@@ -116,7 +130,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<String> getStoragePath()` <a id="getstoragepath"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 93).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 95).
 - **Purpose:** Return the current storage directory's absolute path, for display in Settings.
 - **Inputs:** None.
 - **Returns:** `Future<String>`.
@@ -131,36 +145,45 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<bool> setStoragePath(String? newPath)` <a id="setstoragepath"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 105).
-- **Purpose:** Change the app's storage location, migrating existing data/backups/images to the
-  new location when the new location doesn't already have its own data.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 120).
+- **Purpose:** Change the app's storage location and move everything in the old storage folder to
+  the new one.
 - **Inputs:** `newPath` — the new custom path, or `null`/empty to revert to the default directory.
-- **Returns:** `Future<bool>` — `true` on success, `false` if any step throws.
-- **Side effects:** Persists `storagePath` to `storage_config.json` (in the default directory);
-  copies (then deletes) `device_data.json`/`network_data.json`/`dataset_data.json`/
-  `service_data.json`, plus the `backups/` and `images/` directories, from the old location to the
-  new one.
+- **Returns:** `Future<bool>` — `false` only when an exception escapes (for example while reading or
+  writing `storage_config.json`); a migration that left some entries behind still returns `true`.
+- **Side effects:** Sets `_customPath`; persists `storagePath` to the default directory's
+  `storage_config.json`; moves the old folder's contents into the new one through
+  `migrateStorageContents` from `myapps_data`
+  (`packages/myapps_data/lib/src/storage/storage_migration.dart`).
 - **Algorithm:** 1. Capture the current directory as `oldDir`. 2. Set `_customPath = newPath` and
-  persist it into `storage_config.json` (removing the key entirely when `newPath` is null/empty).
-  3. Resolve `newDir` via `getAppDir()`; if it's unchanged from `oldDir`, return `true` immediately
-  (no migration needed). 4. For each of the four data file names: if the new location already has
-  that file, leave it alone (its data wins); otherwise, if the old location has it, copy then delete
-  it (move semantics). 5. If an old `backups/` directory exists and the new location doesn't have
-  one yet, create the new one and move every file across, then remove the old directory. 6. Repeat
-  step 5 for `images/`. 7. Wrap the whole method in a `try`/`catch` returning `false` on any
-  exception.
+  persist it into `storage_config.json` via [`_readConfigFromDefault`](#_readconfigfromdefault) /
+  [`_writeConfigToDefault`](#_writeconfigtodefault), removing the key when `newPath` is null or
+  empty. 3. Resolve `newDir` via `getAppDir()`, which creates it; if its path equals `oldDir`'s,
+  return `true` (nothing to move). 4. `await migrateStorageContents(from: oldDir, to: newDir)`: every
+  top-level file and directory except `storage_config.json` is copied file by file into `newDir`
+  and each original deleted after its copy; source directories are removed only once empty. The
+  returned list of paths that could not be moved is discarded. 5. Return `true`; the whole body sits
+  in a `try`/`catch` that returns `false`.
 - **Usage:**
   ```dart
   final ok = await DeviceStorage.setStoragePath(pathToSet);
   ```
   (from `settings_page.dart`'s "change storage location" flow)
-- **Notes:** A location that already has its own data files for a given name is never overwritten
-  — the new location's copy always wins over migrating the old one, per file/directory, so pointing
-  the app at an existing MyDevice data folder adopts that folder's data rather than clobbering it.
+- **Notes:** The move covers the whole folder rather than an enumerated list: all four data files,
+  `images/`, `.sync_base/`, `backups/` including `backups/blobs/`, and `webdav_config.json`, so a
+  data file added later moves automatically. It replaced per-directory copies that left
+  `backups/blobs/` behind (restored backups lost their images) and missed `.sync_base/` entirely,
+  which let the next sync treat records other devices had deleted as new local records and
+  resurrect them. A file already present at the destination wins and its source copy is left in
+  place, so nothing is discarded on a guess about which copy is newer. `storage_config.json` stays
+  in the platform default directory because it holds the custom path itself. As a consequence, the
+  other keys in that file (theme, locale, default currency, list column preferences, and so on)
+  are not carried over: [`readConfig`](#readconfig) resolves against the new directory, where no
+  `storage_config.json` exists until a setting is written again.
 
 ### `static Future<Map<String, dynamic>> _readConfigFromDefault()` <a id="_readconfigfromdefault"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 185).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 153).
 - **Purpose:** Read `storage_config.json` from the default directory (used only for
   `storagePath` persistence, distinct from the general [`readConfig`](#readconfig)/
   [`writeConfig`](#writeconfig) pair which reads from the *current*, possibly custom, directory).
@@ -174,9 +197,9 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
   always live in the default directory so it can be found regardless of what it currently points
   to.
 
-### `static Future<void> _writeConfigToDefault(Map<String, dynamic> config)` <a id="_writeconfigfromdefault"></a>
+### `static Future<void> _writeConfigToDefault(Map<String, dynamic> config)` <a id="_writeconfigtodefault"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 199).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 167).
 - **Purpose:** Write `storage_config.json` to the default directory.
 - **Inputs:** `config`.
 - **Returns:** `Future<void>`.
@@ -189,7 +212,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<File> _getFile(String name)` <a id="_getfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 211).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 179).
 - **Purpose:** Resolve a named file inside the *current* app directory (respecting any custom
   storage path).
 - **Inputs:** `name` — a bare file name (e.g. `device_data.json`).
@@ -197,19 +220,19 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 - **Side effects:** None beyond `getAppDir()`'s directory-creation side effect.
 - **Algorithm:** `File(p.join((await getAppDir()).path, name))`.
 - **Usage:** Called by [`load`](#load), [`save`](#save), [`readConfig`](#readconfig),
-  [`writeConfig`](#writeconfig), and (indirectly, via `getAppDir`) by
-  [`exchange_rate_service.md`](exchange_rate_service.md)'s own file resolution.
+  and [`writeConfig`](#writeconfig). [`DeviceExchangeRateService._getFile`](exchange_rate_service.md#_getfile)
+  does not call it; it joins its own file name onto [`getAppDir`](#getappdir) directly.
 - **Notes:** None.
 
 ### `static Future<DeviceData> load()` <a id="load"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 223).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 191).
 - **Purpose:** Load the persisted device list from `device_data.json`.
 - **Inputs:** None.
 - **Returns:** `Future<DeviceData>` — `const DeviceData()` (empty) if the file is absent or empty.
 - **Side effects:** Reads `device_data.json`.
 - **Algorithm:** Existence/empty checks, then `DeviceData.fromJson(jsonDecode(...))` (see
-  [`../../models/device.md#devicedata-fromjson`](../models/device.md)).
+  [`../models/device.md#devicedata-fromjson`](../models/device.md#devicedata-fromjson)).
 - **Usage:**
   ```dart
   final data = await DeviceStorage.load();
@@ -220,7 +243,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> save(DeviceData data)` <a id="save"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 237).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 205).
 - **Purpose:** Persist the full device list to `device_data.json` and notify the auto-sync
   service that local data changed.
 - **Inputs:** `data`.
@@ -240,7 +263,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> addOrUpdate(Device device)` <a id="addorupdate"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 250).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 218).
 - **Purpose:** Insert a new device or replace an existing one (matched by `id`), then clean up
   cross-module references if the device is no longer in service.
 - **Inputs:** `device`.
@@ -249,7 +272,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
   [`_removeDeviceReferences`](#_removedevicereferences).
 - **Algorithm:** 1. Load the current list. 2. Find the index of an existing device with the same
   `id`; replace it if found, else append. 3. Save. 4. If `!device.isInService` (retired or sold —
-  see [`../../models/device.md#lifecyclestatus`](../models/device.md)), remove this device's
+  see [`../models/device.md#lifecyclestatus`](../models/device.md#lifecyclestatus)), remove this device's
   references from network assignments, dataset storage links, and service records.
 - **Usage:**
   ```dart
@@ -264,7 +287,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> deleteDevice(String id)` <a id="deletedevice"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 271).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 239).
 - **Purpose:** Delete a device by id and clean up every cross-module reference to it.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
@@ -280,7 +303,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> _removeDeviceReferences(String id)` <a id="_removedevicereferences"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 283).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 251).
 - **Purpose:** Strip every reference to a device id from network assignments, dataset storage
   links, and service records — the shared cleanup used by both retiring/selling a device and
   outright deleting it.
@@ -304,7 +327,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<Map<String, dynamic>> readConfig()` <a id="readconfig"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 325).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 293).
 - **Purpose:** Read the generic `storage_config.json` key/value map from the *current* app
   directory — the shared config store used for theme, locale, default currency, and other simple
   settings that don't warrant their own file.
@@ -326,7 +349,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> writeConfig(Map<String, dynamic> config)` <a id="writeconfig"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 338).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 306).
 - **Purpose:** Write the generic `storage_config.json` key/value map back to the current app
   directory.
 - **Inputs:** `config` — typically read via [`readConfig`](#readconfig), mutated, then passed back.
@@ -345,7 +368,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<String?> getThemeMode()` <a id="getthememode"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 350).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 318).
 - **Purpose:** Read the persisted theme mode string (`'light'`/`'dark'`/`'system'`, or unset).
 - **Inputs:** None.
 - **Returns:** `Future<String?>`.
@@ -360,7 +383,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> setThemeMode(String? mode)` <a id="setthememode"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 360).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 328).
 - **Purpose:** Persist the theme mode string, or clear it entirely when `mode` is null.
 - **Inputs:** `mode`.
 - **Returns:** `Future<void>`.
@@ -375,7 +398,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<String?> getLocaleTag()` <a id="getlocaletag"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 375).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 343).
 - **Purpose:** Read the persisted locale tag (e.g. `'en'`, `'zh'`), or `null` if unset (follow
   system locale).
 - **Inputs:** None.
@@ -387,7 +410,7 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 
 ### `static Future<void> setLocaleTag(String? tag)` <a id="setlocaletag"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 385).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 353).
 - **Purpose:** Persist the locale tag, or clear it entirely when `tag` is null (revert to system
   locale).
 - **Inputs:** `tag`.
@@ -403,8 +426,8 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
 - **Notes:** None.
 
 ### `static Future<int> _getListColumns(String key)` <a id="getlistcolumns"></a>
-- **Kind:** static method of `DeviceStorage`.
-- **Source:** `lib/features/devices/services/device_storage.dart`.
+- **Kind:** private static method.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 371).
 - **Purpose:** Read one list page's column preference.
 - **Inputs:** `key` — the `storage_config.json` key for that page.
 - **Returns:** `Future<int>` — the stored count, or `listColumnsAuto` when the key is absent, not
@@ -415,8 +438,8 @@ Row count (26 rows, 30 declarations — the four paired accessor rows hold two e
   current width fits; this only rejects values that could never be valid.
 
 ### `static Future<void> _setListColumns(String key, int columns)` <a id="setlistcolumns"></a>
-- **Kind:** static method of `DeviceStorage`.
-- **Source:** `lib/features/devices/services/device_storage.dart`.
+- **Kind:** private static method.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 386).
 - **Purpose:** Persist one list page's column preference.
 - **Inputs:** `key`; `columns` — `listColumnsAuto` or a pinned count.
 - **Returns:** None.

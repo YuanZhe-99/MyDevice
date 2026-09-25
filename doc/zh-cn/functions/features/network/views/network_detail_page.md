@@ -1,6 +1,6 @@
 # lib/features/network/views/network_detail_page.dart
 
-单个 [`Network`](../models/network.md#network-new) 的详情屏：其信息卡片、可排序/分组的已分配设备列表（[`NetworkDevice`](../models/network.md#networkdevice-new)）、那些设备的地图视图（经 [`DeviceMapPage`](../../../shared/views/device_map_page.md)），和由 [`NetworkStorage`](../services/network_storage.md) 支撑的赋值增/改/移除流程。编辑/配置对话框直接构造 `NetworkDevice` 值而非经 `copyWith`。`NetworkDevice` 为何无 `id`/`modifiedAt`、这对 [`setAssignment`](../services/network_storage.md#setassignment) 如何匹配既有赋值（按 `(networkId, deviceId)` 对，非 id）意味着什么见 [网络](../../../../features/networks.md)。
+单个 [`Network`](../models/network.md#network-new) 的详情屏：其信息卡片、可排序/分组的已分配设备列表（[`NetworkDevice`](../models/network.md#networkdevice-new)）、那些设备的地图视图（经 [`DeviceMapPage`](../../../shared/views/device_map_page.md)），和由 [`NetworkStorage`](../services/network_storage.md) 支撑的赋值增/改/移除流程。编辑/配置对话框直接构造 `NetworkDevice` 值而非经 `copyWith`。见 [网络](../../../../features/networks.md)，了解 `NetworkDevice` 为何无 `id`/`modifiedAt`，以及这对 [`setAssignment`](../services/network_storage.md#setassignment) 如何匹配既有赋值（按 `(networkId, deviceId)` 对，非 id）意味着什么。
 
 ## 声明
 
@@ -133,7 +133,7 @@
 - **输入：** `assignment` — 要编辑的既有 `NetworkDevice`。
 - **返回：** `Future<void>`。
 - **副作用：** 显示 [`_showAssignmentDialog`](#showassignmentdialog)；有结果返回时调用 `NetworkStorage.setAssignment`、`AutoSyncService.instance.notifySaved()` 并重载。
-- **算法：** Await `_showAssignmentDialog(l10n, assignment)`；结果非 null 时 await `NetworkStorage.setAssignment(result)`（按 `(networkId, deviceId)` 对匹配并替换——见 [`network_storage.md#setassignment`](../services/network_storage.md)）、调用 `notifySaved()` 并重载。
+- **算法：** Await `_showAssignmentDialog(l10n, assignment)`；结果非 null 时 await `NetworkStorage.setAssignment(result)`（按 `(networkId, deviceId)` 对匹配并替换——见 [`network_storage.md#setassignment`](../services/network_storage.md#setassignment)）、调用 `notifySaved()` 并重载。
 - **用法：** 从 `_buildDeviceCard`（本文件，第 674 行）每卡片 `PopupMenuButton` 的 `'edit'` 项选择。
 - **备注：** 因为 `NetworkDevice` 无 `id`，这里"编辑"赋值实际是"用新构造的替换匹配此 `(networkId, deviceId)` 对的赋值"——见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)。
 

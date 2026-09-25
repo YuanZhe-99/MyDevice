@@ -56,7 +56,7 @@ distinction the new signal would cry wolf on every device a source does not carr
 scraper rot can be checked with one command instead of being noticed by a user. It is
 deliberately **not** wired into CI, because it makes real third-party network requests.
 
-## Chip spec search — `chip_search_service.dart`
+## Chip spec search — `chip_search_service.dart` <a id="chip-spec-search---chip_search_servicedart"></a>
 
 `ChipSearchService` fetches CPU specs from TechPowerUp and Intel, and GPU specs from
 TechPowerUp and AMD:
@@ -102,7 +102,7 @@ guidelines around network scraping of third-party sites in a store-distributed a
 See [Architecture](../architecture.md#appflavor) for how `AppFlavor.isStore` is derived
 from the `FLAVOR` dart-define.
 
-## Bundled presets — `preset_service.dart`
+## Bundled presets — `preset_service.dart` <a id="bundled-presets---presetservicedart"></a>
 
 `PresetService` loads bundled preset data from `assets/presets/` via
 `rootBundle.loadString()`:

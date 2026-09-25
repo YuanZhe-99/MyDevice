@@ -20,7 +20,7 @@ renders whatever comes back.
 | `initState` | method (widget lifecycle) | B | Seed the query controller with the initial query. |
 | `dispose` | method (widget lifecycle) | B | Dispose the query text controller. |
 | [`_search`](#_search) | method (`_ChipSearchDialogState`) | A | Run a CPU/GPU search against `ChipSearchService` and update dialog state. |
-| `_select` | method (`_ChipSearchDialogState`) | B | Pop the dialog with the chosen result converted to `CpuInfo`/`GpuInfo`. |
+| [`_select`](#_select) | method (`_ChipSearchDialogState`) | A | Pop the dialog with the chosen result converted to `CpuInfo`/`GpuInfo`. |
 | `build` | method (widget) | B | Build the dialog shell (header, search bar, results area) — `dialogMaxWidth` wide, `dialogBodyHeight(window − keyboard, preferred: 480)` tall. |
 | `_buildResults` | method (widget helper) | B | Render the loading/error/empty/list states for search results. |
 | [`_coresLabel`](#_coreslabel) | method (`_ChipSearchDialogState`) | A | Format a CPU result's performance/efficiency core counts into a short label. |
@@ -29,7 +29,7 @@ renders whatever comes back.
 
 ### `Future<CpuInfo?> showCpuSearchDialog(BuildContext context, {String? initialQuery, required List<CpuInfo> presets})` <a id="showcpusearchdialog"></a>
 - **Kind:** top-level function
-- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 14)
+- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 15)
 - **Purpose:** Open a modal dialog that lets the user search for a CPU (online sources plus
   bundled presets) and pick one.
 - **Inputs:** `context` — hosting `BuildContext`; `initialQuery` — text to pre-fill the search
@@ -57,7 +57,7 @@ renders whatever comes back.
     if (cpu != null) _applyCpuPreset(cpu);
   }
   ```
-  (from `lib/features/devices/views/device_edit_page.dart`, line 754)
+  (from `lib/features/devices/views/device_edit_page.dart`, line 756)
 - **Notes:** Gated behind the same store-flavor rules as the underlying service — see
   [Online Search and Presets](../../../../features/online-search-and-presets.md) for the four
   required gating call sites; this function does not itself check `AppFlavor`, the search button
@@ -65,7 +65,7 @@ renders whatever comes back.
 
 ### `Future<GpuInfo?> showGpuSearchDialog(BuildContext context, {String? initialQuery, required List<GpuInfo> presets})` <a id="showgpusearchdialog"></a>
 - **Kind:** top-level function
-- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 37)
+- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 38)
 - **Purpose:** Open a modal dialog that lets the user search for a GPU (online sources plus
   bundled presets) and pick one.
 - **Inputs:** `context`; `initialQuery` — pre-filled search text; `presets` — the caller's loaded
@@ -85,12 +85,12 @@ renders whatever comes back.
     if (gpu != null) _applyGpuPreset(gpu);
   }
   ```
-  (from `lib/features/devices/views/device_edit_page.dart`, line 768)
+  (from `lib/features/devices/views/device_edit_page.dart`, line 770)
 - **Notes:** Same store-flavor gating caveat as `showCpuSearchDialog`.
 
 ### `Future<void> _search()` <a id="_search"></a>
 - **Kind:** method of `_ChipSearchDialogState`
-- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 115)
+- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 116)
 - **Purpose:** Run the current query against `ChipSearchService.searchCpu`/`searchGpu` and load
   the results into dialog state.
 - **Inputs:** None (reads `_queryCtrl.text` and `widget.mode`/`widget.cpuPresets`/
@@ -118,14 +118,38 @@ renders whatever comes back.
     child: Text(l10n.searchButton),
   ),
   ```
-  (from `build`, `lib/features/devices/views/chip_search_dialog.dart` lines 216–223)
+  (from `build`, `lib/features/devices/views/chip_search_dialog.dart` lines 226–231)
 - **Notes:** Errors from the underlying HTTP scraping (network failures, parse errors) surface to
   the user as raw `e.toString()` text rather than a friendly message — only the "no results" case
   is localized.
 
+### `void _select(ChipSearchResult result)` <a id="_select"></a>
+- **Kind:** method of `_ChipSearchDialogState`
+- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 152)
+- **Purpose:** Close the dialog, handing the tapped result back to the caller as the model type the
+  current mode expects.
+- **Inputs:** `result` — the tapped `ChipSearchResult` (a preset or a live search hit).
+- **Returns:** `void`.
+- **Side effects:** Pops the dialog route, which completes the `showDialog` future awaited by
+  [`showCpuSearchDialog`](#showcpusearchdialog) / [`showGpuSearchDialog`](#showgpusearchdialog).
+- **Algorithm:**
+  1. In `_ChipMode.cpu`, pop with
+     [`result.toCpuInfo()`](../services/chip_search_service.md#tocpuinfo) (model, architecture,
+     frequency, P/E core counts, threads, cache).
+  2. Otherwise pop with [`result.toGpuInfo()`](../services/chip_search_service.md#togpuinfo)
+     (model and architecture only).
+- **Usage:**
+  ```dart
+  onTap: () => _select(r),
+  ```
+  (from `_buildResults`, `lib/features/devices/views/chip_search_dialog.dart` line 316)
+- **Notes:** The conversion happens here rather than in the caller, so the two `show…SearchDialog`
+  functions can type their `showDialog` future as `CpuInfo` or `GpuInfo`. A GPU result's other
+  fields are dropped by `toGpuInfo`; the editor only fills model and architecture from a GPU pick.
+
 ### `String _coresLabel(ChipSearchResult r)` <a id="_coreslabel"></a>
 - **Kind:** method of `_ChipSearchDialogState`
-- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 317)
+- **Source:** `lib/features/devices/views/chip_search_dialog.dart` (line 327)
 - **Purpose:** Build a short "P+E core" label for a CPU search result's subtitle line.
 - **Inputs:** `r` — a `ChipSearchResult` whose `performanceCores`/`efficiencyCores` may each be
   present or absent.
@@ -144,6 +168,6 @@ renders whatever comes back.
   if (r.performanceCores != null || r.efficiencyCores != null)
     _coresLabel(r),
   ```
-  (from `_buildResults`, `lib/features/devices/views/chip_search_dialog.dart` line 272)
+  (from `_buildResults`, `lib/features/devices/views/chip_search_dialog.dart` line 282)
 - **Notes:** Only called from the CPU subtitle-building branch in `_buildResults`; GPU results use
   `r.architecture` directly instead.

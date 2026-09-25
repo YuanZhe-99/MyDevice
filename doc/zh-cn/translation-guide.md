@@ -130,6 +130,10 @@
 | container header | 分组框标题 | 设备分组框左上角的设备标签 |
 | crossing sweep | 交叉消减扫描 | 调整各层顺序以减少连线交叉的布局步骤 |
 | domain sink | 终点域名 | 没有出边的域名节点，对齐到最后一层 |
+| network assignment | 网络分配 | 一个 `NetworkDevice`：设备在某个网络中的成员关系；旧页面曾用「网络赋值」 |
+| proxy-like service | 类代理服务 | 引导流程作为反向代理候选提供的服务 |
+| overlay network | 叠加网络 | 叠加在其他网络之上的 VPN 网络（Tailscale、ZeroTier、EasyTier、WireGuard） |
+| hand over | 移交 | 引导式编辑器把它无法表示的路由交给高级编辑器 |
 
 ## 6. 复核清单（提交中文页前运行）
 

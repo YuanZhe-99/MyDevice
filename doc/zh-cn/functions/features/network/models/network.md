@@ -1,6 +1,6 @@
 # lib/features/network/models/network.dart
 
-[网络](../../../../features/networks.md) 的模型来源。定义 `NetworkType`/`AddressMode`（两个序列化枚举）、`Network`（局域网/VPN 叠加网定义）、`NetworkDevice`（设备在网络中的成员/赋值）和由 [`../services/network_storage.md`](../services/network_storage.md) 持久化的顶层 `NetworkData` 容器。这里每个模型都遵循应用标准形态——普通/const 构造函数、`toJson`/`fromJson` 和构建在泛型 [`json_preservation.md`](../../../shared/utils/json_preservation.md) 辅助上的 `mergeUnknownFieldsFrom`——带一个刻意例外：`NetworkDevice` 完全**无 `id` 和 `modifiedAt`**。原因见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)（`(networkId, deviceId)` 对已是唯一键，缺失时间戳正是迫使 `sync_merge.dart` 的 `mergeAssignments` 做[内容比较合并](../../../../algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)而非每个其他模型使用的时间戳基础 `mergeRecords<T>` 的东西）。穷举持久化字段参考见 [数据格式 — 网络 / NetworkDevice](../../../../data-formats.md#network--networkdevice-libfeaturesnetworkmodelsnetworkdart)。
+[网络](../../../../features/networks.md) 的模型来源。定义 `NetworkType`/`AddressMode`（两个序列化枚举）、`Network`（局域网/VPN 叠加网络定义）、`NetworkDevice`（设备在网络中的成员/赋值）和由 [`../services/network_storage.md`](../services/network_storage.md) 持久化的顶层 `NetworkData` 容器。这里每个模型都遵循应用标准形态——普通/const 构造函数、`toJson`/`fromJson` 和构建在泛型 [`json_preservation.md`](../../../shared/utils/json_preservation.md) 辅助上的 `mergeUnknownFieldsFrom`——带一个刻意例外：`NetworkDevice` 完全**无 `id` 和 `modifiedAt`**。原因见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)（`(networkId, deviceId)` 对已是唯一键，缺失时间戳正是迫使 `sync_merge.dart` 的 `mergeAssignments` 做[内容比较合并](../../../../algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)而非每个其他模型使用的时间戳基础 `mergeRecords<T>` 的东西）。穷举持久化字段参考见 [数据格式 — 网络 / NetworkDevice](../../../../data-formats.md#network--networkdevice-libfeaturesnetworkmodelsnetworkdart)。
 
 ## 声明
 
@@ -154,7 +154,7 @@
   NetworkDevice(networkId: widget.networkId, deviceId: device.id),
   ```
   （来自 [`network_detail_page.md`](../views/network_detail_page.md) 的 `_addDevice`，作为传给赋值配置对话框的种子）
-- **备注：** `(networkId, deviceId)` 对是记录自然唯一键——合成 `id` 为何这里冗余、缺失 `modifiedAt` 为何迫使同步对此单模型用内容比较（[`mergeAssignments`](../../../../algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)）而非时间戳比较，见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)。
+- **备注：** `(networkId, deviceId)` 对是记录自然唯一键——见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)，了解合成 `id` 为何这里冗余，以及缺失 `modifiedAt` 为何迫使同步对此单模型用内容比较（[`mergeAssignments`](../../../../algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)）而非时间戳比较。
 
 ### `NetworkDevice copyWith({AddressMode? addressMode, String? ipAddress, String? hostname, bool? isExitNode, bool clearIpAddress = false, bool clearHostname = false})` <a id="networkdevice-copywith"></a>
 - **种类：** `NetworkDevice` 的方法。

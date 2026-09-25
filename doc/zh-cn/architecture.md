@@ -2,7 +2,7 @@
 
 本页覆盖 MyDevice!!!!! 的应用壳、导航、状态管理、主题、本地化和整体仓库布局。数据级细节见 [数据格式](data-formats.md)；同步引擎见 [WebDAV 同步](sync.md)。
 
-## 入口点：`lib/main.dart`
+## 入口点：`lib/main.dart` <a id="entry-point-libmaindart"></a>
 
 `main()` 在 `runApp()` 前执行启动工作：
 
@@ -29,7 +29,7 @@
   | `/settings` | `SettingsPage` |
 
 - **`theme.dart`** — `AppTheme.light` / `AppTheme.dark` 用 `flex_color_scheme` 的 `FlexThemeData` 构建，两者都用 `FlexScheme.blue`、`FlexSurfaceMode.levelSurfacesLowScaffold`、Material 3 和底部导航栏的 `NavigationDestinationLabelBehavior.onlyShowSelected`。浅色用 `blendLevel: 7` / `blendOnLevel: 10`；深色用 `blendLevel: 13` / `blendOnLevel: 20`。
-- **`flavor.dart`** — `AppFlavor` 读取编译期 `FLAVOR` dart-define（`String.fromEnvironment('FLAVOR', defaultValue: 'full')`）。`AppFlavor.isStore` 只在 define 恰好是 `'store'` 时为 true；`AppFlavor.isFull` 是其否定。这如何门控在线搜索见 [在线搜索与预设](features/online-search-and-presets.md)。
+- <a id="appflavor"></a>**`flavor.dart`** — `AppFlavor` 读取编译期 `FLAVOR` dart-define（`String.fromEnvironment('FLAVOR', defaultValue: 'full')`）。`AppFlavor.isStore` 只在 define 恰好是 `'store'` 时为 true；`AppFlavor.isFull` 是其否定。这如何门控在线搜索见 [在线搜索与预设](features/online-search-and-presets.md)。
 
 ## 状态管理
 
@@ -114,7 +114,7 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 
 `.gitmodules` 用相对 URL `../MyApps-DATA.git`，因此它对照克隆跟踪的任何远程解析——Gitea 克隆从 Gitea 拉取、GitHub 克隆从 GitHub 拉取，且绝不提交主机名。全新克隆需要 `git clone --recurse-submodules` 或 `git submodule update --init`。
 
-## 核心架构规则
+## 核心架构规则 <a id="core-architecture-rules"></a>
 
 - 导航用带上面列出的五个标签 `ShellRoute` 的 `go_router`。
 - 视觉系统经 `flex_color_scheme` 用 Material 3。

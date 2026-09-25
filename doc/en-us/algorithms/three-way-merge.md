@@ -93,7 +93,7 @@ Each per-model wrapper (`DeviceMergeResult`, `NetworkMergeResult`, `DataSetMerge
 that takes the caller's per-conflict-ID resolution choices and produces the final typed
 data container (`DeviceData`, `NetworkData`, etc.) ready to upload.
 
-## `mergeAssignments` — composite-key content-comparison merge
+## `mergeAssignments` — composite-key content-comparison merge <a id="mergeassignments-composite-key-content-comparison-merge"></a>
 
 `NetworkDevice` has no `id` and no `modifiedAt` (see
 [Networks](../features/networks.md#composite-key-identity--and-why)), so it needs a

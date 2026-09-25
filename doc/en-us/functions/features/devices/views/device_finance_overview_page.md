@@ -53,11 +53,11 @@ locally in `_averageDailyCostAt`/`_totalDailyCostAt`). See
 Row count note: `grep -c 'Purpose:'` on this file returns 33; the table above has 34 real
 declaration rows (the stray `_chartColors` line is a table formatting artifact, not a separate
 row — see below). The one undocumented declaration is `_chartBounds`
-(`lib/features/devices/views/device_finance_overview_page.dart`, line 715): it has no `///` doc
+(`lib/features/devices/views/device_finance_overview_page.dart`, line 790): it has no `///` doc
 comment of any kind (not even a plain one), unlike every other method in the file, so it does not
 match the `Purpose:` grep. It is still a real, load-bearing declaration (see
 [`_chartBounds`](#_chartbounds) below) and is included here per the "every declaration gets a row"
-rule. `_chartColors` (a `static const List<Color>`, line 806) is a data constant, not a function/
+rule. `_chartColors` (a `static const List<Color>`, line 881) is a data constant, not a function/
 method/constructor, and — consistent with how other private enums and constant maps in this
 batch's files are handled — is not counted as its own declaration row.
 
@@ -65,7 +65,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `Widget _buildLineChartPanel({required BuildContext context, required AppLocalizations l10n, required _TrendScale scale, required List<_ChartSeries> series, required double minY, required double maxY})` <a id="_buildlinechartpanel"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 290)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 365)
 - **Purpose:** Compute the log-scale Y-axis bounds/grid interval and render the `fl_chart`
   `LineChart` for the daily-cost trend (history + future series), including axis tick and tooltip
   formatting.
@@ -112,7 +112,7 @@ batch's files are handled — is not counted as its own declaration row.
   ),
   ```
   (from `_buildTrendCard`, `lib/features/devices/views/device_finance_overview_page.dart`, lines
-  259–278)
+  334–353)
 - **Notes:** Both series share the same color (`theme.colorScheme.primary`) — history vs. future
   is distinguished only by the dash pattern and area fill, not by color. See
   [Devices](../../../../features/devices.md#financial-overview-page) for why the axis uses a log
@@ -121,7 +121,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `_TrendData _buildTrendData(_TrendScale scale, DateTime today)` <a id="_buildtrenddata"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 544)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 619)
 - **Purpose:** Sample the fleet's total daily cost at every date in the trend scale, splitting the
   points into a "history" series (dates up to and including today) and a "future" series (today
   onward).
@@ -139,14 +139,14 @@ batch's files are handled — is not counted as its own declaration row.
   3. Tracks `minY`/`maxY` via `fold` starting from `0.0` (so the range always includes zero even
      if all costs are positive or negative).
 - **Usage:** `final trendData = _buildTrendData(scale, today);` in `_buildTrendCard`
-  (`lib/features/devices/views/device_finance_overview_page.dart`, line 203).
+  (`lib/features/devices/views/device_finance_overview_page.dart`, line 278).
 - **Notes:** Because `historySpots`/`futureSpots` share the boundary point, the two
   `LineChartBarData` entries built from them in `_buildLineChartPanel` render as one visually
   continuous line that switches from solid to dashed exactly at `today`.
 
 ### `List<_AssetBucket> _assetBuckets(AppLocalizations l10n)` <a id="_assetbuckets"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 574)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 649)
 - **Purpose:** Group every device with positive financial data by `DeviceCategory`, summing total
   cost and counting devices per category, for the asset-distribution pie chart.
 - **Inputs:** `l10n` — used only to localize each category's label.
@@ -164,15 +164,15 @@ batch's files are handled — is not counted as its own declaration row.
      `_chartColors` (`_chartColors[buckets.length % _chartColors.length]`) in the order categories
      were first encountered in `totals.entries` — not a fixed per-category color.
   4. Sorts the resulting list by `amount` descending (largest category first).
-- **Usage:** `final buckets = _assetBuckets(l10n);` in `_buildAssetDistribution`
-  (`lib/features/devices/views/device_finance_overview_page.dart`, line 128).
+- **Usage:** `final buckets = _assetBuckets(l10n);` in `build` and in `_buildAssetDistribution`
+  (`lib/features/devices/views/device_finance_overview_page.dart`, lines 58 and 203).
 - **Notes:** Because color assignment depends on iteration/insertion order of the `totals` map
   (built from `widget.devices` order) rather than a fixed category → color table, the same
   category can be assigned a different pie-chart color across different device lists.
 
 ### `DateTime _historyStart(DateTime today)` <a id="_historystart"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 609)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 684)
 - **Purpose:** Compute the start date of the trend chart's historical window for the currently
   selected `_FinanceRange`.
 - **Inputs:** `today` — the date-only current date.
@@ -184,12 +184,12 @@ batch's files are handled — is not counted as its own declaration row.
   [`_earliestPurchaseDate`](#_earliestpurchasedate), falling back to a 1-year window if no device
   has a purchase date at all.
 - **Usage:** `final historyStart = _historyStart(today);` in `_buildTrendCard`
-  (`lib/features/devices/views/device_finance_overview_page.dart`, line 200).
+  (`lib/features/devices/views/device_finance_overview_page.dart`, line 275).
 - **Notes:** None.
 
 ### `Duration _historyDuration(DateTime today, DateTime historyStart)` <a id="_historyduration"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 628)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 703)
 - **Purpose:** Derive the forward "future projection" window's length from the historical
   window's length, so the projected segment mirrors however far back the chart already looks.
 - **Inputs:** `today`, `historyStart`.
@@ -204,12 +204,12 @@ batch's files are handled — is not counted as its own declaration row.
   final futureEnd = today.add(_historyDuration(today, historyStart));
   ```
   (from `_buildTrendCard`, `lib/features/devices/views/device_finance_overview_page.dart`, line
-  201)
+  276)
 - **Notes:** None.
 
 ### `DateTime? _earliestPurchaseDate()` <a id="_earliestpurchasedate"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 638)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 713)
 - **Purpose:** Find the earliest `purchaseDate` across all devices in the list, for the "all time"
   trend range.
 - **Inputs:** None (reads `widget.devices`).
@@ -223,7 +223,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `double _totalDailyCostAt(DateTime date)` <a id="_totaldailycostat"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 656)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 731)
 - **Purpose:** Sum the fleet-wide average daily cost as of an arbitrary date (used to sample every
   point on the trend chart, past or future).
 - **Inputs:** `date`.
@@ -237,7 +237,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `double? _averageDailyCostAt(Device device, DateTime date)` <a id="_averagedailycostat"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 668)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 743)
 - **Purpose:** Compute one device's average daily cost as it would have stood (or will stand) on
   an arbitrary date — the core primitive that lets the trend chart plot cost at any past or future
   point, not just "now" (unlike `Device.averageDailyCost()`, which is always relative to the
@@ -272,7 +272,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `double _totalFinancialCost()` <a id="_totalfinancialcost"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 702)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 777)
 - **Purpose:** Sum `Device.totalCost()` (as of now) across every device, for the summary card's
   "Total Cost" metric.
 - **Inputs:** None (reads `widget.devices`).
@@ -280,13 +280,13 @@ batch's files are handled — is not counted as its own declaration row.
 - **Side effects:** None.
 - **Algorithm:** `widget.devices.fold(0, (sum, device) => sum + device.totalCost())`.
 - **Usage:** `_moneyText(_totalFinancialCost())` in `_buildSummaryCard`
-  (`lib/features/devices/views/device_finance_overview_page.dart`, line 94).
+  (`lib/features/devices/views/device_finance_overview_page.dart`, lines 136 and 169).
 - **Notes:** Unlike `_totalDailyCostAt`, this reuses `Device.totalCost()` directly (evaluated at
   "now", the model's default) rather than reimplementing the arithmetic.
 
 ### `double _totalDailyCost()` <a id="_totaldailycost"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 710)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 785)
 - **Purpose:** Sum `Device.averageDailyCost()` (as of now) across every device, for the summary
   card's "Daily Cost" metric.
 - **Inputs:** None.
@@ -294,12 +294,12 @@ batch's files are handled — is not counted as its own declaration row.
 - **Side effects:** None.
 - **Algorithm:** `widget.devices.fold(0, (sum, device) => sum + (device.averageDailyCost() ?? 0))`.
 - **Usage:** `_moneyText(_totalDailyCost())` in `_buildSummaryCard`
-  (`lib/features/devices/views/device_finance_overview_page.dart`, line 102).
+  (`lib/features/devices/views/device_finance_overview_page.dart`, lines 142 and 177).
 - **Notes:** None.
 
 ### `({double minY, double maxY}) _chartBounds(double minY, double maxY)` <a id="_chartbounds"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 715)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 790)
 - **Purpose:** Pad a raw min/max cost range with headroom so the trend line doesn't touch the
   chart's top/bottom edge, and ensure zero is always included in the visible range.
 - **Inputs:** `minY`, `maxY` — the raw (untransformed) observed cost range.
@@ -321,7 +321,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `double _logTransform(double value)` <a id="_logtransform"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 731)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 806)
 - **Purpose:** Apply the signed log transform used for the daily-cost trend chart's Y axis, so
   small recurring costs and large one-time purchase spikes are both readable on the same scale.
 - **Inputs:** `value` — a real cost amount (can be negative, e.g. net-loss days).
@@ -340,7 +340,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `double _logInverse(double value)` <a id="_loginverse"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 742)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 817)
 - **Purpose:** Invert `_logTransform`, converting a log-space axis value back to a real cost amount
   for axis tick labels and tooltips.
 - **Inputs:** `value` — a value already in log-transformed space.
@@ -359,7 +359,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `String _moneyText(double amount)` <a id="_moneytext-finance"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 761)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 836)
 - **Purpose:** Format a plain amount with the page's configured default-currency symbol.
 - **Inputs:** `amount` — already expressed in `widget.defaultCurrency`.
 - **Returns:** `String` — `"{symbol}{amount.toStringAsFixed(2)}"`.
@@ -373,7 +373,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `String _formatAxisValue(double value)` <a id="_formataxisvalue"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 773)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 848)
 - **Purpose:** Format a real (already log-inverted) Y-axis tick value compactly, using `k`/`m`
   suffixes for large magnitudes so labels stay short at the chart's default width.
 - **Inputs:** `value`.
@@ -389,7 +389,7 @@ batch's files are handled — is not counted as its own declaration row.
 
 ### `factory _TrendScale.fromRange(DateTime historyStart, DateTime today, DateTime futureEnd)` <a id="trendscale-fromrange"></a>
 - **Kind:** factory constructor of `_TrendScale`
-- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 846)
+- **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 921)
 - **Purpose:** Build the list of dates to sample for the trend chart (its X axis), choosing a
   sampling step size based on the total span so very long ranges don't produce thousands of
   points, and computing how many points apart X-axis labels should be drawn.
@@ -411,7 +411,7 @@ batch's files are handled — is not counted as its own declaration row.
   6. `labelInterval = ceil(deduped.length / 6)`, floored at `1` — aims for roughly 6 evenly-spaced
      X-axis labels regardless of point count.
 - **Usage:** `final scale = _TrendScale.fromRange(historyStart, today, futureEnd);` in
-  `_buildTrendCard` (`lib/features/devices/views/device_finance_overview_page.dart`, line 202).
+  `_buildTrendCard` (`lib/features/devices/views/device_finance_overview_page.dart`, line 277).
 - **Notes:** Because `today` and `futureEnd` are force-appended before deduplication, the actual
   spacing between the last few sample points can be slightly irregular compared to the fixed
   `step` used for the rest of the range.

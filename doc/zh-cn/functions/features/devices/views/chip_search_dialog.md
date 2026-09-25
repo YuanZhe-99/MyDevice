@@ -13,7 +13,7 @@
 | `initState` | 方法（组件生命周期） | B | 用初始查询播种查询控制器。 |
 | `dispose` | 方法（组件生命周期） | B | 释放查询文本控制器。 |
 | [`_search`](#_search) | 方法（`_ChipSearchDialogState`） | A | 对 `ChipSearchService` 运行 CPU/GPU 搜索并更新对话框状态。 |
-| `_select` | 方法（`_ChipSearchDialogState`） | B | 把所选结果转换为 `CpuInfo`/`GpuInfo` 弹出对话框。 |
+| [`_select`](#_select) | 方法（`_ChipSearchDialogState`） | A | 把所选结果转换为 `CpuInfo`/`GpuInfo` 弹出对话框。 |
 | `build` | 方法（组件） | B | 构建对话框壳（页头、搜索栏、结果区）——宽 `dialogMaxWidth`，高 `dialogBodyHeight(窗口 − 键盘, preferred: 480)`。 |
 | `_buildResults` | 方法（组件辅助） | B | 渲染搜索结果的加载/错误/空/列表状态。 |
 | [`_coresLabel`](#_coreslabel) | 方法（`_ChipSearchDialogState`） | A | 把 CPU 结果的性能/效率核心数格式化为短标签。 |
@@ -22,7 +22,7 @@
 
 ### `Future<CpuInfo?> showCpuSearchDialog(BuildContext context, {String? initialQuery, required List<CpuInfo> presets})` <a id="showcpusearchdialog"></a>
 - **种类：** 顶层函数
-- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 14 行）
+- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 15 行）
 - **用途：** 打开让用户搜索 CPU（在线源加捆绑预设）并挑一个的模态对话框。
 - **输入：** `context` — 宿主 `BuildContext`；`initialQuery` — 预填搜索框的文本（如已输入设备编辑表单的 CPU 型号）；`presets` — 调用方加载的 `CpuInfo` 预设列表，原样传给 `ChipSearchService.searchCpu` 使预设匹配与活结果并排出现。
 - **返回：** `Future<CpuInfo?>` — 所选 `CpuInfo`，对话框无选择关闭时 `null`。
@@ -41,12 +41,12 @@
     if (cpu != null) _applyCpuPreset(cpu);
   }
   ```
-  （来自 `lib/features/devices/views/device_edit_page.dart`，第 754 行）
+  （来自 `lib/features/devices/views/device_edit_page.dart`，第 756 行）
 - **备注：** 门控在与底层服务相同的商店风格规则后——见 [在线搜索与预设](../../../../features/online-search-and-presets.md) 了解四个必需门控调用点；此函数自己不检查 `AppFlavor`，触发它的搜索按钮才是商店构建在 `device_edit_page.dart` 中隐藏的东西。
 
 ### `Future<GpuInfo?> showGpuSearchDialog(BuildContext context, {String? initialQuery, required List<GpuInfo> presets})` <a id="showgpusearchdialog"></a>
 - **种类：** 顶层函数
-- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 37 行）
+- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 38 行）
 - **用途：** 打开让用户搜索 GPU（在线源加捆绑预设）并挑一个的模态对话框。
 - **输入：** `context`；`initialQuery` — 预填搜索文本；`presets` — 调用方加载的 `GpuInfo` 预设列表，作为 `gpuPresets` 传入（`cpuPresets` 留空）。
 - **返回：** `Future<GpuInfo?>` — 所选 `GpuInfo`，无挑选关闭时 `null`。
@@ -63,12 +63,12 @@
     if (gpu != null) _applyGpuPreset(gpu);
   }
   ```
-  （来自 `lib/features/devices/views/device_edit_page.dart`，第 768 行）
+  （来自 `lib/features/devices/views/device_edit_page.dart`，第 770 行）
 - **备注：** 与 `showCpuSearchDialog` 相同的商店风格门控注意。
 
 ### `Future<void> _search()` <a id="_search"></a>
 - **种类：** `_ChipSearchDialogState` 的方法
-- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 115 行）
+- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 116 行）
 - **用途：** 对 `ChipSearchService.searchCpu`/`searchGpu` 运行当前查询并把结果加载进对话框状态。
 - **输入：** 无（读取 `_queryCtrl.text` 和外围状态的 `widget.mode`/`widget.cpuPresets`/`widget.gpuPresets`）。
 - **返回：** `Future<void>`。
@@ -88,12 +88,29 @@
     child: Text(l10n.searchButton),
   ),
   ```
-  （来自 `build`，`lib/features/devices/views/chip_search_dialog.dart` 第 216–223 行）
+  （来自 `build`，`lib/features/devices/views/chip_search_dialog.dart` 第 226–231 行）
 - **备注：** 底层 HTTP 抓取的错误（网络失败、解析错误）作为原始 `e.toString()` 文本浮出给用户而非友好消息——只有"无结果" case 本地化。
+
+### `void _select(ChipSearchResult result)` <a id="_select"></a>
+- **种类：** `_ChipSearchDialogState` 的方法
+- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 152 行）
+- **用途：** 关闭对话框，把点击的结果以当前模式期望的模型类型交回调用方。
+- **输入：** `result` — 被点击的 `ChipSearchResult`（预设或在线搜索命中）。
+- **返回：** `void`。
+- **副作用：** 弹出对话框路由，从而完成 [`showCpuSearchDialog`](#showcpusearchdialog) / [`showGpuSearchDialog`](#showgpusearchdialog) 所 await 的 `showDialog` future。
+- **算法：**
+  1. `_ChipMode.cpu` 模式下以 [`result.toCpuInfo()`](../services/chip_search_service.md#tocpuinfo)（型号、架构、频率、P/E 核心数、线程数、缓存）弹出。
+  2. 否则以 [`result.toGpuInfo()`](../services/chip_search_service.md#togpuinfo)（仅型号和架构）弹出。
+- **用法：**
+  ```dart
+  onTap: () => _select(r),
+  ```
+  （来自 `_buildResults`，`lib/features/devices/views/chip_search_dialog.dart` 第 316 行）
+- **备注：** 转换在这里而非调用方完成，因此两个 `show…SearchDialog` 函数能把各自的 `showDialog` future 类型定为 `CpuInfo` 或 `GpuInfo`。GPU 结果的其他字段被 `toGpuInfo` 丢弃；编辑器从 GPU 选择中只填入型号和架构。
 
 ### `String _coresLabel(ChipSearchResult r)` <a id="_coreslabel"></a>
 - **种类：** `_ChipSearchDialogState` 的方法
-- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 317 行）
+- **来源：** `lib/features/devices/views/chip_search_dialog.dart`（第 327 行）
 - **用途：** 为 CPU 搜索结果副标题行构建短"P+E 核心"标签。
 - **输入：** `r` — `performanceCores`/`efficiencyCores` 各可能存在或缺席的 `ChipSearchResult`。
 - **返回：** `String` — 按哪些核心数已知，为 `'{p}P+{e}E'`、`'{p}C'`、`'{e}E'` 或 `''` 之一。
@@ -108,5 +125,5 @@
   if (r.performanceCores != null || r.efficiencyCores != null)
     _coresLabel(r),
   ```
-  （来自 `_buildResults`，`lib/features/devices/views/chip_search_dialog.dart` 第 272 行）
+  （来自 `_buildResults`，`lib/features/devices/views/chip_search_dialog.dart` 第 282 行）
 - **备注：** 只从 `_buildResults` 的 CPU 副标题构建分支调用；GPU 结果改直接用 `r.architecture`。

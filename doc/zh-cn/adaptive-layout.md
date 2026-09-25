@@ -57,7 +57,7 @@ Fold 8 展开是 4:3 的*横向*面板（2448 × 1848 px），竖持时为 3:4�
 
 规则关乎**形状而非设备类别**，因此 4:3 平板竖屏（768 × 1024 → 0.75）和 16:10 平板竖屏（0.625）同样保持单列，与 Fold 8 竖屏完全一样。两者横屏都分栏。若有人报告「我的平板竖屏不分栏」，那正是规则在起作用。
 
-## 多少列
+## 多少列 <a id="how-many-columns"></a>
 
 一旦允许分栏，列数来自内容实际获得的宽度和每列最小宽度：
 
@@ -111,7 +111,7 @@ tile **先从左到右、再从上到下**排列，每行是一个由 `Expanded`
 
 **手势随列数变化。** 一列时设备与数据集 tile 保留滑动操作（右滑编辑、左滑删除；数据集仅删除）。多列时在一个窄格子内水平拖动含义不明，所以去掉 `Dismissible`，尾部 chevron 变成携带同样操作的菜单——服务 tile 早已使用的那种尾部菜单。两页的删除都没有其他入口，所以菜单是保住删除的关键。重排模式始终渲染单列，因为 `ReorderableListView` 要求一项一个子组件。
 
-## 详情页双栏
+## 详情页双栏 <a id="detail-pages-two-panes"></a>
 
 设备详情页和网络详情页在同一规则下分栏，经由 [`detail_layout.dart`](functions/shared/utils/detail_layout.md) 里一行的页面命名委托：
 
@@ -226,7 +226,7 @@ canSplitLayout(screenWidth, screenHeight)   // 窗口有分栏的形状吗？
 
 **以 `canSplitLayout` 门控的代价：** 横持手机 915 × 412 保持堆叠布局，尽管它是所有视口中高度最少、最能受益的那个。仅宽度的规则——`useNavigationRail` 用的那种——本可以帮到它。这里刻意选择了全应用的分栏规则，与详情页和列表保持一致。
 
-## 导航放在哪里
+## 导航放在哪里 <a id="where-navigation-lives"></a>
 
 **第二条规则，且刻意更窄**：
 
@@ -244,7 +244,7 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 
 刻意不做：1240 dp 以上的 `NavigationDrawer`。导航栏在此直到 extra-large 都正确，第三种导航模式不值其成本。
 
-## 门控量屏幕，容量量内容框
+## 门控量屏幕，容量量内容框 <a id="measure-the-screen-for-the-gate-the-content-box-for-the-capacity"></a>
 
 `canSplitLayout` 和 `useNavigationRail` 读 `MediaQuery.sizeOf(context)`——整个屏幕。容量和窗格宽度读内容实际获得的：`shellContentWidth(screenWidth)` 减页面自身内边距，或 `LayoutBuilder` 的 `constraints.maxWidth`。这种不对称是刻意的，出于两个独立理由：
 

@@ -2,13 +2,13 @@
 
 模型来源：`lib/features/services/models/service.dart`。布局算法来源：`lib/features/services/services/service_topology_layout.dart`。精确模型字段见 [数据格式 — ServiceNode / ServiceEndpoint / ServiceRoute / ServiceRouteHop](../data-formats.md#servicenode--serviceendpoint--serviceroute--serviceroutehop-libfeaturesservicesmodelsservicedart)，布局/路由算法深潜见 [服务拓扑布局](../algorithms/service-topology-layout.md)。完整示例见 [服务拓扑演练](../examples/service-topology-walkthrough.md)。
 
-## 仅手动清单约束
+## 仅手动清单约束 <a id="manual-inventory-only-constraint"></a>
 
 这是整个功能最重要的约束，直接陈述于 `AGENTS.md`：**服务管理是手动清单/备注模块，不是运维或监控系统。** 它必须不连接服务器、不扫描端口、不检查 Docker、不启动/停止服务、不存储机密。用户为个人参考手输服务、端口、路由和 Docker Compose 备注——这里没有任何发现。
 
 服务数据存储在 `service_data.json` 并像其他主模块一样同步/备份/导入（见 [数据格式 — 持久化数据清单](../data-formats.md#persisted-data-inventory)）。
 
-## 模型回顾
+## 模型回顾 <a id="model-recap"></a>
 
 - **`ServiceNode`** — 设备上的服务实例：`deviceId`、`name`、`templateId`/`icon`/`kind`/`runtime`/`state`、`endpoints`（`List<ServiceEndpoint>`）、`tags`、`notes`、可选 `dockerCompose`（纯文本，可从编辑器复制——此字段不添加凭据/令牌管理）、`modifiedAt`、`extraJson`。
 - **`ServiceEndpoint`** — 手动记录的本地/监听端点：协议、传输、绑定地址、端口或端口范围（`port`/`portEnd`）、可选路径/`networkId`、`scope`、`isPrimary` 标志、备注、`extraJson`。
@@ -17,7 +17,7 @@
 
 完整字段列表：[数据格式](../data-formats.md)。
 
-## 视图
+## 视图 <a id="views"></a>
 
 服务标签有四个视图：**总览**、**按设备**、**路由**和**端口**。
 
@@ -41,7 +41,7 @@
 
 角色、车道、设备类别和访问级别标签处处本地化；屏幕阅读器会读出每个节点的标签、角色和车道。
 
-## 拓扑图布局（高层）
+## 拓扑图布局（高层） <a id="topology-graph-layout-high-level"></a>
 
 拓扑布局**语义紧凑而非固定列**：动态图等级从实际边派生并按图压缩，使未用角色列不浪费画布空间。终点域名对齐在最后一层等级；每行只与其最高的节点一样高，因此端口 chip 行比卡片行矮；重心扫描在能消除边交叉时重排等级，且绝不增加交叉；打开分组时，设备成为分组框（见 [设备分组框](../algorithms/service-topology-layout.md#device-containers)）。全屏拓扑把昂贵布局推迟到首帧后，并按图、路由、宽度、旋转派生视口和布局选项缓存布局，因此模式变化（如进入移动/缩放模式）不重跑路由。
 
@@ -49,7 +49,7 @@
 
 直接/局域网/VPN 访问节点和远程 VPS 设备在源端点后作为**平行分支**出现而非单链，同设备公共反向代理服务（如 Caddy）保持本地但可放在路由路径更后位置，使箭头保持从左到右移动。
 
-## 添加访问路径
+## 添加访问路径 <a id="adding-an-access-path"></a>
 
 每个「添加访问方式」按钮——服务应用栏、总览、拓扑卡片、服务的路由分组和 tile 菜单，以及拓扑节点详情——都打开**引导式访问路径页**（`service_access_path_page.dart`，1.5.6 起；它取代了一个单跳对话框）。它是分三步的一张滚动表单，恰好保存一条路由：
 
@@ -58,7 +58,7 @@
 3. **详细设置**——只列所选模式需要的内容：
    - **可达范围**——局域网、VPN、公网或公网（需登录）：这一*可达范围*设定访问级别并固定 [车道](#lane-override)。选择模式时应用其默认值（直连 ⇒ 局域网，其他一切 ⇒ 公网），直到用户自行选择。
    - **先经过反向代理**——用于隧道和端口映射模式，把代理跳放在前面：两跳链 *应用 → Caddy → 隧道或 FRP*。
-   - **代理和中继服务**——在同一个底部面板中选取，可能的候选排在前面（代理类服务，源所在机器上的优先；FRP 模式下为名称含 FRP 的服务，VPS 设备上的优先；Pangolin、Cloudflare 和 Tailscale 服务按名称）。只有一个明显候选时会预选它。「新建代理服务…」和「新建中继服务…」以 Caddy 模板或该模式自己的模板打开服务编辑器，并选中编辑器保存的服务。
+   - **代理和中继服务**——在同一个底部面板中选取，可能的候选排在前面（类代理服务，源所在机器上的优先；FRP 模式下为名称含 FRP 的服务，VPS 设备上的优先；Pangolin、Cloudflare 和 Tailscale 服务按名称）。只有一个明显候选时会预选它。「新建代理服务…」和「新建中继服务…」以 Caddy 模板或该模式自己的模板打开服务编辑器，并选中编辑器保存的服务。
    - **入口端口**（FRP）——中继的端点以 chip 列出。预选主端点，也就是在有这个选择之前拓扑推断出的入口。
    - **公网主机和端口**（FRP、路由器端口转发）——端口必填。FRP 中继所在设备恰好有一条网络分配时，会用它预填主机。
    - **URL / 域名**——反向代理和三种隧道必填，端口映射和直连可选；直连会得到一个由源设备的局域网或 VPN 分配加端点构成的地址（若用户切换到其他模式，这个地址只要未被改动就会被撤回）。
@@ -83,7 +83,7 @@
 
 **高级路由编辑器**仍负责模式未覆盖的一切：三跳或更多、跳备注、scheme 和路径、自定义访问级别。引导式页面通过「高级编辑器」把草稿交给它；只要高级编辑器的表单符合某种模式，它就提供「引导式编辑器」，其**拓扑车道**下拉框写入或清除车道覆盖（*自动*保留推断）。路由*名称*仍在内部生成并对用户隐藏——且总是英文，因此存储的名称绝不随保存它的设备的语言而变化；面向用户的描述属于 `notes`。
 
-## 访问模式
+## 访问模式 <a id="access-patterns"></a>
 
 `lib/features/services/services/service_access_patterns.dart` 为单条访问路径通常遵循的自托管方案命名，使路由可以按用户理解它的方式来描述，而不是一串跳。每种模式恰好产生一个 `ServiceRoute`，其跳都是拓扑构建器已经理解的：
 
@@ -99,13 +99,13 @@
 
 模式从不存储。保存的路由每次打开都会重新分类，只有引导式表单能逐字段复现它时才算作某种模式：一或两跳、可选的代理跳在前、可识别的最后一跳、访问级别与车道构成一种*可达范围*，并且没有表单不显示的跳备注、scheme、路径或其他细节。其他一切——三跳、自定义访问级别、手工改过的跳字段——都归高级编辑器处理，它会原样保留这些内容。
 
-## 车道覆盖
+## 车道覆盖 <a id="lane-override"></a>
 
 拓扑按**访问车道**——局域网 / WiFi、VPN / Tailscale 或公网 / VPS——为每条路由着色和排序。1.5.6 之前车道总是推断得出，且方法优先：任何经 FRP、路由器端口转发、Caddy、Nginx、Traefik、Cloudflare Tunnel 或 Pangolin 的跳都会让路由成为公网，无论其访问级别写的是什么。这无法表达仅限局域网的反向代理（使用分离 DNS 的 Caddy），它总被画在公网车道。
 
 路由现在可以在 `extraJson['accessLane']`（`local`、`vpn` 或 `public`；见 [数据格式](../data-formats.md#app-written-extrajson-keys)）中固定其车道。该键可选且只做增量添加：没有它时旧推断原样适用，因此既有路由的绘制与以前完全相同，旧构建会保留该键并继续推断。路由的**可达范围**——局域网、VPN、公网或公网（需登录）——就是其访问级别与此车道的组合：局域网固定本地车道，VPN 固定 VPN 车道，两种公网选择都固定公网车道（需登录的变体保存 `authenticated` 访问级别）。
 
-## FRP 风格入口/公共端口建模
+## FRP 风格入口/公共端口建模 <a id="frp-style-ingresspublic-port-modeling"></a>
 
 对 FRP 风格访问，路径建模为：VPS/远程设备 → 该 VPS/远程设备上的 FRP 服务，带**兄弟 FRP 端口 chip**：
 
@@ -116,15 +116,15 @@
 
 拓扑端点和远程公共入口端口渲染为带图标和端口号的小圆角方块**端口 chip**，使端口保持可见而不与主设备/服务/域节点视觉竞争。
 
-## 服务模板
+## 服务模板 <a id="service-templates"></a>
 
 `service_template_service.dart` 为常见自托管工具提供模板：Caddy、Gitea、Jellyfin、Pangolin、FRP、Cloudflare Tunnel、File Browser、Vaultwarden、Nextcloud、WordPress、Code Server、OpenCode、AdGuard Home、LuCI、Minecraft Server 和相关 homelab 服务。模板只**预填**名称/图标/类型/默认端口/Compose 示例——不执行发现，匹配上面仅手动清单约束。
 
-## 端口冲突检测
+## 端口冲突检测 <a id="port-conflict-detection"></a>
 
 端口冲突检测**仅建议**：它警告多个手动输入服务使用相同设备/传输/端口，但绝不阻塞保存，因为绑定地址和用户意图可能合法不同（如两个服务正确绑定同一端口的不同接口）。
 
-## 相关
+## 相关 <a id="related"></a>
 
 - [服务拓扑布局](../algorithms/service-topology-layout.md) — 布局和路由算法。
 - [服务拓扑演练](../examples/service-topology-walkthrough.md) — 完整 FRP 示例。

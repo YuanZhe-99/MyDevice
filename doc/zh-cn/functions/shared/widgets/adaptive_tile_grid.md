@@ -1,6 +1,6 @@
 # lib/shared/widgets/adaptive_tile_grid.dart
 
-列表页按 [`listColumnCount`](../utils/adaptive_layout.md#listcolumncount) 返回的列数渲染 tile 所需的三个助手：一行 tile 对应一个 `Row`、整个列表的所有行，以及选择列数的应用栏控件。被 `device_list_page.dart`、`network_list_page.dart`、`dataset_list_page.dart` 和 `service_list_page.dart` 使用。列数规则背后的推理见 [../../../adaptive-layout.md](../../../adaptive-layout.md#多少列)。
+列表页按 [`listColumnCount`](../utils/adaptive_layout.md#listcolumncount) 返回的列数渲染 tile 所需的三个助手：一行 tile 对应一个 `Row`、整个列表的所有行，以及选择列数的应用栏控件。被 `device_list_page.dart`、`network_list_page.dart`、`dataset_list_page.dart` 和 `service_list_page.dart` 使用。列数规则背后的推理见 [../../../adaptive-layout.md](../../../adaptive-layout.md#how-many-columns)。
 
 ## 声明
 

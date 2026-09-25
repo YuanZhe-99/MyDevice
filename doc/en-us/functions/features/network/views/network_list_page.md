@@ -100,7 +100,7 @@ Row count (15) matches `grep -c 'Purpose:' network_list_page.dart` (15) exactly.
 - **Notes:** The `subnet` sort's null-handling is direction-invariant — nulls stay last whether
   ascending or descending, because the ascending wrapper swaps the comparator's arguments rather
   than negating its result (same technique as `_DeviceListPageState._sortedDevices`, see
-  [`../../devices/views/device_list_page.md#_sorteddevices`](../../devices/views/device_list_page.md)).
+  [`../../devices/views/device_list_page.md#_sorteddevices`](../../devices/views/device_list_page.md#_sorteddevices)).
 
 ### `Future<void> _load()` <a id="load"></a>
 - **Kind:** method of `_NetworkListPageState`.

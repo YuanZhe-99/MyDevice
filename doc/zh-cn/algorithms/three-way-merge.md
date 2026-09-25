@@ -4,7 +4,7 @@
 
 本文件有两个合并算法：每个有 `id` 和 `modifiedAt` 的模型使用的通用基于 ID/时间戳的 `mergeRecords<T>`，以及专门用于两者都没有的 `NetworkDevice` 的复合键/内容比较 `mergeAssignments`。
 
-## `mergeRecords<T>` — 通用 ID + 时间戳合并
+## `mergeRecords<T>` — 通用 ID + 时间戳合并 <a id="mergerecordst--generic-id--timestamp-merge"></a>
 
 确认签名：
 
@@ -64,7 +64,7 @@ class RecordMergeResult<T> {
 
 每个逐模型包装（`DeviceMergeResult`、`NetworkMergeResult`、`DataSetMergeResult`、`ServiceMergeResult`）暴露 `hasConflicts` 和取调用方逐冲突 ID 解决选择、产生准备好上传的最终类型化数据容器（`DeviceData`、`NetworkData` 等）的 `buildResolved(resolutions)` 方法。
 
-## `mergeAssignments` — 复合键内容比较合并
+## `mergeAssignments` — 复合键内容比较合并 <a id="mergeassignments-composite-key-content-comparison-merge"></a>
 
 `NetworkDevice` 无 `id` 无 `modifiedAt`（见 [网络 — 复合键身份及其原因](../features/networks.md#composite-key-identity--and-why)），因此需要不同算法。确认签名：
 
@@ -78,7 +78,7 @@ List<NetworkDevice> mergeAssignments(
 
 键函数是 `'${networkId}:${deviceId}'`；变更检测函数是 `jsonEncode(assignment.toJson())`——即**对照基础的内容相等**，非时间戳比较。
 
-### 算法
+### 算法 <a id="algorithm-1"></a>
 
 对跨 local/remote/base 的每个复合键：
 

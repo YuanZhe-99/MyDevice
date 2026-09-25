@@ -47,7 +47,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 - **Returns:** `Future<NetworkData>` — `const NetworkData()` (empty) if the file is absent or empty.
 - **Side effects:** Reads `network_data.json`.
 - **Algorithm:** Existence/empty-content checks, then `NetworkData.fromJson(jsonDecode(...))` (see
-  [`../models/network.md#networkdata-fromjson`](../models/network.md)).
+  [`../models/network.md#networkdata-fromjson`](../models/network.md#networkdata-fromjson)).
 - **Usage:**
   ```dart
   final data = await NetworkStorage.load();
@@ -65,7 +65,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 - **Returns:** `Future<void>`.
 - **Side effects:** Writes `network_data.json` (pretty-printed, non-atomic); calls
   `AutoSyncService.instance.notifySaved()` (see
-  [`../../../../shared/services/auto_sync_service.md#notifysaved`](../../../shared/services/auto_sync_service.md)).
+  [`../../../shared/services/auto_sync_service.md`](../../../shared/services/auto_sync_service.md)).
 - **Algorithm:** JSON-encode `data.toJson()`, write it, then notify auto-sync.
 - **Usage:**
   ```dart

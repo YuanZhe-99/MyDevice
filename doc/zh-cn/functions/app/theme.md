@@ -31,7 +31,7 @@
 - **返回：** 由 `FlexThemeData.light(...)` 构建的 `ThemeData`。
 - **副作用：** 无（每次访问构造新 `ThemeData`；不缓存）。
 - **算法：** 调用 `FlexThemeData.light`，`scheme: FlexScheme.blue`、`surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold`、`blendLevel: 7` 和 `FlexSubThemesData(blendOnLevel: 10, useMaterial3Typography: true, useM2StyleDividerInM3: true, inputDecoratorBorderType: FlexInputBorderType.outline, navigationBarLabelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected)`，`useMaterial3: true`。
-- **用法：** 在 `MyDeviceApp.build()` 中以 `theme: AppTheme.light` 读取（见 [app.md](../app.md)）。
+- **用法：** 在 `MyDeviceApp.build()` 中以 `theme: AppTheme.light` 读取（见 [app.md](app.md)）。
 - **备注：** 无。
 
 ### `static ThemeData get dark` <a id="dark"></a>

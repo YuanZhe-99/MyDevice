@@ -512,7 +512,7 @@ void main() {
       final zipFile = File(p.join(sb.dir.path, 'evil.zip'));
       await zipFile.writeAsBytes(zip);
       final ok = await ImportExportService.importZip(zipFile.path);
-      // Accepted unification (PLAN.md, P3.3.3): MyDevice used to skip the bad
+      // Accepted unification (step P3.3.3 of the myapps_data migration): MyDevice used to skip the bad
       // entry and import the rest. The shared engine classifies every entry
       // before writing any, so an archive containing a traversal entry is
       // rejected outright. Strictly safer — a tampered archive can no longer be

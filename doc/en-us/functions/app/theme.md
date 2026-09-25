@@ -38,7 +38,7 @@ Defines `AppTheme`, the app's Material 3 light/dark theme via `flex_color_scheme
   inputDecoratorBorderType: FlexInputBorderType.outline, navigationBarLabelBehavior:
   NavigationDestinationLabelBehavior.onlyShowSelected)`, with `useMaterial3: true`.
 - **Usage:** Read in `MyDeviceApp.build()` as `theme: AppTheme.light` (see
-  [../app.md](app.md)).
+  [app.md](app.md)).
 - **Notes:** None.
 
 ### `static ThemeData get dark` <a id="dark"></a>

@@ -55,6 +55,26 @@ Row count (21) matches `grep -c 'Purpose:' exchange_rate_service.dart` (21) exac
 - **Notes:** `message` is a stable code, not a human-readable sentence — callers must translate it
   themselves rather than displaying it directly.
 
+### `const DeviceExchangeRateData({required String baseCurrency, required Map<String, double> rates, DateTime? lastFetchedAt})` <a id="deviceexchangeratedata-new"></a>
+- **Kind:** constructor of `DeviceExchangeRateData`.
+- **Source:** `lib/features/devices/services/exchange_rate_service.dart` (line 39).
+- **Purpose:** Create one rate snapshot: every rate in `rates` is "units of that currency per one
+  unit of `baseCurrency`".
+- **Inputs:** `baseCurrency` — an upper-case currency code; `rates` — upper-case currency code →
+  rate; `lastFetchedAt` — when the snapshot came from the network, `null` for built-in fallback
+  rates.
+- **Returns:** A new, immutable `DeviceExchangeRateData`.
+- **Side effects:** None.
+- **Algorithm:** Trivial `const` field assignment; no normalization happens here.
+- **Usage:** Built by [`DeviceExchangeRateData.fromJson`](#deviceexchangeratedata-fromjson) (cached
+  file), by [`fetchLatest`](#fetchlatest) (network, `lastFetchedAt: DateTime.now()`), and by
+  [`load`](#load)'s fallback path (`rates: _fallbackRatesFor(base)`, no `lastFetchedAt`).
+- **Notes:** Callers are responsible for upper-casing codes; every construction site in this file
+  already does. A `null` `lastFetchedAt` makes [`_shouldFetchToday`](#_shouldfetchtoday) report the
+  cache as stale, so fallback rates are always replaced on the next qualifying refresh.
+  `lastFetchedAt` is local time, which is fine because `exchange_rates.json` is a device-local cache
+  that never syncs.
+
 ### `Map<String, dynamic> DeviceExchangeRateData.toJson()` <a id="deviceexchangeratedata-tojson"></a>
 - **Kind:** method of `DeviceExchangeRateData`.
 - **Source:** `lib/features/devices/services/exchange_rate_service.dart` (line 50).
@@ -186,6 +206,19 @@ Row count (21) matches `grep -c 'Purpose:' exchange_rate_service.dart` (21) exac
   trip; any failure (offline, API error) is silently absorbed and simply retried on the next
   qualifying call (app restart, or any conversion that goes through
   [`_rateToDefault`](#_ratetodefault)).
+
+### `static Future<File> _getFile()` <a id="_getfile"></a>
+- **Kind:** private static method.
+- **Source:** `lib/features/devices/services/exchange_rate_service.dart` (line 185).
+- **Purpose:** Resolve the `exchange_rates.json` file inside the *current* app directory.
+- **Inputs:** None.
+- **Returns:** `Future<File>` — the file handle; the file itself may not exist yet.
+- **Side effects:** None beyond `DeviceStorage.getAppDir()`'s directory-creation side effect.
+- **Algorithm:** `File(p.join((await DeviceStorage.getAppDir()).path, _fileName))`.
+- **Usage:** Called by [`load`](#load) and [`save`](#save).
+- **Notes:** Goes through [`DeviceStorage.getAppDir`](device_storage.md#getappdir), so the cache
+  follows a custom storage path like every other data file. It does not use
+  `DeviceStorage._getFile`, which is private to that class.
 
 ### `static Future<DeviceExchangeRateData> load(String baseCurrency)` <a id="load"></a>
 - **Kind:** static method.

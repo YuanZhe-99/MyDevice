@@ -2,7 +2,7 @@
 
 来源：`lib/features/devices/services/device_search_service.dart`、`lib/features/devices/services/chip_search_service.dart` 和 `lib/features/devices/services/preset_service.dart`。`AppFlavor` 见 [架构 — AppFlavor](../architecture.md#appflavor)，这些填充的 `CpuInfo`/`GpuInfo` 形态见 [数据格式](../data-formats.md)。
 
-## 设备规格搜索 — `device_search_service.dart`
+## 设备规格搜索 — `device_search_service.dart` <a id="device-spec-search--device_search_servicedart"></a>
 
 `DeviceSearchService` 从两个源获取设备规格，共用一个客户端并发运行，各自上报自己的结果状态，而不是把失败吞掉：
 
@@ -47,7 +47,7 @@ static Future<DeviceSearchResponse> search(String query) async {
 `tool/check_sources.dart` 会探测每个数据源并打印同样的分类，因此抓取逻辑是否腐化可以用一条命令查明，而不必等
 用户发现。它有意**不**接入 CI，因为它会向第三方发起真实网络请求。
 
-## 芯片规格搜索 — `chip_search_service.dart`
+## 芯片规格搜索 — `chip_search_service.dart` <a id="chip-spec-search---chip_search_servicedart"></a>
 
 `ChipSearchService` 从 TechPowerUp 和 Intel 获取 CPU 规格，从 TechPowerUp 和 AMD 获取 GPU 规格：
 
@@ -80,7 +80,7 @@ static Future<List<ChipSearchResult>> searchCpu(...) async {
 
 任何未门控在线搜索路径都是 App Store 拒绝风险（Apple/Google 审核对商店分发应用中第三方站点网络抓取的指南）。`AppFlavor.isStore` 如何从 `FLAVOR` dart-define 派生见 [架构 — AppFlavor](../architecture.md#appflavor)。
 
-## 捆绑预设 — `preset_service.dart`
+## 捆绑预设 — `preset_service.dart` <a id="bundled-presets--preset_servicedart"></a> <a id="bundled-presets---presetservicedart"></a>
 
 `PresetService` 经 `rootBundle.loadString()` 从 `assets/presets/` 加载捆绑预设数据：
 

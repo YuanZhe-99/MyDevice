@@ -1,6 +1,6 @@
 # lib/shared/widgets/shell_scaffold.dart
 
-`ShellScaffold` 是 `go_router` `ShellRoute` 主体：五个标签（设备/服务/网络/数据集/设置）包裹当前激活标签页，在窄于 600 逻辑像素的窗口上渲染为底部 `NavigationBar`，600 及以上渲染为侧边 `NavigationRail`。出现哪一个是 `useNavigationRail` 的仅宽度决策——见 [../../../adaptive-layout.md](../../../adaptive-layout.md#导航放在哪里)——两者都由同一份 `_destinations` 列表构建，因此不会漂移。见 [架构](../../../architecture.md)。
+`ShellScaffold` 是 `go_router` `ShellRoute` 主体：五个标签（设备/服务/网络/数据集/设置）包裹当前激活标签页，在窄于 600 逻辑像素的窗口上渲染为底部 `NavigationBar`，600 及以上渲染为侧边 `NavigationRail`。出现哪一个是 `useNavigationRail` 的仅宽度决策——见 [../../../adaptive-layout.md](../../../adaptive-layout.md#where-navigation-lives)——两者都由同一份 `_destinations` 列表构建，因此不会漂移。见 [架构](../../../architecture.md)。
 
 ## 声明
 

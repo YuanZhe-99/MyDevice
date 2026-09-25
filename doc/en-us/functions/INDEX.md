@@ -6,7 +6,7 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 
 **Totals:** the repo's `/// Purpose:` comment count is **1214** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1333** declarations — 119 more than
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1328** declarations — 114 more than
 1214 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus the tail
 section of `device.dart`) have no `/// Purpose:` doc comment in
@@ -17,17 +17,16 @@ number.
 
 The `/// Purpose:` figure is verified against source with
 `grep -r '/// Purpose:' lib --include=*.dart` (excluding `lib/l10n/`). The declaration totals are
-hand-maintained and **known to be drifted**: the per-file rows, the Area totals table and the Tier
-table below do not all agree with each other, and a handful of per-file rows do not match the
-Declarations table on their own page either. The drift predates 1.5.6; the 1.5.6 pages were added
-as rows and the totals were moved by exactly those rows' amounts rather than re-audited. Treat the
-per-file rows as authoritative and every total as approximate until a full sweep happens.
+hand-maintained and were **re-audited for 1.5.6**: every per-file row equals the Declarations
+table on its own page (rows and Tier A), and the Area totals and the Tier table below are exact
+sums of the per-file rows. Keep it that way: a change that adds or removes a page's rows updates
+its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 763 |
-| Tier B (index row only) | 570 |
-| **Total** | **1333** |
+| Tier A (full entry) | 713 |
+| Tier B (index row only) | 615 |
+| **Total** | **1328** |
 
 ## Root (`lib/`)
 
@@ -62,10 +61,10 @@ per-file rows as authoritative and every total as approximate until a full sweep
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 25 | 24 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
-| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 30 | 22 |
+| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 35 | 22 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 12 | 11 |
-| `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 4 |
+| `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
 | `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 59 | 14 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 34 | 16 |
@@ -115,20 +114,20 @@ per-file rows as authoritative and every total as approximate until a full sweep
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1214/1333 hand-documented declarations above).
+the 1214/1328 hand-documented declarations above).
 
 ## shared/
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
 | `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 6 | 6 |
-| `lib/shared/services/auto_sync_service.dart` | [shared/services/auto_sync_service.md](shared/services/auto_sync_service.md) | 15 | 15 |
+| `lib/shared/services/auto_sync_service.dart` | [shared/services/auto_sync_service.md](shared/services/auto_sync_service.md) | 20 | 5 |
 | `lib/shared/services/backup_service.dart` | [shared/services/backup_service.md](shared/services/backup_service.md) | 12 | 12 |
 | `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 5 | 5 |
 | `lib/shared/services/image_share_service.dart` | [shared/services/image_share_service.md](shared/services/image_share_service.md) | 3 | 3 |
 | `lib/shared/services/import_export_service.dart` | [shared/services/import_export_service.md](shared/services/import_export_service.md) | 5 | 4 |
 | `lib/shared/services/local_api_server.dart` | [shared/services/local_api_server.md](shared/services/local_api_server.md) | 58 | 49 |
-| `lib/shared/services/sync_merge.dart` | [shared/services/sync_merge.md](shared/services/sync_merge.md) | 11 | 11 |
+| `lib/shared/services/sync_merge.dart` | [shared/services/sync_merge.md](shared/services/sync_merge.md) | 25 | 9 |
 | `lib/shared/services/sync_progress.dart` | [shared/services/sync_progress.md](shared/services/sync_progress.md) | 0 | 0 |
 | `lib/shared/services/sync_wake_lock.dart` | [shared/services/sync_wake_lock.md](shared/services/sync_wake_lock.md) | 0 | 0 |
 | `lib/shared/services/tray_service.dart` | [shared/services/tray_service.md](shared/services/tray_service.md) | 16 | 12 |
@@ -147,11 +146,11 @@ the 1214/1333 hand-documented declarations above).
 | Area | Files | Declarations | Tier A | Tier B |
 |---|---|---|---|---|
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
-| `app/` | 4 | 9 | 4 | 5 |
+| `app/` | 5 | 20 | 15 | 5 |
 | `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 15 | 382 | 202 | 180 |
+| `features/devices/` | 15 | 387 | 218 | 169 |
 | `features/network/` | 5 | 76 | 41 | 35 |
 | `features/services/` | 14 | 524 | 228 | 296 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 20 | 310 | 246 | 64 |
-| **Total** | **67** | **1397** | **788** | **609** |
+| `shared/` | 20 | 225 | 159 | 66 |
+| **Total** | **68** | **1328** | **713** | **615** |

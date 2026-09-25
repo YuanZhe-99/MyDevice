@@ -216,7 +216,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
   calls `NetworkStorage.setAssignment`, `AutoSyncService.instance.notifySaved()`, and reloads.
 - **Algorithm:** Awaits `_showAssignmentDialog(l10n, assignment)`; if the result is non-null, awaits
   `NetworkStorage.setAssignment(result)` (matched and replaced by the `(networkId, deviceId)` pair —
-  see [`network_storage.md#setassignment`](../services/network_storage.md)), calls `notifySaved()`,
+  see [`network_storage.md#setassignment`](../services/network_storage.md#setassignment)), calls `notifySaved()`,
   and reloads.
 - **Usage:** Selected from the per-card `PopupMenuButton`'s `'edit'` item in `_buildDeviceCard`
   (this file, line 674).

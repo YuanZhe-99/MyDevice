@@ -255,7 +255,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** This is the single function that encodes every topology-modeling rule described in
   [../../../../features/services-topology.md](../../../../features/services-topology.md) — the
   FRP ingress/public port distinction and the local/remote role assignment live here, not in the
-  layout or rendering code. The `layoutColumn` hint it used to write for same-device public
+  layout or rendering code. The former layout-column hint it used to write for same-device public
   reverse proxies was never read by the layout after v0.5.9 and was removed in 1.5.6.
 
 ### `void addNode(ServiceTopologyNode node, {String? routeId})` (nested) <a id="addnode"></a>

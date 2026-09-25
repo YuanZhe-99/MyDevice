@@ -50,7 +50,7 @@
 - **用途：** 把完整数据集列表持久化到 `dataset_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `dataset_data.json`（美化打印、非原子）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md#notifysaved)）。
+- **副作用：** 写 `dataset_data.json`（美化打印、非原子）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
 - **算法：** JSON 编码 `data.toJson()`、写它、然后通知自动同步。
 - **用法：**
   ```dart

@@ -183,7 +183,7 @@
 - **副作用：** 无（对输入纯）。
 - **算法：** 构建设备/服务查找映射。定义本地辅助 `addNode`/`addEdge`（按 id/键去重）和 id 格式化器 `deviceNodeId`/`serviceNodeId`/`endpointNodeId`，加 `addDeviceNode`/`addRemoteDeviceNode`/`addServiceNode`/`addEndpointNode`（各构建节点并把其边接到父级）。首先把每个服务（及其设备）作为普通本地节点添加。然后对每条路由：添加源服务/端点链；走每个跳——FRP/端口转发风格跳（`_isPortMappingHop`）渲染为远程服务+入口端口对（跳服务无法解析时中继+远程设备对），随后跳有主机/端口时远程入口节点（`_hasRemoteEntry`）；引用可解析服务的跳渲染为（可能远程）服务+端点节点对；其他一切经 `_relayLabel`/`_roleForRelay` 渲染为泛型中继节点。最后链末每个访问目标（`serviceRouteAccessTargets`）添加一个域节点。返回前按 kind 然后 label 排序节点。
 - **用法：** 被服务总览页调用构建交给布局引擎（[service_topology_layout.md](service_topology_layout.md)）的图。
-- **备注：** 这是编码 [服务与拓扑](../../../../features/services-topology.md) 描述每个拓扑建模规则的唯一函数——FRP 入口/公共端口区分和本地/远程角色分配都住在这里，不在布局或渲染代码。它过去为同设备公共反向代理写入的 `layoutColumn` 提示在 v0.5.9 之后从未被布局读取，已在 1.5.6 移除。
+- **备注：** 这是编码 [服务与拓扑](../../../../features/services-topology.md) 描述每个拓扑建模规则的唯一函数——FRP 入口/公共端口区分和本地/远程角色分配都住在这里，不在布局或渲染代码。它过去为同设备公共反向代理写入的原布局列提示在 v0.5.9 之后从未被布局读取，已在 1.5.6 移除。
 
 ### `void addNode(ServiceTopologyNode node, {String? routeId})`（嵌套） <a id="addnode"></a>
 - **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 371 行。

@@ -43,6 +43,17 @@
 - **用法：** 由 [`_rateToDefault`](#_ratetodefault) 抛出；在 `device_edit_page.dart` 的保存处理器捕获，把 `message` 映射为给用户 snackbar 显示的本地化字符串（`exchangeRateManualRequired` / `exchangeRateUnavailable`）。
 - **备注：** `message` 是稳定码，非人类可读句子——调用方必须自己翻译而非直接显示。
 
+### `const DeviceExchangeRateData({required String baseCurrency, required Map<String, double> rates, DateTime? lastFetchedAt})` <a id="deviceexchangeratedata-new"></a>
+- **种类：** `DeviceExchangeRateData` 的构造函数。
+- **来源：** `lib/features/devices/services/exchange_rate_service.dart`（第 39 行）。
+- **用途：** 创建一份汇率快照：`rates` 中每个汇率都表示"每一单位 `baseCurrency` 折合多少单位该货币"。
+- **输入：** `baseCurrency` — 大写货币代码；`rates` — 大写货币代码 → 汇率；`lastFetchedAt` — 快照从网络获取的时间，内置回退汇率为 `null`。
+- **返回：** 新的不可变 `DeviceExchangeRateData`。
+- **副作用：** 无。
+- **算法：** 平凡 `const` 字段赋值；此处不做任何规范化。
+- **用法：** 由 [`DeviceExchangeRateData.fromJson`](#deviceexchangeratedata-fromjson)（缓存文件）、[`fetchLatest`](#fetchlatest)（网络，`lastFetchedAt: DateTime.now()`）和 [`load`](#load) 的回退路径（`rates: _fallbackRatesFor(base)`，无 `lastFetchedAt`）构建。
+- **备注：** 由调用方负责把代码转为大写；本文件每个构造点都已这样做。`lastFetchedAt` 为 `null` 时 [`_shouldFetchToday`](#_shouldfetchtoday) 报告缓存过期，因此回退汇率总会在下次合格刷新时被替换。`lastFetchedAt` 是本地时间，这没有问题，因为 `exchange_rates.json` 是从不同步的设备本地缓存。
+
 ### `Map<String, dynamic> DeviceExchangeRateData.toJson()` <a id="deviceexchangeratedata-tojson"></a>
 - **种类：** `DeviceExchangeRateData` 的方法。
 - **来源：** `lib/features/devices/services/exchange_rate_service.dart`（第 50 行）。
@@ -152,6 +163,17 @@
   ```
   （来自 `lib/main.dart`，应用启动时与 `BackupService.runAutoBackupIfNeeded()` 一起即发即忘——不 await）
 - **备注：** 启动时不带 `await` 调用，因此应用启动绝不被网络往返阻塞；任何失败（离线、API 错误）被静默吸收并简单在下次合格调用重试（应用重启，或任何经 [`_rateToDefault`](#_ratetodefault) 的转换）。
+
+### `static Future<File> _getFile()` <a id="_getfile"></a>
+- **种类：** 私有静态方法。
+- **来源：** `lib/features/devices/services/exchange_rate_service.dart`（第 185 行）。
+- **用途：** 解析*当前*应用目录内的 `exchange_rates.json` 文件。
+- **输入：** 无。
+- **返回：** `Future<File>` — 文件句柄；文件本身可能尚不存在。
+- **副作用：** 除 `DeviceStorage.getAppDir()` 的目录创建副作用外无。
+- **算法：** `File(p.join((await DeviceStorage.getAppDir()).path, _fileName))`。
+- **用法：** 被 [`load`](#load) 和 [`save`](#save) 调用。
+- **备注：** 经 [`DeviceStorage.getAppDir`](device_storage.md#getappdir) 解析，因此缓存与其他每个数据文件一样跟随自定义存储路径。它不使用 `DeviceStorage._getFile`，后者是那个类的私有方法。
 
 ### `static Future<DeviceExchangeRateData> load(String baseCurrency)` <a id="load"></a>
 - **种类：** 静态方法。

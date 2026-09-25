@@ -8,7 +8,7 @@
 
 `DeviceCategory` 值：`desktop`、`laptop`、`phone`、`tablet`、`headphone`、`watch`、`router`、`gameConsole`、`vps`、`devBoard`、`other`。
 
-## 生命周期与财务跟踪
+## 生命周期与财务跟踪 <a id="lifecycle-and-finance-tracking"></a>
 
 `v0.4.0` 添加。源码确认（`Device.lifecycleStatus`）：
 
@@ -30,13 +30,13 @@ DeviceLifecycleStatus get lifecycleStatus {
 
 `DeviceRecurringCost.dailyConvertedAmount` 从 `billingCycle` 派生（`BillingCycle.monthly` → `price.convertedAmount * 12`，`yearly` → 直接 `price.convertedAmount`）除以 365。
 
-### 退役/出售/删除的级联规则
+### 退役/出售/删除的级联规则 <a id="cascade-rules-on-retiresell-delete"></a>
 
-- 退役或出售设备必须从网络赋值和数据集存储链接移除，并从网络/存储选择器排除。
-- 删除设备必须移除相关网络赋值、数据集存储链接、服务记录和服务路由引用（见 [数据格式 — 交叉引用规则](../data-formats.md#cross-reference-rules)）。
+- 退役或出售设备必须从网络分配和数据集存储链接移除，并从网络/存储选择器排除。
+- 删除设备必须移除相关网络分配、数据集存储链接、服务记录和服务路由引用（见 [数据格式 — 交叉引用规则](../data-formats.md#cross-reference-rules)）。
 - 设备详情和 Markdown 导出相关时含生命周期和财务信息（见 [备份与恢复 — Markdown 导出](../backup-restore.md#markdown-export)）。
 
-## 财务总览页
+## 财务总览页 <a id="financial-overview-page"></a>
 
 `lib/features/devices/views/device_finance_overview_page.dart`（`DeviceFinanceOverviewPage`）从设备列表的财务总览卡片打开。它显示用 `fl_chart` 构建的两个视图：
 
@@ -54,7 +54,7 @@ double _logTransform(double value) {
 
 （带符号 `log10(|x| + 1)` 变换，`_logInverse` 为轴标签和工具提示撤销它）——这让小每日成本与一次性大购买尖峰在同一图表上可读。
 
-## 设备头像渲染
+## 设备头像渲染 <a id="device-avatar-rendering"></a>
 
 `lib/features/devices/widgets/device_avatar.dart`（`DeviceAvatar`、`DeviceAvatar.fromDevice`）是任何设备需要图标时使用的共享圆形头像渲染器：
 

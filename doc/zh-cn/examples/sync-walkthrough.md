@@ -34,7 +34,7 @@
    - 成功时保存 `device_data.json` 新基础快照。
 6. 用户反而关闭冲突对话框（如系统返回手势）时，按 [WebDAV 同步 — 手动 vs 自动同步](../sync.md#manual-vs-auto-sync) 整个解决中止：不上传任何东西、冲突在设置/WebDAV 中保持可见为挂起状态，两侧都不被静默选择。
 
-## NetworkDevice 赋值示例
+## NetworkDevice 赋值示例 <a id="networkdevice-assignment-example"></a>
 
 `NetworkDevice` 无 `id` 无 `modifiedAt`——其身份是复合键 `(networkId, deviceId)`，合并比较序列化内容而非时间戳（见 [网络 — 复合键身份及其原因](../features/networks.md#composite-key-identity--and-why) 和 [三方合并 — mergeAssignments 复合键内容比较合并](../algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)）。
 

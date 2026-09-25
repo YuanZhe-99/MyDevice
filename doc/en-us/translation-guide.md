@@ -158,6 +158,8 @@ Not copied to the other repos — no other app has these.
 | proxy-like service | 类代理服务 | a service the guided flow offers as a reverse-proxy candidate |
 | overlay network | 叠加网络 | a VPN network layered over other networks (Tailscale, ZeroTier, EasyTier, WireGuard) |
 | hand over | 移交 | the guided editor passing a route it cannot represent to the advanced editor |
+| stray config | 游离配置 | a `storage_config.json` an older build left in the custom storage folder; "adopt" it = 收编 |
+| unmoved entry | 未移动条目 | a file a storage-location change left in the old folder |
 
 ## 6. Review checklist (run before committing a Chinese page)
 

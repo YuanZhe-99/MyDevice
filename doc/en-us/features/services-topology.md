@@ -86,8 +86,9 @@ to read at preview size. The full-screen topology (`service_topology_page.dart`)
   [Platform Notes](../platform-notes.md#android)). The export captures the current highlight,
   so a single route can be exported on its own.
 
-Role, lane, device-category and access-level labels are localized throughout; screen readers
-hear each node's label, role and lane.
+Role, lane, device-category, route-method and access-level labels are localized throughout — a
+remote relay service's subtitle reads "{method} service" in the UI language (e.g. "FRP 服务"), not
+the English the graph builder records; screen readers hear each node's label, role and lane.
 
 ## Topology graph layout (high level)
 

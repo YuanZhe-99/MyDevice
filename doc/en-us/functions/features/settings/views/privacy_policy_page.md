@@ -25,9 +25,9 @@ file's 3 real declarations exactly (all three sit directly above the declaration
 All three declarations are Tier B. `build` is pure widget composition. `_getText` is a locale
 switch that selects between four embedded string constants (`_en`, `_zh`, `_zhTW`, `_ja`) — it has
 no side effects and no I/O, so despite the branching it is treated the same as the label/text
-lookup helpers classified Tier B elsewhere in this doc set (e.g. `_categoryLabel`/`_sortModeLabel`
+lookup helpers classified Tier B elsewhere in this doc set (e.g. `_sortModeLabel`/`_filterLabel`
 in `device_list_page.dart`): a fixed switch over an enum-like input that returns static content,
-not business logic. Its only notable behavior (source line 41-53) is checking `languageCode ==
+not business logic. Its only notable behavior (source lines 50-53) is checking `languageCode ==
 'zh' && countryCode == 'TW'` *before* falling into the plain `switch (locale.languageCode)`, so
 Traditional Chinese must be matched by both fields together — a bare `'zh'` match alone would
 otherwise select the Simplified Chinese text for Taiwan locales too.

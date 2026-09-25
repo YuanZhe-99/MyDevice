@@ -7,6 +7,7 @@ import '../../../shared/utils/detail_layout.dart';
 import '../../../shared/views/device_map_page.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
+import '../../devices/widgets/device_category_icon.dart';
 import '../models/network.dart';
 import '../services/network_storage.dart';
 import 'network_edit_page.dart';
@@ -156,28 +157,6 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     }
 
     return list;
-  }
-
-  /// Purpose: Return the display label for category label.
-  /// Inputs: `context`, `category`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  String _categoryLabel(BuildContext context, DeviceCategory category) {
-    final l10n = AppLocalizations.of(context)!;
-    return switch (category) {
-      DeviceCategory.desktop => l10n.deviceCategoryDesktop,
-      DeviceCategory.laptop => l10n.deviceCategoryLaptop,
-      DeviceCategory.phone => l10n.deviceCategoryPhone,
-      DeviceCategory.tablet => l10n.deviceCategoryTablet,
-      DeviceCategory.headphone => l10n.deviceCategoryHeadphone,
-      DeviceCategory.watch => l10n.deviceCategoryWatch,
-      DeviceCategory.router => l10n.deviceCategoryRouter,
-      DeviceCategory.gameConsole => l10n.deviceCategoryGameConsole,
-      DeviceCategory.vps => l10n.deviceCategoryVps,
-      DeviceCategory.devBoard => l10n.deviceCategoryDevBoard,
-      DeviceCategory.other => l10n.deviceCategoryOther,
-    };
   }
 
   /// Purpose: Return the display label for sort mode label.
@@ -724,7 +703,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
           Padding(
             padding: const EdgeInsets.only(top: 8, bottom: 4, left: 4),
             child: Text(
-              _categoryLabel(context, cat),
+              deviceCategoryLabel(AppLocalizations.of(context)!, cat),
               style: TextStyle(fontWeight: FontWeight.w600, color: cs.primary),
             ),
           ),

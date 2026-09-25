@@ -143,7 +143,8 @@ what keeps their wire format, backup format, and lock semantics interoperable.
   backup bundle and blob store, ZIP allowlist, and sync scheduling.
 - **The seam:** [`functions/app/data_modules.md`](functions/app/data_modules.md) declares the
   `StorageAdapter` over `DeviceStorage` plus one `DataModule` per data file. It is the single source
-  of truth for data-file names and backup module keys.
+  of truth for data-file names and backup module keys; the storage hubs' own file-name constants
+  alias its `*DataFileName` constants.
 - **The facades:** `WebDAVService`, `BackupService`, `ImportExportService`, and `AutoSyncService`
   keep their previous public APIs and delegate to the package. Their shapes are deliberately frozen
   so call sites and tests keep working; behavior changes belong in the package.
@@ -163,7 +164,10 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
   widget file that compares a size against a number is a bug. See
   [Adaptive Layout](adaptive-layout.md).
 - File I/O goes through `DeviceStorage.getAppDir()` so a user-configured custom storage
-  path (`storage_config.json`) is always honored.
+  path (`storage_config.json`) is always honored. Local preferences are the exception: they and
+  the custom path itself live in the one `storage_config.json` in the platform default folder,
+  read and written only through `DeviceStorage.readConfig`/`writeConfig`, so moving the data never
+  touches them (see [Data Formats](data-formats.md#storage_configjson)).
 - JSON output is pretty-printed with `JsonEncoder.withIndent('  ')`.
 - Optional null/empty fields are omitted from JSON via conditional map entries (e.g.
   `if (notes != null) 'notes': notes`), not written as explicit `null`.

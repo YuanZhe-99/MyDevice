@@ -420,6 +420,22 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('a remote relay service is subtitled in the UI language', (
+    tester,
+  ) async {
+    await pumpTopology(tester);
+    final card = find.byKey(const ValueKey('topology-node-service:frps'));
+    await tester.ensureVisible(card);
+    expect(
+      find.descendant(of: card, matching: find.textContaining('FRP 服务')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: card, matching: find.textContaining('service')),
+      findsNothing,
+    );
+  });
+
   testWidgets('node actions open the guided page with the node prefilled', (
     tester,
   ) async {

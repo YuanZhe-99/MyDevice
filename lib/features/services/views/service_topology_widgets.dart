@@ -491,10 +491,28 @@ Color serviceAccessLaneColor(ColorScheme cs, ServiceAccessLane lane) =>
 /// Side effects: None.
 /// Notes: A relay node shows its localized route method, or its localized hop
 /// type when the builder only recorded the raw type name; a device node its
-/// localized category, which the builder records as the raw enum name; every
-/// other node shows the builder's `detail` unchanged.
+/// localized category, which the builder records as the raw enum name; a
+/// relay service on the remote side — whose detail the builder writes as the
+/// English "`<method>` service", or the raw hop-type name without a method —
+/// its localized method in "{method} service", or its localized hop type;
+/// every other node shows the builder's `detail` unchanged.
 String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node) {
   final detail = node.detail?.trim();
+  if (node.kind == ServiceTopologyNodeKind.service &&
+      node.role == ServiceTopologyNodeRole.remoteService) {
+    final l10n = AppLocalizations.of(context)!;
+    final method = node.method;
+    if (method != null &&
+        detail == '${serviceRouteMethodLabel(method)} service') {
+      return l10n.serviceTopologyRelayServiceSubtitle(
+        serviceRouteMethodUiLabel(l10n, method),
+      );
+    }
+    final type = ServiceRouteHopType.values
+        .where((value) => value.name == detail)
+        .firstOrNull;
+    if (type != null) return serviceHopTypeLabel(l10n, type);
+  }
   if (node.kind == ServiceTopologyNodeKind.device) {
     final category = DeviceCategory.values
         .where((value) => value.name == detail)

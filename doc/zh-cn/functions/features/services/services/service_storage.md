@@ -21,18 +21,18 @@
 
 ### `static Future<File> _getFile()` <a id="_getfile"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 16 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 17 行）。
 - **用途：** 解析应用当前数据目录内 `service_data.json` 文件（尊重经 [`DeviceStorage.setStoragePath`](../../devices/services/device_storage.md#setstoragepath) 配置的任何自定义存储路径）。
 - **输入：** 无。
 - **返回：** `Future<File>`。
 - **副作用：** 除 `DeviceStorage.getAppDir()` 的目录创建副作用外无。
-- **算法：** `File('${(await DeviceStorage.getAppDir()).path}/$dataFileName')`，`dataFileName` 是常量 `'service_data.json'`。
+- **算法：** `File('${(await DeviceStorage.getAppDir()).path}/$dataFileName')`，`dataFileName` 是 [`data_modules.dart`](../../../app/data_modules.md#constants) 中 `serviceDataFileName`（`'service_data.json'`）的别名。
 - **用法：** 只被 [`load`](#load) 和 [`save`](#save) 内部调用；不暴露到此类外。
 - **备注：** 与 `DeviceStorage` 自己的等价（`_getFile`，也逐文件私有）不同，本文件无单独"默认目录"变体——它总是对照 `DeviceStorage.getAppDir()` 当前报告的任何东西解析。
 
 ### `static Future<ServiceData> load()` <a id="load"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 26 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 27 行）。
 - **用途：** 从 `service_data.json` 加载持久化服务清单。
 - **输入：** 无。
 - **返回：** `Future<ServiceData>` — 文件缺席或其内容空白时 `const ServiceData()`（空）。
@@ -49,7 +49,7 @@
 
 ### `static Future<void> save(ServiceData data)` <a id="save"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 40 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 41 行）。
 - **用途：** 把完整服务清单（服务和路由一起）持久化到 `service_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data` — 要写的完整 `ServiceData`；此类每个修改器都用新重建 `ServiceData` 调用它，绝不用部分更新。
 - **返回：** `Future<void>`。
@@ -60,7 +60,7 @@
 
 ### `static Future<void> addOrUpdateService(ServiceNode service)` <a id="addorupdateservice"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 52 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 53 行）。
 - **用途：** 插入新服务或按 `id` 替换既有服务。
 - **输入：** `service`。
 - **返回：** `Future<void>`。
@@ -75,7 +75,7 @@
 
 ### `static Future<void> deleteService(String id)` <a id="deleteservice"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 75 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 76 行）。
 - **用途：** 按 id 删除服务并剥离任何引用它的路由跳，使已删除服务不能作为跳 `serviceId` 悬空。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
@@ -90,7 +90,7 @@
 
 ### `static Future<void> addOrUpdateRoute(ServiceRoute route)` <a id="addorupdateroute"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 100 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 101 行）。
 - **用途：** 插入新路由或按 `id` 替换既有路由。
 - **输入：** `route`。
 - **返回：** `Future<void>`。
@@ -105,7 +105,7 @@
 
 ### `static Future<void> deleteRoute(String id)` <a id="deleteroute"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 123 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 124 行）。
 - **用途：** 按 id 删除路由。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
@@ -120,7 +120,7 @@
 
 ### `static Future<void> removeDeviceReferences(String deviceId)` <a id="removedevicereferences"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/services/services/service_storage.dart`（第 139 行）。
+- **来源：** `lib/features/services/services/service_storage.dart`（第 140 行）。
 - **用途：** 移除对已删除或离开服务（退役/出售）设备的每个服务和路由引用——[`DeviceStorage`](../../devices/services/device_storage.md) 跨模块级联删除规则的服务层半边。
 - **输入：** `deviceId`。
 - **返回：** `Future<void>`。

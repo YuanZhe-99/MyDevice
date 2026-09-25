@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../../../app/data_modules.dart';
 import '../../../features/devices/services/device_storage.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../models/dataset.dart';
 
 class DataSetStorage {
-  static const _dataFileName = 'dataset_data.json';
+  static const _dataFileName = dataSetDataFileName;
 
   /// Purpose: Provide the internal get file helper for this file.
   /// Inputs: None.

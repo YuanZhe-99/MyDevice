@@ -382,11 +382,15 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     }
   }
 
-  /// Purpose: Show storage path dialog in the current UI flow.
+  /// Purpose: Let the user change or reset the storage location.
   /// Inputs: `context`.
   /// Returns: `Future<void>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: Shows the path dialog; calls `DeviceStorage.setStoragePath`
+  /// and reloads the shown path; shows the outcome.
+  /// Notes: A path that could not be recorded shows a failure snackbar; a
+  /// move that left entries behind shows a dialog (key
+  /// `storage-unmoved-dialog`) naming the old folder and each entry; a full
+  /// success shows the usual snackbar.
   Future<void> _showStoragePathDialog(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: _storagePath);
@@ -432,21 +436,59 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
     if (newPath == null) return;
     final pathToSet = newPath.isEmpty ? null : newPath;
-    final ok = await DeviceStorage.setStoragePath(pathToSet);
-    if (ok) {
-      await _loadStoragePath();
+    final result = await DeviceStorage.setStoragePath(pathToSet);
+    if (!result.saved) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              pathToSet == null
-                  ? l10n.settingsResetDefaultLocation
-                  : l10n.settingsStoragePathUpdated,
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.settingsStoragePathFailed)));
+      }
+      return;
+    }
+    await _loadStoragePath();
+    if (!context.mounted) return;
+    if (result.unmoved.isNotEmpty) {
+      await showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          key: const Key('storage-unmoved-dialog'),
+          icon: const Icon(Icons.warning_amber_rounded),
+          title: Text(l10n.settingsStoragePathUnmovedTitle),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.settingsStoragePathUnmovedBody(result.from ?? '')),
+                const SizedBox(height: 8),
+                for (final entry in result.unmoved)
+                  SelectableText(
+                    entry,
+                    style: const TextStyle(fontFamily: 'monospace'),
+                  ),
+              ],
             ),
           ),
-        );
-      }
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+            ),
+          ],
+        ),
+      );
+      return;
     }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          pathToSet == null
+              ? l10n.settingsResetDefaultLocation
+              : l10n.settingsStoragePathUpdated,
+        ),
+      ),
+    );
   }
 
   /// Purpose: Load tray settings into the current workflow or state.

@@ -28,12 +28,14 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<File> _getFile()` <a id="getfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 16).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 17).
 - **Purpose:** Resolve the `network_data.json` file inside the current app directory.
 - **Inputs:** None.
 - **Returns:** `Future<File>`.
 - **Side effects:** None beyond `DeviceStorage.getAppDir()`'s directory-creation side effect.
-- **Algorithm:** `File('${(await DeviceStorage.getAppDir()).path}/network_data.json')`.
+- **Algorithm:** `File('${appDir.path}/$_dataFileName')` on `DeviceStorage.getAppDir()`, where
+  `_dataFileName` aliases `networkDataFileName` (`'network_data.json'`) from
+  [`data_modules.dart`](../../../app/data_modules.md#constants).
 - **Usage:** Called by [`load`](#load) and [`save`](#save).
 - **Notes:** Delegating to `DeviceStorage.getAppDir()` (rather than resolving its own directory)
   is what keeps `network_data.json` living alongside `device_data.json` even after the user changes
@@ -41,7 +43,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<NetworkData> load()` <a id="load"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 26).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 27).
 - **Purpose:** Load the persisted network dataset from `network_data.json`.
 - **Inputs:** None.
 - **Returns:** `Future<NetworkData>` — `const NetworkData()` (empty) if the file is absent or empty.
@@ -58,7 +60,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<void> save(NetworkData data)` <a id="save"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 40).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 41).
 - **Purpose:** Persist the full network dataset to `network_data.json` and notify the auto-sync
   service that local data changed.
 - **Inputs:** `data`.
@@ -84,7 +86,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<void> addOrUpdateNetwork(Network network)` <a id="addorupdatenetwork"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 52).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 53).
 - **Purpose:** Insert a new network or replace an existing one, matched by `id`.
 - **Inputs:** `network`.
 - **Returns:** `Future<void>`.
@@ -101,7 +103,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<void> deleteNetwork(String id)` <a id="deletenetwork"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 69).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 70).
 - **Purpose:** Delete a network by id and remove every assignment that referenced it.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
@@ -119,7 +121,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<void> setAssignment(NetworkDevice assignment)` <a id="setassignment"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 83).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 84).
 - **Purpose:** Insert a new device assignment or replace an existing one, matched by the
   `(networkId, deviceId)` composite key.
 - **Inputs:** `assignment`.
@@ -141,7 +143,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 
 ### `static Future<void> removeAssignment(String networkId, String deviceId)` <a id="removeassignment"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/network/services/network_storage.dart` (line 104).
+- **Source:** `lib/features/network/services/network_storage.dart` (line 105).
 - **Purpose:** Remove a single device's assignment from a network.
 - **Inputs:** `networkId`, `deviceId`.
 - **Returns:** `Future<void>`.

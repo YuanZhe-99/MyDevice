@@ -306,21 +306,27 @@ all (**44 Tier A / 32 Tier B**).
   source.
 - **Notes:** None.
 
-### `String addServiceNode(ServiceNode service, {bool remote = false, String? routeId, String? detailOverride})` (nested) <a id="addservicenode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 489.
+### `String addServiceNode(ServiceNode service, {bool remote = false, String? routeId, String? detailOverride, ServiceRouteMethod? method})` (nested) <a id="addservicenode"></a>
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 492.
 - **Purpose:** Add (or reuse) a service node, its owning device node, and the edge between them.
-- **Inputs:** `service`; `remote` (default `false`); optional `routeId`/`detailOverride`.
-  **Returns:** the node id.
+- **Inputs:** `service`; `remote` (default `false`) — a hop service on the remote side; optional
+  `routeId` (the route adding it), `detailOverride` (replaces the default detail) and `method`
+  (the hop method that made the service a relay). **Returns:** the node id.
 - **Side effects:** Calls `addDeviceNode`/`addRemoteDeviceNode`, `addNode`, `addEdge`.
 - **Algorithm:** Resolve the device node (remote or local per `remote`); build the service node
-  with `detailOverride` or a default (the service's kind, or up to 3 endpoint port texts joined);
-  wire the device→service edge (tagged with `routeId` only when remote).
+  (role `remoteService` or `localService`) with `detailOverride` or a default (the service's kind,
+  or up to 3 endpoint port texts joined) and `method`; wire the device→service edge (tagged with
+  `routeId` only when remote).
 - **Usage:** Called once per service up front (as a plain local node) and again per route hop
-  that references a service.
-- **Notes:** None.
+  that references a service. A port-mapping hop's service is added with `remote: true`,
+  `detailOverride` set to the English "`<serviceRouteMethodLabel(method)>` service" (or the raw
+  hop-type name when the hop has no method) and `method: hop.method`.
+- **Notes:** The recorded `method` lets the canvas card localize that English detail
+  ([`_nodeSubtitle`](../views/service_topology_widgets.md#nodesubtitle)) without the builder
+  touching localization.
 
 ### `String addEndpointNode(ServiceNode service, ServiceEndpoint endpoint, {bool remote = false, String? routeId})` (nested) <a id="addendpointnode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 534.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 539.
 - **Purpose:** Add (or reuse) an endpoint node and wire it to its parent service node.
 - **Inputs:** `service`, `endpoint`; `remote`; optional `routeId`. **Returns:** the node id.
 - **Side effects:** Calls `addNode`, `addEdge`.
@@ -334,7 +340,7 @@ all (**44 Tier A / 32 Tier B**).
   [service_topology_layout.md](service_topology_layout.md)).
 
 ### `List<ServiceWarning> findServiceReferenceWarnings({required List<ServiceNode> services, required List<ServiceRoute> routes, required List<Device> devices, required List<Network> networks})` <a id="findservicereferencewarnings"></a>
-- **Kind:** top-level function. **Source:** line 745.
+- **Kind:** top-level function. **Source:** line 751.
 - **Purpose:** Scan saved services and routes for broken or ambiguous references, for display in
   the Services overview.
 - **Inputs:** `services`, `routes`, `devices`, `networks`. **Returns:** `List<ServiceWarning>`.
@@ -353,7 +359,7 @@ all (**44 Tier A / 32 Tier B**).
   `_publicTargetRoutesConflict`/`_endpointPortsOverlap`.
 
 ### `String normalizedBindAddress(String? bindAddress)` <a id="normalizedbindaddress"></a>
-- **Kind:** top-level function. **Source:** line 857.
+- **Kind:** top-level function. **Source:** line 863.
 - **Purpose:** Canonicalize any wildcard-meaning bind address form to the single sentinel `'*'`.
 - **Inputs:** `bindAddress` (nullable). **Returns:** `String`.
 - **Side effects:** None.
@@ -364,7 +370,7 @@ all (**44 Tier A / 32 Tier B**).
   recognized as the same "listens on everything" case for conflict detection.
 
 ### `List<ServiceRoute> _conflictingPublicTargetRoutes(List<ServiceRoute> routes, Map<String, ServiceNode> serviceMap)` <a id="conflictingpublictargetroutes"></a>
-- **Kind:** top-level function. **Source:** line 872.
+- **Kind:** top-level function. **Source:** line 878.
 - **Purpose:** Given a set of routes sharing one canonical access target, return only the subset
   actually in conflict with each other.
 - **Inputs:** `routes`, `serviceMap`. **Returns:** the conflicting subset, original order.
@@ -376,7 +382,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `bool _publicTargetRoutesConflict(ServiceRoute a, ServiceRoute b, Map<String, ServiceNode> serviceMap)` <a id="publictargetroutesconflict"></a>
-- **Kind:** top-level function. **Source:** line 896.
+- **Kind:** top-level function. **Source:** line 902.
 - **Purpose:** Decide whether two routes sharing a public target are ambiguous enough to warn
   about.
 - **Inputs:** `a`, `b`, `serviceMap`. **Returns:** `bool`.
@@ -390,7 +396,7 @@ all (**44 Tier A / 32 Tier B**).
   — matching the comment on `findServiceReferenceWarnings`'s doc block.
 
 ### `ServiceEndpoint? _sourceEndpointForDuplicateTargetCheck(ServiceNode service, ServiceRoute route)` <a id="sourceendpointforduplicatetargetcheck"></a>
-- **Kind:** top-level function. **Source:** line 917.
+- **Kind:** top-level function. **Source:** line 923.
 - **Purpose:** Resolve the endpoint to use when comparing two routes' source ports for the
   duplicate-target check.
 - **Inputs:** `service`, `route`. **Returns:** `ServiceEndpoint?`.
@@ -403,7 +409,7 @@ all (**44 Tier A / 32 Tier B**).
   ambiguous rather than guessing.
 
 ### `bool _endpointPortsOverlap(ServiceEndpoint a, ServiceEndpoint b)` <a id="endpointportsoverlap"></a>
-- **Kind:** top-level function. **Source:** line 934.
+- **Kind:** top-level function. **Source:** line 940.
 - **Purpose:** Test whether two endpoints' (possibly-ranged) port intervals overlap.
 - **Inputs:** `a`, `b`. **Returns:** `bool` — `true` (conservatively) if either side has no port
   at all.
@@ -415,7 +421,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `ServiceTopologyNodeRole _preferTopologyRole(ServiceTopologyNodeRole current, ServiceTopologyNodeRole incoming)` <a id="prefertopologyrole"></a>
-- **Kind:** top-level function. **Source:** line 945.
+- **Kind:** top-level function. **Source:** line 951.
 - **Purpose:** Pick the more informative of two roles when merging two node observations for the
   same id.
 - **Inputs:** `current`, `incoming`. **Returns:** `ServiceTopologyNodeRole`.
@@ -427,7 +433,7 @@ all (**44 Tier A / 32 Tier B**).
   treat it as remote everywhere," rather than the first-seen role winning arbitrarily.
 
 ### `bool _isRemoteHopService({required ServiceNode source, required ServiceNode hopService, required Map<String, Device> deviceMap})` <a id="isremotehopservice"></a>
-- **Kind:** top-level function. **Source:** line 960.
+- **Kind:** top-level function. **Source:** line 966.
 - **Purpose:** Decide whether a hop's referenced service should be rendered as remote.
 - **Inputs:** `source` (route's source service), `hopService`, `deviceMap`.
 - **Returns:** `bool`.
@@ -439,7 +445,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `ServiceAccessLane serviceAccessLaneForRoute(ServiceRoute route)` <a id="serviceaccesslaneforroute"></a>
-- **Kind:** top-level function. **Source:** line 979.
+- **Kind:** top-level function. **Source:** line 985.
 - **Purpose:** Classify a route into one of three access lanes (local/VPN/public) for topology
   rendering and edge grouping.
 - **Inputs:** `route`. **Returns:** `ServiceAccessLane`.
@@ -458,7 +464,7 @@ all (**44 Tier A / 32 Tier B**).
   override means exactly the old inference.
 
 ### `ServiceEndpoint? _portMappingIngressEndpoint(ServiceNode service, ServiceRouteHop hop)` <a id="portmappingingressendpoint"></a>
-- **Kind:** top-level function. **Source:** line 1030.
+- **Kind:** top-level function. **Source:** line 1036.
 - **Purpose:** Resolve which endpoint on the hop's service represents the FRP/port-forward
   ingress port.
 - **Inputs:** `service`, `hop`. **Returns:** `ServiceEndpoint?`.
@@ -473,7 +479,7 @@ all (**44 Tier A / 32 Tier B**).
   port rendered via `_hasRemoteEntry`/`addRemoteDeviceNode`.
 
 ### `ServiceEndpoint? serviceDefaultIngressEndpoint(ServiceNode service)` <a id="servicedefaultingressendpoint"></a>
-- **Kind:** top-level function. **Source:** line 1046.
+- **Kind:** top-level function. **Source:** line 1052.
 - **Purpose:** Pick the endpoint a relay service receives tunnelled traffic on when a route does
   not name one.
 - **Inputs:** `service`. **Returns:** The primary endpoint, else the first, else null.
@@ -485,7 +491,7 @@ all (**44 Tier A / 32 Tier B**).
   records the ingress the topology already inferred, so saving it does not move any edge.
 
 ### `ServiceAccessLane? serviceRouteExplicitAccessLane(ServiceRoute route)` <a id="serviceroutexplicitaccesslane"></a>
-- **Kind:** top-level function. **Source:** line 1057.
+- **Kind:** top-level function. **Source:** line 1063.
 - **Purpose:** Read a route's explicit access-lane override.
 - **Inputs:** `route`. **Returns:** The lane named by `extraJson['accessLane']`, or null when the
   key is absent, not a string, or not one of `local` / `vpn` / `public`.
@@ -496,7 +502,7 @@ all (**44 Tier A / 32 Tier B**).
   break an older reader.
 
 ### `Map<String, dynamic> serviceRouteExtraJsonWithAccessLane(Map<String, dynamic> extraJson, ServiceAccessLane? lane)` <a id="serviceroutextrajsonwithaccesslane"></a>
-- **Kind:** top-level function. **Source:** line 1072.
+- **Kind:** top-level function. **Source:** line 1078.
 - **Purpose:** Write or remove the access-lane override in a route's `extraJson`.
 - **Inputs:** `extraJson` — the route's existing map; `lane` — the lane to pin, or null to
   return the route to inference.
@@ -508,7 +514,7 @@ all (**44 Tier A / 32 Tier B**).
   `serviceRouteExtraJsonWithTargets`.
 
 ### `List<ServiceRoute> relatedRoutesForNode(ServiceTopologyNode node, List<ServiceRoute> routes, {List<ServiceNode> services = const []})` <a id="relatedroutesfornode"></a>
-- **Kind:** top-level function. **Source:** line 1094.
+- **Kind:** top-level function. **Source:** line 1100.
 - **Purpose:** List the routes a topology node takes part in, for the node details and for
   selection highlighting.
 - **Inputs:** `node`; `routes` — the routes the graph was built from; `services` — optional, lets
@@ -525,7 +531,7 @@ all (**44 Tier A / 32 Tier B**).
   route with a free-form hop. A missing id never matches a missing reference now.
 
 ### `const ServiceTopologyFilter({Set<String>? deviceIds, Set<ServiceAccessLane> lanes = {...all}, String query = ''})` <a id="servicetopologyfilter-new"></a>
-- **Kind:** constructor. **Source:** line 1164.
+- **Kind:** constructor. **Source:** line 1170.
 - **Purpose:** Create what the full-screen topology is narrowed to.
 - **Inputs:** `deviceIds` — the devices whose services and routes show, null for every device;
   `lanes` — the access lanes whose routes show, all three by default; `query` — search text,
@@ -539,7 +545,7 @@ all (**44 Tier A / 32 Tier B**).
   whitespace alone is no search.
 
 ### `({List<ServiceNode> services, List<ServiceRoute> routes}) filterServiceTopologyInput({required List<ServiceNode> services, required List<ServiceRoute> routes, required ServiceTopologyFilter filter})` <a id="filterservicetopologyinput"></a>
-- **Kind:** top-level function. **Source:** line 1275.
+- **Kind:** top-level function. **Source:** line 1281.
 - **Purpose:** Narrow the services and routes a topology is built from — filters produce a
   subgraph, never a paint-time mask.
 - **Inputs:** `services`, `routes` — the whole inventory; `filter`.
@@ -559,7 +565,7 @@ all (**44 Tier A / 32 Tier B**).
   route-less services.
 
 ### `ServiceTopologyHighlight serviceTopologyHighlight(ServiceTopologyGraph graph, List<ServiceRoute> routes, {String? selectedNodeId})` <a id="servicetopologyhighlight"></a>
-- **Kind:** top-level function. **Source:** line 1372.
+- **Kind:** top-level function. **Source:** line 1378.
 - **Purpose:** Work out which nodes and edges a set of routes lights up on the topology.
 - **Inputs:** `graph`; `routes` — the highlighted routes, e.g. from `relatedRoutesForNode`, or
   one of them; `selectedNodeId` — lit even when it takes part in none of them.
@@ -579,7 +585,7 @@ all (**44 Tier A / 32 Tier B**).
   being drawn.
 
 ### `String _relayLabel(ServiceRouteHop hop, Map<String, ServiceNode> services)` <a id="relaylabel"></a>
-- **Kind:** top-level function. **Source:** line 1440.
+- **Kind:** top-level function. **Source:** line 1446.
 - **Purpose:** Compute the display label for a generic (non-service, non-port-mapping) relay
   node.
 - **Inputs:** `hop`, `services`. **Returns:** `String`.
@@ -593,7 +599,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `List<String> serviceRouteAccessTargets(ServiceRoute route)` <a id="servicerouteaccesstargets"></a>
-- **Kind:** top-level function. **Source:** line 1480.
+- **Kind:** top-level function. **Source:** line 1486.
 - **Purpose:** Collect a route's deduplicated public access targets: its `finalUrl` plus any
   grouped targets stored in `extraJson.publicTargets`.
 - **Inputs:** `route`. **Returns:** `List<String>`, original-encounter order, first occurrence
@@ -610,7 +616,7 @@ all (**44 Tier A / 32 Tier B**).
   documented compatibility rule that `finalUrl` remains "the first target for compatibility."
 
 ### `void addTarget(Object? value)` (nested) <a id="addtarget"></a>
-- **Kind:** local function inside `serviceRouteAccessTargets`. **Source:** line 1488.
+- **Kind:** local function inside `serviceRouteAccessTargets`. **Source:** line 1494.
 - **Purpose:** Add one candidate target to the enclosing `targets` list if it's a non-empty,
   non-duplicate string.
 - **Inputs:** `value` (untyped — tolerates non-string JSON values). **Returns:** `void`.
@@ -625,7 +631,7 @@ all (**44 Tier A / 32 Tier B**).
   the top of this page).
 
 ### `Map<String, dynamic> serviceRouteExtraJsonWithTargets(Map<String, dynamic> extraJson, List<String> targets)` <a id="servicerouteextrajsonwithtargets"></a>
-- **Kind:** top-level function. **Source:** line 1516.
+- **Kind:** top-level function. **Source:** line 1522.
 - **Purpose:** Write a route's grouped extra access targets back into its `extraJson`, ready for
   persistence.
 - **Inputs:** `extraJson` (existing map), `targets`. **Returns:** a new
@@ -638,7 +644,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `String serviceRouteDisplayTarget(ServiceRoute route)` <a id="serviceroutedisplaytarget"></a>
-- **Kind:** top-level function. **Source:** line 1528.
+- **Kind:** top-level function. **Source:** line 1534.
 - **Purpose:** Pick the single string used to display a route's primary target (e.g. as a
   Markdown section heading, per `import_export_service.md`).
 - **Inputs:** `route`. **Returns:** `String`.
@@ -651,7 +657,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `String serviceRouteGeneratedName({required String sourceName, required List<ServiceRouteHop> hops, required List<String> targets})` <a id="serviceroutegeneratedname"></a>
-- **Kind:** top-level function. **Source:** line 1535.
+- **Kind:** top-level function. **Source:** line 1541.
 - **Purpose:** Generate the route's internal display name (`"<source> via <method> - <target>"`)
   used when the user hasn't written a custom description.
 - **Inputs:** `sourceName`, `hops`, `targets`. **Returns:** `String`.
@@ -666,7 +672,7 @@ all (**44 Tier A / 32 Tier B**).
   user-facing route descriptions belong in `notes`, not this generated name.
 
 ### `String serviceRouteChainPreview(ServiceRoute route, {required List<ServiceNode> services, List<Device> devices = const [], String Function(ServiceRouteHop hop)? hopFallback})` <a id="serviceroutechainpreview"></a>
-- **Kind:** top-level function. **Source:** line 1574.
+- **Kind:** top-level function. **Source:** line 1580.
 - **Purpose:** Describe a route's whole chain on one line.
 - **Inputs:** `route`; `services`; `devices` — optional, names the device of a hop service that
   runs somewhere other than the source; `hopFallback` — names a hop that has neither a service
@@ -685,7 +691,7 @@ all (**44 Tier A / 32 Tier B**).
   route in the same words.
 
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **Kind:** top-level function. **Source:** line 1632.
+- **Kind:** top-level function. **Source:** line 1638.
 - **Purpose:** Join a list of access targets into a compact, truncated summary string.
 - **Inputs:** `targets`; `maxItems` (default 3). **Returns:** `String` — empty if `targets` is
   empty.
@@ -696,7 +702,7 @@ all (**44 Tier A / 32 Tier B**).
 - **Notes:** None.
 
 ### `String compactAccessTargetLabel(String target)` <a id="compactaccesstargetlabel"></a>
-- **Kind:** top-level function. **Source:** line 1640.
+- **Kind:** top-level function. **Source:** line 1646.
 - **Purpose:** Shorten a URL-like access target to a compact `host[:port][path]` label for
   display, or return it unchanged if it isn't a parseable absolute URL.
 - **Inputs:** `target`. **Returns:** `String`.

@@ -157,19 +157,26 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 | 数据集 | `dataset_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录 |
 | 服务与服务路由 | `service_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录服务/路由 |
 | 图像 | `images/` | 是 | 仅引用文件名比较 |
-| 主题、语言区域、备份设置、排序偏好、列表列数偏好、默认货币、汇率设置 | `storage_config.json` | 否 | 本地偏好 |
+| 主题、语言区域、备份设置、排序偏好、列表列数偏好、默认货币、汇率设置、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
 | WebDAV 凭据 | `webdav_config.json` | 否 | 仅本地机密/配置 |
 | 同步基础快照 | `.sync_base/*.json` | 否 | 本地合并跟踪 |
 | 备份 | `backups/backup_*.json` | 否 | 本地恢复；v2 捆绑引用去重图像 blob |
 | 备份图像 blob | `backups/blobs/` | 否 | 内容寻址（`sha256`），跨备份共享，引用计数 GC |
 | 汇率缓存 | `exchange_rates.json` | 否 | 本地缓存/回退数据 |
 
-默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`；更改路径迁移数据文件、备份和图像（见 [架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
+默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`，而它本身总是留在默认文件夹；更改路径会移动存储文件夹中的其他一切——数据文件、备份、图像、`.sync_base/`、`webdav_config.json`——并报告留下的任何东西（见 [`storage_config.json`](#storage_configjson)、[架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
 
-- **`storage_config.json`** — 本地、不同步偏好（主题、语言区域、备份设置、排序偏好、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)）。
+- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)）。
 - **`webdav_config.json`** — 仅本地 WebDAV 凭据/配置；绝不同步。
 - **`.sync_base/`** — 上次成功同步的逐数据文件基础快照（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`），用于三方合并；也持有 `upload_lock.json`，用于下次启动检测中断上传的进行中上传本地记录。见 [WebDAV 同步](sync.md)。
 - **`backups/`** — 完整 v2 捆绑格式和 blob 存储布局见 [备份与恢复](backup-restore.md)。
+
+### `storage_config.json` <a id="storage_configjson"></a>
+
+- **一个文件，位于默认文件夹。** 无论存储路径如何，`storage_config.json` 总是位于平台默认文件夹（桌面上为 `Documents/MyDevice`），因为应用必须先读到自定义路径才知道数据在哪里。它保存每个本地偏好*以及*自定义路径（`storagePath`）。`DeviceStorage.readConfig`/`writeConfig` 以及共享引擎使用的 `DeviceStorageAdapter` 都读写这一个文件，因此移动数据从不会重置或复制偏好。
+- **`storagePath` 归 `setStoragePath` 所有。** 偏好写入会把映射中 `storagePath` 下的任何内容替换为当前自定义路径，没有自定义路径时删除该键，因此保存主题或列数选择永远不会移动或丢失数据。
+- **收编游离副本（1.5.7）。** 1.5.7 之前，`readConfig`/`writeConfig` 使用当前存储文件夹，而自定义路径位于默认文件夹，因此移动后偏好读作默认值，新偏好写进自定义文件夹里的第二个 `storage_config.json`。现在对某个自定义路径的首次配置访问会检查该文件夹：那里的游离 `storage_config.json` 被合并进默认文件——它的键较新，因此胜出，`storagePath` 除外——然后被删除。无法读取或解析的游离文件保持不动。
+- **更改存储路径。** 旧文件夹中除顶层 `storage_config.json` 外的一切都移到新文件夹（见 [`DeviceStorage.setStoragePath`](functions/features/devices/services/device_storage.md#setstoragepath)）。目标位置已存在的文件胜出，其源副本留在原处。留在旧文件夹中的每个文件——复制失败的，或因目标已有同名文件而被跳过的——都会被报告回来，设置页连同旧文件夹路径一起列出它们，因为应用在新位置看不到它们。
 
 ## 交叉引用规则 <a id="cross-reference-rules"></a>
 

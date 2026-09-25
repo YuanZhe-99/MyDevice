@@ -6,7 +6,7 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 
 **Totals:** the repo's `/// Purpose:` comment count is **1214** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1328** declarations — 114 more than
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1336** declarations — 122 more than
 1214 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus the tail
 section of `device.dart`) have no `/// Purpose:` doc comment in
@@ -24,9 +24,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 713 |
-| Tier B (index row only) | 615 |
-| **Total** | **1328** |
+| Tier A (full entry) | 720 |
+| Tier B (index row only) | 616 |
+| **Total** | **1336** |
 
 ## Root (`lib/`)
 
@@ -41,7 +41,7 @@ its per-file row and both total tables in the same commit.
 | `lib/app/app.dart` | [app/app.md](app/app.md) | 2 | 0 |
 | `lib/app/flavor.dart` | [app/flavor.md](app/flavor.md) | 3 | 1 |
 | `lib/app/router.dart` | [app/router.md](app/router.md) | 1 | 0 |
-| `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 11 | 11 |
+| `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 14 | 14 |
 | `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 3 | 3 |
 
 ## features/datasets/
@@ -61,14 +61,14 @@ its per-file row and both total tables in the same commit.
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 25 | 24 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
-| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 35 | 22 |
+| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 44 | 26 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 12 | 11 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
-| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 59 | 14 |
-| `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 34 | 16 |
-| `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 46 | 16 |
+| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 58 | 14 |
+| `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 33 | 16 |
+| `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 45 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
 | `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 7 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
@@ -79,7 +79,7 @@ its per-file row and both total tables in the same commit.
 |---|---|---|---|
 | `lib/features/network/models/network.dart` | [features/network/models/network.md](features/network/models/network.md) | 17 | 16 |
 | `lib/features/network/services/network_storage.dart` | [features/network/services/network_storage.md](features/network/services/network_storage.md) | 7 | 7 |
-| `lib/features/network/views/network_detail_page.dart` | [features/network/views/network_detail_page.md](features/network/views/network_detail_page.md) | 27 | 11 |
+| `lib/features/network/views/network_detail_page.dart` | [features/network/views/network_detail_page.md](features/network/views/network_detail_page.md) | 26 | 11 |
 | `lib/features/network/views/network_edit_page.dart` | [features/network/views/network_edit_page.md](features/network/views/network_edit_page.md) | 9 | 1 |
 | `lib/features/network/views/network_list_page.dart` | [features/network/views/network_list_page.md](features/network/views/network_list_page.md) | 16 | 6 |
 
@@ -114,7 +114,7 @@ its per-file row and both total tables in the same commit.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1214/1328 hand-documented declarations above).
+the 1214/1336 hand-documented declarations above).
 
 ## shared/
 
@@ -146,11 +146,11 @@ the 1214/1328 hand-documented declarations above).
 | Area | Files | Declarations | Tier A | Tier B |
 |---|---|---|---|---|
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
-| `app/` | 5 | 20 | 15 | 5 |
+| `app/` | 5 | 23 | 18 | 5 |
 | `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 15 | 387 | 218 | 169 |
-| `features/network/` | 5 | 76 | 41 | 35 |
+| `features/devices/` | 15 | 393 | 222 | 171 |
+| `features/network/` | 5 | 75 | 41 | 34 |
 | `features/services/` | 14 | 524 | 228 | 296 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 20 | 225 | 159 | 66 |
-| **Total** | **68** | **1328** | **713** | **615** |
+| **Total** | **68** | **1336** | **720** | **616** |

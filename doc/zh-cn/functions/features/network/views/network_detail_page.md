@@ -13,7 +13,6 @@
 | [`_saveSortPrefs`](#savesortprefs) | 方法（`_NetworkDetailPageState`） | A | 把那四个排序相关标志持久化到设备存储配置。 |
 | [`_compareIp`](#compareip) | 方法（`_NetworkDetailPageState`） | A | 逐八位组数字比较两个点分四组 IP 字符串。 |
 | [`_sortedAssignments`](#sortedassignments) | getter（`_NetworkDetailPageState`） | A | 按当前排序模式、方向、分组和退出优先设置排序/分组/重排 `_assignments`。 |
-| `_categoryLabel` | 方法（`_NetworkDetailPageState`） | B | 把 `DeviceCategory` 映射到其本地化标签。 |
 | `_sortModeLabel` | 方法（`_NetworkDetailPageState`） | B | 把 `NetworkDeviceSortMode` 映射到其本地化标签。 |
 | [`_load`](#load) | 方法（`_NetworkDetailPageState`） | A | 从存储重载网络、其赋值和完整设备列表。 |
 | `_findDevice` | 方法（`_NetworkDetailPageState`） | B | 在加载设备列表按 id 查找设备。 |
@@ -34,13 +33,13 @@
 | `_DevicePicker`（构造函数） | 构造函数 | B | 为选择器面板存储未分配设备列表。 |
 | `_DevicePicker.build` | 方法（组件） | B | 渲染要挑选设备的底部面板列表。 |
 
-行数（24）与 `grep -c 'Purpose:' network_detail_page.dart`（24）精确匹配。
+行数（26）与 `grep -c 'Purpose:' network_detail_page.dart`（26）精确匹配。
 
 ## 文档
 
 ### `void initState()` <a id="initstate"></a>
 - **种类：** `_NetworkDetailPageState` 的方法（组件生命周期覆盖）。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 48 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 51 行）。
 - **用途：** 启动初始偏好加载，然后网络/赋值/设备数据加载。
 - **输入：** 无。
 - **返回：** 无。
@@ -51,7 +50,7 @@
 
 ### `Future<void> _loadSortPrefs()` <a id="loadsortprefs"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 59 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 61 行）。
 - **用途：** 从设备存储配置加载持久化排序模式、排序方向、类别分组标志和退出节点优先标志，回退默认。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -62,7 +61,7 @@
 
 ### `Future<void> _saveSortPrefs()` <a id="savesortprefs"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 82 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 84 行）。
 - **用途：** 把当前排序模式、方向、分组标志和退出优先标志持久化回设备存储配置。
 - **输入：** 无（读取四个对应状态字段）。
 - **返回：** `Future<void>`。
@@ -73,7 +72,7 @@
 
 ### `int _compareIp(String? a, String? b)` <a id="compareip"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 96 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 98 行）。
 - **用途：** 数字（逐八位组）而非字典序比较两个点分四组 IP 地址字符串，使单数字末八位组的地址在同前缀下正确排在双数字末八位组前（普通字符串比较会弄反）。
 - **输入：** `a`、`b` — 可空 IP 字符串。
 - **返回：** `int` — 标准比较器契约；无论哪侧 null，null 总是排最后。
@@ -84,18 +83,18 @@
 
 ### `List<NetworkDevice> get _sortedAssignments` <a id="sortedassignments"></a>
 - **种类：** `_NetworkDetailPageState` 的 getter。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 114 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 116 行）。
 - **用途：** 产生最终显示赋值列表：按活动 `NetworkDeviceSortMode` 和方向排序、可选按设备类别分组、可选把退出节点赋值拉到前面。
 - **输入：** 无（读取 `_assignments`、`_sortMode`、`_sortAscending`、`_groupByCategory`、`_exitNodeFirst`、`_allDevices`）。
 - **返回：** `List<NetworkDevice>` — 新列表；`_assignments` 本身绝不被修改。
 - **副作用：** 无。
 - **算法：** 1. 把 `_assignments` 复制进 `list`。2. 经对 `_sortMode` 的 `switch` 构建 `comparator`：`deviceOrder` 比较每个赋值设备在 `_allDevices` 中的索引；`alphabetical` 不区分大小写比较设备名（设备缺失回退原始 `deviceId`）；`ip` 委托 [`_compareIp`](#compareip)。3. 包装比较器尊重 `_sortAscending`（升序时交换参数顺序）。4. `_groupByCategory` 时：先按每个赋值设备的 `DeviceCategory.index` 排序（缺失设备默认 `DeviceCategory.other`），每类别组内回退有效比较器。否则直接按有效比较器排序整个列表。5. `_exitNodeFirst` 时：把（已排序）列表分区为 `isExitNode == true` 和 `false`，先连接退出——这在主排序/分组*后*发生，因此退出节点作为整块拉到前面，不打扰步骤 2–4 在每个分区内建立的相对顺序。
-- **用法：** `_buildDeviceList` 顶部读取（本文件，第 641 行）：`final sorted = _sortedAssignments;`。
+- **用法：** `_buildDeviceList` 顶部读取（本文件，第 690 行）：`final sorted = _sortedAssignments;`。
 - **备注：** 退出节点优先分区最后应用且独立于分组——同时开启 `_groupByCategory` 和 `_exitNodeFirst` 仍显示每个退出节点在每非退出节点前，类别页头也不例外（即 `_exitNodeFirst` 实际在列表最顶层覆盖严格类别分组）。
 
 ### `Future<void> _load()` <a id="load"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 199 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 179 行）。
 - **用途：** 重载此网络自己的记录、其设备赋值和完整设备列表（把赋值 `deviceId` 解析为名/类别需要）。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -106,7 +105,7 @@
 
 ### `Future<void> _deleteNetwork()` <a id="deletenetwork"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 258 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 238 行）。
 - **用途：** 显示确认对话框，确认时删除此网络并离开页面。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -117,7 +116,7 @@
 
 ### `Future<void> _addDevice()` <a id="adddevice"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 289 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 269 行）。
 - **用途：** 让用户挑在用、尚未分配的设备，配置其地址模式/IP/主机名/退出节点标志，并持久化新赋值。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -128,18 +127,18 @@
 
 ### `Future<void> _editAssignment(NetworkDevice assignment)` <a id="editassignment"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 320 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 300 行）。
 - **用途：** 用既有赋值值预填重新打开赋值配置对话框，并持久化任何变更。
 - **输入：** `assignment` — 要编辑的既有 `NetworkDevice`。
 - **返回：** `Future<void>`。
 - **副作用：** 显示 [`_showAssignmentDialog`](#showassignmentdialog)；有结果返回时调用 `NetworkStorage.setAssignment`、`AutoSyncService.instance.notifySaved()` 并重载。
 - **算法：** Await `_showAssignmentDialog(l10n, assignment)`；结果非 null 时 await `NetworkStorage.setAssignment(result)`（按 `(networkId, deviceId)` 对匹配并替换——见 [`network_storage.md#setassignment`](../services/network_storage.md#setassignment)）、调用 `notifySaved()` 并重载。
-- **用法：** 从 `_buildDeviceCard`（本文件，第 674 行）每卡片 `PopupMenuButton` 的 `'edit'` 项选择。
+- **用法：** 从 `_buildDeviceCard`（本文件，第 742 行）每卡片 `PopupMenuButton` 的 `'edit'` 项选择。
 - **备注：** 因为 `NetworkDevice` 无 `id`，这里"编辑"赋值实际是"用新构造的替换匹配此 `(networkId, deviceId)` 对的赋值"——见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)。
 
 ### `Future<void> _removeAssignment(NetworkDevice assignment)` <a id="removeassignment"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 335 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 315 行）。
 - **用途：** 显示确认对话框，确认时从此网络移除设备赋值。
 - **输入：** `assignment` — 要移除的 `NetworkDevice`。
 - **返回：** `Future<void>`。
@@ -150,7 +149,7 @@
 
 ### `Future<NetworkDevice?> _showAssignmentDialog(AppLocalizations l10n, NetworkDevice initial)` <a id="showassignmentdialog"></a>
 - **种类：** `_NetworkDetailPageState` 的方法。
-- **来源：** `lib/features/network/views/network_detail_page.dart`（第 369 行）。
+- **来源：** `lib/features/network/views/network_detail_page.dart`（第 349 行）。
 - **用途：** 显示配置一个赋值地址模式、IP 地址、主机名和退出节点标志、从 `initial` 播种的模态对话框。
 - **输入：** `l10n`；`initial` — 播种对话框字段的 `NetworkDevice`（"添加"为新鲜未保存实例，"编辑"为既有）。
 - **返回：** `Future<NetworkDevice?>` — 用户保存时配置的 `NetworkDevice`，取消时 `null`。

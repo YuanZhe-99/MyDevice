@@ -51,8 +51,15 @@ Row count (2) matches `grep -c 'Purpose:' device_category_icon.dart` (2) exactly
 - **Returns:** `String` — the `deviceCategory*` ARB string of the category.
 - **Side effects:** None.
 - **Algorithm:** An exhaustive `switch` over the eleven `DeviceCategory` values.
-- **Usage:** The service topology's node details (`service_topology_page.dart`), for the device
-  tile's subtitle.
-- **Notes:** The device editor, device list and finance overview each still keep a private copy
-  of the same mapping (`_categoryLabel`); folding them onto this helper is left out of the 1.5.6
-  topology work to keep its diff scoped.
+- **Usage:** Every place the app shows a category's name: the category dropdown in
+  [`device_edit_page.dart`](../views/device_edit_page.md); the category group headers and the
+  `_DeviceCard` subtitles in [`device_list_page.dart`](../views/device_list_page.md); the asset
+  distribution buckets in
+  [`device_finance_overview_page.dart`](../views/device_finance_overview_page.md); the device
+  group headers in [`network_detail_page.dart`](../../network/views/network_detail_page.md); the
+  service topology's node details (`service_topology_page.dart`), for the device tile's subtitle;
+  and a device node's subtitle on the topology canvas
+  ([`service_topology_widgets.dart`](../../services/views/service_topology_widgets.md#nodesubtitle)).
+- **Notes:** The one mapping of a category to its name. Before 1.5.7 the device editor, device
+  list, finance overview and network detail page each kept a private copy (`_categoryLabel`); they
+  now all call this helper, so a new category needs only one case here.

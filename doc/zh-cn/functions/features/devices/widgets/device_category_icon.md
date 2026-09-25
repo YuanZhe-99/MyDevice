@@ -40,5 +40,5 @@
 - **返回：** `String` — 该类别的 `deviceCategory*` ARB 字符串。
 - **副作用：** 无。
 - **算法：** 覆盖十一个 `DeviceCategory` 值的穷举 `switch`。
-- **用法：** 服务拓扑的节点详情（`service_topology_page.dart`），用作设备 tile 的副标题。
-- **备注：** 设备编辑器、设备列表和财务总览各自仍保留一份相同映射的私有副本（`_categoryLabel`）；为控制改动范围，1.5.6 的拓扑工作没有把它们并入此辅助。
+- **用法：** 应用显示类别名称的每一处：[`device_edit_page.dart`](../views/device_edit_page.md) 中的类别下拉框；[`device_list_page.dart`](../views/device_list_page.md) 中的类别分组标题和 `_DeviceCard` 副标题；[`device_finance_overview_page.dart`](../views/device_finance_overview_page.md) 中的资产分布分桶；[`network_detail_page.dart`](../../network/views/network_detail_page.md) 中的设备分组标题；服务拓扑的节点详情（`service_topology_page.dart`），用作设备 tile 的副标题；以及拓扑画布上设备节点的副标题（[`service_topology_widgets.dart`](../../services/views/service_topology_widgets.md#nodesubtitle)）。
+- **备注：** 类别到名称的唯一映射。1.5.7 之前，设备编辑器、设备列表、财务总览和网络详情页各自保留一份私有副本（`_categoryLabel`）；它们现在都调用此辅助，因此新增类别只需在这里加一个 case。

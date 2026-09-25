@@ -102,7 +102,7 @@ guidelines around network scraping of third-party sites in a store-distributed a
 See [Architecture](../architecture.md#appflavor) for how `AppFlavor.isStore` is derived
 from the `FLAVOR` dart-define.
 
-## Bundled presets — `preset_service.dart` <a id="bundled-presets---presetservicedart"></a>
+## Bundled presets — `preset_service.dart` <a id="bundled-presets--preset_servicedart"></a> <a id="bundled-presets---presetservicedart"></a>
 
 `PresetService` loads bundled preset data from `assets/presets/` via
 `rootBundle.loadString()`:

@@ -31,7 +31,6 @@
 | `_dateOnly` | 方法（`_DeviceFinanceOverviewPageState`） | B | 从 `DateTime` 剥离日内时间分量。 |
 | [`_moneyText`](#_moneytext-finance) | 方法（`_DeviceFinanceOverviewPageState`） | A | 用页面默认货币符号格式化金额。 |
 | [`_formatAxisValue`](#_formataxisvalue) | 方法（`_DeviceFinanceOverviewPageState`） | A | 大数量级用 `k`/`m` 后缀格式化 Y 轴刻度值。 |
-| `_categoryLabel` | 方法（`_DeviceFinanceOverviewPageState`） | B | 把 `DeviceCategory` 映射到其本地化标签。 |
 | `_TrendScale`（构造函数） | 构造函数 | B | 存储预计算日期列表、标签间隔和日期格式化器。 |
 | [`_TrendScale.fromRange`](#trendscale-fromrange) | 工厂构造函数 | A | 为历史/今天/未来结束范围构建 `_TrendScale`（日期样本 + 标签间隔）。 |
 | `pointCount` | getter（`_TrendScale`） | B | 返回采样日期数（图表 X 轴点数）。 |
@@ -41,13 +40,13 @@
 | `_ChartSeries`（构造函数） | 构造函数 | B | 存储一个图表系列的标签、颜色、点和虚线标志。 |
 | `_AssetBucket`（构造函数） | 构造函数 | B | 存储一个类别的标签、金额、计数和图表颜色。 |
 
-行数说明：对此文件 `grep -c 'Purpose:'` 返回 33；上面表格有 34 个真实声明行（游离 `_chartColors` 行是表格格式伪影，非单独行——见下面）。唯一未文档化声明是 `_chartBounds`（`lib/features/devices/views/device_finance_overview_page.dart`，第 790 行）：它完全无 `///` 文档注释（连普通都没有），不像文件每个其他方法，因此不匹配 `Purpose:` grep。它仍是真实、承载负载声明（见下面 [`_chartBounds`](#_chartbounds)）并按"每个声明得一行"规则包含于此。`_chartColors`（`static const List<Color>`，第 881 行）是数据常量，非函数/方法/构造函数，且——与本批文件其他私有枚举和常量映射处理方式一致——不计数为自己的声明行。
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 32；上面表格有 33 个真实声明行（游离 `_chartColors` 行是表格格式伪影，非单独行——见下面）。唯一未文档化声明是 `_chartBounds`（`lib/features/devices/views/device_finance_overview_page.dart`，第 791 行）：它完全无 `///` 文档注释（连普通都没有），不像文件每个其他方法，因此不匹配 `Purpose:` grep。它仍是真实、承载负载声明（见下面 [`_chartBounds`](#_chartbounds)）并按"每个声明得一行"规则包含于此。`_chartColors`（`static const List<Color>`，第 861 行）是数据常量，非函数/方法/构造函数，且——与本批文件其他私有枚举和常量映射处理方式一致——不计数为自己的声明行。
 
 ## 文档
 
 ### `Widget _buildLineChartPanel({required BuildContext context, required AppLocalizations l10n, required _TrendScale scale, required List<_ChartSeries> series, required double minY, required double maxY})` <a id="_buildlinechartpanel"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 365 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 366 行）
 - **用途：** 计算对数刻度 Y 轴边界/网格间隔并渲染每日成本趋势（历史 + 未来系列）的 `fl_chart` `LineChart`，含轴刻度和工具提示格式化。
 - **输入：** `scale` — 描述采样日期/标签的 `_TrendScale`；`series` — 一个或两个 `_ChartSeries`（历史和虚线未来投影）；`minY`/`maxY` — 要显示的原始（未变换）成本范围。
 - **返回：** `Widget` — 图例行加 260px 高 `LineChart`。
@@ -74,12 +73,12 @@
     maxY: trendData.maxY,
   ),
   ```
-  （来自 `_buildTrendCard`，`lib/features/devices/views/device_finance_overview_page.dart`，第 334–353 行）
+  （来自 `_buildTrendCard`，`lib/features/devices/views/device_finance_overview_page.dart`，第 335–354 行）
 - **备注：** 两个系列共享相同颜色（`theme.colorScheme.primary`）——历史 vs 未来只由虚线模式和面积填充区分，非颜色。轴为何用对数变换（让小循环每日成本和大一次性购买尖峰在同一图表可读）见 [设备 — 财务总览页](../../../../features/devices.md#financial-overview-page)。
 
 ### `_TrendData _buildTrendData(_TrendScale scale, DateTime today)` <a id="_buildtrenddata"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 619 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 620 行）
 - **用途：** 在趋势刻度每个日期采样车队总每日成本，把点拆分为"历史"系列（到今天含今天）和"未来"系列（今天起）。
 - **输入：** `scale` — `_TrendScale`（采样日期）；`today` — 历史和投影间边界的仅日期"现在"。
 - **返回：** 含 `historySpots`、`futureSpots` 和跨所有采样值观察到的原始 `minY`/`maxY` 的 `_TrendData`。
@@ -88,12 +87,12 @@
   1. 对 `scale.dates` 每个索引 `i`，计算 `value = _totalDailyCostAt(scale.dates[i])` 并构建 `FlSpot(i.toDouble(), value)`。
   2. 日期不晚于 `today` 时把点加入 `historySpots`，不早于 `today` 时加入 `futureSpots`——因此 `today` 本身包含在**两个**系列中，这正是视觉上在"现在"点连接实线和虚线段的 东西。
   3. 从 `0.0` 开始的 `fold` 跟踪 `minY`/`maxY`（使范围即使所有成本都正或负也总是含零）。
-- **用法：** `_buildTrendCard` 中的 `final trendData = _buildTrendData(scale, today);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 278 行）。
+- **用法：** `_buildTrendCard` 中的 `final trendData = _buildTrendData(scale, today);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 279 行）。
 - **备注：** 因为 `historySpots`/`futureSpots` 共享边界点，`_buildLineChartPanel` 从它们构建的两个 `LineChartBarData` 条目渲染为一条视觉连续、恰在 `today` 从实线切换虚线的线。
 
 ### `List<_AssetBucket> _assetBuckets(AppLocalizations l10n)` <a id="_assetbuckets"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 649 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 650 行）
 - **用途：** 按 `DeviceCategory` 分组每个带正财务数据的设备，为资产分布饼图求和总成本并逐类别计数设备。
 - **输入：** `l10n` — 只用于本地化每个类别标签。
 - **返回：** `List<_AssetBucket>` — 每个至少有一个 `totalCost() > 0` 设备的类别一个桶，按 `amount` 降序排序。
@@ -103,23 +102,23 @@
   2. 经带 `ifAbsent` 的 `Map.update` 累积 `totals[category] += amount` 和 `counts[category] += 1`。
   3. 为每个类别条目构建一个 `_AssetBucket`，按 `totals.entries` 中类别首次遇到顺序循环 `_chartColors` 分配颜色（`_chartColors[buckets.length % _chartColors.length]`）——非固定逐类别颜色。
   4. 按 `amount` 降序排序结果列表（最大类别在前）。
-- **用法：** `build` 和 `_buildAssetDistribution` 中的 `final buckets = _assetBuckets(l10n);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 58 和 203 行）。
+- **用法：** `build` 和 `_buildAssetDistribution` 中的 `final buckets = _assetBuckets(l10n);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 59 和 204 行）。
 - **备注：** 因为颜色分配依赖 `totals` 映射（从 `widget.devices` 顺序构建）的迭代/插入顺序而非固定类别 → 颜色表，同一类别跨不同设备列表可被分配不同饼图颜色。
 
 ### `DateTime _historyStart(DateTime today)` <a id="_historystart"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 684 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 685 行）
 - **用途：** 为当前所选 `_FinanceRange` 计算趋势图历史窗口开始日期。
 - **输入：** `today` — 仅日期当前日期。
 - **返回：** `DateTime` — `today` 减 1 年、减 3 年，或（"全部"）最早设备购买日期。
 - **副作用：** 无（读取 `_range` 状态）。
 - **算法：** 对 `_range` 做 `switch`：`_FinanceRange.year` → 年份减 1 的 `today`；`_FinanceRange.threeYears` → 年份减 3；`_FinanceRange.all` → [`_earliestPurchaseDate`](#_earliestpurchasedate)，无设备有购买日期时回退 1 年窗口。
-- **用法：** `_buildTrendCard` 中的 `final historyStart = _historyStart(today);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 275 行）。
+- **用法：** `_buildTrendCard` 中的 `final historyStart = _historyStart(today);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 276 行）。
 - **备注：** 无。
 
 ### `Duration _historyDuration(DateTime today, DateTime historyStart)` <a id="_historyduration"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 703 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 704 行）
 - **用途：** 从历史窗口长度派生前向"未来投影"窗口长度，使投影段镜像图表已回看的距离。
 - **输入：** `today`、`historyStart`。
 - **返回：** `Duration` — `today` 与 `historyStart` 间的绝对天数，下限 30 天。
@@ -129,12 +128,12 @@
   ```dart
   final futureEnd = today.add(_historyDuration(today, historyStart));
   ```
-  （来自 `_buildTrendCard`，`lib/features/devices/views/device_finance_overview_page.dart`，第 276 行）
+  （来自 `_buildTrendCard`，`lib/features/devices/views/device_finance_overview_page.dart`，第 277 行）
 - **备注：** 无。
 
 ### `DateTime? _earliestPurchaseDate()` <a id="_earliestpurchasedate"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 713 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 714 行）
 - **用途：** 跨列表中所有设备找最早 `purchaseDate`，供"全部时间"趋势范围。
 - **输入：** 无（读取 `widget.devices`）。
 - **返回：** `DateTime?` — 最早仅日期购买日期，无设备有 `purchaseDate` 时 `null`。
@@ -145,7 +144,7 @@
 
 ### `double _totalDailyCostAt(DateTime date)` <a id="_totaldailycostat"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 731 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 732 行）
 - **用途：** 截至任意日期（用于采样趋势图上每个点，过去或未来）求和车队级平均每日成本。
 - **输入：** `date`。
 - **返回：** `double` — 跨 `widget.devices` 的 [`_averageDailyCostAt`](#_averagedailycostat) 之和（逐设备 `null` 结果当作 `0`）。
@@ -156,7 +155,7 @@
 
 ### `double? _averageDailyCostAt(Device device, DateTime date)` <a id="_averagedailycostat"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 743 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 744 行）
 - **用途：** 计算一个设备在任意日期将已（或将要）达到的平均每日成本——让趋势图能在任何过去或未来点绘制成本的核心原语，不只"现在"（不同于总是相对当前的 `Device.averageDailyCost()`）。
 - **输入：** `device`；`date` — 要评估的日期（可相对今天在过去或未来）。
 - **返回：** `double?` — 设备无财务数据、无 `purchaseDate` 或 `date` 早于购买日期时 `null`；否则截至 `date` 的平均每日成本。
@@ -175,29 +174,29 @@
 
 ### `double _totalFinancialCost()` <a id="_totalfinancialcost"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 777 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 778 行）
 - **用途：** 跨每个设备求和 `Device.totalCost()`（截至现在），供摘要卡片"总成本"指标。
 - **输入：** 无（读取 `widget.devices`）。
 - **返回：** `double`。
 - **副作用：** 无。
 - **算法：** `widget.devices.fold(0, (sum, device) => sum + device.totalCost())`。
-- **用法：** `_buildSummaryCard` 中的 `_moneyText(_totalFinancialCost())`（`lib/features/devices/views/device_finance_overview_page.dart`，第 136 和 169 行）。
+- **用法：** `_buildSummaryCard` 中的 `_moneyText(_totalFinancialCost())`（`lib/features/devices/views/device_finance_overview_page.dart`，第 137 和 170 行）。
 - **备注：** 与 `_totalDailyCostAt` 不同，这直接复用 `Device.totalCost()`（在"现在"、模型默认评估）而非重新实现算术。
 
 ### `double _totalDailyCost()` <a id="_totaldailycost"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 785 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 786 行）
 - **用途：** 跨每个设备求和 `Device.averageDailyCost()`（截至现在），供摘要卡片"每日成本"指标。
 - **输入：** 无。
 - **返回：** `double`。
 - **副作用：** 无。
 - **算法：** `widget.devices.fold(0, (sum, device) => sum + (device.averageDailyCost() ?? 0))`。
-- **用法：** `_buildSummaryCard` 中的 `_moneyText(_totalDailyCost())`（`lib/features/devices/views/device_finance_overview_page.dart`，第 142 和 177 行）。
+- **用法：** `_buildSummaryCard` 中的 `_moneyText(_totalDailyCost())`（`lib/features/devices/views/device_finance_overview_page.dart`，第 143 和 178 行）。
 - **备注：** 无。
 
 ### `({double minY, double maxY}) _chartBounds(double minY, double maxY)` <a id="_chartbounds"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 790 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 791 行）
 - **用途：** 用余量填充原始 min/max 成本范围，使趋势线不碰图表顶/底边，并确保零总是包含在可见范围内。
 - **输入：** `minY`、`maxY` — 原始（未变换）观察成本范围。
 - **返回：** 记录 `(minY: double, maxY: double)` — 填充边界。
@@ -211,7 +210,7 @@
 
 ### `double _logTransform(double value)` <a id="_logtransform"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 806 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 807 行）
 - **用途：** 应用每日成本趋势图 Y 轴使用的带符号对数变换，使小循环成本和一次性购买尖峰在同一刻度都可读。
 - **输入：** `value` — 真实成本金额（可为负，如净亏损日）。
 - **返回：** `double` — `value == 0` 时 `0`；否则 `sign(value) * log10(|value| + 1)`。
@@ -222,7 +221,7 @@
 
 ### `double _logInverse(double value)` <a id="_loginverse"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 817 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 818 行）
 - **用途：** 反转 `_logTransform`，把对数空间轴值转回真实成本金额供轴刻度标签和工具提示。
 - **输入：** `value` — 已在对数变换空间的值。
 - **返回：** `double` — `value == 0` 时 `0`；否则 `sign(value) * (10^|value| - 1)`。
@@ -239,7 +238,7 @@
 
 ### `String _moneyText(double amount)` <a id="_moneytext-finance"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 836 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 837 行）
 - **用途：** 用页面配置的默认货币符号格式化普通金额。
 - **输入：** `amount` — 已以 `widget.defaultCurrency` 表达。
 - **返回：** `String` — `"{symbol}{amount.toStringAsFixed(2)}"`。
@@ -250,7 +249,7 @@
 
 ### `String _formatAxisValue(double value)` <a id="_formataxisvalue"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 848 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 849 行）
 - **用途：** 紧凑格式化真实（已对数反转）Y 轴刻度值，大数量级用 `k`/`m` 后缀使标签在图表默认宽度保持短。
 - **输入：** `value`。
 - **返回：** `String` — `|value| >= 1_000_000` 时 `"{sign}{abs/1e6:.1f}m"`、`|value| >= 1_000` 时 `"{sign}{abs/1e3:.1f}k"`、否则普通整数值。
@@ -261,7 +260,7 @@
 
 ### `factory _TrendScale.fromRange(DateTime historyStart, DateTime today, DateTime futureEnd)` <a id="trendscale-fromrange"></a>
 - **种类：** `_TrendScale` 的工厂构造函数
-- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 921 行）
+- **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 901 行）
 - **用途：** 构建趋势图要采样的日期列表（其 X 轴），基于总跨度选择采样步长使非常长范围不产生数千点，并计算 X 轴标签应相隔多少点绘制。
 - **输入：** `historyStart`、`today`、`futureEnd` — 界定采样范围的三个关键日期。
 - **返回：** 带去重、排序 `dates` 列表、`labelInterval` 和固定 `M/d`（轴）/ `yyyy-MM-dd`（工具提示）`DateFormat` 的新 `_TrendScale`。
@@ -273,5 +272,5 @@
   4. 显式把 `today` 和 `futureEnd` 追加进列表（保证两者总是作为精确采样点存在，即使步长否则会跳过它们），然后排序。
   5. 去重连续相等日期（单线性遍，只保留与最后保留者不同的日期）。
   6. `labelInterval = ceil(deduped.length / 6)`，下限 `1`——无论点数多少瞄准约 6 个均匀间隔 X 轴标签。
-- **用法：** `_buildTrendCard` 中的 `final scale = _TrendScale.fromRange(historyStart, today, futureEnd);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 277 行）。
+- **用法：** `_buildTrendCard` 中的 `final scale = _TrendScale.fromRange(historyStart, today, futureEnd);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 278 行）。
 - **备注：** 因为 `today` 和 `futureEnd` 去重前强制追加，最后几个采样点间实际间距与范围其余部分使用的固定 `step` 相比可稍不规则。

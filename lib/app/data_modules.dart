@@ -85,6 +85,15 @@ const deviceDataFileName = 'device_data.json';
 /// Backup module key for [deviceDataFileName].
 const deviceModuleId = 'devices';
 
+/// Data file holding networks and device network assignments.
+const networkDataFileName = 'network_data.json';
+
+/// Data file holding datasets and their storage links.
+const dataSetDataFileName = 'dataset_data.json';
+
+/// Data file holding service nodes and routes.
+const serviceDataFileName = 'service_data.json';
+
 /// Purpose: Extract device image basenames referenced by device records.
 /// Inputs: [json] raw or merged `device_data.json`.
 /// Returns: Referenced image basenames; empty for malformed input.
@@ -228,7 +237,7 @@ DataModule buildDevicesModule() => _singleContainerModule<DeviceMergeResult, Dev
 /// That stays app-side.
 DataModule buildNetworksModule() =>
     _singleContainerModule<NetworkMergeResult, Network>(
-      fileName: 'network_data.json',
+      fileName: networkDataFileName,
       moduleId: 'networks',
       validate: (json) =>
           NetworkData.fromJson(jsonDecode(json) as Map<String, dynamic>),
@@ -254,7 +263,7 @@ DataModule buildNetworksModule() =>
 /// Notes: None.
 DataModule buildDataSetsModule() =>
     _singleContainerModule<DataSetMergeResult, DataSet>(
-      fileName: 'dataset_data.json',
+      fileName: dataSetDataFileName,
       moduleId: 'datasets',
       validate: (json) =>
           DataSetData.fromJson(jsonDecode(json) as Map<String, dynamic>),
@@ -282,7 +291,7 @@ DataModule buildDataSetsModule() =>
 /// a shared ID by runtime type, so plain record IDs remain valid resolution
 /// keys and no namespacing is needed.
 DataModule buildServicesModule() => DataModule(
-  fileName: 'service_data.json',
+  fileName: serviceDataFileName,
   moduleId: 'services',
   validate: (json) =>
       ServiceData.fromJson(jsonDecode(json) as Map<String, dynamic>),

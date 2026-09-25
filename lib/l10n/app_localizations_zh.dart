@@ -348,6 +348,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsStoragePathUpdated => '存储位置已更新';
 
   @override
+  String get settingsStoragePathFailed => '无法更改存储位置。';
+
+  @override
+  String get settingsStoragePathUnmovedTitle => '部分项目未能移动';
+
+  @override
+  String settingsStoragePathUnmovedBody(String folder) {
+    return '以下项目仍在 $folder 中。在你手动将它们移到新位置之前，应用无法读取它们：';
+  }
+
+  @override
   String totalDevices(int count) {
     return '$count 台设备';
   }
@@ -1710,6 +1721,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceTopologyAddAccessOnDevice => '为此设备上的服务添加访问路径';
 
   @override
+  String serviceTopologyRelayServiceSubtitle(String method) {
+    return '$method 服务';
+  }
+
+  @override
   String get serviceTopologyRouteFocusHint => '点按一条链路只高亮它，再点一次恢复全部。';
 
   @override
@@ -2075,6 +2091,17 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsStoragePathUpdated => '儲存位置已更新';
+
+  @override
+  String get settingsStoragePathFailed => '無法變更儲存位置。';
+
+  @override
+  String get settingsStoragePathUnmovedTitle => '部分項目未能移動';
+
+  @override
+  String settingsStoragePathUnmovedBody(String folder) {
+    return '以下項目仍在 $folder 中。在你手動將它們移到新位置之前，應用程式無法讀取它們：';
+  }
 
   @override
   String totalDevices(int count) {
@@ -3437,6 +3464,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceTopologyAddAccessOnDevice => '為此裝置上的服務新增存取路徑';
+
+  @override
+  String serviceTopologyRelayServiceSubtitle(String method) {
+    return '$method 服務';
+  }
 
   @override
   String get serviceTopologyRouteFocusHint => '點按一條鏈路只醒目提示它，再點一次恢復全部。';

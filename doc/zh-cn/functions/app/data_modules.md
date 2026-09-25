@@ -11,6 +11,9 @@
 | [`deviceArchiveNamePrefix`](#constants) | 常量 | A | `'mydevice_export_'`。 |
 | [`deviceDataFileName`](#constants) | 常量 | A | `'device_data.json'`。 |
 | [`deviceModuleId`](#constants) | 常量 | A | `'devices'`。 |
+| [`networkDataFileName`](#constants) | 常量 | A | `'network_data.json'`。 |
+| [`dataSetDataFileName`](#constants) | 常量 | A | `'dataset_data.json'`。 |
+| [`serviceDataFileName`](#constants) | 常量 | A | `'service_data.json'`。 |
 | [`deviceReferencedImages(json)`](#devicereferencedimages) | 函数 | A | 记录引用的设备图像基名。 |
 | [`buildDevicesModule()`](#modules) | 函数 | A | 设备 `DataModule`（唯一图像源）。 |
 | [`buildNetworksModule()`](#modules) | 函数 | A | 网络 `DataModule`。 |
@@ -23,11 +26,11 @@
 ### `class DeviceStorageAdapter` <a id="devicestorageadapter"></a>
 - **用途：** 给共享引擎存储根和 `storage_config.json` 访问，包无需知道 `DeviceStorage` 任何东西。
 - **构造函数：** `const DeviceStorageAdapter({Future<Directory> Function()? appDir})`。
-- **方法：** `getAppDir()`、`readConfig()`、`writeConfig(config)`，全部委托给枢纽。
-- **备注：** 可选 `appDir` 解析器存在使 `BackupService` 能继续尊重其 `@visibleForTesting appDirProvider`。每次调用都咨询它。`DeviceStorage.getAppDir()` 每次调用重新读取其配置，因此自定义存储路径变更立即被拾取。
+- **方法：** `getAppDir()`、`readConfig()`、`writeConfig(config)`，全部委托给枢纽。配置这一对无论存储路径如何，总是读写平台默认文件夹中唯一的 `storage_config.json`，且 `writeConfig` 不能改变 `storagePath` 键（见 [`DeviceStorage.writeConfig`](../features/devices/services/device_storage.md#writeconfig)）。
+- **备注：** 可选 `appDir` 解析器存在使 `BackupService` 能继续尊重其 `@visibleForTesting appDirProvider`。每次调用都咨询它。`DeviceStorage.getAppDir()` 对照内存中的自定义路径解析，而 `setStoragePath` 会更新该路径，因此自定义存储路径变更立即被拾取。
 
 ### 常量 <a id="constants"></a>
-- **备注：** 文件名和模块 id 是持久化兼容契约——旧构建和新构建必须对照相同 WebDAV 服务器和相同备份捆绑互操作。绝不要改变它们。
+- **备注：** 文件名和模块 id 是持久化兼容契约——旧构建和新构建必须对照相同 WebDAV 服务器和相同备份捆绑互操作。绝不要改变它们。四个 `*DataFileName` 常量是写出数据文件名的唯一位置：这里的模块构建器使用它们，存储枢纽也使用它们——`DeviceStorage._dataFileName`、`NetworkStorage._dataFileName`、`DataSetStorage._dataFileName` 和 `ServiceStorage.dataFileName` 分别是 `deviceDataFileName`、`networkDataFileName`、`dataSetDataFileName` 和 `serviceDataFileName` 的别名。
 
 ### `deviceReferencedImages(json)` <a id="devicereferencedimages"></a>
 - **返回：** 来自 `Device.imagePath` 的图像基名；格式错误输入为空集合。

@@ -20,18 +20,18 @@
 
 ### `static Future<File> _getFile()` <a id="getfile"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 16 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 17 行）。
 - **用途：** 解析当前应用目录内 `network_data.json` 文件。
 - **输入：** 无。
 - **返回：** `Future<File>`。
 - **副作用：** 除 `DeviceStorage.getAppDir()` 的目录创建副作用外无。
-- **算法：** `File('${(await DeviceStorage.getAppDir()).path}/network_data.json')`。
+- **算法：** 在 `DeviceStorage.getAppDir()` 上 `File('${appDir.path}/$_dataFileName')`，`_dataFileName` 是 [`data_modules.dart`](../../../app/data_modules.md#constants) 中 `networkDataFileName`（`'network_data.json'`）的别名。
 - **用法：** 被 [`load`](#load) 和 [`save`](#save) 调用。
 - **备注：** 委托 `DeviceStorage.getAppDir()`（而非解析自己的目录）正是让 `network_data.json` 即使用户在设置更改存储位置后也住在 `device_data.json` 旁的东西。
 
 ### `static Future<NetworkData> load()` <a id="load"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 26 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 27 行）。
 - **用途：** 从 `network_data.json` 加载持久化网络数据集。
 - **输入：** 无。
 - **返回：** `Future<NetworkData>` — 文件缺席或为空时 `const NetworkData()`（空）。
@@ -46,7 +46,7 @@
 
 ### `static Future<void> save(NetworkData data)` <a id="save"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 40 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 41 行）。
 - **用途：** 把完整网络数据集持久化到 `network_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
@@ -63,7 +63,7 @@
 
 ### `static Future<void> addOrUpdateNetwork(Network network)` <a id="addorupdatenetwork"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 52 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 53 行）。
 - **用途：** 插入新网络或按 `id` 替换既有网络。
 - **输入：** `network`。
 - **返回：** `Future<void>`。
@@ -78,7 +78,7 @@
 
 ### `static Future<void> deleteNetwork(String id)` <a id="deletenetwork"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 69 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 70 行）。
 - **用途：** 按 id 删除网络并移除每个引用它的赋值。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
@@ -93,7 +93,7 @@
 
 ### `static Future<void> setAssignment(NetworkDevice assignment)` <a id="setassignment"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 83 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 84 行）。
 - **用途：** 插入新设备赋值或按 `(networkId, deviceId)` 复合键替换既有赋值。
 - **输入：** `assignment`。
 - **返回：** `Future<void>`。
@@ -108,7 +108,7 @@
 
 ### `static Future<void> removeAssignment(String networkId, String deviceId)` <a id="removeassignment"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/network/services/network_storage.dart`（第 104 行）。
+- **来源：** `lib/features/network/services/network_storage.dart`（第 105 行）。
 - **用途：** 从网络移除单个设备的赋值。
 - **输入：** `networkId`、`deviceId`。
 - **返回：** `Future<void>`。

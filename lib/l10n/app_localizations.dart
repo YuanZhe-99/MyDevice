@@ -761,6 +761,24 @@ abstract class AppLocalizations {
   /// **'Storage location updated'**
   String get settingsStoragePathUpdated;
 
+  /// No description provided for @settingsStoragePathFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not change the storage location.'**
+  String get settingsStoragePathFailed;
+
+  /// No description provided for @settingsStoragePathUnmovedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Some items were not moved'**
+  String get settingsStoragePathUnmovedTitle;
+
+  /// No description provided for @settingsStoragePathUnmovedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'These items are still in {folder}. Until you move them to the new location yourself, the app cannot see them:'**
+  String settingsStoragePathUnmovedBody(String folder);
+
   /// No description provided for @totalDevices.
   ///
   /// In en, this message translates to:
@@ -3334,6 +3352,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add access path for a service on this device'**
   String get serviceTopologyAddAccessOnDevice;
+
+  /// No description provided for @serviceTopologyRelayServiceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{method} service'**
+  String serviceTopologyRelayServiceSubtitle(String method);
 
   /// No description provided for @serviceTopologyRouteFocusHint.
   ///

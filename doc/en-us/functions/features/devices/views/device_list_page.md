@@ -34,7 +34,6 @@ gating requirements this satisfies (call site 4 of 4).
 | `_viewFinancialOverview` | method (`_DeviceListPageState`) | B | Push the financial overview page, then reload. |
 | [`_confirmDeleteDevice`](#_confirmdeletedevice) | method (`_DeviceListPageState`) | A | Confirm and, if accepted, delete a device and notify the sync layer. |
 | [`_addFromTemplate`](#_addfromtemplate) | method (`_DeviceListPageState`) | A | Pick a bundled device template, materialize it into a `Device`, and open it for editing. |
-| `_categoryLabel` | method (`_DeviceListPageState`) | B | Map a `DeviceCategory` to its localized label. |
 | `_sortModeLabel` | method (`_DeviceListPageState`) | B | Map a `SortMode` to its localized label. |
 | `_filterLabel` | method (`_DeviceListPageState`) | B | Map a `DeviceStatusFilter` to its localized label. |
 | [`_statusCount`](#_statuscount) | method (`_DeviceListPageState`) | A | Count devices with a given lifecycle status. |
@@ -67,7 +66,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_DeviceListPageState` (widget lifecycle override)
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 54)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 57)
 - **Purpose:** Wire this page into the auto-sync notification system and kick off the initial
   preference/device loads.
 - **Inputs:** None.
@@ -85,13 +84,13 @@ gating requirements this satisfies (call site 4 of 4).
      preferences (avoids a visible re-sort flash after the list first renders).
 - **Usage:** Invoked automatically by the Flutter framework when `_DeviceListPageState` is first
   inserted into the tree; no direct call site.
-- **Notes:** The counterpart `dispose()` (line 67) calls
+- **Notes:** The counterpart `dispose()` (line 70) calls
   `AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged)` to avoid leaking the
   listener after the page is disposed.
 
 ### `Future<void> _loadSortPrefs()` <a id="_loadsortprefs"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 86)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 89)
 - **Purpose:** Load the persisted sort mode, category-grouping flag, and sort direction from
   device storage config, falling back to sensible defaults.
 - **Inputs:** None.
@@ -111,7 +110,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `Future<void> _loadFinancialPrefs()` <a id="_loadfinancialprefs"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 105)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 122)
 - **Purpose:** Load the user's configured default currency so finance figures on this page format
   correctly.
 - **Inputs:** None.
@@ -125,7 +124,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `Future<void> _saveSortPrefs()` <a id="_savesortprefs"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 115)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 132)
 - **Purpose:** Persist the current sort mode, grouping flag, and sort direction back to device
   storage config.
 - **Inputs:** None (reads `_sortMode`, `_groupByCategory`, `_sortAscending`).
@@ -140,7 +139,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `List<Device> get _visibleDevices` <a id="_visibledevices"></a>
 - **Kind:** getter of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 128)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 145)
 - **Purpose:** Apply the active `DeviceStatusFilter` to the full device list.
 - **Inputs:** None (reads `_devices`, `_statusFilter`).
 - **Returns:** `List<Device>` — the subset matching the filter.
@@ -156,7 +155,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `List<Device> get _sortedDevices` <a id="_sorteddevices"></a>
 - **Kind:** getter of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 147)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 164)
 - **Purpose:** Produce the final list for display: `_visibleDevices` sorted by the active
   `SortMode` and direction, optionally grouped by category.
 - **Inputs:** None (reads `_visibleDevices`, `_sortMode`, `_sortAscending`, `_groupByCategory`,
@@ -180,14 +179,14 @@ gating requirements this satisfies (call site 4 of 4).
      `effectiveComparator` within each category; otherwise sorts the whole list by
      `effectiveComparator` directly.
 - **Usage:** `final sorted = _sortedDevices;` in `_buildDeviceList`
-  (`lib/features/devices/views/device_list_page.dart`, line 638).
+  (`lib/features/devices/views/device_list_page.dart`, line 728).
 - **Notes:** The null-handling in the date comparators is direction-invariant — nulls are always
   last, both ascending and descending, because the ascending wrapper simply swaps the comparator's
   two arguments rather than negating its result.
 
 ### `Future<void> _loadDevices()` <a id="_loaddevices"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 203)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 220)
 - **Purpose:** Reload the full device list from storage and refresh the page's state.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -202,7 +201,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `Future<bool> _confirmDeleteDevice(Device device)` <a id="_confirmdeletedevice"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 288)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 305)
 - **Purpose:** Show a confirmation dialog for deleting a device, and if confirmed, delete it and
   refresh the list.
 - **Inputs:** `device` — the device the user swiped to delete.
@@ -218,14 +217,14 @@ gating requirements this satisfies (call site 4 of 4).
      returns `true`.
   3. Otherwise returns `false` without side effects.
 - **Usage:** `confirmDismiss: (direction) async { ... return _confirmDeleteDevice(device); }` in
-  `_buildDismissibleCard` (`lib/features/devices/views/device_list_page.dart`, line 944) — the
+  `_buildDismissibleCard` (`lib/features/devices/views/device_list_page.dart`, line 1061) — the
   `Dismissible`'s `confirmDismiss` uses the returned `bool` to decide whether to actually remove
   the swiped tile.
 - **Notes:** None.
 
 ### `Future<void> _addFromTemplate()` <a id="_addfromtemplate"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 321)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 338)
 - **Purpose:** Let the user pick a bundled device template, then open a pre-filled edit page for
   the resulting device.
 - **Inputs:** None.
@@ -244,27 +243,27 @@ gating requirements this satisfies (call site 4 of 4).
      those resolve, then calls `template.toDevice(cpuPresets: cpus, gpuPresets: gpus)` to build a
      concrete `Device` from the template, pushes `DeviceEditPage(device: device)`, and reloads.
 - **Usage:** `onPressed: _addFromTemplate,` on the "add from template" FAB in `build`
-  (`lib/features/devices/views/device_list_page.dart`, line 618).
+  (`lib/features/devices/views/device_list_page.dart`, line 637).
 - **Notes:** Three separate `mounted` checks guard the three awaited steps (template load, picker
   result, cpu/gpu preset load) since the user could navigate away from the page during any of
   them.
 
 ### `int _statusCount(DeviceLifecycleStatus status)` <a id="_statuscount"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 394)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 393)
 - **Purpose:** Count how many devices currently have a given lifecycle status.
 - **Inputs:** `status`.
 - **Returns:** `int`.
 - **Side effects:** None.
 - **Algorithm:** `_devices.where((d) => d.lifecycleStatus == status).length`.
 - **Usage:** `_statusCount(DeviceLifecycleStatus.inService)` etc. in `_buildHomeHeader`
-  (`lib/features/devices/views/device_list_page.dart`, lines 700–702), feeding the three status
+  (`lib/features/devices/views/device_list_page.dart`, lines 817–819), feeding the three status
   progress bars.
 - **Notes:** None.
 
 ### `double _totalFinancialCost()` <a id="_totalfinancialcost-list"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 402)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 401)
 - **Purpose:** Sum `Device.totalCost()` (as of now) across every device, for the home header's
   "Total Cost" metric.
 - **Inputs:** None.
@@ -272,13 +271,13 @@ gating requirements this satisfies (call site 4 of 4).
 - **Side effects:** None.
 - **Algorithm:** `_devices.fold(0, (sum, device) => sum + device.totalCost())`.
 - **Usage:** `_moneyText(_totalFinancialCost())` in `_buildHomeHeader`
-  (`lib/features/devices/views/device_list_page.dart`, line 747).
+  (`lib/features/devices/views/device_list_page.dart`, line 864).
 - **Notes:** Same shape as `DeviceFinanceOverviewPage._totalFinancialCost` (this file's list-page
   header shows the same aggregate the finance overview page's summary card shows).
 
 ### `double _totalDailyCost()` <a id="_totaldailycost-list"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 410)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 409)
 - **Purpose:** Sum `Device.averageDailyCost()` (as of now) across every device, for the home
   header's "Daily Cost" metric.
 - **Inputs:** None.
@@ -286,12 +285,12 @@ gating requirements this satisfies (call site 4 of 4).
 - **Side effects:** None.
 - **Algorithm:** `_devices.fold(0, (sum, device) => sum + (device.averageDailyCost() ?? 0))`.
 - **Usage:** `_moneyText(_totalDailyCost())` in `_buildHomeHeader`
-  (`lib/features/devices/views/device_list_page.dart`, line 755).
+  (`lib/features/devices/views/device_list_page.dart`, line 872).
 - **Notes:** None.
 
 ### `String _moneyText(double amount)` <a id="_moneytext-list"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 418)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 417)
 - **Purpose:** Format a plain amount with the page's configured default-currency symbol.
 - **Inputs:** `amount` — already in `_defaultCurrency`.
 - **Returns:** `String` — `"{symbol}{amount.toStringAsFixed(2)}"`.
@@ -304,7 +303,7 @@ gating requirements this satisfies (call site 4 of 4).
 
 ### `Future<void> _onReorder(int oldIndex, int newIndex)` <a id="_onreorder"></a>
 - **Kind:** method of `_DeviceListPageState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 458)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 457)
 - **Purpose:** Move a device to a new position in the custom (storage) order and persist the
   change.
 - **Inputs:** `oldIndex`, `newIndex` — as supplied by `ReorderableListView.builder`'s
@@ -315,14 +314,14 @@ gating requirements this satisfies (call site 4 of 4).
   to reflect the reorder immediately, then awaits `DeviceStorage.save(DeviceData(devices:
   _devices))` to persist the new order.
 - **Usage:** `onReorderItem: _onReorder,` on the `ReorderableListView.builder` shown while
-  `_reordering` is true, in `build` (`lib/features/devices/views/device_list_page.dart`, line 586).
+  `_reordering` is true, in `build` (`lib/features/devices/views/device_list_page.dart`, line 605).
 - **Notes:** The source doc comment notes `onReorderItem` (as opposed to the older `onReorder`
   callback) already adjusts `newIndex` after the removal, so this method doesn't need its own
   index-adjustment logic — a common source of off-by-one bugs with Flutter's reorder callbacks.
 
 ### `List<DeviceTemplate> get _filtered` <a id="_filtered"></a>
 - **Kind:** getter of `_TemplatePickerState`
-- **Source:** `lib/features/devices/views/device_list_page.dart` (line 1040)
+- **Source:** `lib/features/devices/views/device_list_page.dart` (line 1181)
 - **Purpose:** Filter the bundled device template list by the current search query.
 - **Inputs:** None (reads `_query`, `widget.templates`).
 - **Returns:** `List<DeviceTemplate>` — all templates if the query is empty, otherwise those whose
@@ -332,7 +331,7 @@ gating requirements this satisfies (call site 4 of 4).
   template's `name`, `brand`, `model`, `cpu`, `gpu` and `ram` into one lowercased haystack and keeps
   templates whose haystack `contains` the query.
 - **Usage:** `final items = _filtered;` in `_TemplatePickerState.build`
-  (`lib/features/devices/views/device_list_page.dart`, line 1056), driving the picker's `ListView`.
+  (`lib/features/devices/views/device_list_page.dart`, line 1237), driving the picker's `ListView`.
 - **Notes:** The field set deliberately matches what the tile displays. Filtering on `name` alone
   meant typing a chip the subtitle was showing — "Snapdragon", "Apple M4" — returned nothing.
 

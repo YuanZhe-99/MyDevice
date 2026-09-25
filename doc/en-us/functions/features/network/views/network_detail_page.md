@@ -21,7 +21,6 @@ existing assignment (by the `(networkId, deviceId)` pair, not an id).
 | [`_saveSortPrefs`](#savesortprefs) | method (`_NetworkDetailPageState`) | A | Persist those four sort-related flags to device storage config. |
 | [`_compareIp`](#compareip) | method (`_NetworkDetailPageState`) | A | Compare two dotted-quad IP strings numerically, octet by octet. |
 | [`_sortedAssignments`](#sortedassignments) | getter (`_NetworkDetailPageState`) | A | Sort/group/reorder `_assignments` per the current sort mode, direction, grouping, and exit-first settings. |
-| `_categoryLabel` | method (`_NetworkDetailPageState`) | B | Map a `DeviceCategory` to its localized label. |
 | `_sortModeLabel` | method (`_NetworkDetailPageState`) | B | Map a `NetworkDeviceSortMode` to its localized label. |
 | [`_load`](#load) | method (`_NetworkDetailPageState`) | A | Reload the network, its assignments, and the full device list from storage. |
 | `_findDevice` | method (`_NetworkDetailPageState`) | B | Look up a device by id in the loaded device list. |
@@ -42,13 +41,13 @@ existing assignment (by the `(networkId, deviceId)` pair, not an id).
 | `_DevicePicker` (constructor) | constructor | B | Store the list of unassigned devices for the picker sheet. |
 | `_DevicePicker.build` | method (widget) | B | Render the bottom-sheet list of devices to pick from. |
 
-Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactly.
+Row count (26) matches `grep -c 'Purpose:' network_detail_page.dart` (26) exactly.
 
 ## Documentation
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_NetworkDetailPageState` (widget lifecycle override).
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 48).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 51).
 - **Purpose:** Kick off the initial preference load, then the network/assignment/device data load.
 - **Inputs:** None.
 - **Returns:** None.
@@ -63,7 +62,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<void> _loadSortPrefs()` <a id="loadsortprefs"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 59).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 61).
 - **Purpose:** Load the persisted sort mode, sort direction, category-grouping flag, and
   exit-node-first flag from device storage config, falling back to defaults.
 - **Inputs:** None.
@@ -82,7 +81,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<void> _saveSortPrefs()` <a id="savesortprefs"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 82).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 84).
 - **Purpose:** Persist the current sort mode, direction, grouping flag, and exit-first flag back to
   device storage config.
 - **Inputs:** None (reads the four corresponding state fields).
@@ -95,7 +94,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `int _compareIp(String? a, String? b)` <a id="compareip"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 96).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 98).
 - **Purpose:** Compare two dotted-quad IP address strings numerically (octet by octet), not
   lexicographically, so an address with a single-digit final octet correctly sorts before one with
   a two-digit final octet at the same prefix (plain string comparison would get this backwards).
@@ -117,7 +116,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `List<NetworkDevice> get _sortedAssignments` <a id="sortedassignments"></a>
 - **Kind:** getter of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 114).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 116).
 - **Purpose:** Produce the final assignment list for display: sorted by the active
   `NetworkDeviceSortMode` and direction, optionally grouped by device category, optionally with
   exit-node assignments pulled to the front.
@@ -136,7 +135,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
   partition the (already sorted) list into `isExitNode == true` and `false`, and concatenate exits
   first — this happens *after* the main sort/grouping, so exit nodes are pulled to the front as a
   whole block without disturbing the relative order established by steps 2–4 within each partition.
-- **Usage:** Read at the top of `_buildDeviceList` (this file, line 641):
+- **Usage:** Read at the top of `_buildDeviceList` (this file, line 690):
   `final sorted = _sortedAssignments;`.
 - **Notes:** The exit-node-first partition is applied last and is independent of grouping — turning
   on both `_groupByCategory` and `_exitNodeFirst` still shows every exit node before every
@@ -145,7 +144,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<void> _load()` <a id="load"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 199).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 179).
 - **Purpose:** Reload this network's own record, its device assignments, and the full device list
   (needed to resolve assignment `deviceId`s to names/categories).
 - **Inputs:** None.
@@ -164,7 +163,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<void> _deleteNetwork()` <a id="deletenetwork"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 258).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 238).
 - **Purpose:** Show a confirmation dialog, and if confirmed, delete this network and leave the
   page.
 - **Inputs:** None.
@@ -182,7 +181,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<void> _addDevice()` <a id="adddevice"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 289).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 269).
 - **Purpose:** Let the user pick an in-service, not-yet-assigned device, configure its address
   mode/IP/hostname/exit-node flag, and persist the new assignment.
 - **Inputs:** None.
@@ -207,7 +206,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<void> _editAssignment(NetworkDevice assignment)` <a id="editassignment"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 320).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 300).
 - **Purpose:** Re-open the assignment-configuration dialog pre-filled with an existing assignment's
   values, and persist any changes.
 - **Inputs:** `assignment` — the existing `NetworkDevice` to edit.
@@ -219,14 +218,14 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
   see [`network_storage.md#setassignment`](../services/network_storage.md#setassignment)), calls `notifySaved()`,
   and reloads.
 - **Usage:** Selected from the per-card `PopupMenuButton`'s `'edit'` item in `_buildDeviceCard`
-  (this file, line 674).
+  (this file, line 742).
 - **Notes:** Because `NetworkDevice` has no `id`, "editing" an assignment here is really "replace
   the assignment matching this `(networkId, deviceId)` pair with a newly-constructed one" — see
   [Networks](../../../../features/networks.md#composite-key-identity--and-why).
 
 ### `Future<void> _removeAssignment(NetworkDevice assignment)` <a id="removeassignment"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 335).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 315).
 - **Purpose:** Show a confirmation dialog, and if confirmed, remove a device's assignment from this
   network.
 - **Inputs:** `assignment` — the `NetworkDevice` to remove.
@@ -241,7 +240,7 @@ Row count (24) matches `grep -c 'Purpose:' network_detail_page.dart` (24) exactl
 
 ### `Future<NetworkDevice?> _showAssignmentDialog(AppLocalizations l10n, NetworkDevice initial)` <a id="showassignmentdialog"></a>
 - **Kind:** method of `_NetworkDetailPageState`.
-- **Source:** `lib/features/network/views/network_detail_page.dart` (line 369).
+- **Source:** `lib/features/network/views/network_detail_page.dart` (line 349).
 - **Purpose:** Show the modal dialog for configuring one assignment's address mode, IP address,
   hostname, and exit-node flag, seeded from `initial`.
 - **Inputs:** `l10n`; `initial` — the `NetworkDevice` to seed the dialog's fields from (a fresh

@@ -33,7 +33,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<File> _getFile()` <a id="_getfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 16).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 17).
 - **Purpose:** Resolve the `service_data.json` file inside the app's current data
   directory (respecting any custom storage path configured via
   [`DeviceStorage.setStoragePath`](../../devices/services/device_storage.md#setstoragepath)).
@@ -41,7 +41,8 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 - **Returns:** `Future<File>`.
 - **Side effects:** None beyond `DeviceStorage.getAppDir()`'s directory-creation side effect.
 - **Algorithm:** `File('${(await DeviceStorage.getAppDir()).path}/$dataFileName')`, where
-  `dataFileName` is the constant `'service_data.json'`.
+  `dataFileName` aliases `serviceDataFileName` (`'service_data.json'`) from
+  [`data_modules.dart`](../../../app/data_modules.md#constants).
 - **Usage:** Called internally by [`load`](#load) and [`save`](#save) only; not exposed
   outside this class.
 - **Notes:** Unlike `DeviceStorage`'s own equivalent (`_getFile`, which is also
@@ -50,7 +51,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<ServiceData> load()` <a id="load"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 26).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 27).
 - **Purpose:** Load the persisted service inventory from `service_data.json`.
 - **Inputs:** None.
 - **Returns:** `Future<ServiceData>` — `const ServiceData()` (empty) if the file is absent
@@ -74,7 +75,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<void> save(ServiceData data)` <a id="save"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 40).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 41).
 - **Purpose:** Persist the full service inventory (services and routes together) to
   `service_data.json` and notify the auto-sync service that local data changed.
 - **Inputs:** `data` — the complete `ServiceData` to write; every mutator in this class
@@ -98,7 +99,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<void> addOrUpdateService(ServiceNode service)` <a id="addorupdateservice"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 52).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 53).
 - **Purpose:** Insert a new service or replace an existing one, matched by `id`.
 - **Inputs:** `service`.
 - **Returns:** `Future<void>`.
@@ -121,7 +122,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<void> deleteService(String id)` <a id="deleteservice"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 75).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 76).
 - **Purpose:** Delete a service by id and strip any route hop that referenced it, so a
   deleted service can't dangle as a hop's `serviceId`.
 - **Inputs:** `id`.
@@ -145,7 +146,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<void> addOrUpdateRoute(ServiceRoute route)` <a id="addorupdateroute"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 100).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 101).
 - **Purpose:** Insert a new route or replace an existing one, matched by `id`.
 - **Inputs:** `route`.
 - **Returns:** `Future<void>`.
@@ -165,7 +166,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<void> deleteRoute(String id)` <a id="deleteroute"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 123).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 124).
 - **Purpose:** Delete a route by id.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
@@ -182,7 +183,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 
 ### `static Future<void> removeDeviceReferences(String deviceId)` <a id="removedevicereferences"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/services/services/service_storage.dart` (line 139).
+- **Source:** `lib/features/services/services/service_storage.dart` (line 140).
 - **Purpose:** Remove every service and route reference to a device that was deleted or
   left service (retired/sold) — the service-layer half of
   [`DeviceStorage`](../../devices/services/device_storage.md)'s cross-module cascade-delete

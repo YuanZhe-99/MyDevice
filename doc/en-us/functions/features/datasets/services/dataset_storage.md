@@ -28,12 +28,14 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static Future<File> _getFile()` <a id="getfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 16).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 17).
 - **Purpose:** Resolve the `dataset_data.json` file inside the current app directory.
 - **Inputs:** None.
 - **Returns:** `Future<File>`.
 - **Side effects:** None beyond `DeviceStorage.getAppDir()`'s directory-creation side effect.
-- **Algorithm:** `File('${(await DeviceStorage.getAppDir()).path}/dataset_data.json')`.
+- **Algorithm:** `File('${appDir.path}/$_dataFileName')` on `DeviceStorage.getAppDir()`, where
+  `_dataFileName` aliases `dataSetDataFileName` (`'dataset_data.json'`) from
+  [`data_modules.dart`](../../../app/data_modules.md#constants).
 - **Usage:** Called by [`load`](#load) and [`save`](#save).
 - **Notes:** Same pattern as `NetworkStorage._getFile`
   (`../../network/services/network_storage.md`) — delegating to `DeviceStorage.getAppDir()` keeps
@@ -42,7 +44,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static Future<DataSetData> load()` <a id="load"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 26).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 27).
 - **Purpose:** Load the persisted dataset list from `dataset_data.json`.
 - **Inputs:** None.
 - **Returns:** `Future<DataSetData>` — `const DataSetData()` (empty) if the file is absent or empty.
@@ -58,7 +60,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static Future<void> save(DataSetData data)` <a id="save"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 40).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 41).
 - **Purpose:** Persist the full dataset list to `dataset_data.json` and notify the auto-sync
   service that local data changed.
 - **Inputs:** `data`.
@@ -78,7 +80,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static Future<void> addOrUpdate(DataSet dataset)` <a id="addorupdate"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 52).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 53).
 - **Purpose:** Insert a new dataset or replace an existing one, matched by `id`.
 - **Inputs:** `dataset`.
 - **Returns:** `Future<void>`.
@@ -94,7 +96,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static Future<void> delete(String id)` <a id="delete"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 69).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 70).
 - **Purpose:** Delete a dataset by id.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
@@ -112,7 +114,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static Future<void> remapDeviceStorageLinks({required String deviceId, required int oldSlotCount, required Map<int, int> indexMap})` <a id="remapdevicestoragelinks"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 85).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 86).
 - **Purpose:** Re-map every dataset's `storageIndices` for one device after that device's storage
   list was reordered or had entries removed, so links keep pointing at the correct physical slot
   instead of silently drifting.
@@ -149,7 +151,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 
 ### `static bool _sameIndices(List<int> a, List<int> b)` <a id="sameindices"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 145).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 146).
 - **Purpose:** Compare two storage-index lists element-wise for equality.
 - **Inputs:** `a`, `b`.
 - **Returns:** `bool` — `false` immediately on a length mismatch; otherwise `true` only if every

@@ -360,28 +360,6 @@ class _DeviceListPageState extends State<DeviceListPage> {
     }
   }
 
-  /// Purpose: Return the display label for category label.
-  /// Inputs: `context`, `category`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  String _categoryLabel(BuildContext context, DeviceCategory category) {
-    final l10n = AppLocalizations.of(context)!;
-    return switch (category) {
-      DeviceCategory.desktop => l10n.deviceCategoryDesktop,
-      DeviceCategory.laptop => l10n.deviceCategoryLaptop,
-      DeviceCategory.phone => l10n.deviceCategoryPhone,
-      DeviceCategory.tablet => l10n.deviceCategoryTablet,
-      DeviceCategory.headphone => l10n.deviceCategoryHeadphone,
-      DeviceCategory.watch => l10n.deviceCategoryWatch,
-      DeviceCategory.router => l10n.deviceCategoryRouter,
-      DeviceCategory.gameConsole => l10n.deviceCategoryGameConsole,
-      DeviceCategory.vps => l10n.deviceCategoryVps,
-      DeviceCategory.devBoard => l10n.deviceCategoryDevBoard,
-      DeviceCategory.other => l10n.deviceCategoryOther,
-    };
-  }
-
   /// Purpose: Return the display label for sort mode label.
   /// Inputs: `l10n`.
   /// Returns: `String`.
@@ -630,7 +608,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
                 return _DeviceCard(
                   key: ValueKey(device.id),
                   device: device,
-                  categoryLabel: _categoryLabel(context, device.category),
+                  categoryLabel: deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
                   defaultCurrency: _defaultCurrency,
                   onTap: () {},
                   trailing: ReorderableDragStartListener(
@@ -689,7 +667,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (columns == 1) return _buildDismissibleCard(device, l10n, theme);
     return _DeviceCard(
       device: device,
-      categoryLabel: _categoryLabel(context, device.category),
+      categoryLabel: deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
       defaultCurrency: _defaultCurrency,
       onTap: () => _viewDevice(device),
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -785,7 +763,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
               key: ValueKey('header_${device.category.name}'),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Text(
-                _categoryLabel(context, device.category),
+                deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
@@ -1085,7 +1063,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
       },
       child: _DeviceCard(
         device: device,
-        categoryLabel: _categoryLabel(context, device.category),
+        categoryLabel: deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
         defaultCurrency: _defaultCurrency,
         onTap: () => _viewDevice(device),
       ),

@@ -4,11 +4,13 @@
 canonical storage-location/config service: `getAppDir()` is called by `DataSetStorage` and
 `NetworkStorage` (`../../../network/services/network_storage.dart`,
 `../../../datasets/services/dataset_storage.dart`) to resolve the *same* app directory those
-modules' own data files live in, and `readConfig`/`writeConfig` back a small generic
-`storage_config.json`-like key/value store (`theme`, `locale`, `defaultCurrency`,
-`autoUpdateExchangeRates`, etc.) that `AppSettings`
-(`../../../../shared/providers/app_settings.md`) and
-[`exchange_rate_service.md`](exchange_rate_service.md) also read/write through. See
+modules' own data files live in, and `readConfig`/`writeConfig` back a small generic key/value
+store (`themeMode`, `locale`, `defaultCurrency`, `autoUpdateExchangeRates`, list columns, etc.)
+that `AppSettings` (`../../../../shared/providers/app_settings.md`) and
+[`exchange_rate_service.md`](exchange_rate_service.md) also read/write through. That store is the
+one `storage_config.json` in the platform default folder, which also holds the custom storage
+path, so moving the data never touches the preferences; see
+[Data Formats](../../../../data-formats.md#storage_configjson) for its rules. See
 [Data Formats](../../../../data-formats.md) for the `DeviceData`/`Device` JSON shape this file
 serializes, and [Devices](../../../../features/devices.md) for the cascade-delete rules
 `deleteDevice`/`addOrUpdate` implement.
@@ -18,8 +20,8 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `DeviceStorage` | class | B | Static-only storage hub: the device list, the app directory, and `storage_config.json`. |
-| `_dataFileName` | static const (private) | B | `'device_data.json'`, the device list's file name. |
-| `_configFileName` | static const (private) | B | `'storage_config.json'`, the local settings file name. |
+| `_dataFileName` | static const (private) | B | The device list's file name: `deviceDataFileName` (`'device_data.json'`) from `data_modules.dart`. |
+| `_configFileName` | static const (private) | B | `'storage_config.json'`, the local preferences file name. |
 | `_customPath` | static field (private) | B | Cached custom storage path; `null` means the default directory. |
 | `_configLoaded` | static field (private) | B | Whether `_loadCustomPath` already ran in this process. |
 | [`_getDefaultAppDir`](#_getdefaultappdir) | static method (private) | A | Resolve (and create) the default `~/Documents/MyDevice` directory. |
@@ -27,8 +29,11 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`_loadCustomPath`](#_loadcustompath) | static method (private) | A | Load the custom storage path from config, once per process. |
 | [`getAppDir`](#getappdir) | static method | A | Resolve the app's data directory (custom path if configured, else default). |
 | [`getStoragePath`](#getstoragepath) | static method | A | Return the current storage directory's display path. |
-| [`setStoragePath`](#setstoragepath) | static method | A | Change the storage location and move the whole storage folder to it. |
-| [`_readConfigFromDefault`](#_readconfigfromdefault) | static method (private) | A | Read `storage_config.json` from the default (not custom) directory. |
+| [`setStoragePath`](#setstoragepath) | static method | A | Change the storage location, move the whole storage folder to it, and report what stayed behind. |
+| [`_leftoverEntries`](#_leftoverentries) | static method (private) | A | List the files a storage move left in the old folder, except the top-level config. |
+| `_strayCheckedFor` | static field (private) | B | The custom path whose folder was last checked for a stray `storage_config.json`. |
+| [`_adoptStrayConfig`](#_adoptstrayconfig) | static method (private) | A | Merge a `storage_config.json` an older build left in the custom folder into the default one, then delete it. |
+| [`_readConfigFromDefault`](#_readconfigfromdefault) | static method (private) | A | Read `storage_config.json` from the default directory — the only copy. |
 | [`_writeConfigToDefault`](#_writeconfigtodefault) | static method (private) | A | Write `storage_config.json` to the default directory. |
 | [`_getFile`](#_getfile) | static method (private) | A | Resolve a named file inside the current app directory. |
 | [`load`](#load) | static method | A | Load the persisted `DeviceData` (device list). |
@@ -36,8 +41,8 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`addOrUpdate`](#addorupdate) | static method | A | Insert or replace a device by id; clean up references if it left service. |
 | [`deleteDevice`](#deletedevice) | static method | A | Delete a device by id and clean up cross-module references. |
 | [`_removeDeviceReferences`](#_removedevicereferences) | static method (private) | A | Strip network/dataset/service references to a device id. |
-| [`readConfig`](#readconfig) | static method | A | Read the generic `storage_config.json` key/value map. |
-| [`writeConfig`](#writeconfig) | static method | A | Write the generic `storage_config.json` key/value map. |
+| [`readConfig`](#readconfig) | static method | A | Read the preferences map from the default folder's `storage_config.json`. |
+| [`writeConfig`](#writeconfig) | static method | A | Write the preferences map to the default folder's `storage_config.json`, keeping `storagePath` owned by `setStoragePath`. |
 | [`getThemeMode`](#getthememode) | static method | A | Read the persisted theme mode string. |
 | [`setThemeMode`](#setthememode) | static method | A | Persist (or clear) the theme mode string. |
 | [`getLocaleTag`](#getlocaletag) | static method | A | Read the persisted locale tag. |
@@ -52,19 +57,27 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | `setDataSetListColumns` | static method | B | `_setListColumns('dataSetListColumns', columns)`. |
 | `getServiceListColumns` | static method | B | `_getListColumns('serviceListColumns')`: one preference serves the devices, routes and ports views; the overview is always one column. |
 | `setServiceListColumns` | static method | B | `_setListColumns('serviceListColumns', columns)`. |
+| `StoragePathResult` | class | B | What `setStoragePath` did: whether the path was recorded and which entries the move left behind. |
+| `saved` | field (`StoragePathResult`) | B | Whether the new path was recorded; false means nothing changed. |
+| `unmoved` | field (`StoragePathResult`) | B | Relative paths the move left in the old folder; empty when everything moved or nothing had to. |
+| `from` | field (`StoragePathResult`) | B | The old folder holding the unmoved entries; null when nothing was moved. |
+| [`StoragePathResult`](#storagepathresult-new) | constructor | A | Create a result; `saved` defaults to true, `unmoved` to empty. |
+| [`complete`](#complete) | getter (`StoragePathResult`) | A | Whether the change fully succeeded: saved and nothing left behind. |
 
-Row count (35) is five more than `grep -c '/// Purpose:' device_storage.dart` (30). Each of the 30
+Row count (44) is ten more than `grep -c '/// Purpose:' device_storage.dart` (34). Each of the 32
 static methods, including each of the eight list-column accessors, has its own row and its own
-`Purpose:` block. The five extra rows are the `DeviceStorage` class itself, the private static
-consts `_dataFileName` and `_configFileName`, and the private static fields `_customPath` and
-`_configLoaded`, which carry an ordinary `///` description or none and are listed because every
-declaration appears in the table. Tier A: 22 rows.
+`Purpose:` block, and so do the `StoragePathResult` constructor and its `complete` getter. The ten
+extra rows are the `DeviceStorage` class itself, the private static consts `_dataFileName` and
+`_configFileName`, the private static fields `_customPath`, `_configLoaded` and
+`_strayCheckedFor`, the `StoragePathResult` class, and its fields `saved`, `unmoved` and `from`,
+which carry an ordinary `///` description or none and are listed because every declaration
+appears in the table. Tier A: 26 rows.
 
 ## Documentation
 
 ### `static Future<Directory> _getDefaultAppDir()` <a id="_getdefaultappdir"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 31).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 32).
 - **Purpose:** Resolve the default `<Documents>/MyDevice` directory, creating it if missing.
 - **Inputs:** None.
 - **Returns:** `Future<Directory>`.
@@ -77,22 +90,23 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<File> _getConfigFile()` <a id="_getconfigfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 46).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 47).
 - **Purpose:** Resolve the `storage_config.json` file path, which always lives in the *default*
   app directory regardless of any configured custom storage path.
 - **Inputs:** None.
 - **Returns:** `Future<File>`.
 - **Side effects:** None (does not create the file).
 - **Algorithm:** Join `_getDefaultAppDir()`'s path with `_configFileName`.
-- **Usage:** Called by [`_loadCustomPath`](#_loadcustompath), [`_readConfigFromDefault`](#_readconfigfromdefault),
-  and [`_writeConfigToDefault`](#_writeconfigtodefault).
+- **Usage:** Called by [`_loadCustomPath`](#_loadcustompath), [`_adoptStrayConfig`](#_adoptstrayconfig),
+  [`_readConfigFromDefault`](#_readconfigfromdefault), and
+  [`_writeConfigToDefault`](#_writeconfigtodefault).
 - **Notes:** Deliberately bypasses `getAppDir()`/any custom path — this file must be discoverable
   even if the custom path it names is itself invalid or on unmounted storage, otherwise the app
   could never recover the storage path setting.
 
 ### `static Future<void> _loadCustomPath()` <a id="_loadcustompath"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 57).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 58).
 - **Purpose:** Load the custom storage path (if any) from `storage_config.json` into the static
   `_customPath` cache, exactly once per process.
 - **Inputs:** None.
@@ -104,13 +118,14 @@ declaration appears in the table. Tier A: 22 rows.
   (missing file, malformed JSON), extracting `json['storagePath']`. 3. Set `_configLoaded = true`
   unconditionally, even on error, so a corrupt config file doesn't force a re-read attempt on every
   call.
-- **Usage:** Called at the start of [`getAppDir`](#getappdir).
+- **Usage:** Called at the start of [`getAppDir`](#getappdir) and
+  [`_adoptStrayConfig`](#_adoptstrayconfig).
 - **Notes:** A malformed config file is treated the same as "no custom path" (falls back to
   default) rather than surfacing an error to the caller.
 
 ### `static Future<Directory> getAppDir()` <a id="getappdir"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 77).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 78).
 - **Purpose:** Resolve the app's current data directory — the configured custom path if one is
   set and non-empty, otherwise the default `<Documents>/MyDevice` directory.
 - **Inputs:** None.
@@ -130,7 +145,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<String> getStoragePath()` <a id="getstoragepath"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 95).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 96).
 - **Purpose:** Return the current storage directory's absolute path, for display in Settings.
 - **Inputs:** None.
 - **Returns:** `Future<String>`.
@@ -143,90 +158,146 @@ declaration appears in the table. Tier A: 22 rows.
   (from `settings_page.dart`, showing the current storage location)
 - **Notes:** None.
 
-### `static Future<bool> setStoragePath(String? newPath)` <a id="setstoragepath"></a>
+### `static Future<StoragePathResult> setStoragePath(String? newPath)` <a id="setstoragepath"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 120).
-- **Purpose:** Change the app's storage location and move everything in the old storage folder to
-  the new one.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 127).
+- **Purpose:** Change the app's storage location, move everything in the old storage folder to
+  the new one, and report what the move left behind.
 - **Inputs:** `newPath` — the new custom path, or `null`/empty to revert to the default directory.
-- **Returns:** `Future<bool>` — `false` only when an exception escapes (for example while reading or
-  writing `storage_config.json`); a migration that left some entries behind still returns `true`.
-- **Side effects:** Sets `_customPath`; persists `storagePath` to the default directory's
-  `storage_config.json`; moves the old folder's contents into the new one through
-  `migrateStorageContents` from `myapps_data`
-  (`packages/myapps_data/lib/src/storage/storage_migration.dart`).
-- **Algorithm:** 1. Capture the current directory as `oldDir`. 2. Set `_customPath = newPath` and
-  persist it into `storage_config.json` via [`_readConfigFromDefault`](#_readconfigfromdefault) /
+- **Returns:** `Future<StoragePathResult>` (see [`StoragePathResult`](#storagepathresult-new)) —
+  `saved: false` only when an exception escapes (for example while reading or writing
+  `storage_config.json`), in which case nothing changed; otherwise `saved: true`, with `unmoved`
+  listing the relative paths still in the old folder and `from` naming that folder (empty and
+  null when the path did not change).
+- **Side effects:** May adopt a stray config first ([`_adoptStrayConfig`](#_adoptstrayconfig));
+  sets `_customPath`; persists `storagePath` to the default directory's `storage_config.json`;
+  moves the old folder's contents into the new one through `migrateStorageContents` from
+  `myapps_data` (`packages/myapps_data/lib/src/storage/storage_migration.dart`).
+- **Algorithm:** 1. `_adoptStrayConfig()`, so a stray copy in the current custom folder is merged
+  before that folder is emptied. 2. Capture the current directory as `oldDir`. 3. Set
+  `_customPath = newPath` and persist it into `storage_config.json` via
+  [`_readConfigFromDefault`](#_readconfigfromdefault) /
   [`_writeConfigToDefault`](#_writeconfigtodefault), removing the key when `newPath` is null or
-  empty. 3. Resolve `newDir` via `getAppDir()`, which creates it; if its path equals `oldDir`'s,
-  return `true` (nothing to move). 4. `await migrateStorageContents(from: oldDir, to: newDir)`: every
-  top-level file and directory except `storage_config.json` is copied file by file into `newDir`
-  and each original deleted after its copy; source directories are removed only once empty. The
-  returned list of paths that could not be moved is discarded. 5. Return `true`; the whole body sits
-  in a `try`/`catch` that returns `false`.
+  empty. 4. Resolve `newDir` via `getAppDir()`, which creates it; if its path equals `oldDir`'s,
+  return `const StoragePathResult()` (nothing to move). 5.
+  `await migrateStorageContents(from: oldDir, to: newDir)`: every top-level file and directory
+  except `storage_config.json` is copied file by file into `newDir` and each original deleted after
+  its copy; source directories are removed only once empty. It returns the paths it failed to
+  move. 6. Union those with [`_leftoverEntries(oldDir)`](#_leftoverentries) — which also catches
+  the files skipped because the destination already had one of that name — sort, and return
+  `StoragePathResult(unmoved: ..., from: oldDir.path)`. The whole body sits in a `try`/`catch`
+  that returns `StoragePathResult(saved: false)`.
 - **Usage:**
   ```dart
-  final ok = await DeviceStorage.setStoragePath(pathToSet);
+  final result = await DeviceStorage.setStoragePath(pathToSet);
   ```
-  (from `settings_page.dart`'s "change storage location" flow)
+  (from `settings_page.dart`'s "change storage location" flow, which shows a failure snackbar, a
+  dialog listing `result.unmoved` under `result.from`, or the usual success snackbar — see
+  [`_showStoragePathDialog`](../../settings/views/settings_page.md#_showstoragepathdialog))
 - **Notes:** The move covers the whole folder rather than an enumerated list: all four data files,
   `images/`, `.sync_base/`, `backups/` including `backups/blobs/`, and `webdav_config.json`, so a
   data file added later moves automatically. It replaced per-directory copies that left
   `backups/blobs/` behind (restored backups lost their images) and missed `.sync_base/` entirely,
   which let the next sync treat records other devices had deleted as new local records and
   resurrect them. A file already present at the destination wins and its source copy is left in
-  place, so nothing is discarded on a guess about which copy is newer. `storage_config.json` stays
-  in the platform default directory because it holds the custom path itself. As a consequence, the
-  other keys in that file (theme, locale, default currency, list column preferences, and so on)
-  are not carried over: [`readConfig`](#readconfig) resolves against the new directory, where no
-  `storage_config.json` exists until a setting is written again.
+  place, so nothing is discarded on a guess about which copy is newer — but that copy is no longer
+  readable by the app, which is why it is reported with the failures. `storage_config.json` stays
+  in the platform default directory: it holds the custom path itself and every other preference,
+  and [`readConfig`](#readconfig)/[`writeConfig`](#writeconfig) always use that copy, so a move
+  never touches the preferences. (Before 1.5.7 the preferences were read from the current storage
+  folder and so looked reset after a move.) `test/storage_path_test.dart` covers preferences
+  across a move and an entry left behind by an occupied destination.
+
+### `static Future<List<String>> _leftoverEntries(Directory oldDir)` <a id="_leftoverentries"></a>
+- **Kind:** private static method.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 166).
+- **Purpose:** List the files a storage move left in the old folder.
+- **Inputs:** `oldDir` — the folder the data moved out of.
+- **Returns:** `Future<List<String>>` — the path of every file still under `oldDir`, relative to
+  it, except the top-level `storage_config.json`; empty when the folder is gone or cannot be
+  listed.
+- **Side effects:** Lists the folder (recursively, not following links).
+- **Algorithm:** If `oldDir` does not exist, return `[]`. Otherwise walk
+  `oldDir.list(recursive: true, followLinks: false)`, keep only `File` entities, and add each
+  `p.relative(entity.path, from: oldDir.path)` unless it equals `_configFileName`. Any exception is
+  swallowed and the list gathered so far returned.
+- **Usage:** Called by [`setStoragePath`](#setstoragepath) after the move.
+- **Notes:** `migrateStorageContents` reports files it failed to copy but not those it skipped
+  because the destination already had a file of that name; both stay behind unseen by the app, so
+  the old folder itself is the source of truth. Empty directories are not listed.
+
+### `static Future<void> _adoptStrayConfig()` <a id="_adoptstrayconfig"></a>
+- **Kind:** private static method.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 198).
+- **Purpose:** Adopt a `storage_config.json` that an older build wrote into the custom storage
+  folder.
+- **Inputs:** None.
+- **Returns:** `Future<void>`.
+- **Side effects:** Sets `_strayCheckedFor`; may rewrite the default folder's
+  `storage_config.json` and delete the stray file.
+- **Algorithm:** 1. `_loadCustomPath()`. 2. Return when there is no custom path or when
+  `_strayCheckedFor` already equals it; otherwise record it in `_strayCheckedFor`. 3. Inside a
+  `try`/`catch` that swallows everything: resolve the stray file `<custom>/storage_config.json`;
+  return if it is the default config file itself (`p.equals`) or does not exist. 4. Parse it (an
+  empty file counts as `{}`), merge as `{...default, ...stray}` so the stray keys win, force
+  `storagePath` back to the custom path, write the result through
+  [`_writeConfigToDefault`](#_writeconfigtodefault), then delete the stray file.
+- **Usage:** Called first by [`setStoragePath`](#setstoragepath), [`readConfig`](#readconfig) and
+  [`writeConfig`](#writeconfig).
+- **Notes:** Before 1.5.7 `readConfig`/`writeConfig` used the current storage folder while the
+  custom path lived in the default one, so after a move the preferences seemed reset and new ones
+  went into a second file in the custom folder; those are the newer values, hence they win.
+  `storagePath` is the exception because only the default file may hold it. Checked once per
+  custom path per process; a stray file that cannot be read or parsed is left in place (and not
+  retried until the custom path changes or the app restarts).
 
 ### `static Future<Map<String, dynamic>> _readConfigFromDefault()` <a id="_readconfigfromdefault"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 153).
-- **Purpose:** Read `storage_config.json` from the default directory (used only for
-  `storagePath` persistence, distinct from the general [`readConfig`](#readconfig)/
-  [`writeConfig`](#writeconfig) pair which reads from the *current*, possibly custom, directory).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 228).
+- **Purpose:** Read `storage_config.json` from the default directory — the only copy of the
+  preferences and the custom path.
 - **Inputs:** None.
 - **Returns:** `Future<Map<String, dynamic>>` — `{}` if the file is absent or empty.
 - **Side effects:** None (read-only).
 - **Algorithm:** Existence check, empty-content check, then `jsonDecode`.
-- **Usage:** Called only by [`setStoragePath`](#setstoragepath).
-- **Notes:** Deliberately separate from `readConfig()`/`_getFile()`, which resolve against
-  `getAppDir()` (the *current*, possibly custom, directory) — the storage-path setting itself must
-  always live in the default directory so it can be found regardless of what it currently points
-  to.
+- **Usage:** Called by [`setStoragePath`](#setstoragepath), [`_adoptStrayConfig`](#_adoptstrayconfig)
+  and [`readConfig`](#readconfig).
+- **Notes:** Resolves through [`_getConfigFile`](#_getconfigfile), never `getAppDir()`: the
+  storage-path setting must be findable regardless of what it currently points to, and keeping
+  every preference beside it means a move never strands them.
 
 ### `static Future<void> _writeConfigToDefault(Map<String, dynamic> config)` <a id="_writeconfigtodefault"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 167).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 242).
 - **Purpose:** Write `storage_config.json` to the default directory.
 - **Inputs:** `config`.
 - **Returns:** `Future<void>`.
 - **Side effects:** Writes `storage_config.json` (pretty-printed, non-atomic direct write).
 - **Algorithm:** `JsonEncoder.withIndent('  ')` then `writeAsString`.
-- **Usage:** Called only by [`setStoragePath`](#setstoragepath).
+- **Usage:** Called by [`setStoragePath`](#setstoragepath), [`_adoptStrayConfig`](#_adoptstrayconfig)
+  and [`writeConfig`](#writeconfig).
 - **Notes:** Not atomic (no temp-file-then-rename), unlike the sync-critical writes in
   `WebDAVService` (`../../../../shared/services/webdav_service.md`) — this is a small local
   settings file, not one of the four synced data files.
 
 ### `static Future<File> _getFile(String name)` <a id="_getfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 179).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 254).
 - **Purpose:** Resolve a named file inside the *current* app directory (respecting any custom
   storage path).
 - **Inputs:** `name` — a bare file name (e.g. `device_data.json`).
 - **Returns:** `Future<File>`.
 - **Side effects:** None beyond `getAppDir()`'s directory-creation side effect.
 - **Algorithm:** `File(p.join((await getAppDir()).path, name))`.
-- **Usage:** Called by [`load`](#load), [`save`](#save), [`readConfig`](#readconfig),
-  and [`writeConfig`](#writeconfig). [`DeviceExchangeRateService._getFile`](exchange_rate_service.md#_getfile)
-  does not call it; it joins its own file name onto [`getAppDir`](#getappdir) directly.
-- **Notes:** None.
+- **Usage:** Called by [`load`](#load) and [`save`](#save).
+  [`DeviceExchangeRateService._getFile`](exchange_rate_service.md#_getfile) does not call it; it
+  joins its own file name onto [`getAppDir`](#getappdir) directly.
+- **Notes:** Before 1.5.7 [`readConfig`](#readconfig)/[`writeConfig`](#writeconfig) also resolved
+  `storage_config.json` through this method, which is what put preferences in the custom folder.
 
 ### `static Future<DeviceData> load()` <a id="load"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 191).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 266).
 - **Purpose:** Load the persisted device list from `device_data.json`.
 - **Inputs:** None.
 - **Returns:** `Future<DeviceData>` — `const DeviceData()` (empty) if the file is absent or empty.
@@ -243,7 +314,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> save(DeviceData data)` <a id="save"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 205).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 280).
 - **Purpose:** Persist the full device list to `device_data.json` and notify the auto-sync
   service that local data changed.
 - **Inputs:** `data`.
@@ -263,7 +334,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> addOrUpdate(Device device)` <a id="addorupdate"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 218).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 293).
 - **Purpose:** Insert a new device or replace an existing one (matched by `id`), then clean up
   cross-module references if the device is no longer in service.
 - **Inputs:** `device`.
@@ -287,7 +358,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> deleteDevice(String id)` <a id="deletedevice"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 239).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 314).
 - **Purpose:** Delete a device by id and clean up every cross-module reference to it.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
@@ -303,7 +374,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> _removeDeviceReferences(String id)` <a id="_removedevicereferences"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 251).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 326).
 - **Purpose:** Strip every reference to a device id from network assignments, dataset storage
   links, and service records — the shared cleanup used by both retiring/selling a device and
   outright deleting it.
@@ -327,15 +398,16 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<Map<String, dynamic>> readConfig()` <a id="readconfig"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 293).
-- **Purpose:** Read the generic `storage_config.json` key/value map from the *current* app
-  directory — the shared config store used for theme, locale, default currency, and other simple
-  settings that don't warrant their own file.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 372).
+- **Purpose:** Read the app's local preferences — the generic key/value map in the default
+  folder's `storage_config.json`, the shared config store used for theme, locale, default currency,
+  list columns and other simple settings that don't warrant their own file.
 - **Inputs:** None.
 - **Returns:** `Future<Map<String, dynamic>>` — `{}` if absent/empty.
-- **Side effects:** Reads `storage_config.json` (via [`_getFile`](#_getfile), i.e. from the current,
-  possibly custom, directory — distinct from [`_readConfigFromDefault`](#_readconfigfromdefault)).
-- **Algorithm:** Existence/empty checks, then `jsonDecode`.
+- **Side effects:** May adopt a stray config from the custom storage folder first
+  ([`_adoptStrayConfig`](#_adoptstrayconfig)); reads `storage_config.json` from the default folder.
+- **Algorithm:** `await _adoptStrayConfig()`, then
+  [`_readConfigFromDefault`](#_readconfigfromdefault) (existence/empty checks, then `jsonDecode`).
 - **Usage:**
   ```dart
   final config = await DeviceStorage.readConfig();
@@ -345,17 +417,23 @@ declaration appears in the table. Tier A: 22 rows.
   directly by `dataset_list_page.dart` for its own small config flags)
 - **Notes:** This is a generic, model-agnostic map — any module can stash its own keys here without
   a shared schema, similar in spirit to `extraJson` preservation elsewhere in the app but for local
-  settings rather than synced records.
+  settings rather than synced records. The file is the same whatever the storage path — the one in
+  the platform default folder, beside `storagePath` — so moving the data never resets a
+  preference. Before 1.5.7 this read the *current* storage folder, where no config existed after a
+  move.
 
 ### `static Future<void> writeConfig(Map<String, dynamic> config)` <a id="writeconfig"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 306).
-- **Purpose:** Write the generic `storage_config.json` key/value map back to the current app
-  directory.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 385).
+- **Purpose:** Write the app's local preferences back to the default folder's
+  `storage_config.json`.
 - **Inputs:** `config` — typically read via [`readConfig`](#readconfig), mutated, then passed back.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `storage_config.json` (pretty-printed, non-atomic).
-- **Algorithm:** `JsonEncoder.withIndent('  ')` then `writeAsString`.
+- **Side effects:** May adopt a stray config first ([`_adoptStrayConfig`](#_adoptstrayconfig));
+  rewrites `storage_config.json` in the default folder (pretty-printed, non-atomic).
+- **Algorithm:** `await _adoptStrayConfig()`; copy `config`, remove `storagePath`, put back the
+  current `_customPath` under `storagePath` when it is set and non-empty, then
+  [`_writeConfigToDefault`](#_writeconfigtodefault).
 - **Usage:**
   ```dart
   config['defaultCurrency'] = currency.toUpperCase();
@@ -364,11 +442,14 @@ declaration appears in the table. Tier A: 22 rows.
   (from `exchange_rate_service.md`'s `setDefaultCurrency`)
 - **Notes:** Callers must read-modify-write (there is no merge helper) — concurrent writers could
   clobber each other's keys, but this file is only ever written from the single-threaded UI/local
-  API layer, never from a background isolate.
+  API layer, never from a background isolate. `storagePath` belongs to
+  [`setStoragePath`](#setstoragepath): whatever `config` holds under that key is replaced by the
+  current custom path, or removed without one, so a preference write can never move or lose the
+  data (covered by `test/storage_path_test.dart`).
 
 ### `static Future<String?> getThemeMode()` <a id="getthememode"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 318).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 398).
 - **Purpose:** Read the persisted theme mode string (`'light'`/`'dark'`/`'system'`, or unset).
 - **Inputs:** None.
 - **Returns:** `Future<String?>`.
@@ -383,7 +464,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> setThemeMode(String? mode)` <a id="setthememode"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 328).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 408).
 - **Purpose:** Persist the theme mode string, or clear it entirely when `mode` is null.
 - **Inputs:** `mode`.
 - **Returns:** `Future<void>`.
@@ -398,7 +479,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<String?> getLocaleTag()` <a id="getlocaletag"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 343).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 423).
 - **Purpose:** Read the persisted locale tag (e.g. `'en'`, `'zh'`), or `null` if unset (follow
   system locale).
 - **Inputs:** None.
@@ -410,7 +491,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> setLocaleTag(String? tag)` <a id="setlocaletag"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 353).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 433).
 - **Purpose:** Persist the locale tag, or clear it entirely when `tag` is null (revert to system
   locale).
 - **Inputs:** `tag`.
@@ -427,7 +508,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<int> _getListColumns(String key)` <a id="getlistcolumns"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 371).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 451).
 - **Purpose:** Read one list page's column preference.
 - **Inputs:** `key` — the `storage_config.json` key for that page.
 - **Returns:** `Future<int>` — the stored count, or `listColumnsAuto` when the key is absent, not
@@ -439,7 +520,7 @@ declaration appears in the table. Tier A: 22 rows.
 
 ### `static Future<void> _setListColumns(String key, int columns)` <a id="setlistcolumns"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 386).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 466).
 - **Purpose:** Persist one list page's column preference.
 - **Inputs:** `key`; `columns` — `listColumnsAuto` or a pinned count.
 - **Returns:** None.
@@ -447,3 +528,32 @@ declaration appears in the table. Tier A: 22 rows.
 - **Usage:** The four `set…ListColumns` accessors, called fire-and-forget from the list pages.
 - **Notes:** A count in 1..`listMaxColumns` is stored; anything else removes the key, so the
   default is absent from the file rather than written as zero — matching `setThemeMode`.
+
+### `const StoragePathResult({bool saved = true, List<String> unmoved = const [], String? from})` <a id="storagepathresult-new"></a>
+- **Kind:** constructor of `StoragePathResult`, the top-level class that tells the caller what
+  [`setStoragePath`](#setstoragepath) did.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 560).
+- **Purpose:** Create a result.
+- **Inputs:** `saved` — whether the new path was recorded (default `true`; `false` means nothing
+  changed); `unmoved` — relative paths the move left in the old folder (default empty); `from` —
+  the old folder holding them (null when nothing was moved).
+- **Returns:** A new `StoragePathResult`.
+- **Side effects:** None.
+- **Algorithm:** Field assignment.
+- **Usage:** `setStoragePath` returns `const StoragePathResult()` when the path did not change,
+  `StoragePathResult(unmoved: unmoved, from: oldDir.path)` after a move, and
+  `const StoragePathResult(saved: false)` on an exception.
+- **Notes:** An unmoved entry is not readable by the app at the new location, so a caller must
+  surface `unmoved` to the user; Settings does so in its `storage-unmoved-dialog`.
+
+### `bool get complete` <a id="complete"></a>
+- **Kind:** getter of `StoragePathResult`.
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 571).
+- **Purpose:** Report whether the change fully succeeded.
+- **Inputs:** None.
+- **Returns:** `bool` — `saved && unmoved.isEmpty`.
+- **Side effects:** None.
+- **Algorithm:** `saved && unmoved.isEmpty`.
+- **Usage:** For callers and tests that only need a yes/no; `settings_page.dart` checks `saved`
+  and `unmoved` separately to pick its message.
+- **Notes:** None.

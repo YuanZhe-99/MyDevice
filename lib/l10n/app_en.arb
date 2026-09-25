@@ -137,6 +137,10 @@
   "settingsResetDefault": "Reset to Default",
   "settingsResetDefaultLocation": "Storage location reset to default",
   "settingsStoragePathUpdated": "Storage location updated",
+  "settingsStoragePathFailed": "Could not change the storage location.",
+  "settingsStoragePathUnmovedTitle": "Some items were not moved",
+  "settingsStoragePathUnmovedBody": "These items are still in {folder}. Until you move them to the new location yourself, the app cannot see them:",
+  "@settingsStoragePathUnmovedBody": { "placeholders": { "folder": { "type": "String" } } },
 
   "totalDevices": "{count} device(s)",
   "@totalDevices": {
@@ -638,6 +642,8 @@
   "serviceTopologyExposeThroughRelay": "Expose a service through this relay",
   "serviceTopologyAddServiceToTarget": "Add another service to this target",
   "serviceTopologyAddAccessOnDevice": "Add access path for a service on this device",
+  "serviceTopologyRelayServiceSubtitle": "{method} service",
+  "@serviceTopologyRelayServiceSubtitle": { "placeholders": { "method": { "type": "String" } } },
   "serviceTopologyRouteFocusHint": "Tap a route to highlight only it; tap it again for all.",
   "serviceTopologySelectNodeHint": "Select a node to see its details and routes.",
   "backupModuleServices": "Services",

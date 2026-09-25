@@ -20,18 +20,18 @@
 
 ### `static Future<File> _getFile()` <a id="getfile"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 16 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 17 行）。
 - **用途：** 解析当前应用目录内 `dataset_data.json` 文件。
 - **输入：** 无。
 - **返回：** `Future<File>`。
 - **副作用：** 除 `DeviceStorage.getAppDir()` 的目录创建副作用外无。
-- **算法：** `File('${(await DeviceStorage.getAppDir()).path}/dataset_data.json')`。
+- **算法：** 在 `DeviceStorage.getAppDir()` 上 `File('${appDir.path}/$_dataFileName')`，`_dataFileName` 是 [`data_modules.dart`](../../../app/data_modules.md#constants) 中 `dataSetDataFileName`（`'dataset_data.json'`）的别名。
 - **用法：** 被 [`load`](#load) 和 [`save`](#save) 调用。
 - **备注：** 与 `NetworkStorage._getFile`（`../../network/services/network_storage.md`）相同模式——委托 `DeviceStorage.getAppDir()` 使 `dataset_data.json` 即使设置自定义存储路径后也与应用其他数据文件同处。
 
 ### `static Future<DataSetData> load()` <a id="load"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 26 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 27 行）。
 - **用途：** 从 `dataset_data.json` 加载持久化数据集列表。
 - **输入：** 无。
 - **返回：** `Future<DataSetData>` — 文件缺席或为空时 `const DataSetData()`（空）。
@@ -46,7 +46,7 @@
 
 ### `static Future<void> save(DataSetData data)` <a id="save"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 40 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 41 行）。
 - **用途：** 把完整数据集列表持久化到 `dataset_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
@@ -61,7 +61,7 @@
 
 ### `static Future<void> addOrUpdate(DataSet dataset)` <a id="addorupdate"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 52 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 53 行）。
 - **用途：** 插入新数据集或按 `id` 替换既有数据集。
 - **输入：** `dataset`。
 - **返回：** `Future<void>`。
@@ -76,7 +76,7 @@
 
 ### `static Future<void> delete(String id)` <a id="delete"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 69 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 70 行）。
 - **用途：** 按 id 删除数据集。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
@@ -91,7 +91,7 @@
 
 ### `static Future<void> remapDeviceStorageLinks({required String deviceId, required int oldSlotCount, required Map<int, int> indexMap})` <a id="remapdevicestoragelinks"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 85 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 86 行）。
 - **用途：** 设备存储列表被重排或移除条目后，为一台设备重映射每个数据集的 `storageIndices`，使链接继续指向正确物理槽而非静默漂移。
 - **输入：** `deviceId` — 哪台设备存储变了；`oldSlotCount` — 编辑前有多少槽；`indexMap` — 把每个**旧**槽索引（`0..oldSlotCount-1`）映射到其**新**索引；映射缺席的旧索引意为该槽被移除无替代。
 - **返回：** `Future<void>`。
@@ -102,7 +102,7 @@
 
 ### `static bool _sameIndices(List<int> a, List<int> b)` <a id="sameindices"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 145 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 146 行）。
 - **用途：** 逐元素比较两个存储索引列表是否相等。
 - **输入：** `a`、`b`。
 - **返回：** `bool` — 长度不匹配立即 `false`；否则只在每个位置都匹配时 `true`。

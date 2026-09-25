@@ -696,27 +696,6 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     };
   }
 
-  /// Purpose: Return the display label for category label.
-  /// Inputs: `l10n`, `cat`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  String _categoryLabel(AppLocalizations l10n, DeviceCategory cat) {
-    return switch (cat) {
-      DeviceCategory.desktop => l10n.deviceCategoryDesktop,
-      DeviceCategory.laptop => l10n.deviceCategoryLaptop,
-      DeviceCategory.phone => l10n.deviceCategoryPhone,
-      DeviceCategory.tablet => l10n.deviceCategoryTablet,
-      DeviceCategory.headphone => l10n.deviceCategoryHeadphone,
-      DeviceCategory.watch => l10n.deviceCategoryWatch,
-      DeviceCategory.router => l10n.deviceCategoryRouter,
-      DeviceCategory.gameConsole => l10n.deviceCategoryGameConsole,
-      DeviceCategory.vps => l10n.deviceCategoryVps,
-      DeviceCategory.devBoard => l10n.deviceCategoryDevBoard,
-      DeviceCategory.other => l10n.deviceCategoryOther,
-    };
-  }
-
   /// Purpose: Provide the internal apply cpu preset helper for this file.
   /// Inputs: `cpu`.
   /// Returns: `void`.
@@ -1194,7 +1173,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                 children: [
                   Icon(deviceCategoryIcon(cat), size: 20),
                   const SizedBox(width: 8),
-                  Text(_categoryLabel(l10n, cat)),
+                  Text(deviceCategoryLabel(l10n, cat)),
                 ],
               ),
             ),

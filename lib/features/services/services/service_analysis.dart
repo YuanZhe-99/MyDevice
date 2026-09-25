@@ -481,16 +481,20 @@ ServiceTopologyGraph buildServiceTopology({
     return id;
   }
 
-  /// Purpose: Add service node through the current flow.
-  /// Inputs: `service`.
-  /// Returns: `String`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Purpose: Add a service node and its device-to-service edge.
+  /// Inputs: `service`; `remote` — a hop service on the remote side;
+  /// `routeId` — the route adding it; `detailOverride` — replaces the port
+  /// list as the detail; `method` — the hop method that made it a relay.
+  /// Returns: `String` — the node id.
+  /// Side effects: Adds to or merges into the local `nodes` and `edges`.
+  /// Notes: A port-mapping hop's service gets the English detail
+  /// "`<method>` service" and its `method`, so the card can localize it.
   String addServiceNode(
     ServiceNode service, {
     bool remote = false,
     String? routeId,
     String? detailOverride,
+    ServiceRouteMethod? method,
   }) {
     final deviceId = remote
         ? addRemoteDeviceNode(service.deviceId, routeId: routeId)
@@ -515,6 +519,7 @@ ServiceTopologyGraph buildServiceTopology({
                       .join(', ')),
         deviceId: service.deviceId,
         serviceId: service.id,
+        method: method,
       ),
       routeId: routeId,
     );
@@ -597,6 +602,7 @@ ServiceTopologyGraph buildServiceTopology({
             detailOverride: hop.method == null
                 ? hop.type.name
                 : '${serviceRouteMethodLabel(hop.method!)} service',
+            method: hop.method,
           );
           final ingressEndpoint = _portMappingIngressEndpoint(hopService, hop);
           if (ingressEndpoint != null) {

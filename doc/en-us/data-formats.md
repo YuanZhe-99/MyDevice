@@ -256,7 +256,7 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Datasets | `dataset_data.json` | Yes | Per-record by `id` and `modifiedAt` |
 | Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
 | Images | `images/` | Yes | Referenced-only filename comparison |
-| Theme, locale, backup settings, sort preferences, list column preferences, default currency, exchange-rate settings | `storage_config.json` | No | Local preference |
+| Theme, locale, backup settings, sort preferences, list column preferences, default currency, exchange-rate settings, custom storage path | `storage_config.json` (default folder) | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
 | Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
@@ -264,11 +264,14 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Exchange-rate cache | `exchange_rates.json` | No | Local cache/fallback data |
 
 The default app data directory is `Documents/MyDevice` on desktop or the platform app
-documents directory on mobile. Custom storage paths are stored in `storage_config.json`;
-changing the path migrates data files, backups, and images (see
+documents directory on mobile. Custom storage paths are stored in `storage_config.json`, which
+itself always stays in the default folder; changing the path moves everything else in the storage
+folder — data files, backups, images, `.sync_base/`, `webdav_config.json` — and reports anything
+it left behind (see [`storage_config.json`](#storage_configjson),
 [Architecture](architecture.md#core-architecture-rules), `DeviceStorage.getAppDir()`).
 
-- **`storage_config.json`** — local, unsynced preferences (theme, locale, backup
+- **`storage_config.json`** — one file in the platform default folder (see
+  [below](#storage_configjson)) holding the local, unsynced preferences (theme, locale, backup
   settings, sort preferences, default currency, exchange-rate settings, custom storage
   path, tray/minimize/close-to-tray flags, local API port/credentials, and the four list
   column preferences `deviceListColumns`, `networkListColumns`, `dataSetListColumns` and
@@ -282,6 +285,32 @@ changing the path migrates data files, backups, and images (see
   [WebDAV Sync](sync.md).
 - **`backups/`** — see [Backup and Restore](backup-restore.md) for the full v2 bundle
   format and blob store layout.
+
+### `storage_config.json` <a id="storage_configjson"></a>
+
+- **One file, in the default folder.** `storage_config.json` always lives in the platform default
+  folder (`Documents/MyDevice` on desktop), whatever the storage path, because the app must read
+  the custom path before it knows where the data is. It holds every local preference *and* the
+  custom path (`storagePath`). `DeviceStorage.readConfig`/`writeConfig`, and the
+  `DeviceStorageAdapter` the shared engines use, all read and write this one file, so moving the
+  data never resets or duplicates a preference.
+- **`storagePath` belongs to `setStoragePath`.** A preference write replaces whatever the map
+  holds under `storagePath` with the current custom path, or drops the key when there is none, so
+  saving a theme or a column choice can never move or lose the data.
+- **Adopting a stray copy (1.5.7).** Before 1.5.7, `readConfig`/`writeConfig` used the current
+  storage folder while the custom path lived in the default one, so after a move the preferences
+  read as defaults and new ones went into a second `storage_config.json` in the custom folder.
+  The first config access for a given custom path now checks that folder: a stray
+  `storage_config.json` there is merged into the default file — its keys win, being the newer
+  ones, except `storagePath` — and deleted. A stray file that cannot be read or parsed is left
+  alone.
+- **Changing the storage path.** Everything in the old folder except the top-level
+  `storage_config.json` moves to the new one (see
+  [`DeviceStorage.setStoragePath`](functions/features/devices/services/device_storage.md#setstoragepath)).
+  A file already present at the destination wins and its source copy stays put. Every file left
+  in the old folder — one that failed to copy, or one skipped because the destination already had
+  a file of that name — is reported back, and Settings lists them with the old folder's path,
+  because the app cannot see them at the new location.
 
 ## Cross-reference rules
 

@@ -13,6 +13,9 @@ both read from the registry declared here.
 | [`deviceArchiveNamePrefix`](#constants) | constant | A | `'mydevice_export_'`. |
 | [`deviceDataFileName`](#constants) | constant | A | `'device_data.json'`. |
 | [`deviceModuleId`](#constants) | constant | A | `'devices'`. |
+| [`networkDataFileName`](#constants) | constant | A | `'network_data.json'`. |
+| [`dataSetDataFileName`](#constants) | constant | A | `'dataset_data.json'`. |
+| [`serviceDataFileName`](#constants) | constant | A | `'service_data.json'`. |
 | [`deviceReferencedImages(json)`](#devicereferencedimages) | function | A | Device image basenames referenced by records. |
 | [`buildDevicesModule()`](#modules) | function | A | The devices `DataModule` (the only image source). |
 | [`buildNetworksModule()`](#modules) | function | A | The networks `DataModule`. |
@@ -27,14 +30,22 @@ both read from the registry declared here.
   package knowing anything about `DeviceStorage`.
 - **Constructor:** `const DeviceStorageAdapter({Future<Directory> Function()? appDir})`.
 - **Methods:** `getAppDir()`, `readConfig()`, `writeConfig(config)`, all delegating to the hub.
+  The config pair always reads and writes the one `storage_config.json` in the platform default
+  folder, whatever the storage path, and `writeConfig` cannot change the `storagePath` key (see
+  [`DeviceStorage.writeConfig`](../features/devices/services/device_storage.md#writeconfig)).
 - **Notes:** The optional `appDir` resolver exists so `BackupService` can keep honoring its
   `@visibleForTesting appDirProvider`. It is consulted on every call. `DeviceStorage.getAppDir()`
-  re-reads its config each call, so a custom storage-path change is picked up immediately.
+  resolves against the in-memory custom path, which `setStoragePath` updates, so a custom
+  storage-path change is picked up immediately.
 
 ### Constants <a id="constants"></a>
 - **Notes:** File names and module ids are persisted compatibility contracts — an older build and a
   newer one must interoperate against the same WebDAV server and the same backup bundles. Never
-  change them.
+  change them. The four `*DataFileName` constants are the only place the data-file names are
+  written: the module builders here use them, and so do the storage hubs —
+  `DeviceStorage._dataFileName`, `NetworkStorage._dataFileName`, `DataSetStorage._dataFileName`
+  and `ServiceStorage.dataFileName` are aliases of `deviceDataFileName`, `networkDataFileName`,
+  `dataSetDataFileName` and `serviceDataFileName`.
 
 ### `deviceReferencedImages(json)` <a id="devicereferencedimages"></a>
 - **Returns:** Image basenames from `Device.imagePath`; an empty set for malformed input.

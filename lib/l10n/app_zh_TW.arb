@@ -137,6 +137,9 @@
   "settingsResetDefault": "恢復預設",
   "settingsResetDefaultLocation": "已恢復預設儲存位置",
   "settingsStoragePathUpdated": "儲存位置已更新",
+  "settingsStoragePathFailed": "無法變更儲存位置。",
+  "settingsStoragePathUnmovedTitle": "部分項目未能移動",
+  "settingsStoragePathUnmovedBody": "以下項目仍在 {folder} 中。在你手動將它們移到新位置之前，應用程式無法讀取它們：",
 
   "totalDevices": "{count} 台裝置",
   "@totalDevices": {
@@ -613,6 +616,7 @@
   "serviceTopologyExposeThroughRelay": "透過此中繼公開服務",
   "serviceTopologyAddServiceToTarget": "為此目標新增其他服務",
   "serviceTopologyAddAccessOnDevice": "為此裝置上的服務新增存取路徑",
+  "serviceTopologyRelayServiceSubtitle": "{method} 服務",
   "serviceTopologyRouteFocusHint": "點按一條鏈路只醒目提示它，再點一次恢復全部。",
   "serviceTopologySelectNodeHint": "選取一個節點以查看其詳情和鏈路。",
   "backupModuleServices": "服務",

@@ -350,6 +350,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsStoragePathUpdated => '保存場所を更新しました';
 
   @override
+  String get settingsStoragePathFailed => '保存場所を変更できませんでした。';
+
+  @override
+  String get settingsStoragePathUnmovedTitle => '一部の項目を移動できませんでした';
+
+  @override
+  String settingsStoragePathUnmovedBody(String folder) {
+    return '次の項目はまだ $folder にあります。新しい場所へ手動で移動するまで、アプリからは読み込めません：';
+  }
+
+  @override
   String totalDevices(int count) {
     return '$count 台のデバイス';
   }
@@ -1714,6 +1725,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceTopologyAddAccessOnDevice => 'このデバイスのサービスにアクセス経路を追加';
+
+  @override
+  String serviceTopologyRelayServiceSubtitle(String method) {
+    return '$method サービス';
+  }
 
   @override
   String get serviceTopologyRouteFocusHint =>

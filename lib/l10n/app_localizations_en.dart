@@ -357,6 +357,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsStoragePathUpdated => 'Storage location updated';
 
   @override
+  String get settingsStoragePathFailed =>
+      'Could not change the storage location.';
+
+  @override
+  String get settingsStoragePathUnmovedTitle => 'Some items were not moved';
+
+  @override
+  String settingsStoragePathUnmovedBody(String folder) {
+    return 'These items are still in $folder. Until you move them to the new location yourself, the app cannot see them:';
+  }
+
+  @override
   String totalDevices(int count) {
     return '$count device(s)';
   }
@@ -1742,6 +1754,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get serviceTopologyAddAccessOnDevice =>
       'Add access path for a service on this device';
+
+  @override
+  String serviceTopologyRelayServiceSubtitle(String method) {
+    return '$method service';
+  }
 
   @override
   String get serviceTopologyRouteFocusHint =>

@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../../../app/data_modules.dart';
 import '../../../features/devices/services/device_storage.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../models/network.dart';
 
 class NetworkStorage {
-  static const _dataFileName = 'network_data.json';
+  static const _dataFileName = networkDataFileName;
 
   /// Purpose: Provide the internal get file helper for this file.
   /// Inputs: None.

@@ -11,11 +11,12 @@ import '../../network/models/network.dart';
 import '../../network/services/network_storage.dart';
 import '../../services/services/service_storage.dart';
 import '../models/device.dart';
+import '../../../app/data_modules.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 
 class DeviceStorage {
-  static const _dataFileName = 'device_data.json';
+  static const _dataFileName = deviceDataFileName;
   static const _configFileName = 'storage_config.json';
 
   /// Custom storage path (loaded from config).
@@ -99,14 +100,20 @@ class DeviceStorage {
 
   /// Purpose: Update the custom storage directory and migrate the app's data to it.
   /// Inputs: `newPath`; pass `null` or empty to reset to the default location.
-  /// Returns: `Future<bool>` — false only when the path could not be recorded.
+  /// Returns: `Future<StoragePathResult>` — `saved` is false only when the
+  /// path could not be recorded; `unmoved` lists the entries the move left in
+  /// the old folder.
   /// Side effects: Rewrites `storage_config.json` and moves the old storage
   /// folder's contents to the new location.
   /// Notes: Migrates **everything** in the folder — all four data files,
   /// `images/`, `.sync_base/`, `backups/` (blobs included), and
   /// `webdav_config.json` — not an enumerated list, so a data file added later
   /// moves automatically. `storage_config.json` deliberately stays put: it lives
-  /// in the platform default directory and holds the custom path itself.
+  /// in the platform default directory, holds the custom path itself and every
+  /// other preference, so moving the data never touches the preferences. A
+  /// stray copy an older build left in the custom folder is adopted first.
+  /// An unmoved entry is not readable by the app at the new location; the
+  /// caller must tell the user.
   ///
   /// This replaced hand-rolled per-directory copies that only walked top-level
   /// files, so `backups/blobs/` was left behind and every restored backup lost
@@ -117,8 +124,9 @@ class DeviceStorage {
   ///
   /// Existing destination files win and their source copies are left in place,
   /// so nothing is discarded on a guess about which copy is newer.
-  static Future<bool> setStoragePath(String? newPath) async {
+  static Future<StoragePathResult> setStoragePath(String? newPath) async {
     try {
+      await _adoptStrayConfig();
       final oldDir = await getAppDir();
 
       _customPath = newPath;
@@ -132,16 +140,83 @@ class DeviceStorage {
       await _writeConfigToDefault(config);
 
       final newDir = await getAppDir();
-      if (oldDir.path == newDir.path) return true;
+      if (oldDir.path == newDir.path) return const StoragePathResult();
 
       // Per-entry failures are reported rather than thrown; the path change
       // itself has already been persisted, so the move is best-effort and any
-      // unmoved file remains readable at the old location.
-      await migrateStorageContents(from: oldDir, to: newDir);
-      return true;
+      // unmoved entry stays in the old folder, where the caller can point the
+      // user to it.
+      final failed = await migrateStorageContents(from: oldDir, to: newDir);
+      final unmoved = {...failed, ...await _leftoverEntries(oldDir)}.toList()
+        ..sort();
+      return StoragePathResult(unmoved: unmoved, from: oldDir.path);
     } catch (_) {
-      return false;
+      return const StoragePathResult(saved: false);
     }
+  }
+
+  /// Purpose: List the files a storage move left in the old folder.
+  /// Inputs: `oldDir` — the folder the data moved out of.
+  /// Returns: Relative paths of every file still there, except the
+  /// top-level `storage_config.json`, which never moves.
+  /// Side effects: Lists the folder.
+  /// Notes: `migrateStorageContents` reports files it failed to copy, but
+  /// not those it skipped because the destination already had one of the
+  /// same name; both stay behind unseen by the app, so both are reported.
+  static Future<List<String>> _leftoverEntries(Directory oldDir) async {
+    final left = <String>[];
+    try {
+      if (!await oldDir.exists()) return left;
+      await for (final entity in oldDir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        if (entity is! File) continue;
+        final relative = p.relative(entity.path, from: oldDir.path);
+        if (relative == _configFileName) continue;
+        left.add(relative);
+      }
+    } catch (_) {}
+    return left;
+  }
+
+  /// The custom path whose folder was last checked for a stray config file.
+  static String? _strayCheckedFor;
+
+  /// Purpose: Adopt a `storage_config.json` that an older build wrote into the
+  /// custom storage folder.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May merge the stray file into the default folder's
+  /// `storage_config.json` and delete the stray file.
+  /// Notes: Before 1.5.7 `readConfig`/`writeConfig` used the current storage
+  /// folder while the custom path lived in the default one, so after a move
+  /// the preferences seemed reset and new ones went to a second file in the
+  /// custom folder. The stray file's keys are the newer ones and win, except
+  /// `storagePath`, which only the default file may hold. Checked once per
+  /// custom path; a file that cannot be read or parsed is left alone.
+  static Future<void> _adoptStrayConfig() async {
+    await _loadCustomPath();
+    final custom = _customPath;
+    if (custom == null || custom.isEmpty || _strayCheckedFor == custom) {
+      return;
+    }
+    _strayCheckedFor = custom;
+    try {
+      final defaultFile = await _getConfigFile();
+      final stray = File(p.join(custom, _configFileName));
+      if (p.equals(stray.path, defaultFile.path) || !await stray.exists()) {
+        return;
+      }
+      final raw = await stray.readAsString();
+      final strayConfig = raw.trim().isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(raw) as Map<String, dynamic>;
+      final merged = {...await _readConfigFromDefault(), ...strayConfig};
+      merged['storagePath'] = custom;
+      await _writeConfigToDefault(merged);
+      await stray.delete();
+    } catch (_) {}
   }
 
   /// Purpose: Provide the internal read config from default helper for this file.
@@ -285,29 +360,34 @@ class DeviceStorage {
 
   // ── Config persistence (theme, locale) ──
 
-  /// Purpose: Implement the read config behavior for this file.
+  /// Purpose: Read the app's local preferences.
   /// Inputs: None.
-  /// Returns: `Future<Map<String, dynamic>>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
+  /// Returns: `Future<Map<String, dynamic>>` — `storage_config.json` from the
+  /// default folder; empty when it does not exist.
+  /// Side effects: Performs local file-system I/O; may adopt a stray config
+  /// file from the custom storage folder first.
+  /// Notes: One file for every preference and the custom path, always in the
+  /// platform default folder, whatever the storage path — so moving the data
+  /// never resets the theme, language, currency or list columns.
   static Future<Map<String, dynamic>> readConfig() async {
-    final file = await _getFile(_configFileName);
-    if (!await file.exists()) return {};
-    final raw = await file.readAsString();
-    if (raw.trim().isEmpty) return {};
-    return jsonDecode(raw) as Map<String, dynamic>;
+    await _adoptStrayConfig();
+    return _readConfigFromDefault();
   }
 
-  /// Purpose: Implement the write config behavior for this file.
-  /// Inputs: `config`.
+  /// Purpose: Write the app's local preferences.
+  /// Inputs: `config` — the complete map, usually read with [readConfig] and
+  /// modified.
   /// Returns: `Future<void>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
+  /// Side effects: Rewrites `storage_config.json` in the default folder.
+  /// Notes: `storagePath` belongs to [setStoragePath]: whatever `config`
+  /// holds under that key is replaced by the current custom path, or removed
+  /// without one, so a preference write can never move or lose the data.
   static Future<void> writeConfig(Map<String, dynamic> config) async {
-    final file = await _getFile(_configFileName);
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(config),
-    );
+    await _adoptStrayConfig();
+    final custom = _customPath;
+    final out = {...config}..remove('storagePath');
+    if (custom != null && custom.isNotEmpty) out['storagePath'] = custom;
+    await _writeConfigToDefault(out);
   }
 
   /// Purpose: Implement the get theme mode behavior for this file.
@@ -457,4 +537,36 @@ class DeviceStorage {
   /// Notes: None.
   static Future<void> setServiceListColumns(int columns) =>
       _setListColumns('serviceListColumns', columns);
+}
+
+/// What `DeviceStorage.setStoragePath` did.
+class StoragePathResult {
+  /// Whether the new path was recorded. False means nothing changed.
+  final bool saved;
+
+  /// Entries (relative paths) the move left in the old folder; empty when
+  /// everything moved or nothing had to.
+  final List<String> unmoved;
+
+  /// The old folder, where the unmoved entries still are; null when nothing
+  /// was moved.
+  final String? from;
+
+  /// Purpose: Create a result.
+  /// Inputs: `saved` — true by default; `unmoved`; `from`.
+  /// Returns: A new `StoragePathResult`.
+  /// Side effects: None.
+  /// Notes: None.
+  const StoragePathResult({
+    this.saved = true,
+    this.unmoved = const [],
+    this.from,
+  });
+
+  /// Purpose: Report whether the change fully succeeded.
+  /// Inputs: None.
+  /// Returns: `bool` — saved and nothing left behind.
+  /// Side effects: None.
+  /// Notes: None.
+  bool get complete => saved && unmoved.isEmpty;
 }

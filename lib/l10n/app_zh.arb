@@ -132,6 +132,9 @@
   "settingsResetDefault": "恢复默认",
   "settingsResetDefaultLocation": "已恢复默认存储位置",
   "settingsStoragePathUpdated": "存储位置已更新",
+  "settingsStoragePathFailed": "无法更改存储位置。",
+  "settingsStoragePathUnmovedTitle": "部分项目未能移动",
+  "settingsStoragePathUnmovedBody": "以下项目仍在 {folder} 中。在你手动将它们移到新位置之前，应用无法读取它们：",
 
   "totalDevices": "{count} 台设备",
 
@@ -603,6 +606,7 @@
   "serviceTopologyExposeThroughRelay": "通过此中继公开服务",
   "serviceTopologyAddServiceToTarget": "为此目标添加其他服务",
   "serviceTopologyAddAccessOnDevice": "为此设备上的服务添加访问路径",
+  "serviceTopologyRelayServiceSubtitle": "{method} 服务",
   "serviceTopologyRouteFocusHint": "点按一条链路只高亮它，再点一次恢复全部。",
   "serviceTopologySelectNodeHint": "选择一个节点以查看其详情和链路。",
   "backupModuleServices": "服务",

@@ -14,4 +14,4 @@
 
 ## 文档
 
-三个声明都是 Tier B。`build` 是纯组件组合。`_getText` 是在四个嵌入字符串常量（`_en`、`_zh`、`_zhTW`、`_ja`）间选择的语言区域 switch——它无副作用无 IO，因此尽管有分支仍被当作与本文档集别处归为 Tier B 的标签/文本查找辅助（如 `device_list_page.dart` 的 `_categoryLabel`/`_sortModeLabel`）相同：对返回静态内容的枚举类输入固定 switch，非业务逻辑。其唯一值得注意行为（源码第 41-53 行）是在落入普通 `switch (locale.languageCode)` *前*检查 `languageCode == 'zh' && countryCode == 'TW'`，因此繁体中文必须两个字段一起匹配——否则裸 `'zh'` 匹配会也为台湾语言区域选择简体中文文本。
+三个声明都是 Tier B。`build` 是纯组件组合。`_getText` 是在四个嵌入字符串常量（`_en`、`_zh`、`_zhTW`、`_ja`）间选择的语言区域 switch——它无副作用无 IO，因此尽管有分支仍被当作与本文档集别处归为 Tier B 的标签/文本查找辅助（如 `device_list_page.dart` 的 `_sortModeLabel`/`_filterLabel`）相同：对返回静态内容的枚举类输入固定 switch，非业务逻辑。其唯一值得注意行为（源码第 50-53 行）是在落入普通 `switch (locale.languageCode)` *前*检查 `languageCode == 'zh' && countryCode == 'TW'`，因此繁体中文必须两个字段一起匹配——否则裸 `'zh'` 匹配会也为台湾语言区域选择简体中文文本。

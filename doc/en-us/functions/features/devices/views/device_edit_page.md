@@ -44,7 +44,6 @@ model this form edits.
 | `_pickRetiredDate` | method (`_DeviceEditPageState`) | B | Show a date picker and set `_retiredDate` on selection. |
 | `_storageTypeLabel` | method (`_DeviceEditPageState`) | B | Map a `StorageType` to its localized label. |
 | `_storageInterfaceLabel` | method (`_DeviceEditPageState`) | B | Map a `StorageInterface` to its localized label. |
-| `_categoryLabel` | method (`_DeviceEditPageState`) | B | Map a `DeviceCategory` to its localized label. |
 | `_applyCpuPreset` | method (`_DeviceEditPageState`) | B | Copy a `CpuInfo` preset's fields into the CPU controllers and bump `_cpuAutoKey` to refresh the `Autocomplete`. |
 | `_applyGpuPreset` | method (`_DeviceEditPageState`) | B | Copy a `GpuInfo` preset's fields into the GPU controllers and bump `_gpuAutoKey`. |
 | `_searchCpuOnline` | method (`_DeviceEditPageState`) | B | Open the CPU search dialog and apply the chosen result via `_applyCpuPreset`. |
@@ -82,7 +81,7 @@ model this form edits.
 | [`_filtered`](#_filtered-gpu) (GPU) | getter (`_GpuPresetPickerState`) | A | Filter `widget.presets` to entries whose model/architecture contains the current search query. |
 | `build` | method (widget, `_GpuPresetPickerState`) | B | Render the draggable sheet: a search field plus a list of `_filtered` presets. |
 
-Row-count note: `grep -c 'Purpose:'` on this file returns 55, matching the 55 rows above exactly —
+Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 rows above exactly —
 every declaration in this file (including every field-mapping label helper) carries the repo's
 standard `/// Purpose:` doc-comment block.
 
@@ -199,7 +198,7 @@ use the links in the table above rather than guessing the anchor from the name a
   _ramUnit = ramParsed.$2;
   ```
   (`initState`, line 140); also used per storage slot in `initState` (line 224) and for the
-  RAM/storage fields inside `_applySearchResult` (lines 890, 897).
+  RAM/storage fields inside `_applySearchResult` (lines 869, 876).
 - **Notes:** Only recognizes `MB`/`GB`/`TB` — matches `_memoryUnits` (line 338); callers use
   Dart's positional-record `.$1`/`.$2` accessors on the return value.
 
@@ -283,14 +282,14 @@ use the links in the table above rather than guessing the anchor from the name a
      short-circuit makes this a no-op whenever no slot actually moved).
   8. Calls `AutoSyncService.instance.notifySaved()` (see [WebDAV Sync](../../../../sync.md)) and,
      if still mounted, pops the page via `Navigator.of(context).pop()`.
-- **Usage:** `TextButton(onPressed: _save, child: Text(l10n.save))` (`build`, line 1584).
+- **Usage:** `TextButton(onPressed: _save, child: Text(l10n.save))` (`build`, line 1563).
 - **Notes:** A brand-new device (`widget.device == null`) never calls `remapDeviceStorageLinks` —
   there is nothing to remap yet. Recurring-cost drafts with an empty/unparseable amount are
   silently dropped rather than saved with a zero amount.
 
 ### `Future<void> _showSearchDialog()` <a id="_showsearchdialog"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 812)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 791)
 - **Purpose:** Open the online device-search dialog, seeded with the form's current field values,
   and apply whatever fields the user chooses to import from the result.
 - **Inputs:** None (reads current controller/state values).
@@ -309,7 +308,7 @@ use the links in the table above rather than guessing the anchor from the name a
      meanwhile.
   4. Otherwise calls `_applySearchResult(result)`.
 - **Usage:** `IconButton(icon: const Icon(Icons.travel_explore), onPressed: _showSearchDialog)`,
-  shown only `if (AppFlavor.isFull)` (`build`, lines 1578–1583; see
+  shown only `if (AppFlavor.isFull)` (`build`, lines 1557–1562; see
   [Online Search and Presets](../../../../features/online-search-and-presets.md) for the
   store-build gating).
 - **Notes:** Only the *first* storage slot's capacity is offered as "current" context to the
@@ -317,7 +316,7 @@ use the links in the table above rather than guessing the anchor from the name a
 
 ### `void _applySearchResult(Map<String, dynamic> result)` <a id="_applysearchresult"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 847)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 826)
 - **Purpose:** Apply the field map returned by the online search dialog (or carried in via
   `DeviceEditPage(searchResult: ...)`) onto the edit form, fuzzy-matching CPU/GPU text against the
   loaded presets where possible.
@@ -334,7 +333,7 @@ use the links in the table above rather than guessing the anchor from the name a
      is applied via `_applyCpuPreset`. If no preset matches, the raw chipset string is written
      directly into `_cpuModelCtrl` and `_cpuAutoKey` is bumped (forces the `Autocomplete` widget to
      rebuild, since setting `.text` alone doesn't refresh it — see `build`'s
-     `ValueKey('cpu_auto_$_cpuAutoKey')`, line 1844).
+     `ValueKey('cpu_auto_$_cpuAutoKey')`, line 1823).
   3. `gpuName`: identical mutual-substring matching against `_gpuPresets`, same raw-text fallback.
   4. `ram`: parsed via `_parseValueUnit` into `_ramCtrl`/`_ramUnit`.
   5. `storage`: parsed via `_parseValueUnit` and written into slot **0 only**
@@ -346,7 +345,7 @@ use the links in the table above rather than guessing the anchor from the name a
      any previously chosen emoji).
 - **Usage:** `_applySearchResult(widget.searchResult!)` from `_loadPresets` when the page was
   opened with a search result (line 289); `_applySearchResult(result)` from `_showSearchDialog`
-  after an in-place dialog search (line 839).
+  after an in-place dialog search (line 818).
 - **Notes:** CPU/GPU matching is intentionally loose (mutual substring, not exact) so e.g. a
   result's `"Apple A17 Pro"` can match a shorter preset name or vice versa; because it's
   substring-based, ambiguous/short model strings could match the wrong preset — the same tradeoff
@@ -354,7 +353,7 @@ use the links in the table above rather than guessing the anchor from the name a
 
 ### `String? _detectLogoForModel(String model)` <a id="_detectlogoformodel"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 949)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 928)
 - **Purpose:** Find an SVG logo asset path for a CPU/GPU model string as it's typed, using a small
   local brand table plus a Mali-specific ARM mapping.
 - **Inputs:** `model` — the live text of `_cpuModelCtrl`/`_gpuModelCtrl`.
@@ -366,14 +365,14 @@ use the links in the table above rather than guessing the anchor from the name a
   *starts with*; returns `null` if none match.
 - **Usage:** `_brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text))` and
   `_brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text))`, rebuilt live on every `build` call
-  next to the CPU/GPU section headers (lines 1820, 1922).
+  next to the CPU/GPU section headers (lines 1799, 1901).
 - **Notes:** This file's `_brandLogoMap` is a smaller, separate table from
   `device_detail_page.dart`'s `_brandLogoMap`/`_detectModelLogo` (~39 entries, `contains`-based
   there vs `startsWith` here) — the two are not shared and can drift out of sync with each other.
 
 ### `Future<void> _pickImage()` <a id="_pickimage"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1078)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1057)
 - **Purpose:** Let the user pick a photo from the device's gallery/filesystem and adopt it as the
   device's icon.
 - **Inputs:** None.
@@ -384,13 +383,13 @@ use the links in the table above rather than guessing the anchor from the name a
   `setState`s `_imagePath = path` and `_emoji = null` (an image always replaces any emoji,
   matching `_applySearchResult`'s `image` handling and the reverse in `_showEmojiPicker`/
   `_removeIcon`).
-- **Usage:** `IconButton(..., onPressed: _pickImage)` in `_buildIconSection` (line 1135).
+- **Usage:** `IconButton(..., onPressed: _pickImage)` in `_buildIconSection` (line 1114).
 - **Notes:** If the user cancels the picker (`path == null`), nothing changes — no error is
   surfaced either way.
 
 ### `factory _RecurringCostDraft.fromCost(DeviceRecurringCost cost)` <a id="_recurringcostdraft-fromcost"></a>
 - **Kind:** factory constructor of `_RecurringCostDraft`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2340)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2319)
 - **Purpose:** Convert a persisted `DeviceRecurringCost` into an editable draft (with its own text
   controllers) for the recurring-costs section.
 - **Inputs:** `cost` — an existing `DeviceRecurringCost` from `widget.device.recurringCosts`.
@@ -410,7 +409,7 @@ use the links in the table above rather than guessing the anchor from the name a
 
 ### `List<CpuInfo> get _filtered` (in `_CpuPresetPickerState`) <a id="_filtered-cpu"></a>
 - **Kind:** getter of `_CpuPresetPickerState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2394)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2373)
 - **Purpose:** Filter the bottom sheet's preset list down to entries whose model or architecture
   text contains the current search query.
 - **Inputs:** None (reads `_query`, `widget.presets`).
@@ -419,14 +418,14 @@ use the links in the table above rather than guessing the anchor from the name a
 - **Algorithm:** Returns `widget.presets` unfiltered when `_query` is empty; otherwise lowercases
   the query and keeps only presets whose lowercased `model` or `architecture` contains it (a
   preset with a null `model`/`architecture` is treated as an empty string for the check).
-- **Usage:** `final items = _filtered;` at the top of `build` (line 2424), used both for the item
+- **Usage:** `final items = _filtered;` at the top of `build` (line 2403), used both for the item
   count and as the `ListView.builder`'s items.
 - **Notes:** Matching is substring/case-insensitive only, no fuzzy or multi-token matching — a
   two-word query won't match a model containing both words in a different order.
 
 ### `List<GpuInfo> get _filtered` (in `_GpuPresetPickerState`) <a id="_filtered-gpu"></a>
 - **Kind:** getter of `_GpuPresetPickerState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2506)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2485)
 - **Purpose:** Filter the bottom sheet's preset list down to entries whose model or architecture
   text contains the current search query.
 - **Inputs:** None (reads `_query`, `widget.presets`).
@@ -435,5 +434,5 @@ use the links in the table above rather than guessing the anchor from the name a
 - **Algorithm:** Identical to
   [`_CpuPresetPickerState._filtered`](#_filtered-cpu), over `GpuInfo`/`widget.presets` instead of
   `CpuInfo`.
-- **Usage:** `final items = _filtered;` at the top of `build` (line 2523).
+- **Usage:** `final items = _filtered;` at the top of `build` (line 2502).
 - **Notes:** Same substring/case-insensitive-only caveat as the CPU picker's `_filtered`.

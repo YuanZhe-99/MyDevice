@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../../../app/data_modules.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/service.dart';
 
 class ServiceStorage {
-  static const dataFileName = 'service_data.json';
+  static const dataFileName = serviceDataFileName;
 
   /// Purpose: Provide the internal get file helper for this file.
   /// Inputs: None.

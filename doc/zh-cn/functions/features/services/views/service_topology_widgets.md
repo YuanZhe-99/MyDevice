@@ -22,7 +22,7 @@
 | `_edgeColor` | 方法（`ServiceTopologyEdgePainter`） | B | 边的车道颜色；没有车道时为 outline 颜色。 |
 | `shouldRepaint` | 方法（`ServiceTopologyEdgePainter`） | B | 只在图、布局、配色方案或高亮变化时重绘。 |
 | `serviceAccessLaneColor` | 顶层函数 | B | 访问车道的颜色（局域网为 tertiary，VPN 为 secondary，公网为 primary）。 |
-| [`_nodeSubtitle`](#nodesubtitle) | 顶层函数 | A | 拓扑节点卡片显示的副标题：中继显示本地化方法或跳类型，设备显示本地化类别，否则显示构建器的 detail。 |
+| [`_nodeSubtitle`](#nodesubtitle) | 顶层函数 | A | 拓扑节点卡片显示的副标题：远端中继服务显示本地化的"{method} service"，中继显示本地化方法或跳类型，设备显示本地化类别，否则显示构建器的 detail。 |
 | [`_compactTopologyLabel`](#compacttopologylabel) | 顶层函数 | A | 把拓扑节点标签/详情缩短为紧凑 chip 尺寸字符串。 |
 | [`iconForTopologyNode`](#iconfortopologynode) | 顶层函数 | A | 按 kind 及其解析设备/服务解析拓扑节点图标。 |
 | `iconForRouteMethod` | 顶层函数 | B | 把 `ServiceRouteMethod` 映射到其显示图标（null → 通用路由图标）。 |
@@ -85,18 +85,18 @@
 
 ### `String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node)` <a id="nodesubtitle"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 496 行）。
+- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 499 行）。
 - **用途：** 返回拓扑节点卡片在其标签下显示的副标题。
 - **输入：** `context`、`node`。
 - **返回：** `String?` — 无可显示内容时为 null。
 - **副作用：** 无。
-- **算法：** 对 `detail` 为 `DeviceCategory` 名称的设备节点，返回 `deviceCategoryLabel`。对中继节点，节点带方法时返回本地化方法（`serviceRouteMethodUiLabel`），否则在 `detail` 是原始跳类型名时返回本地化跳类型。其他每个节点返回修剪后的 `detail`，为空时返回 null。
+- **算法：** 1. 对处于 `remoteService` 角色的服务节点（远端的跳服务，例如端口映射跳的中继服务）：节点带 `method` 且 `detail` 恰为构建器写入的英文 `"<serviceRouteMethodLabel(method)> service"` 时，返回以本地化方法（`serviceRouteMethodUiLabel`）填充的 `serviceTopologyRelayServiceSubtitle`（"{method} service"）；否则在 `detail` 是原始跳类型名时返回本地化跳类型（`serviceHopTypeLabel`）。2. 对 `detail` 为 `DeviceCategory` 名称的设备节点，返回 `deviceCategoryLabel`。3. 对中继节点，节点带方法时返回本地化方法（`serviceRouteMethodUiLabel`），否则在 `detail` 是原始跳类型名时返回本地化跳类型。4. 其他每个节点（以及上述 `detail` 均未匹配的节点）返回修剪后的 `detail`，为空时返回 null。
 - **用法：** `ServiceTopologyNodeCard._buildCard` 的副标题，与车道标签连接；以及 `_buildHeader` 的类别。
-- **备注：** 图构建器在中继和设备的 `detail` 中存储原始枚举名；在渲染时再本地化，使 [`service_analysis.dart`](../services/service_analysis.md) 保持与语言无关。1.5.6 之前设备卡片显示原始类别名（如 `vps`）。
+- **备注：** 图构建器在中继和设备的 `detail` 中存储原始枚举名，在远端中继服务的 `detail` 中存储英文 "`<method>` service"（或原始跳类型名），并自 1.5.7 起在该节点上记录该跳的 `method`；在渲染时再本地化，使 [`service_analysis.dart`](../services/service_analysis.md) 保持与语言无关。1.5.6 之前设备卡片显示原始类别名（如 `vps`）；1.5.7 之前远端中继服务在任何语言下都显示英文 "FRP service"。`test/service_topology_page_test.dart` 检查中文卡片。
 
 ### `String _compactTopologyLabel(ServiceTopologyNode node)` <a id="compacttopologylabel"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 525 行）。
+- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 543 行）。
 - **用途：** 把拓扑节点标签/详情缩短为适合紧凑端口 chip 的短字符串。
 - **输入：** `node`。
 - **返回：** `String`。
@@ -107,7 +107,7 @@
 
 ### `IconData iconForTopologyNode(ServiceTopologyNode node, List<ServiceNode> services, List<Device> devices)` <a id="iconfortopologynode"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 547 行）。
+- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 565 行）。
 - **用途：** 基于 kind 和（可解析时）其底层设备/服务解析拓扑节点要显示的图标。
 - **输入：** `node`、`services`、`devices`。
 - **返回：** `IconData`。
@@ -118,7 +118,7 @@
 
 ### `Matrix4 fitTransform(Size canvas, Size viewport, {required double minScale, required double maxScale, double boundaryMargin = 0})` <a id="fittransform"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 825 行）。
+- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 843 行）。
 - **用途：** 计算把画布适配进 `InteractiveViewer` 的变换。
 - **输入：** `canvas` — 查看器所布局的子组件（画布旋转时为转过后的尺寸）；`viewport` — 查看器的尺寸；`minScale`、`maxScale` — 查看器的缩放限制；`boundaryMargin` — 查看器在子组件周围的边距。
 - **返回：** `Matrix4` — 三个轴上一致的缩放加一个平移；画布或视口为空时为单位矩阵。

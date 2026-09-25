@@ -108,7 +108,7 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 
 - **留在这里的东西：** 所有模型、逐功能存储枢纽、逐模块合并包装、`mergeAssignments`、Markdown 导出和每个页面。
 - **移走的东西：** 传输、锁生命周期、合并管线、`.sync_base` 快照、图像同步、备份捆绑和 blob 存储、ZIP 允许列表和同步调度。
-- **接缝：** [`functions/app/data_modules.md`](functions/app/data_modules.md) 声明 `DeviceStorage` 上的 `StorageAdapter` 加每个数据文件一个 `DataModule`。它是数据文件名和备份模块键的单一真相源。
+- **接缝：** [`functions/app/data_modules.md`](functions/app/data_modules.md) 声明 `DeviceStorage` 上的 `StorageAdapter` 加每个数据文件一个 `DataModule`。它是数据文件名和备份模块键的单一真相源；各存储枢纽自己的文件名常量是其 `*DataFileName` 常量的别名。
 - **门面：** `WebDAVService`、`BackupService`、`ImportExportService` 和 `AutoSyncService` 保留先前公共 API 并委托给包。其形态刻意冻结，使调用点和测试继续工作；行为变更属于包。
 - **MyDevice 特有旋钮：** 备份引擎以 `syntheticImagesModule: true` 构建，这正是让 `images` 在这里成为可选恢复模块而其他两个应用没有的东西。
 
@@ -119,7 +119,7 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 - 导航用带上面列出的五个标签 `ShellRoute` 的 `go_router`。
 - 视觉系统经 `flex_color_scheme` 用 Material 3。
 - 每个宽度或高度决策——布局能否分栏、导航放在哪里、能容纳多少列、对话框能多高——都经过 `lib/shared/utils/adaptive_layout.dart`。组件文件里把尺寸和数字比较就是 bug。见[自适应布局](adaptive-layout.md)。
-- 文件 IO 经 `DeviceStorage.getAppDir()`，使用户配置的自定义存储路径（`storage_config.json`）总是被尊重。
+- 文件 IO 经 `DeviceStorage.getAppDir()`，使用户配置的自定义存储路径（`storage_config.json`）总是被尊重。本地偏好是例外：它们和自定义路径本身位于平台默认文件夹中唯一的 `storage_config.json`，只经 `DeviceStorage.readConfig`/`writeConfig` 读写，因此移动数据从不触及它们（见 [数据格式](data-formats.md#storage_configjson)）。
 - JSON 输出用 `JsonEncoder.withIndent('  ')` 美化打印。
 - 可选 null/空字段经条件映射条目从 JSON 省略（如 `if (notes != null) 'notes': notes`），不写显式 `null`。
 - 每个模型的 `modifiedAt` 写为 `DateTime.now().toUtc()`。本地时间 `modifiedAt` 值破坏跨时区同步冲突检测；本地时间写的旧数据仍解析，但新写必须 UTC。见 [数据格式](data-formats.md)。

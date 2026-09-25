@@ -41,7 +41,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 | `_edgeColor` | method (`ServiceTopologyEdgePainter`) | B | An edge's lane colour, the outline colour without a lane. |
 | `shouldRepaint` | method (`ServiceTopologyEdgePainter`) | B | Repaint only when the graph, layout, color scheme or highlight changed. |
 | `serviceAccessLaneColor` | top-level function | B | The colour of an access lane (local tertiary, VPN secondary, public primary). |
-| [`_nodeSubtitle`](#nodesubtitle) | top-level function | A | The subtitle a topology node card shows: a relay's localized method or hop type, a device's localized category, else the builder's detail. |
+| [`_nodeSubtitle`](#nodesubtitle) | top-level function | A | The subtitle a topology node card shows: a remote relay service's localized "{method} service", a relay's localized method or hop type, a device's localized category, else the builder's detail. |
 | [`_compactTopologyLabel`](#compacttopologylabel) | top-level function | A | Shorten a topology node's label/detail to a compact chip-sized string. |
 | [`iconForTopologyNode`](#iconfortopologynode) | top-level function | A | Resolve the icon for a topology node, by kind and its resolved device/service. |
 | `iconForRouteMethod` | top-level function | B | Map a `ServiceRouteMethod` to its display icon (null → the generic route icon). |
@@ -135,24 +135,34 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node)` <a id="nodesubtitle"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 496).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 499).
 - **Purpose:** Return the subtitle a topology node card shows under its label.
 - **Inputs:** `context`, `node`.
 - **Returns:** `String?` — null when there is nothing to show.
 - **Side effects:** None.
-- **Algorithm:** For a device node whose `detail` is a `DeviceCategory` name, return
-  `deviceCategoryLabel`. For a relay node, return the localized method
+- **Algorithm:** 1. For a service node in the `remoteService` role (a hop service on the remote
+  side, such as a port-mapping hop's relay service): when the node has a `method` and `detail`
+  is exactly the English `"<serviceRouteMethodLabel(method)> service"` the builder wrote, return
+  `serviceTopologyRelayServiceSubtitle` ("{method} service") filled with the localized method
+  (`serviceRouteMethodUiLabel`); else, when `detail` is a raw hop-type name, return the localized
+  hop type (`serviceHopTypeLabel`). 2. For a device node whose `detail` is a `DeviceCategory`
+  name, return `deviceCategoryLabel`. 3. For a relay node, return the localized method
   (`serviceRouteMethodUiLabel`) when the node has one, else the localized hop type when `detail`
-  is a raw hop-type name. Every other node returns its trimmed `detail`, or null when empty.
+  is a raw hop-type name. 4. Every other node (and any of the above whose `detail` matched
+  nothing) returns its trimmed `detail`, or null when empty.
 - **Usage:** `ServiceTopologyNodeCard._buildCard`'s subtitle, joined with the lane label, and
   `_buildHeader`'s category.
-- **Notes:** The graph builder stores raw enum names in a relay's and a device's `detail`;
-  localizing at render time keeps [`service_analysis.dart`](../services/service_analysis.md)
-  language-free. Before 1.5.6 device cards showed the raw category name (e.g. `vps`).
+- **Notes:** The graph builder stores raw enum names in a relay's and a device's `detail`, and an
+  English "`<method>` service" (or the raw hop-type name) in a remote relay service's `detail`,
+  recording the hop's `method` on that node since 1.5.7; localizing at render time keeps
+  [`service_analysis.dart`](../services/service_analysis.md) language-free. Before 1.5.6 device
+  cards showed the raw category name (e.g. `vps`); before 1.5.7 a remote relay service showed the
+  English "FRP service" in every language. `test/service_topology_page_test.dart` checks the
+  Chinese card.
 
 ### `String _compactTopologyLabel(ServiceTopologyNode node)` <a id="compacttopologylabel"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 525).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 543).
 - **Purpose:** Shorten a topology node's label/detail to a short string that fits inside a compact
   port-chip.
 - **Inputs:** `node`.
@@ -172,7 +182,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `IconData iconForTopologyNode(ServiceTopologyNode node, List<ServiceNode> services, List<Device> devices)` <a id="iconfortopologynode"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 547).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 565).
 - **Purpose:** Resolve the icon to show for a topology node, based on its kind and, when
   resolvable, its underlying device/service.
 - **Inputs:** `node`, `services`, `devices`.
@@ -190,7 +200,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `Matrix4 fitTransform(Size canvas, Size viewport, {required double minScale, required double maxScale, double boundaryMargin = 0})` <a id="fittransform"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 825).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 843).
 - **Purpose:** Compute the transform that fits a canvas into an `InteractiveViewer`.
 - **Inputs:** `canvas` — the child as the viewer lays it out (turned when the canvas is rotated);
   `viewport` — the viewer's size; `minScale`, `maxScale` — the viewer's zoom limits;

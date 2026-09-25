@@ -132,6 +132,9 @@
   "settingsResetDefault": "デフォルトに戻す",
   "settingsResetDefaultLocation": "デフォルトの保存場所に戻しました",
   "settingsStoragePathUpdated": "保存場所を更新しました",
+  "settingsStoragePathFailed": "保存場所を変更できませんでした。",
+  "settingsStoragePathUnmovedTitle": "一部の項目を移動できませんでした",
+  "settingsStoragePathUnmovedBody": "次の項目はまだ {folder} にあります。新しい場所へ手動で移動するまで、アプリからは読み込めません：",
 
   "totalDevices": "{count} 台のデバイス",
 
@@ -601,6 +604,7 @@
   "serviceTopologyExposeThroughRelay": "この中継でサービスを公開",
   "serviceTopologyAddServiceToTarget": "この宛先に別のサービスを追加",
   "serviceTopologyAddAccessOnDevice": "このデバイスのサービスにアクセス経路を追加",
+  "serviceTopologyRelayServiceSubtitle": "{method} サービス",
   "serviceTopologyRouteFocusHint": "ルートをタップするとそれだけを強調し、もう一度タップすると全体に戻ります。",
   "serviceTopologySelectNodeHint": "ノードを選ぶと詳細とルートが表示されます。",
   "backupModuleServices": "サービス",

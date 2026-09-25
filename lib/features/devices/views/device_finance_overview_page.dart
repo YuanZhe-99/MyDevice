@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../models/device.dart';
+import '../widgets/device_category_icon.dart';
 import '../services/exchange_rate_service.dart';
 
 enum _FinanceRange { year, threeYears, all }
@@ -665,7 +666,7 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     for (final entry in totals.entries) {
       buckets.add(
         _AssetBucket(
-          label: _categoryLabel(l10n, entry.key),
+          label: deviceCategoryLabel(l10n, entry.key),
           amount: entry.value,
           count: counts[entry.key] ?? 0,
           color: _chartColors[buckets.length % _chartColors.length],
@@ -855,27 +856,6 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
       return '$sign${(abs / 1000).toStringAsFixed(1)}k';
     }
     return value.toStringAsFixed(0);
-  }
-
-  /// Purpose: Return the display label for category label.
-  /// Inputs: `l10n`, `category`.
-  /// Returns: `String`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  String _categoryLabel(AppLocalizations l10n, DeviceCategory category) {
-    return switch (category) {
-      DeviceCategory.desktop => l10n.deviceCategoryDesktop,
-      DeviceCategory.laptop => l10n.deviceCategoryLaptop,
-      DeviceCategory.phone => l10n.deviceCategoryPhone,
-      DeviceCategory.tablet => l10n.deviceCategoryTablet,
-      DeviceCategory.headphone => l10n.deviceCategoryHeadphone,
-      DeviceCategory.watch => l10n.deviceCategoryWatch,
-      DeviceCategory.router => l10n.deviceCategoryRouter,
-      DeviceCategory.gameConsole => l10n.deviceCategoryGameConsole,
-      DeviceCategory.vps => l10n.deviceCategoryVps,
-      DeviceCategory.devBoard => l10n.deviceCategoryDevBoard,
-      DeviceCategory.other => l10n.deviceCategoryOther,
-    };
   }
 
   static const _chartColors = [

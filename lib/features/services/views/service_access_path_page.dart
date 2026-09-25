@@ -16,8 +16,8 @@ import '../services/service_storage.dart';
 import '../services/service_template_service.dart';
 import 'service_edit_page.dart';
 import 'service_endpoint_dialog.dart';
-import 'service_list_page.dart';
 import 'service_route_edit_page.dart';
+import 'service_topology_widgets.dart';
 
 /// The guided "Add access path" page: one scrolling form over a
 /// [ServiceAccessDraft] that saves exactly one `ServiceRoute`.

@@ -4,9 +4,9 @@
 view: given a `ServiceTopologyGraph` (nodes/edges, from `service_analysis.dart`) and the
 `ServiceRoute` list that produced it, `ServiceTopologyLayout.build` computes a canvas `Size`, a
 `Rect` per node, an integer rank per node, and a pre-routed orthogonal polyline (`List<Offset>`)
-per edge. The widget layer (`ServiceTopologyView` in
-`../../../../features/services/views/service_list_page.md`, called from
-`lib/features/services/views/service_list_page.dart`) only paints these precomputed values — it
+per edge. The widget layer (`_ServiceTopologyView` in
+[`../views/service_topology_page.md`](../views/service_topology_page.md), in
+`lib/features/services/views/service_topology_page.dart`) only paints these precomputed values — it
 does no layout or pathfinding of its own, and the result is cached per graph/routes/viewport/
 rotation so switching modes doesn't force a relayout. This file is the single most
 algorithm-dense file in the app: most of its private helpers implement real graph-rank
@@ -159,7 +159,7 @@ exactly.
     request.viewportWidth.toDouble(),
   );
   ```
-  (`lib/features/services/views/service_list_page.dart`, `_calculateLayout`, deferred to run after
+  (`lib/features/services/views/service_topology_page.dart`, `_calculateLayout`, deferred to run after
   the first frame per `AGENTS.md`'s `v0.5.12` note.)
 - **Notes:** Row/rank computation (steps 3–4) is intentionally independent of node placement
   (step 5) — ranks come purely from the edge graph, while rows come from routes/neighbors; they

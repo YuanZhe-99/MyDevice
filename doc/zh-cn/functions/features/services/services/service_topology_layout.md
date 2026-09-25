@@ -1,6 +1,6 @@
 # lib/features/services/services/service_topology_layout.dart
 
-`ServiceTopologyLayout` 是服务拓扑图视图的纯、静态布局/路由引擎：给定 `ServiceTopologyGraph`（节点/边，来自 `service_analysis.dart`）和产生它的 `ServiceRoute` 列表，`ServiceTopologyLayout.build` 计算画布 `Size`、每节点 `Rect`、每节点整数等级和每边预路由正交折线（`List<Offset>`）。组件层（`service_list_page.md` 的 `ServiceTopologyView`，从 `lib/features/services/views/service_list_page.dart` 调用）只绘制这些预计算值——它自己不做布局或寻路，结果按 图/路由/视口/旋转 缓存，使切换模式不强制重布局。本文件是应用算法最密集的文件：其大多数私有辅助实现真实图等级传播、行压实或正交 A* 风格寻路，而非组件组合。
+`ServiceTopologyLayout` 是服务拓扑图视图的纯、静态布局/路由引擎：给定 `ServiceTopologyGraph`（节点/边，来自 `service_analysis.dart`）和产生它的 `ServiceRoute` 列表，`ServiceTopologyLayout.build` 计算画布 `Size`、每节点 `Rect`、每节点整数等级和每边预路由正交折线（`List<Offset>`）。组件层（[`../views/service_topology_page.md`](../views/service_topology_page.md) 中的 `_ServiceTopologyView`，位于 `lib/features/services/views/service_topology_page.dart`）只绘制这些预计算值——它自己不做布局或寻路，结果按 图/路由/视口/旋转 缓存，使切换模式不强制重布局。本文件是应用算法最密集的文件：其大多数私有辅助实现真实图等级传播、行压实或正交 A* 风格寻路，而非组件组合。
 
 本文件实现的两个算法的高层描述（动态语义等级，和快速净空路径优先带 A* 回退的正交路由）见 [服务拓扑布局](../../../../algorithms/service-topology-layout.md)，此布局渲染的功能见 [服务与拓扑](../../../../features/services-topology.md)。概念文档引用的函数名（`_nodeRanks`、`_alignSiblingPortRanks`、`_placeNodes`、`_fastRouteBetween`、`_routeBetween`、`_RouteHeap`/`_RouteState`、`_congestionCost`）写本页时对照当前源码验证；概念文档一个细节下面细化：`_nodeRanks` 不把每个节点从等级 0 开始——设备节点从等级 0 开始，每个其他节点 kind 从等级 1 开始（见那个条目）。
 
@@ -123,7 +123,7 @@
     request.viewportWidth.toDouble(),
   );
   ```
-  （`lib/features/services/views/service_list_page.dart`，`_calculateLayout`，按 `AGENTS.md` 的 `v0.5.12` 说明延迟到首帧后运行。）
+  （`lib/features/services/views/service_topology_page.dart`，`_calculateLayout`，按 `AGENTS.md` 的 `v0.5.12` 说明延迟到首帧后运行。）
 - **备注：** 行/等级计算（步骤 3–4）刻意独立于节点放置（步骤 5）——等级纯来自边图，而行来自路由/邻居；它们只在 `_placeNodes` 按期望行排序每个等级内节点时组合。
 
 ### `static Map<String, Rect> _placeNodes(ServiceTopologyGraph graph, Map<String, int> nodeRanks, Map<String, double> desiredRows)` <a id="_placenodes"></a>

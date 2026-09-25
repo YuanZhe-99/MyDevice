@@ -4,12 +4,12 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1133** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1143** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1249** declarations — 116 more than
-1133 — because a number of real declarations across several files (especially the two large
-algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus tail
-sections of `device.dart` and `service_list_page.dart`) have no `/// Purpose:` doc comment in
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1249** declarations — 106 more than
+1143 — because a number of real declarations across several files (especially the two large
+algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus the tail
+section of `device.dart`) have no `/// Purpose:` doc comment in
 source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
 call-site statement rather than a real declaration. Every such case is called out explicitly on
 its file page with a reconciling row-count note; nothing is silently invented to force a round
@@ -98,8 +98,10 @@ per-file rows as authoritative and every total as approximate until a full sweep
 | `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 54 | 13 |
 | `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
 | `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
-| `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 68 | 19 |
+| `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
+| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 16 | 7 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 18 | 5 |
 
 ## features/settings/
 
@@ -113,7 +115,7 @@ per-file rows as authoritative and every total as approximate until a full sweep
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1133/1249 hand-documented declarations above).
+the 1143/1249 hand-documented declarations above).
 
 ## shared/
 
@@ -149,7 +151,7 @@ the 1133/1249 hand-documented declarations above).
 | `features/datasets/` | 4 | 49 | 30 | 19 |
 | `features/devices/` | 15 | 381 | 201 | 180 |
 | `features/network/` | 5 | 76 | 41 | 35 |
-| `features/services/` | 12 | 442 | 197 | 245 |
+| `features/services/` | 14 | 442 | 197 | 245 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 20 | 309 | 245 | 64 |
-| **Total** | **65** | **1313** | **755** | **558** |
+| **Total** | **67** | **1313** | **755** | **558** |

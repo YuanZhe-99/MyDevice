@@ -10,7 +10,7 @@ import '../models/service.dart';
 import '../services/service_storage.dart';
 import '../services/service_template_service.dart';
 import 'service_endpoint_dialog.dart';
-import 'service_list_page.dart';
+import 'service_topology_widgets.dart';
 
 /// What the service edit page did, returned when it pops.
 ///

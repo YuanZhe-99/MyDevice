@@ -1726,6 +1726,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get serviceTopologyReset => 'Reset';
 
   @override
+  String get serviceTopologyGroupByDevice => 'Group by device';
+
+  @override
   String get serviceTopologyRouteFocusHint =>
       'Tap a route to highlight only it; tap it again for all.';
 

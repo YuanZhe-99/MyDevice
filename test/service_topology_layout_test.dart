@@ -148,6 +148,557 @@ void main() {
       }
     }
   });
+
+  test('a row of port chips is shorter than a row of cards', () {
+    final data = _chipRowsData();
+    final graph = buildServiceTopology(
+      services: data.services,
+      routes: data.routes,
+      devices: data.devices,
+    );
+    final layout = ServiceTopologyLayout.build(graph, data.routes, 900);
+
+    final chips = [
+      layout.nodeRects['endpoint:app:a']!,
+      layout.nodeRects['endpoint:app:b']!,
+      layout.nodeRects['endpoint:app:c']!,
+    ]..sort((a, b) => a.top.compareTo(b.top));
+    final stride = chips[2].top - chips[1].top;
+    expect(stride, lessThan(ServiceTopologyLayout.nodeHeight + 44));
+    expect(
+      stride,
+      ServiceTopologyLayout.portChipSize + ServiceTopologyLayout.rowGap,
+    );
+    expect(
+      chips[1].top - chips[0].top,
+      ServiceTopologyLayout.nodeHeight + ServiceTopologyLayout.rowGap,
+      reason: 'the first row also holds the service card',
+    );
+  });
+
+  test('domain sinks share the last rank and paths stay clean', () {
+    for (final sample in [_buildSampleGraph(), _frpSample()]) {
+      final layout = ServiceTopologyLayout.build(
+        sample.graph,
+        sample.routes,
+        480,
+      );
+      final lastRank = layout.nodeRanks.values.reduce(math.max);
+      final domains = sample.graph.nodes.where(
+        (node) => node.kind == ServiceTopologyNodeKind.domain,
+      );
+      expect(domains, isNotEmpty);
+      for (final domain in domains) {
+        expect(layout.nodeRanks[domain.id], lastRank, reason: domain.id);
+      }
+      _expectCleanPaths(sample.graph, layout);
+    }
+
+    final sample = _buildSampleGraph();
+    final unaligned = ServiceTopologyLayout.build(
+      sample.graph,
+      sample.routes,
+      480,
+      options: const ServiceTopologyLayoutOptions(alignDomainSinks: false),
+    );
+    expect(
+      {
+        for (final node in sample.graph.nodes)
+          if (node.kind == ServiceTopologyNodeKind.domain)
+            unaligned.nodeRanks[node.id],
+      }.length,
+      greaterThan(1),
+      reason: 'without alignment the sample domains sit on different ranks',
+    );
+  });
+
+  test('countCrossings counts order swaps between ranks', () {
+    ServiceTopologyEdge edge(String from, String to) =>
+        ServiceTopologyEdge(from: from, to: to);
+    final ranks = {'a': 0, 'b': 0, 'c': 1, 'd': 1, 'x': 2, 'y': 2};
+    final positions = {
+      'a': 0.0,
+      'b': 1.0,
+      'c': 0.0,
+      'd': 1.0,
+      'x': 0.0,
+      'y': 1.0,
+    };
+    int count(List<ServiceTopologyEdge> edges) =>
+        ServiceTopologyLayout.countCrossings(ranks, positions, edges);
+
+    expect(count([edge('a', 'd'), edge('b', 'c')]), 1);
+    expect(count([edge('a', 'c'), edge('b', 'd')]), 0);
+    expect(count([edge('a', 'c'), edge('a', 'd')]), 0, reason: 'shared end');
+    expect(count([edge('a', 'y'), edge('b', 'x')]), 1, reason: 'long edges');
+    expect(
+      count([edge('a', 'y'), edge('b', 'x'), edge('c', 'x')]),
+      1,
+      reason: 'meeting at a shared end is not a crossing',
+    );
+    expect(count([edge('a', 'b')]), 0, reason: 'same-rank edges are ignored');
+  });
+
+  test('the barycenter sweep removes crossings and never adds any', () {
+    final shared = _sharedVpsSample();
+    for (final group in [false, true]) {
+      final unswept = ServiceTopologyLayout.build(
+        shared.graph,
+        shared.routes,
+        900,
+        options: ServiceTopologyLayoutOptions(
+          groupByDevice: group,
+          crossingSweeps: 0,
+        ),
+      );
+      final swept = ServiceTopologyLayout.build(
+        shared.graph,
+        shared.routes,
+        900,
+        options: ServiceTopologyLayoutOptions(groupByDevice: group),
+      );
+      expect(swept.crossings, lessThan(unswept.crossings), reason: '$group');
+      _expectCleanPaths(shared.graph, swept);
+    }
+
+    for (final sample in [
+      _buildSampleGraph(),
+      _buildSparseRouteGraph(),
+      _frpSample(),
+    ]) {
+      for (final group in [false, true]) {
+        final unswept = ServiceTopologyLayout.build(
+          sample.graph,
+          sample.routes,
+          640,
+          options: ServiceTopologyLayoutOptions(
+            groupByDevice: group,
+            crossingSweeps: 0,
+          ),
+        );
+        final swept = ServiceTopologyLayout.build(
+          sample.graph,
+          sample.routes,
+          640,
+          options: ServiceTopologyLayoutOptions(groupByDevice: group),
+        );
+        expect(swept.crossings, lessThanOrEqualTo(unswept.crossings));
+      }
+    }
+  });
+
+  test('device containers hold their members and nothing else', () {
+    for (final sample in [
+      _buildSampleGraph(),
+      _frpSample(),
+      _sharedVpsSample(),
+    ]) {
+      final graph = sample.graph;
+      final layout = ServiceTopologyLayout.build(
+        graph,
+        sample.routes,
+        640,
+        options: const ServiceTopologyLayoutOptions(groupByDevice: true),
+      );
+      final nodes = {for (final node in graph.nodes) node.id: node};
+      final grouped = {
+        for (final node in graph.nodes)
+          if (node.kind == ServiceTopologyNodeKind.device &&
+              graph.nodes.any(
+                (other) =>
+                    other.kind == ServiceTopologyNodeKind.service &&
+                    other.deviceId == node.deviceId,
+              ))
+            node.id,
+      };
+      expect(layout.groupRects.keys.toSet(), grouped);
+
+      bool member(String id, String group) {
+        final node = nodes[id]!;
+        return node.deviceId == nodes[group]!.deviceId &&
+            (node.kind == ServiceTopologyNodeKind.service ||
+                node.kind == ServiceTopologyNodeKind.endpoint ||
+                node.kind == ServiceTopologyNodeKind.remoteEntry);
+      }
+
+      for (final entry in layout.groupRects.entries) {
+        final container = entry.value;
+        final header = layout.nodeRects[entry.key]!;
+        expect(_inside(header, container), isTrue, reason: entry.key);
+        expect(header.top, container.top);
+        expect(header.height, ServiceTopologyLayout.containerHeaderHeight);
+        for (final rect in layout.nodeRects.entries) {
+          if (rect.key == entry.key) continue;
+          if (member(rect.key, entry.key)) {
+            expect(
+              _inside(rect.value, container),
+              isTrue,
+              reason: '${rect.key} inside ${entry.key}',
+            );
+            expect(rect.value.top, greaterThan(header.bottom));
+          } else {
+            expect(
+              rect.value.overlaps(container),
+              isFalse,
+              reason: '${rect.key} intrudes on ${entry.key}',
+            );
+          }
+        }
+        for (final other in layout.groupRects.entries) {
+          if (other.key == entry.key) continue;
+          expect(
+            other.value.overlaps(container),
+            isFalse,
+            reason: '${other.key} overlaps ${entry.key}',
+          );
+        }
+      }
+
+      final implied = {
+        for (final edge in graph.edges)
+          if (grouped.contains(edge.from) &&
+              nodes[edge.to]!.kind == ServiceTopologyNodeKind.service &&
+              member(edge.to, edge.from))
+            edge,
+      };
+      expect(layout.hiddenEdges, implied);
+      expect(implied, isNotEmpty);
+      _expectCleanPaths(graph, layout);
+
+      final flat = ServiceTopologyLayout.build(graph, sample.routes, 640);
+      expect(flat.groupRects, isEmpty);
+      expect(flat.hiddenEdges, isEmpty);
+      for (final edge in graph.edges) {
+        expect(flat.edgePaths[edge], isNotNull);
+      }
+      for (final id in grouped) {
+        expect(flat.nodeRects[id]!.height, ServiceTopologyLayout.nodeHeight);
+      }
+    }
+  });
+
+  test('the walkthrough graph groups home and VPS with the domain last', () {
+    final sample = _frpSample();
+    final layout = ServiceTopologyLayout.build(
+      sample.graph,
+      sample.routes,
+      900,
+      options: const ServiceTopologyLayoutOptions(groupByDevice: true),
+    );
+    expect(layout.groupRects.keys.toSet(), {'device:mac', 'device:cloud'});
+    expect(
+      layout.nodeRanks['endpoint:frp:frp57000'],
+      layout.nodeRanks['remote:cloud::443'],
+      reason: 'the FRP ports stay siblings',
+    );
+    expect(
+      layout.nodeRanks['domain:example.com'],
+      layout.nodeRanks.values.reduce(math.max),
+    );
+  });
+
+  test('a 60-node, 80-edge graph lays out', () {
+    final sample = _syntheticSample();
+    expect(sample.graph.nodes.length, greaterThanOrEqualTo(60));
+    expect(sample.graph.edges.length, greaterThanOrEqualTo(80));
+    for (final group in [false, true]) {
+      final watch = Stopwatch()..start();
+      final layout = ServiceTopologyLayout.build(
+        sample.graph,
+        sample.routes,
+        900,
+        options: ServiceTopologyLayoutOptions(groupByDevice: group),
+      );
+      watch.stop();
+      // Logged, not asserted: CI machines vary too much for a time limit.
+      // ignore: avoid_print
+      print(
+        'synthetic topology (${sample.graph.nodes.length} nodes, '
+        '${sample.graph.edges.length} edges, grouped: $group): '
+        '${watch.elapsedMilliseconds} ms, ${layout.crossings} crossings',
+      );
+      expect(layout.nodeRects.length, sample.graph.nodes.length);
+    }
+  });
+}
+
+/// Purpose: Check that every drawn edge is an orthogonal path that avoids
+/// every node but its own ends.
+/// Inputs: `graph`, `layout`.
+/// Returns: None.
+/// Side effects: Records test expectations.
+/// Notes: Hidden edges must have no path; every other edge must have one.
+void _expectCleanPaths(
+  ServiceTopologyGraph graph,
+  ServiceTopologyLayout layout,
+) {
+  for (final edge in graph.edges) {
+    final path = layout.edgePaths[edge];
+    if (layout.hiddenEdges.contains(edge)) {
+      expect(path, isNull, reason: 'hidden ${edge.from} -> ${edge.to}');
+      continue;
+    }
+    expect(path, isNotNull, reason: '${edge.from} -> ${edge.to}');
+    expect(path!.length, greaterThanOrEqualTo(2));
+    for (var i = 1; i < path.length; i++) {
+      expect(
+        _horizontal(path[i - 1], path[i]) || _vertical(path[i - 1], path[i]),
+        isTrue,
+        reason: '${edge.from} -> ${edge.to}',
+      );
+    }
+    for (final entry in layout.nodeRects.entries) {
+      if (entry.key == edge.from || entry.key == edge.to) continue;
+      expect(
+        _polylineIntersectsRect(path, entry.value.inflate(0.5)),
+        isFalse,
+        reason: '${edge.from} -> ${edge.to} crosses ${entry.key}',
+      );
+    }
+  }
+}
+
+/// Purpose: Report whether one rect lies inside another.
+/// Inputs: `inner`, `outer`.
+/// Returns: `bool`.
+/// Side effects: None.
+/// Notes: Allows a hundredth of a pixel for rounding.
+bool _inside(Rect inner, Rect outer) {
+  final slack = outer.inflate(0.01);
+  return slack.left <= inner.left &&
+      slack.top <= inner.top &&
+      slack.right >= inner.right &&
+      slack.bottom >= inner.bottom;
+}
+
+/// Purpose: Build the FRP walkthrough data as a sample graph.
+/// Inputs: None.
+/// Returns: `_SampleGraph`.
+/// Side effects: None.
+/// Notes: Caddy on a Mac publishes `example.com` through FRP on a VPS.
+_SampleGraph _frpSample() {
+  final data = _frpTopologyData();
+  return _SampleGraph(
+    buildServiceTopology(
+      services: data.services,
+      routes: data.routes,
+      devices: data.devices,
+    ),
+    data.routes,
+  );
+}
+
+/// Purpose: Build one service whose three endpoints are each a route's source.
+/// Inputs: None.
+/// Returns: `_FrpTopologyData` — devices, services and routes.
+/// Side effects: None.
+/// Notes: The routes have no hops and no targets, so the endpoint chips are
+/// alone on their rows except the first, which the service card shares.
+_FrpTopologyData _chipRowsData() {
+  final device = Device(
+    id: 'box',
+    name: 'Box',
+    category: DeviceCategory.desktop,
+  );
+  final service = ServiceNode(
+    id: 'app',
+    deviceId: device.id,
+    name: 'App',
+    endpoints: [
+      ServiceEndpoint(id: 'a', port: 8001),
+      ServiceEndpoint(id: 'b', port: 8002),
+      ServiceEndpoint(id: 'c', port: 8003),
+    ],
+  );
+  return _FrpTopologyData(
+    devices: [device],
+    services: [service],
+    routes: [
+      for (final endpoint in ['a', 'b', 'c'])
+        ServiceRoute(
+          id: 'route-$endpoint',
+          name: 'Route $endpoint',
+          sourceServiceId: service.id,
+          sourceEndpointId: endpoint,
+        ),
+    ],
+  );
+}
+
+/// Purpose: Build two home devices publishing through one shared VPS.
+/// Inputs: None.
+/// Returns: `_SampleGraph`.
+/// Side effects: None.
+/// Notes: Two services on each home device go out through one FRP server;
+/// one domain is shared by a service of each device. Service names are
+/// chosen so the label order interleaves the devices, which the row order
+/// alone leaves crossed.
+_SampleGraph _sharedVpsSample() {
+  final devices = [
+    Device(id: 'home-a', name: 'Alpha box', category: DeviceCategory.desktop),
+    Device(id: 'home-b', name: 'Beta NAS', category: DeviceCategory.desktop),
+    Device(id: 'vps', name: 'VPS', category: DeviceCategory.vps),
+  ];
+  ServiceNode service(String id, String device, String name, int port) =>
+      ServiceNode(
+        id: id,
+        deviceId: device,
+        name: name,
+        endpoints: [ServiceEndpoint(id: '$id-ep', port: port, isPrimary: true)],
+      );
+  final services = [
+    service('zapp', 'home-a', 'Zeta app', 8080),
+    service('aapp', 'home-a', 'Alpha app', 8081),
+    service('bapp', 'home-b', 'Beta app', 9000),
+    service('capp', 'home-b', 'Aardvark', 9001),
+    ServiceNode(
+      id: 'frp',
+      deviceId: 'vps',
+      name: 'FRP',
+      kind: ServiceKind.tunnel,
+      endpoints: [ServiceEndpoint(id: 'frp-ep', port: 7000, isPrimary: true)],
+    ),
+  ];
+  ServiceRoute frp(String id, String source, int port, String target) =>
+      ServiceRoute(
+        id: id,
+        name: id,
+        sourceServiceId: source,
+        sourceEndpointId: '$source-ep',
+        accessLevel: ServiceAccessLevel.public,
+        finalUrl: target,
+        hops: [
+          ServiceRouteHop(
+            type: ServiceRouteHopType.portForward,
+            method: ServiceRouteMethod.frp,
+            serviceId: 'frp',
+            deviceId: 'vps',
+            port: port,
+          ),
+        ],
+      );
+  final routes = [
+    frp('r1', 'zapp', 443, 'shared.example.com'),
+    frp('r2', 'bapp', 8443, 'shared.example.com'),
+    frp('r3', 'aapp', 444, 'a.example.com'),
+    frp('r4', 'capp', 445, 'c.example.com'),
+    ServiceRoute(
+      id: 'r5',
+      name: 'r5',
+      sourceServiceId: 'zapp',
+      sourceEndpointId: 'zapp-ep',
+      finalUrl: 'http://z.lan',
+      hops: [
+        ServiceRouteHop(
+          type: ServiceRouteHopType.manual,
+          method: ServiceRouteMethod.direct,
+        ),
+      ],
+    ),
+  ];
+  return _SampleGraph(
+    buildServiceTopology(services: services, routes: routes, devices: devices),
+    routes,
+  );
+}
+
+/// Purpose: Build a synthetic inventory of at least 60 nodes and 80 edges.
+/// Inputs: None.
+/// Returns: `_SampleGraph`.
+/// Side effects: None.
+/// Notes: Three home devices with a Caddy and three services each; every
+/// service is published through one of two VPS FRP servers, two of them
+/// through their device's Caddy first, and reached on the LAN as well.
+_SampleGraph _syntheticSample() {
+  final devices = <Device>[];
+  final services = <ServiceNode>[];
+  final routes = <ServiceRoute>[];
+  for (var v = 0; v < 2; v++) {
+    devices.add(
+      Device(id: 'vps$v', name: 'VPS $v', category: DeviceCategory.vps),
+    );
+    services.add(
+      ServiceNode(
+        id: 'frp$v',
+        deviceId: 'vps$v',
+        name: 'FRP $v',
+        kind: ServiceKind.tunnel,
+        endpoints: [ServiceEndpoint(id: 'bind', port: 7000, isPrimary: true)],
+      ),
+    );
+  }
+  for (var d = 0; d < 3; d++) {
+    devices.add(
+      Device(id: 'home$d', name: 'Home $d', category: DeviceCategory.desktop),
+    );
+    services.add(
+      ServiceNode(
+        id: 'caddy$d',
+        deviceId: 'home$d',
+        name: 'Caddy $d',
+        kind: ServiceKind.reverseProxy,
+        endpoints: [ServiceEndpoint(id: 'https', port: 443, isPrimary: true)],
+      ),
+    );
+    for (var s = 0; s < 3; s++) {
+      final id = 'app$d-$s';
+      services.add(
+        ServiceNode(
+          id: id,
+          deviceId: 'home$d',
+          name: 'App $d.$s',
+          endpoints: [
+            ServiceEndpoint(id: 'web', port: 8000 + s, isPrimary: true),
+          ],
+        ),
+      );
+      routes.add(
+        ServiceRoute(
+          id: '$id-public',
+          name: '$id public',
+          sourceServiceId: id,
+          sourceEndpointId: 'web',
+          accessLevel: ServiceAccessLevel.public,
+          finalUrl: 'https://$id.example.com',
+          hops: [
+            if (s != 1)
+              ServiceRouteHop(
+                type: ServiceRouteHopType.reverseProxy,
+                method: ServiceRouteMethod.caddy,
+                serviceId: 'caddy$d',
+                endpointId: 'https',
+              ),
+            ServiceRouteHop(
+              type: ServiceRouteHopType.portForward,
+              method: ServiceRouteMethod.frp,
+              serviceId: 'frp${(d + s) % 2}',
+              deviceId: 'vps${(d + s) % 2}',
+              port: 10000 + d * 10 + s,
+            ),
+          ],
+        ),
+      );
+      routes.add(
+        ServiceRoute(
+          id: '$id-lan',
+          name: '$id lan',
+          sourceServiceId: id,
+          sourceEndpointId: 'web',
+          finalUrl: 'http://home$d.lan:${8000 + s}',
+          hops: [
+            ServiceRouteHop(
+              type: ServiceRouteHopType.manual,
+              method: ServiceRouteMethod.direct,
+            ),
+          ],
+        ),
+      );
+    }
+  }
+  return _SampleGraph(
+    buildServiceTopology(services: services, routes: routes, devices: devices),
+    routes,
+  );
 }
 
 /// Purpose: Build and return sample graph for the current context.

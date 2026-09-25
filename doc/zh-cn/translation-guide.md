@@ -127,6 +127,9 @@
 | guided editor / advanced editor | 引导式编辑器 / 高级编辑器 | 两种路由编辑器 |
 | device container | 设备分组框 | 拓扑中把一台设备的服务和端口框在一起的分组框 |
 | route highlight | 路由高亮 | 拓扑对所选节点相关路由的强调显示 |
+| container header | 分组框标题 | 设备分组框左上角的设备标签 |
+| crossing sweep | 交叉消减扫描 | 调整各层顺序以减少连线交叉的布局步骤 |
+| domain sink | 终点域名 | 没有出边的域名节点，对齐到最后一层 |
 
 ## 6. 复核清单（提交中文页前运行）
 

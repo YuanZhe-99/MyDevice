@@ -125,18 +125,23 @@ non-existent client-facing hop through the ingress port.
 
 Per [Service Topology Layout](../algorithms/service-topology-layout.md):
 
-1. `svc-jellyfin` and `svc-caddy` are local service nodes under `dev-home`; Caddy sits at a
-   later rank than Jellyfin's endpoint chip because the route passes Jellyfin → Caddy, so the
-   arrows keep reading left-to-right even though both run on the same machine.
-2. `dev-vps`, `svc-frp` and its port chips sit in later ranks (remote/public side).
-   `_alignSiblingPortRanks` pulls the ingress chip and the public-entry chip onto the same
-   rank so the two FRP port chips appear side by side rather than one trailing the other.
-3. Edges are routed orthogonally: `ep-jellyfin → svc-caddy → ep-caddy` (short local edges),
-   `ep-caddy → ep-frp-ingress` (crossing to the VPS side), `svc-frp → :443`, and
+1. With "Group by device" on (the default), `dev-home` is a container with its name on a
+   header tab, holding `svc-jellyfin`, `svc-caddy` and their port chips; the device-to-service
+   edges are implied by the container and not drawn. Caddy sits at a later rank than
+   Jellyfin's endpoint chip because the route passes Jellyfin → Caddy, so the arrows keep
+   reading left-to-right even though both run on the same machine.
+2. `dev-vps` is a second container, below the first and drawn with a dashed border (a remote
+   VPS), holding `svc-frp` and its two port chips. `_alignSiblingPortRanks` pulls the ingress
+   chip and the public-entry chip onto the same rank, so the two FRP port chips stack side by
+   side in one column rather than one trailing the other.
+3. `media.example.com`, a domain with no outgoing edges, sits on the last rank, to the right
+   of both containers.
+4. Edges are routed orthogonally: `ep-jellyfin → svc-caddy → ep-caddy` (short local edges),
+   `ep-caddy → ep-frp-ingress` (down into the VPS container), `svc-frp → :443`, and
    `:443 → media.example.com` (a domain/URL leaf node) — each computed by
    `_fastRouteBetween`/`_routeBetween` with turn/congestion costs so they don't visually
    overlap even though they all flow through the same general area of the canvas.
-4. Both FRP port chips render as small rounded-square chips (port icon + number) rather
+5. Both FRP port chips render as small rounded-square chips (port icon + number) rather
    than full node cards, per the port-chip rendering rule.
 
 ## Related

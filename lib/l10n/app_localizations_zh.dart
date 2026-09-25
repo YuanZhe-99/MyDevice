@@ -1695,6 +1695,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceTopologyReset => '重置';
 
   @override
+  String get serviceTopologyGroupByDevice => '按设备分组';
+
+  @override
   String get serviceTopologyRouteFocusHint => '点按一条链路只高亮它，再点一次恢复全部。';
 
   @override
@@ -3407,6 +3410,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceTopologyReset => '重設';
+
+  @override
+  String get serviceTopologyGroupByDevice => '依裝置分組';
 
   @override
   String get serviceTopologyRouteFocusHint => '點按一條鏈路只醒目提示它，再點一次恢復全部。';

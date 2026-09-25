@@ -3305,6 +3305,12 @@ abstract class AppLocalizations {
   /// **'Reset'**
   String get serviceTopologyReset;
 
+  /// No description provided for @serviceTopologyGroupByDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Group by device'**
+  String get serviceTopologyGroupByDevice;
+
   /// No description provided for @serviceTopologyRouteFocusHint.
   ///
   /// In en, this message translates to:

@@ -22,8 +22,12 @@ split out of `service_list_page.dart` in 1.5.6 and then gained the topology's in
   exported canvas.
 - **Fit and reset.** In move mode, icon buttons fit the canvas into the viewer (`fitTransform`)
   or reset its transform.
+- **Group by device.** An app-bar toggle, on by default for the session, passes
+  `groupByDevice` to the layout: devices become containers with a header tab and the
+  device-to-service edges are hidden. Part of the layout request, so toggling re-lays out the
+  same graph.
 
-The page owns the mode, rotation, export, selection and filter state; the view owns the
+The page owns the mode, rotation, export, grouping, selection and filter state; the view owns the
 deferred, cached layout (`_TopologyLayoutRequest` is its cache key). Node cards, the edge
 painter, the legend and the icon, colour and fit helpers come from
 [`service_topology_widgets.md`](service_topology_widgets.md); the filter and highlight logic
@@ -41,7 +45,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| `_ServiceTopologyView` (constructor) | constructor | B | Create the canvas widget: graph, inventory, mode, rotation, capture key, selection, taps, transform. |
+| `_ServiceTopologyView` (constructor) | constructor | B | Create the canvas widget: graph, inventory, layout options, mode, rotation, capture key, selection, taps, transform. |
 | `createState` | method (`_ServiceTopologyView`) | B | Create the canvas's mutable state object. |
 | `build` | method (widget, `_ServiceTopologyViewState`) | B | Lay out the canvas inside a `LayoutBuilder`, requesting/showing the cached layout and remembering the viewport. |
 | [`_ensureLayout`](#ensurelayout) | method (`_ServiceTopologyViewState`) | A | Schedule a deferred layout calculation for a request, deduplicating in-flight requests. |
@@ -50,8 +54,8 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 | `_reportLayoutReady` | method (`_ServiceTopologyViewState`) | B | Notify the parent (deferred to next frame) when layout readiness changes. |
 | [`fitToViewport`](#fittoviewport) | method (`_ServiceTopologyViewState`) | A | Fit the laid-out canvas into the view through the transformation controller. |
 | [`_buildViewer`](#buildviewer) | method (widget helper) | A | Render the edges and node cards with the selection, in a scroll view (select) or an `InteractiveViewer` (move). |
-| [`_TopologyLayoutRequest` (constructor)](#topologylayoutrequest-new) | constructor | A | Create a layout cache-key value (graph, routes, viewport width). |
-| [`==`](#equals) | operator (`_TopologyLayoutRequest`) | A | Compare two requests by graph/route identity and viewport width. |
+| [`_TopologyLayoutRequest` (constructor)](#topologylayoutrequest-new) | constructor | A | Create a layout cache-key value (graph, routes, viewport width, layout options). |
+| [`==`](#equals) | operator (`_TopologyLayoutRequest`) | A | Compare two requests by graph/route identity, viewport width and options. |
 | [`hashCode`](#hashcode) | getter (`_TopologyLayoutRequest`) | A | Hash a request consistently with its equality contract. |
 | `ServiceTopologyPage` (constructor) | constructor | B | Create the full-screen topology page widget. |
 | `createState` | method (`ServiceTopologyPage`) | B | Create the page's mutable state object. |
@@ -82,7 +86,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void _ensureLayout(_TopologyLayoutRequest request)` <a id="ensurelayout"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 135).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 139).
 - **Purpose:** Schedule a deferred layout calculation for a request, unless an identical request is
   already pending.
 - **Inputs:** `request`.
@@ -105,7 +109,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Future<void> _calculateLayout(_TopologyLayoutRequest request, int generation)` <a id="calculatelayout"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 149).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 153).
 - **Purpose:** Run the topology layout engine for one request, after yielding a frame, and cache
   the result if it's still the current request.
 - **Inputs:** `request`; `generation` — the `_layoutGeneration` value captured when this
@@ -117,7 +121,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
   doesn't block the frame that scheduled it. 2. Bail out if unmounted, or if `generation` no longer
   equals `_layoutGeneration`, or if `_pendingRequest` no longer equals `request` (a newer request
   superseded this one). 3. Compute
-  `ServiceTopologyLayout.build(request.graph, request.routes, request.viewportWidth.toDouble())`
+  `ServiceTopologyLayout.build(request.graph, request.routes, request.viewportWidth.toDouble(), options: request.options)`
   (see [`../services/service_topology_layout.md#build`](../services/service_topology_layout.md#build)).
   4. Re-check the same three staleness conditions (the computation itself may have taken long
   enough for a newer request to arrive). 5. `setState` to store the layout, mark `request` as
@@ -130,7 +134,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void fitToViewport()` <a id="fittoviewport"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 211).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 216).
 - **Purpose:** Fit the laid-out canvas into the view.
 - **Inputs:** None.
 - **Returns:** `void`.
@@ -148,15 +152,16 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget _buildViewer(BuildContext context, ServiceTopologyLayout layout, int turns)` <a id="buildviewer"></a>
 - **Kind:** method (widget helper) of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 238).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 245).
 - **Purpose:** Build the canvas — edges and node cards — inside its viewer.
 - **Inputs:** `context`; `layout` — the cached layout; `turns` — quarter turns, 0 to 3.
 - **Returns:** `Widget`.
 - **Side effects:** None.
 - **Algorithm:** 1. A `Stack` at `layout.size`: a `CustomPaint` with `ServiceTopologyEdgePainter`
   (given the highlight), then one `ServiceTopologyNodeCard` per laid-out node, keyed
-  `topology-node-<id>`, `selected` for the selected node and `dimmed` when a highlight leaves it
-  out, with `onTap` only in select mode. 2. Wrap in a `RotatedBox` for a rotation and in the
+  `topology-node-<id>`, `selected` for the selected node, `header` for a device node that heads
+  a container (`layout.groupRects`), and `dimmed` when a highlight leaves it out, with `onTap`
+  only in select mode; the painter draws the containers under the edges. 2. Wrap in a `RotatedBox` for a rotation and in the
   export `RepaintBoundary`. 3. Select mode: a `GestureDetector` keyed `topology-canvas` whose tap
   clears the selection, around two nested scroll views. Move mode: an `InteractiveViewer` on the
   page's `TransformationController` with `_boundaryMargin`, `_minScale` and `_maxScale`.
@@ -165,11 +170,11 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
   that miss every card clear the selection. Selection changes only repaint: the layout request
   does not include the highlight.
 
-### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth})` <a id="topologylayoutrequest-new"></a>
+### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth, required this.options})` <a id="topologylayoutrequest-new"></a>
 - **Kind:** constructor.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 321).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 332).
 - **Purpose:** Create the value used as a topology layout's cache key.
-- **Inputs:** `graph`, `routes`, `viewportWidth`.
+- **Inputs:** `graph`, `routes`, `viewportWidth`, `options` — the view's `ServiceTopologyLayoutOptions`.
 - **Returns:** A new `_TopologyLayoutRequest`.
 - **Side effects:** None.
 - **Algorithm:** Plain field assignment.
@@ -178,13 +183,13 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `bool operator ==(Object other)` <a id="equals"></a>
 - **Kind:** operator of `_TopologyLayoutRequest`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 333).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 345).
 - **Purpose:** Compare two layout requests for cache-reuse purposes.
 - **Inputs:** `other`.
 - **Returns:** `bool`.
 - **Side effects:** None.
 - **Algorithm:** `true` if `identical(this, other)`, or if `other` is a `_TopologyLayoutRequest`
-  with `identical` `graph`, `identical` `routes`, and an equal `viewportWidth`.
+  with `identical` `graph`, `identical` `routes`, an equal `viewportWidth` and equal `options`.
 - **Usage:** Used implicitly via `==`/`!=` in `build` (`_completedRequest == request`) and
   [`_ensureLayout`](#ensurelayout) (`_pendingRequest == request`).
 - **Notes:** Uses **identity** (`identical`), not value equality, for `graph`/`routes` — two
@@ -192,16 +197,17 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
   unequal. This is intentional: any new `buildServiceTopology`/[`_load`](service_list_page.md#load) call invalidates the
   cache even if the resulting graph looks the same, and it avoids a deep structural comparison on
   every build. `viewportWidth` is rounded to an `int` (in `_ServiceTopologyViewState.build`) before
-  comparison, to avoid tiny constraint jitter forcing a re-layout.
+  comparison, to avoid tiny constraint jitter forcing a re-layout. `options` compares by value, so
+  toggling "Group by device" re-lays out the same graph instance without rebuilding it.
 
 ### `int get hashCode` <a id="hashcode"></a>
 - **Kind:** getter of `_TopologyLayoutRequest`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 346).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 360).
 - **Purpose:** Produce a hash code consistent with the identity-based `==` above.
 - **Inputs:** None.
 - **Returns:** `int`.
 - **Side effects:** None.
-- **Algorithm:** `Object.hash(identityHashCode(graph), identityHashCode(routes), viewportWidth)`.
+- **Algorithm:** `Object.hash(identityHashCode(graph), identityHashCode(routes), viewportWidth, options)`.
 - **Usage:** Not called explicitly anywhere in this file — `_TopologyLayoutRequest` values are only
   ever compared via `==`, not stored in a `Map`/`Set` — but Dart requires a `hashCode` consistent
   with `==` whenever the latter is overridden.
@@ -211,7 +217,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `({ServiceTopologyGraph graph, List<ServiceRoute> routes}) _visible()` <a id="visible"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 446).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 464).
 - **Purpose:** Return the graph and routes the current filter shows.
 - **Inputs:** None.
 - **Returns:** The page's own `graph` and `routes` when the filter narrows nothing; otherwise the
@@ -228,7 +234,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `_selectionIn(ServiceTopologyGraph graph, List<ServiceRoute> routes)` <a id="selectionin"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 474).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 497).
 - **Purpose:** Resolve the selection on the visible graph.
 - **Inputs:** `graph`, `routes` — from [`_visible`](#visible).
 - **Returns:** A record of the selected node, its related routes and the
@@ -247,7 +253,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void _selectNode(ServiceTopologyNode node)` <a id="selectnode"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 522).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 540).
 - **Purpose:** Select a tapped node.
 - **Inputs:** `node`.
 - **Returns:** `void`.
@@ -261,7 +267,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void _showDetailsSheet(ServiceTopologyNode node)` <a id="showdetailssheet"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 602).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 620).
 - **Purpose:** Show a node's details in a bottom sheet.
 - **Inputs:** `node`.
 - **Returns:** `void`.
@@ -278,7 +284,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Future<void> _exportTopologyImage()` <a id="exporttopologyimage"></a>
 - **Kind:** method of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 646).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 664).
 - **Purpose:** Capture the topology canvas (via its `RepaintBoundary`) as a PNG and hand it to the
   platform-appropriate share/save flow.
 - **Inputs:** None.
@@ -306,17 +312,19 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget build(BuildContext context)` <a id="pagebuild"></a>
 - **Kind:** method (widget build) of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 696).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 715).
 - **Purpose:** Build the topology page scaffold.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
 - **Side effects:** None beyond filling the `_visible` and `_selectionIn` caches.
 - **Algorithm:** 1. Resolve the visible graph and the selection. 2. The app bar's actions: the
   filter button (key `topology-filter`, a `Badge` with `ServiceTopologyFilter.activeCount` while
-  a filter is active), rotation (which also resets the transform) and export (enabled only with
+  a filter is active), the "Group by device" toggle (key `topology-group-by-device`, selected while
+  `_groupByDevice` is on; flipping it resets the transform), rotation (which also resets the transform) and export (enabled only with
   a ready layout of a non-empty graph). 3. The topology column: `_buildModeRow`,
   `_buildLegendStrip`, then either `_buildNoMatch` (an empty filtered graph) or the
-  `_ServiceTopologyView` with the highlight, the selected id, `_selectNode`, a background tap
+  `_ServiceTopologyView` with `ServiceTopologyLayoutOptions(groupByDevice: _groupByDevice)`, the
+  highlight, the selected id, `_selectNode`, a background tap
   that clears a selection, and the transform. 4. On `useDetailTwoPane` windows, a `Row` of the
   column, a divider and [`_buildDetailsPane`](#builddetailspane) at
   `topologyDetailPaneWidth(width)`; otherwise the column alone.
@@ -327,7 +335,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget _buildDetailsPane(AppLocalizations l10n, ...? selection)` <a id="builddetailspane"></a>
 - **Kind:** method (widget helper) of `_ServiceTopologyPageState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 900).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 933).
 - **Purpose:** Build the details pane of a split window.
 - **Inputs:** `l10n`; `selection` — from [`_selectionIn`](#selectionin), or null.
 - **Returns:** `Widget`.
@@ -342,7 +350,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget build(BuildContext context)` (`_TopologyNodeDetails`) <a id="detailsbuild"></a>
 - **Kind:** method (widget build) of `_TopologyNodeDetails`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1016).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1049).
 - **Purpose:** Render a node's details.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
@@ -361,7 +369,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `Widget build(BuildContext context)` (`_TopologyFilterSheetState`) <a id="filterbuild"></a>
 - **Kind:** method (widget build) of `_TopologyFilterSheetState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1197).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 1230).
 - **Purpose:** Render the filter sheet.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.

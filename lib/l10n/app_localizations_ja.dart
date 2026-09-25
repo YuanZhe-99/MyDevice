@@ -1701,6 +1701,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get serviceTopologyReset => 'リセット';
 
   @override
+  String get serviceTopologyGroupByDevice => 'デバイスごとにまとめる';
+
+  @override
   String get serviceTopologyRouteFocusHint =>
       'ルートをタップするとそれだけを強調し、もう一度タップすると全体に戻ります。';
 

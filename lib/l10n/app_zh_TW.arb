@@ -608,6 +608,7 @@
   "serviceTopologyClearSelection": "取消選取",
   "serviceTopologyFit": "符合視窗",
   "serviceTopologyReset": "重設",
+  "serviceTopologyGroupByDevice": "依裝置分組",
   "serviceTopologyRouteFocusHint": "點按一條鏈路只醒目提示它，再點一次恢復全部。",
   "serviceTopologySelectNodeHint": "選取一個節點以查看其詳情和鏈路。",
   "backupModuleServices": "服務",

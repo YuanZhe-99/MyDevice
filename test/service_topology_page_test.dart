@@ -4,6 +4,7 @@ import 'package:my_device/l10n/app_localizations.dart';
 import 'package:my_device/features/devices/models/device.dart';
 import 'package:my_device/features/services/models/service.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
+import 'package:my_device/features/services/services/service_topology_layout.dart';
 import 'package:my_device/features/services/views/service_topology_page.dart';
 import 'package:my_device/features/services/views/service_topology_widgets.dart';
 
@@ -351,6 +352,36 @@ void main() {
         findsOneWidget,
       );
     }
+  });
+
+  testWidgets('devices head containers until grouping is turned off', (
+    tester,
+  ) async {
+    await pumpTopology(tester);
+    final toggle = find.byKey(const Key('topology-group-by-device'));
+    expect(toggle, findsOneWidget);
+    expect(tester.widget<IconButton>(toggle).isSelected, isTrue);
+
+    Finder node(String id) => find.byKey(ValueKey('topology-node-$id'));
+    ServiceTopologyNodeCard card(String id) =>
+        tester.widget<ServiceTopologyNodeCard>(node(id));
+    expect(card('device:home').header, isTrue);
+    expect(card('device:vps').header, isTrue);
+    expect(card('service:jellyfin').header, isFalse);
+    expect(
+      tester.getSize(node('device:home')).height,
+      ServiceTopologyLayout.containerHeaderHeight,
+    );
+
+    await tester.tap(toggle);
+    await pumpUntil(tester, find.byType(ServiceTopologyNodeCard));
+    await settle(tester);
+    expect(tester.widget<IconButton>(toggle).isSelected, isFalse);
+    expect(card('device:home').header, isFalse);
+    expect(
+      tester.getSize(node('device:home')).height,
+      ServiceTopologyLayout.nodeHeight,
+    );
   });
 
   testWidgets('node cards announce their label, role and lane', (tester) async {

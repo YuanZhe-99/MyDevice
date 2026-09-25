@@ -1,8 +1,60 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui';
 
 import '../models/service.dart';
 import 'service_analysis.dart';
+
+/// The switches of one topology layout. Part of the page's layout cache key,
+/// so it has value equality.
+class ServiceTopologyLayoutOptions {
+  /// Draw each device that hosts a service as a container around its
+  /// services, endpoints and remote entries, with the device as its header.
+  final bool groupByDevice;
+
+  /// Move every domain node without outgoing edges to the last rank, so final
+  /// addresses line up in one column on the right.
+  final bool alignDomainSinks;
+
+  /// How many alternating down/up barycenter sweeps may reorder the ranks to
+  /// remove edge crossings; 0 keeps the row-based order.
+  final int crossingSweeps;
+
+  /// Purpose: Create a set of layout options.
+  /// Inputs: `groupByDevice` — off by default, so a bare `build` call lays
+  /// out every edge; `alignDomainSinks` — on by default; `crossingSweeps` —
+  /// four by default.
+  /// Returns: A new `ServiceTopologyLayoutOptions`.
+  /// Side effects: None.
+  /// Notes: The topology page turns `groupByDevice` on by default and offers
+  /// a toggle.
+  const ServiceTopologyLayoutOptions({
+    this.groupByDevice = false,
+    this.alignDomainSinks = true,
+    this.crossingSweeps = 4,
+  });
+
+  /// Purpose: Compare two option sets by value.
+  /// Inputs: `other`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
+  @override
+  bool operator ==(Object other) =>
+      other is ServiceTopologyLayoutOptions &&
+      other.groupByDevice == groupByDevice &&
+      other.alignDomainSinks == alignDomainSinks &&
+      other.crossingSweeps == crossingSweeps;
+
+  /// Purpose: Hash the options consistently with `==`.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: None.
+  /// Notes: None.
+  @override
+  int get hashCode =>
+      Object.hash(groupByDevice, alignDomainSinks, crossingSweeps);
+}
 
 class ServiceTopologyLayout {
   final Size size;
@@ -10,16 +62,34 @@ class ServiceTopologyLayout {
   final Map<String, int> nodeRanks;
   final Map<ServiceTopologyEdge, List<Offset>> edgePaths;
 
+  /// Device containers: the device node's id → the container's rect, which
+  /// holds its members and the header strip. Empty unless the layout groups
+  /// by device. A grouped device node's own rect in [nodeRects] is the
+  /// header strip.
+  final Map<String, Rect> groupRects;
+
+  /// Edges the containers imply — a grouped device to its own services.
+  /// They are neither routed nor painted. Identity-keyed, like [edgePaths].
+  final Set<ServiceTopologyEdge> hiddenEdges;
+
+  /// Edge crossings between adjacent ranks left after the barycenter sweep,
+  /// as `countCrossings` measures them.
+  final int crossings;
+
   /// Purpose: Create a service topology layout instance.
-  /// Inputs: None.
+  /// Inputs: `size`, `nodeRects`, `nodeRanks`, `edgePaths`; `groupRects`,
+  /// `hiddenEdges` — empty without device grouping; `crossings`.
   /// Returns: A new `ServiceTopologyLayout` instance.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Side effects: None.
+  /// Notes: Built by `build`; the widget layer only reads it.
   const ServiceTopologyLayout({
     required this.size,
     required this.nodeRects,
     required this.nodeRanks,
     required this.edgePaths,
+    this.groupRects = const {},
+    this.hiddenEdges = const {},
+    this.crossings = 0,
   });
 
   static const nodeWidth = 204.0;
@@ -28,21 +98,42 @@ class ServiceTopologyLayout {
   static const rankGap = 38.0;
   static const verticalGap = 24.0;
   static const padding = 24.0;
+
+  /// Space between two rows beyond the taller node on the upper row. With a
+  /// card row this gives a 112 px stride (the old fixed stride was 120); a
+  /// row of port chips only needs 88.
+  static const rowGap = 36.0;
+
+  /// Height of a device container's header strip: one line of card text
+  /// with its icon, as the header variant of the node card draws it.
+  static const containerHeaderHeight = 40.0;
+
+  /// A container's inner margin around its members and under its header.
+  /// Kept below half of [rankGap], so containers in neighbouring rank
+  /// columns never touch.
+  static const containerPadding = 12.0;
+
   static const _routingMargin = 72.0;
   static const _routingClearance = 14.0;
   static const _routingEscape = 18.0;
   static const _routingTrackGap = 22.0;
 
   /// Purpose: Calculate node positions and pre-routed edge paths for a topology graph.
-  /// Inputs: `graph`, `routes`, `viewportWidth`.
-  /// Returns: A `ServiceTopologyLayout` with canvas size, node rectangles, ranks, and edge paths.
+  /// Inputs: `graph`, `routes`, `viewportWidth`; `options` — device grouping,
+  /// domain sink alignment and the crossing sweep.
+  /// Returns: A `ServiceTopologyLayout` with canvas size, node rectangles,
+  /// ranks, edge paths and, when grouping, the containers and hidden edges.
   /// Side effects: None.
-  /// Notes: Rows are compacted after semantic placement so unused route lanes do not stretch the canvas.
+  /// Notes: Rows are compacted after semantic placement so unused route
+  /// lanes do not stretch the canvas. With grouping, grouped device nodes
+  /// leave the rank columns (their column disappears when empty) and become
+  /// container headers.
   static ServiceTopologyLayout build(
     ServiceTopologyGraph graph,
     List<ServiceRoute> routes,
-    double viewportWidth,
-  ) {
+    double viewportWidth, {
+    ServiceTopologyLayoutOptions options = const ServiceTopologyLayoutOptions(),
+  }) {
     final nodeMap = {for (final node in graph.nodes) node.id: node};
     final validEdges = graph.edges
         .where(
@@ -61,7 +152,30 @@ class ServiceTopologyLayout {
       incoming[edge.to]!.add(edge.from);
     }
 
-    final routeRows = _routeRows(graph, routes, nodeMap);
+    final groups = options.groupByDevice
+        ? _deviceGroups(graph)
+        : const <String, List<String>>{};
+    final memberGroup = {
+      for (final entry in groups.entries)
+        for (final member in entry.value) member: entry.key,
+    };
+    final hiddenEdges = <ServiceTopologyEdge>{
+      for (final edge in validEdges)
+        if (memberGroup[edge.to] == edge.from &&
+            nodeMap[edge.to]!.kind == ServiceTopologyNodeKind.service)
+          edge,
+    };
+    final drawnEdges = [
+      for (final edge in validEdges)
+        if (!hiddenEdges.contains(edge)) edge,
+    ];
+
+    final routeRows = _routeRows(
+      graph,
+      routes,
+      nodeMap,
+      byDevice: groups.isNotEmpty,
+    );
     final desiredRows = _desiredRows(
       graph,
       routes,
@@ -69,13 +183,40 @@ class ServiceTopologyLayout {
       incoming,
       outgoing,
     );
-    final nodeRanks = _nodeRanks(graph, validEdges);
+    var nodeRanks = _nodeRanks(
+      graph,
+      validEdges,
+      alignDomainSinks: options.alignDomainSinks,
+    );
+    if (groups.isNotEmpty) nodeRanks = _headerRanks(nodeRanks, groups);
     final compactRows = _compactDesiredRows(graph, desiredRows);
-    final nodeRects = _placeNodes(graph, nodeRanks, compactRows);
+    final placed = _placeNodes(
+      [
+        for (final node in graph.nodes)
+          if (!groups.containsKey(node.id)) node,
+      ],
+      nodeRanks,
+      compactRows,
+      drawnEdges,
+      memberGroup,
+      options.crossingSweeps,
+    );
+    var nodeRects = placed.rects;
+    var groupRects = const <String, Rect>{};
+    if (groups.isNotEmpty) {
+      final contained = _placeContainers(
+        nodeRects,
+        placed.targets,
+        nodeRanks,
+        groups,
+      );
+      nodeRects = contained.rects;
+      groupRects = contained.groups;
+    }
 
     var maxRight = padding;
     var maxBottom = padding;
-    for (final rect in nodeRects.values) {
+    for (final rect in [...nodeRects.values, ...groupRects.values]) {
       maxRight = math.max(maxRight, rect.right);
       maxBottom = math.max(maxBottom, rect.bottom);
     }
@@ -83,28 +224,107 @@ class ServiceTopologyLayout {
       math.max(viewportWidth, maxRight + padding + _routingMargin),
       math.max(360.0, maxBottom + padding + _routingMargin),
     );
-    final edgePaths = _routeEdges(validEdges, nodeRects, nodeRanks, size);
+    final edgePaths = _routeEdges(drawnEdges, nodeRects, nodeRanks, size);
 
     return ServiceTopologyLayout(
       size: size,
       nodeRects: nodeRects,
       nodeRanks: nodeRanks,
       edgePaths: edgePaths,
+      groupRects: groupRects,
+      hiddenEdges: hiddenEdges,
+      crossings: placed.crossings,
     );
   }
 
-  /// Purpose: Place topology nodes into rank columns and compact rows within each rank.
-  /// Inputs: `graph`, `nodeRanks`, `desiredRows`.
-  /// Returns: Node rectangles keyed by node id.
+  /// Purpose: Find the devices the layout draws as containers.
+  /// Inputs: `graph`.
+  /// Returns: The device node's id → the ids of its members, in graph order.
   /// Side effects: None.
-  /// Notes: Rank-local row compaction removes blank vertical bands that only matter to other ranks.
-  static Map<String, Rect> _placeNodes(
-    ServiceTopologyGraph graph,
+  /// Notes: Members are the service, endpoint and remote-entry nodes carrying
+  /// the device's id. Only a device with at least one service member is
+  /// grouped: a router that a hop names but that hosts nothing stays a plain
+  /// card, and its remote entry stays a free chip.
+  static Map<String, List<String>> _deviceGroups(ServiceTopologyGraph graph) {
+    final deviceNodes = {
+      for (final node in graph.nodes)
+        if (node.kind == ServiceTopologyNodeKind.device &&
+            node.deviceId != null)
+          node.deviceId!: node.id,
+    };
+    final members = <String, List<ServiceTopologyNode>>{};
+    for (final node in graph.nodes) {
+      final device = deviceNodes[node.deviceId];
+      if (device == null) continue;
+      if (node.kind == ServiceTopologyNodeKind.service ||
+          node.kind == ServiceTopologyNodeKind.endpoint ||
+          node.kind == ServiceTopologyNodeKind.remoteEntry) {
+        members.putIfAbsent(device, () => []).add(node);
+      }
+    }
+    return {
+      for (final entry in members.entries)
+        if (entry.value.any(
+          (node) => node.kind == ServiceTopologyNodeKind.service,
+        ))
+          entry.key: [for (final node in entry.value) node.id],
+    };
+  }
+
+  /// Purpose: Re-rank the graph once grouped device nodes leave the columns.
+  /// Inputs: `ranks` — from `_nodeRanks`; `groups` — from `_deviceGroups`.
+  /// Returns: Dense ranks for every other node, and for each grouped device
+  /// node the smallest rank among its members.
+  /// Side effects: None.
+  /// Notes: A column that held only grouped devices (usually rank 0) is
+  /// dropped, so the canvas does not keep an empty band on the left.
+  static Map<String, int> _headerRanks(
+    Map<String, int> ranks,
+    Map<String, List<String>> groups,
+  ) {
+    final used = {
+      for (final entry in ranks.entries)
+        if (!groups.containsKey(entry.key)) entry.value,
+    }.toList()..sort();
+    final dense = {for (var i = 0; i < used.length; i++) used[i]: i};
+    final result = {
+      for (final entry in ranks.entries)
+        if (!groups.containsKey(entry.key)) entry.key: dense[entry.value]!,
+    };
+    for (final entry in groups.entries) {
+      result[entry.key] = entry.value
+          .map((id) => result[id] ?? 0)
+          .fold<int>(1 << 30, math.min);
+    }
+    return result;
+  }
+
+  /// Purpose: Place topology nodes into rank columns, reduce crossings, and
+  /// turn rows into y positions.
+  /// Inputs: `nodes` — every node that sits in a rank column (grouped device
+  /// nodes do not); `nodeRanks`, `desiredRows`; `edges` — the drawn edges,
+  /// for the crossing count; `memberGroup` — member id → its container,
+  /// empty without grouping; `sweeps` — the barycenter sweep limit.
+  /// Returns: Node rectangles keyed by node id; each node's row target — the
+  /// y its row asks for, before nodes above it in its rank push it down;
+  /// and the crossings left.
+  /// Side effects: None.
+  /// Notes: Rank-local row compaction removes blank vertical bands that only
+  /// matter to other ranks. A container's members are kept together in each
+  /// rank before the sweep, which moves them as one block. Each row is as
+  /// tall as its tallest node plus `rowGap` (see `_rowPositions`).
+  static ({Map<String, Rect> rects, Map<String, double> targets, int crossings})
+  _placeNodes(
+    List<ServiceTopologyNode> nodes,
     Map<String, int> nodeRanks,
     Map<String, double> desiredRows,
+    List<ServiceTopologyEdge> edges,
+    Map<String, String> memberGroup,
+    int sweeps,
   ) {
+    final nodeMap = {for (final node in nodes) node.id: node};
     final ranked = <int, List<ServiceTopologyNode>>{};
-    for (final node in graph.nodes) {
+    for (final node in nodes) {
       ranked.putIfAbsent(nodeRanks[node.id] ?? 0, () => []).add(node);
     }
     final orderedRanks = ranked.keys.toList()..sort();
@@ -140,24 +360,422 @@ class ServiceTopologyLayout {
       x += (rankWidths[rank] ?? nodeWidth) + rankGap;
     }
 
-    final rects = <String, Rect>{};
-    const rowStride = nodeHeight + 44;
+    final order = <int, List<String>>{};
+    final rows = <String, double>{};
     for (final rank in orderedRanks) {
-      final nodes = ranked[rank] ?? const <ServiceTopologyNode>[];
-      final rankRows = _compactRankRows(nodes, desiredRows);
+      final rankNodes = ranked[rank]!;
+      final rankRows = _compactRankRows(rankNodes, desiredRows);
+      final ids = [for (final node in rankNodes) node.id];
+      final grouped = memberGroup.isEmpty
+          ? ids
+          : _keepGroupsTogether(ids, memberGroup);
+      final values = [for (final id in ids) rankRows[id] ?? 0]..sort();
+      for (var i = 0; i < grouped.length; i++) {
+        rows[grouped[i]] = values[i];
+      }
+      order[rank] = grouped;
+    }
+    final crossings = _sweepCrossings(
+      order,
+      rows,
+      nodeRanks,
+      [
+        for (final edge in edges)
+          if (nodeMap.containsKey(edge.from) && nodeMap.containsKey(edge.to))
+            edge,
+      ],
+      memberGroup,
+      sweeps,
+    );
+    final rowY = _rowPositions(rows, nodeMap);
+
+    final rects = <String, Rect>{};
+    final targets = <String, double>{};
+    for (final rank in orderedRanks) {
       final rankWidth = rankWidths[rank] ?? nodeWidth;
       var previousBottom = padding - verticalGap;
-      for (final node in nodes) {
+      for (final id in order[rank]!) {
+        final node = nodeMap[id]!;
         final width = _nodeWidth(node);
         final height = _nodeHeight(node);
-        final targetY = padding + (rankRows[node.id] ?? 0) * rowStride;
-        final y = math.max(targetY, previousBottom + verticalGap);
+        final target = rowY(rows[id] ?? 0);
+        targets[id] = target;
+        final y = math.max(target, previousBottom + verticalGap);
         final centeredX = (rankX[rank] ?? padding) + (rankWidth - width) / 2;
-        rects[node.id] = Rect.fromLTWH(centeredX, y, width, height);
+        rects[id] = Rect.fromLTWH(centeredX, y, width, height);
         previousBottom = y + height;
       }
     }
-    return rects;
+    return (rects: rects, targets: targets, crossings: crossings);
+  }
+
+  /// Purpose: Reorder one rank so each container's members sit together.
+  /// Inputs: `ids` — the rank in row order; `memberGroup`.
+  /// Returns: The same ids, each container's members moved up to its first
+  /// member, in their own order.
+  /// Side effects: None.
+  /// Notes: The caller hands the rank's sorted row values out in this new
+  /// order, so the rank's rows stay a permutation of what they were.
+  static List<String> _keepGroupsTogether(
+    List<String> ids,
+    Map<String, String> memberGroup,
+  ) {
+    final result = <String>[];
+    final seen = <String>{};
+    for (final id in ids) {
+      if (seen.contains(id)) continue;
+      final group = memberGroup[id];
+      if (group == null) {
+        seen.add(id);
+        result.add(id);
+        continue;
+      }
+      for (final other in ids) {
+        if (memberGroup[other] == group && seen.add(other)) result.add(other);
+      }
+    }
+    return result;
+  }
+
+  /// Purpose: Turn compact row values into y positions sized by content.
+  /// Inputs: `rows` — node id → compact row; `nodeMap`.
+  /// Returns: A function from a row value to its y position.
+  /// Side effects: None.
+  /// Notes: Each distinct row value is as tall as its tallest node on any
+  /// rank; the next value starts `(next − this) × (height + rowGap)` lower,
+  /// so fractional gaps from compaction keep their proportion, and a row of
+  /// port chips is shorter than a row of cards. Values are matched with
+  /// `_rowEpsilon`; an unknown value falls back to a card-row stride.
+  static double Function(double) _rowPositions(
+    Map<String, double> rows,
+    Map<String, ServiceTopologyNode> nodeMap,
+  ) {
+    final heights = <double, double>{};
+    double? known(double value) {
+      for (final key in heights.keys) {
+        if ((key - value).abs() <= _rowEpsilon) return key;
+      }
+      return null;
+    }
+
+    for (final entry in rows.entries) {
+      final node = nodeMap[entry.key];
+      if (node == null) continue;
+      final key = known(entry.value) ?? entry.value;
+      heights[key] = math.max(heights[key] ?? 0, _nodeHeight(node));
+    }
+    final values = heights.keys.toList()..sort();
+    final ys = <double, double>{};
+    for (var i = 0; i < values.length; i++) {
+      ys[values[i]] = i == 0
+          ? padding + math.max(0, values[0]) * (nodeHeight + rowGap)
+          : ys[values[i - 1]]! +
+                (values[i] - values[i - 1]) *
+                    (heights[values[i - 1]]! + rowGap);
+    }
+    return (row) {
+      final key = known(row);
+      return key == null ? padding + row * (nodeHeight + rowGap) : ys[key]!;
+    };
+  }
+
+  /// Purpose: Reduce edge crossings with alternating barycenter sweeps.
+  /// Inputs: `order` — rank → ids in row order; `rows` — id → compact row;
+  /// `ranks`; `edges` — the drawn edges between placed nodes; `memberGroup`;
+  /// `sweeps` — the sweep limit.
+  /// Returns: The crossing count of the order it leaves.
+  /// Side effects: Mutates `order` and `rows` when a sweep improves them.
+  /// Notes: Down sweeps order a rank by the mean row of its neighbours on
+  /// lower ranks, up sweeps by those on higher ranks; a node without such
+  /// neighbours keeps its row as its key. A container's members move as one
+  /// block keyed by their mean. The rank's sorted row values are handed out
+  /// in the new order, so rows are only permuted and chains stay straight
+  /// where they were. A new order is kept only when it strictly lowers the
+  /// total count, so the result never has more crossings than the input.
+  static int _sweepCrossings(
+    Map<int, List<String>> order,
+    Map<String, double> rows,
+    Map<String, int> ranks,
+    List<ServiceTopologyEdge> edges,
+    Map<String, String> memberGroup,
+    int sweeps,
+  ) {
+    var best = countCrossings(ranks, _orderPositions(order, rows), edges);
+    if (sweeps <= 0 || best == 0) return best;
+    final neighbors = <String, Set<String>>{};
+    for (final edge in edges) {
+      neighbors.putIfAbsent(edge.from, () => <String>{}).add(edge.to);
+      neighbors.putIfAbsent(edge.to, () => <String>{}).add(edge.from);
+    }
+    final rankList = order.keys.toList()..sort();
+    for (var sweep = 0; sweep < sweeps; sweep++) {
+      final down = sweep.isEven;
+      var improved = false;
+      final sequence = down ? rankList.skip(1) : rankList.reversed.skip(1);
+      for (final rank in sequence) {
+        final ids = order[rank]!;
+        if (ids.length < 2) continue;
+        double barycenter(String id) {
+          final values = [
+            for (final neighbor in neighbors[id] ?? const <String>{})
+              if (rows.containsKey(neighbor) &&
+                  (down
+                      ? (ranks[neighbor] ?? rank) < rank
+                      : (ranks[neighbor] ?? rank) > rank))
+                rows[neighbor]!,
+          ];
+          if (values.isEmpty) return rows[id] ?? 0;
+          return values.reduce((a, b) => a + b) / values.length;
+        }
+
+        final units = <String, List<String>>{};
+        for (final id in ids) {
+          final group = memberGroup[id];
+          units
+              .putIfAbsent(
+                group == null ? 'node:$id' : 'group:$group',
+                () => [],
+              )
+              .add(id);
+        }
+        final keyed =
+            [
+              for (final (index, unit) in units.values.indexed)
+                (
+                  index: index,
+                  unit: unit,
+                  key:
+                      unit.map(barycenter).reduce((a, b) => a + b) /
+                      unit.length,
+                ),
+            ]..sort((a, b) {
+              final cmp = a.key.compareTo(b.key);
+              return cmp != 0 ? cmp : a.index.compareTo(b.index);
+            });
+        final next = [for (final entry in keyed) ...entry.unit];
+        var same = true;
+        for (var i = 0; i < ids.length; i++) {
+          if (ids[i] != next[i]) {
+            same = false;
+            break;
+          }
+        }
+        if (same) continue;
+        final values = [for (final id in ids) rows[id] ?? 0]..sort();
+        final trialRows = {...rows};
+        for (var i = 0; i < next.length; i++) {
+          trialRows[next[i]] = values[i];
+        }
+        final trialOrder = {...order, rank: next};
+        final count = countCrossings(
+          ranks,
+          _orderPositions(trialOrder, trialRows),
+          edges,
+        );
+        if (count < best) {
+          best = count;
+          order[rank] = next;
+          rows.addAll({for (final id in next) id: trialRows[id]!});
+          improved = true;
+        }
+      }
+      if (!improved || best == 0) break;
+    }
+    return best;
+  }
+
+  /// Purpose: Give every placed node a strictly ordered position in its rank.
+  /// Inputs: `order`, `rows`.
+  /// Returns: id → its row plus a tiny index term.
+  /// Side effects: None.
+  /// Notes: Two nodes on the same row value still stack in list order, so
+  /// the index term keeps that order visible to `countCrossings`.
+  static Map<String, double> _orderPositions(
+    Map<int, List<String>> order,
+    Map<String, double> rows,
+  ) => {
+    for (final ids in order.values)
+      for (final (index, id) in ids.indexed) id: (rows[id] ?? 0) + index * 1e-4,
+  };
+
+  /// Purpose: Count edge crossings between ranks.
+  /// Inputs: `ranks` — node id → rank; `positions` — node id → vertical
+  /// position within its rank (any measure that orders a rank); `edges`.
+  /// Returns: The number of times two edges swap order from one rank line to
+  /// the next, over every pair of edges.
+  /// Side effects: None.
+  /// Notes: The bilayer inversion count, generalized to long edges: an edge
+  /// spanning several ranks is sampled on every rank line it passes, its
+  /// position there interpolated linearly. Two edges that meet on a line
+  /// and go on in swapped order count once; two that only share an end do
+  /// not count. Edges within one rank and edges with an unplaced end are
+  /// ignored.
+  static int countCrossings(
+    Map<String, int> ranks,
+    Map<String, double> positions,
+    List<ServiceTopologyEdge> edges,
+  ) {
+    final spans = <({int r0, double p0, int r1, double p1})>[];
+    for (final edge in edges) {
+      final ra = ranks[edge.from];
+      final rb = ranks[edge.to];
+      final pa = positions[edge.from];
+      final pb = positions[edge.to];
+      if (ra == null || rb == null || pa == null || pb == null || ra == rb) {
+        continue;
+      }
+      spans.add(
+        ra < rb
+            ? (r0: ra, p0: pa, r1: rb, p1: pb)
+            : (r0: rb, p0: pb, r1: ra, p1: pa),
+      );
+    }
+    double at(({int r0, double p0, int r1, double p1}) span, int rank) =>
+        span.p0 + (span.p1 - span.p0) * (rank - span.r0) / (span.r1 - span.r0);
+    var count = 0;
+    for (var i = 0; i < spans.length; i++) {
+      for (var j = i + 1; j < spans.length; j++) {
+        final a = spans[i];
+        final b = spans[j];
+        final first = math.max(a.r0, b.r0);
+        final last = math.min(a.r1, b.r1);
+        var side = 0;
+        for (var rank = first; rank <= last; rank++) {
+          final difference = at(a, rank) - at(b, rank);
+          final sign = difference > _rowEpsilon
+              ? 1
+              : (difference < -_rowEpsilon ? -1 : 0);
+          if (sign == 0) continue;
+          if (side != 0 && sign != side) count++;
+          side = sign;
+        }
+      }
+    }
+    return count;
+  }
+
+  /// Purpose: Draw device containers around their members.
+  /// Inputs: `flat` — the rects from `_placeNodes`; `targets` — each node's
+  /// row target from `_placeNodes`; `ranks`; `groups` — device node id →
+  /// member ids.
+  /// Returns: The adjusted rects, now including each grouped device node's
+  /// header tab, and the container rects keyed by device node id.
+  /// Side effects: None.
+  /// Notes: Walks every free node and every container in order of its flat
+  /// top (a container by its highest member, before free nodes on a tie),
+  /// keeping a floor per rank. A container spans its members' ranks and
+  /// starts below every floor there. Inside it, members go back to their row
+  /// targets relative to the highest one, so a member no longer keeps the
+  /// gap another device's node left above it; members of one rank still
+  /// stack at least `verticalGap` apart. Whatever the container adds is
+  /// added to a running shift for everything after, so rows below stay
+  /// aligned across ranks. A free node in a container's ranks lands below
+  /// it. The header is a tab on the container's top-left, at most a card
+  /// wide, so edges can still enter the container from above. By
+  /// construction every member lies inside its container, no free node meets
+  /// a container, and containers never overlap; so it never needs a
+  /// fallback.
+  static ({Map<String, Rect> rects, Map<String, Rect> groups}) _placeContainers(
+    Map<String, Rect> flat,
+    Map<String, double> targets,
+    Map<String, int> ranks,
+    Map<String, List<String>> groups,
+  ) {
+    final memberGroup = {
+      for (final entry in groups.entries)
+        for (final member in entry.value) member: entry.key,
+    };
+    final items = <({double top, bool container, int index, String id})>[];
+    for (final (index, entry) in groups.entries.indexed) {
+      final top = entry.value
+          .map((id) => flat[id]?.top ?? double.infinity)
+          .reduce(math.min);
+      items.add((top: top, container: true, index: index, id: entry.key));
+    }
+    for (final (index, id) in flat.keys.indexed) {
+      if (memberGroup.containsKey(id)) continue;
+      items.add((top: flat[id]!.top, container: false, index: index, id: id));
+    }
+    items.sort((a, b) {
+      final topCmp = a.top.compareTo(b.top);
+      if (topCmp != 0) return topCmp;
+      if (a.container != b.container) return a.container ? -1 : 1;
+      return a.index.compareTo(b.index);
+    });
+
+    final rects = <String, Rect>{};
+    final containers = <String, Rect>{};
+    final floors = <int, double>{};
+    const headerSpace = containerHeaderHeight + containerPadding;
+    var shift = 0.0;
+    for (final item in items) {
+      if (!item.container) {
+        final rect = flat[item.id]!;
+        final rank = ranks[item.id] ?? 0;
+        final floor = floors[rank];
+        final y = math.max(
+          rect.top + shift,
+          floor == null ? double.negativeInfinity : floor + verticalGap,
+        );
+        rects[item.id] = rect.translate(0, y - rect.top);
+        floors[rank] = y + rect.height;
+        continue;
+      }
+      final members = [
+        for (final id in groups[item.id]!)
+          if (flat[id] != null) id,
+      ]..sort((a, b) => flat[a]!.top.compareTo(flat[b]!.top));
+      final memberRanks = [for (final id in members) ranks[id] ?? 0];
+      final firstRank = memberRanks.reduce(math.min);
+      final lastRank = memberRanks.reduce(math.max);
+      var memberTop = item.top + shift + headerSpace;
+      for (var rank = firstRank; rank <= lastRank; rank++) {
+        final floor = floors[rank];
+        if (floor != null) {
+          memberTop = math.max(memberTop, floor + verticalGap + headerSpace);
+        }
+      }
+      shift = memberTop - item.top;
+      final firstTarget = members
+          .map((id) => targets[id] ?? flat[id]!.top)
+          .reduce(math.min);
+      final rankBottoms = <int, double>{};
+      var left = double.infinity;
+      var right = double.negativeInfinity;
+      var bottom = double.negativeInfinity;
+      for (final id in members) {
+        final flatRect = flat[id]!;
+        final rank = ranks[id] ?? 0;
+        final above = rankBottoms[rank];
+        final y = math.max(
+          memberTop + (targets[id] ?? flatRect.top) - firstTarget,
+          above == null ? memberTop : above + verticalGap,
+        );
+        final rect = flatRect.translate(0, y - flatRect.top);
+        rects[id] = rect;
+        rankBottoms[rank] = rect.bottom;
+        left = math.min(left, rect.left);
+        right = math.max(right, rect.right);
+        bottom = math.max(bottom, rect.bottom);
+      }
+      final container = Rect.fromLTRB(
+        left - containerPadding,
+        memberTop - headerSpace,
+        right + containerPadding,
+        bottom + containerPadding,
+      );
+      containers[item.id] = container;
+      rects[item.id] = Rect.fromLTWH(
+        container.left,
+        container.top,
+        math.min(container.width, nodeWidth),
+        containerHeaderHeight,
+      );
+      for (var rank = firstRank; rank <= lastRank; rank++) {
+        floors[rank] = container.bottom;
+      }
+    }
+    return (rects: rects, groups: containers);
   }
 
   /// Purpose: Compact desired rows within one rank before turning them into y positions.
@@ -242,15 +860,20 @@ class ServiceTopologyLayout {
     return row;
   }
 
-  /// Purpose: Provide the internal node ranks helper for this file.
-  /// Inputs: `graph`, `validEdges`.
-  /// Returns: `Map<String, int>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Assign every node a dense rank (column) from the edge graph.
+  /// Inputs: `graph`, `validEdges`; `alignDomainSinks` — move sink domains to
+  /// the last rank.
+  /// Returns: Node id → rank, densified to `0..N`.
+  /// Side effects: None.
+  /// Notes: Devices start at 0, everything else at 1; each edge pushes its
+  /// target one rank past its source (capped, so a cycle terminates) and
+  /// sibling ports are pulled level. With `alignDomainSinks`, every domain
+  /// without outgoing edges then takes the highest rank before compression.
   static Map<String, int> _nodeRanks(
     ServiceTopologyGraph graph,
-    List<ServiceTopologyEdge> validEdges,
-  ) {
+    List<ServiceTopologyEdge> validEdges, {
+    bool alignDomainSinks = false,
+  }) {
     final nodeMap = {for (final node in graph.nodes) node.id: node};
     final ranks = <String, int>{
       for (final node in graph.nodes)
@@ -271,6 +894,17 @@ class ServiceTopologyLayout {
         changed = true;
       }
       if (!changed) break;
+    }
+
+    if (alignDomainSinks) {
+      final sources = {for (final edge in validEdges) edge.from};
+      final lastRank = ranks.values.fold<int>(0, math.max);
+      for (final node in graph.nodes) {
+        if (node.kind == ServiceTopologyNodeKind.domain &&
+            !sources.contains(node.id)) {
+          ranks[node.id] = lastRank;
+        }
+      }
     }
 
     final uniqueRanks = ranks.values.toSet().toList()..sort();
@@ -341,16 +975,42 @@ class ServiceTopologyLayout {
   static double _nodeHeight(ServiceTopologyNode node) =>
       node.compact ? portChipSize : nodeHeight;
 
-  /// Purpose: Provide the internal route rows helper for this file.
-  /// Inputs: `graph`, `routes`, `nodeMap`.
-  /// Returns: `Map<String, double>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Assign each route a preferred row along a virtual row axis.
+  /// Inputs: `graph`, `routes`, `nodeMap`; `byDevice` — order sources by
+  /// device first.
+  /// Returns: Route id → row.
+  /// Side effects: None.
+  /// Notes: Sources (every local service, and every route's source) are
+  /// ordered by label; with `byDevice`, by their device first — local devices
+  /// by name, then remote ones — so a device's services take a contiguous
+  /// band of rows and its container stays compact. A source without routes
+  /// still reserves a little space.
   static Map<String, double> _routeRows(
     ServiceTopologyGraph graph,
     List<ServiceRoute> routes,
-    Map<String, ServiceTopologyNode> nodeMap,
-  ) {
+    Map<String, ServiceTopologyNode> nodeMap, {
+    bool byDevice = false,
+  }) {
+    final deviceNodes = {
+      for (final node in graph.nodes)
+        if (node.kind == ServiceTopologyNodeKind.device &&
+            node.deviceId != null)
+          node.deviceId!: node,
+    };
+
+    /// Purpose: Return the device sort key of a source node.
+    /// Inputs: `id` — a source node id.
+    /// Returns: `String` — remote flag, device label, device id.
+    /// Side effects: None.
+    /// Notes: Local helper of [_routeRows].
+    String deviceKey(String id) {
+      final deviceId = nodeMap[id]?.deviceId;
+      final device = deviceNodes[deviceId];
+      final remote = device?.role == ServiceTopologyNodeRole.remoteDevice;
+      return '${remote ? 1 : 0}\u0000'
+          '${device?.label.toLowerCase() ?? ''}\u0000${deviceId ?? ''}';
+    }
+
     final routesBySource = <String, List<ServiceRoute>>{};
     for (final route in routes) {
       routesBySource
@@ -366,6 +1026,10 @@ class ServiceTopologyLayout {
           node.id,
     }.toList();
     sourceIds.sort((a, b) {
+      if (byDevice) {
+        final deviceCmp = deviceKey(a).compareTo(deviceKey(b));
+        if (deviceCmp != 0) return deviceCmp;
+      }
       final aNode = nodeMap[a];
       final bNode = nodeMap[b];
       final aLabel = aNode?.label.toLowerCase() ?? a;
@@ -488,7 +1152,7 @@ class ServiceTopologyLayout {
       for (final rect in rects.values) rect.inflate(_routingClearance),
     ];
     final gridBase = _RoutingGridBase.fromObstacles(obstacles, size);
-    final routedSegments = <_Segment>[];
+    final routedSegments = _RoutedSegments();
     final paths = <ServiceTopologyEdge, List<Offset>>{};
     final orderedEdges = [...validEdges]
       ..sort((a, b) {
@@ -575,7 +1239,7 @@ class ServiceTopologyLayout {
     required double toOffset,
     required List<Rect> obstacles,
     required _RoutingGridBase gridBase,
-    required List<_Segment> routedSegments,
+    required _RoutedSegments routedSegments,
     required Size size,
   }) {
     final forward = to.center.dx >= from.center.dx;
@@ -667,7 +1331,7 @@ class ServiceTopologyLayout {
     required Offset start,
     required Offset goal,
     required List<Rect> obstacles,
-    required List<_Segment> routedSegments,
+    required _RoutedSegments routedSegments,
     required Size size,
   }) {
     final candidates = <List<Offset>>[];
@@ -728,7 +1392,7 @@ class ServiceTopologyLayout {
     required Offset goal,
     required List<Rect> obstacles,
     required _RoutingGridBase gridBase,
-    required List<_Segment> routedSegments,
+    required _RoutedSegments routedSegments,
     required Size size,
   }) {
     final xs = {...gridBase.xs};
@@ -744,7 +1408,7 @@ class ServiceTopologyLayout {
       addY(point.dy - _routingTrackGap);
       addY(point.dy + _routingTrackGap);
     }
-    for (final segment in routedSegments) {
+    for (final segment in routedSegments.all) {
       addX(segment.a.dx);
       addX(segment.b.dx);
       addY(segment.a.dy);
@@ -770,9 +1434,17 @@ class ServiceTopologyLayout {
     }
 
     final pointCount = xValues.length * yValues.length;
-    final distances = List<double>.filled(pointCount * 3, double.infinity);
-    final previous = List<int?>.filled(pointCount * 3, null);
+    final distances = Float64List(pointCount * 3)
+      ..fillRange(0, pointCount * 3, double.infinity);
+    final previous = Int32List(pointCount * 3)
+      ..fillRange(0, pointCount * 3, -1);
     final heap = _RouteHeap();
+    // Length plus congestion of each grid step, filled on first use: a step
+    // is reached from both ends and in several directions, and neither its
+    // obstacles nor its congestion change during one search. NaN = not yet
+    // computed, negative = blocked.
+    final stepCosts = Float64List(pointCount * 2)
+      ..fillRange(0, pointCount * 2, double.nan);
 
     int pointIndex(int x, int y) => y * xValues.length + x;
     int stateIndex(int point, int direction) => point * 3 + direction;
@@ -810,14 +1482,22 @@ class ServiceTopologyLayout {
       for (final neighbor in neighbors) {
         final nextPoint = pointIndex(neighbor.x, neighbor.y);
         final b = pointOffset(nextPoint);
-        if (_segmentBlocked(a, b, obstacles)) continue;
+        final step =
+            math.min(currentPoint, nextPoint) * 2 +
+            (neighbor.direction == 1 ? 0 : 1);
+        var stepCost = stepCosts[step];
+        if (stepCost.isNaN) {
+          stepCost = _segmentBlocked(a, b, obstacles)
+              ? -1
+              : _manhattan(a, b) + _congestionCost(a, b, routedSegments);
+          stepCosts[step] = stepCost;
+        }
+        if (stepCost < 0) continue;
         final turnCost =
             currentDirection == 0 || currentDirection == neighbor.direction
             ? 0.0
             : 26.0;
-        final congestionCost = _congestionCost(a, b, routedSegments);
-        final nextCost =
-            currentCost + _manhattan(a, b) + turnCost + congestionCost;
+        final nextCost = currentCost + stepCost + turnCost;
         final nextState = stateIndex(nextPoint, neighbor.direction);
         if (nextCost + _epsilon >= distances[nextState]) continue;
         distances[nextState] = nextCost;
@@ -828,8 +1508,8 @@ class ServiceTopologyLayout {
 
     if (bestGoalState == null) return null;
     final reversed = <Offset>[];
-    int? state = bestGoalState;
-    while (state != null) {
+    var state = bestGoalState;
+    while (state >= 0) {
       reversed.add(pointOffset(state ~/ 3));
       state = previous[state];
     }
@@ -841,7 +1521,7 @@ class ServiceTopologyLayout {
   /// Returns: A lower score for shorter paths with fewer turns and less congestion.
   /// Side effects: None.
   /// Notes: Internal helper used within this file only.
-  static double _pathScore(List<Offset> path, List<_Segment> routedSegments) {
+  static double _pathScore(List<Offset> path, _RoutedSegments routedSegments) {
     if (path.length < 2) return double.infinity;
     var score = 0.0;
     var previousDirection = 0;
@@ -912,25 +1592,15 @@ class ServiceTopologyLayout {
   /// Inputs: `a`, `b`, `routedSegments`.
   /// Returns: `double`.
   /// Side effects: None.
-  /// Notes: Hardly penalizes crossings, strongly penalizes reused lanes, and softly penalizes nearby parallel lanes.
+  /// Notes: Hardly penalizes crossings, strongly penalizes reused lanes, and
+  /// softly penalizes nearby parallel lanes. Delegates to
+  /// `_RoutedSegments.cost`, which only looks at the segments near the
+  /// candidate's axis.
   static double _congestionCost(
     Offset a,
     Offset b,
-    List<_Segment> routedSegments,
-  ) {
-    var cost = 0.0;
-    final candidate = _Segment(a, b);
-    for (final segment in routedSegments) {
-      if (candidate.sameAxisOverlap(segment)) {
-        cost += 180.0;
-      } else if (candidate.nearAxisOverlap(segment, _routingTrackGap * 0.85)) {
-        cost += 58.0;
-      } else if (candidate.crosses(segment)) {
-        cost += 28.0;
-      }
-    }
-    return cost;
-  }
+    _RoutedSegments routedSegments,
+  ) => routedSegments.cost(a, b);
 
   /// Purpose: Provide the internal segments for path helper for this file.
   /// Inputs: `path`.
@@ -1204,6 +1874,133 @@ class _RoutingGridBase {
       addY(obstacle.bottom + ServiceTopologyLayout._routingTrackGap);
     }
     return _RoutingGridBase(xs: xs, ys: ys);
+  }
+}
+
+/// The segments routed so far, indexed by axis coordinate for congestion
+/// scoring.
+class _RoutedSegments {
+  /// Every segment, in the order it was added.
+  final all = <_Segment>[];
+
+  /// Horizontal segments, sorted by y.
+  final _horizontal = <_Segment>[];
+
+  /// Vertical segments, sorted by x.
+  final _vertical = <_Segment>[];
+
+  /// Purpose: Add segments to the list and the axis indexes.
+  /// Inputs: `segments`.
+  /// Returns: `void`.
+  /// Side effects: Mutates this index.
+  /// Notes: A segment is filed as horizontal or vertical (never both — the
+  /// router drops zero-length segments).
+  void addAll(Iterable<_Segment> segments) {
+    for (final segment in segments) {
+      all.add(segment);
+      if (segment.horizontal) {
+        _horizontal.insert(
+          _lowerBound(_horizontal, segment.a.dy, (s) => s.a.dy),
+          segment,
+        );
+      } else if (segment.vertical) {
+        _vertical.insert(
+          _lowerBound(_vertical, segment.a.dx, (s) => s.a.dx),
+          segment,
+        );
+      }
+    }
+  }
+
+  /// Purpose: Score how much a candidate segment conflicts with the routed
+  /// segments.
+  /// Inputs: `a`, `b` — the candidate's ends.
+  /// Returns: `double` — 180 per routed segment on the same line whose span
+  /// overlaps it, else 58 per parallel one within 0.85 × the track gap, else
+  /// 28 per perpendicular one it crosses.
+  /// Side effects: None.
+  /// Notes: The same tests, `sameAxisOverlap`, `nearAxisOverlap` and
+  /// `crosses`, as checking the candidate against every segment, but only
+  /// the segments inside the candidate's band are visited, found by binary
+  /// search: parallel ones within the near distance of its line, and
+  /// perpendicular ones whose line lies within its span. Costs are whole numbers, so the order of the sum cannot change
+  /// the result.
+  double cost(Offset a, Offset b) {
+    const near = ServiceTopologyLayout._routingTrackGap * 0.85;
+    final candidate = _Segment(a, b);
+    var cost = 0.0;
+    if (candidate.horizontal) {
+      final y = a.dy;
+      for (
+        var i = _lowerBound(_horizontal, y - near, (s) => s.a.dy);
+        i < _horizontal.length && _horizontal[i].a.dy <= y + near;
+        i++
+      ) {
+        final other = _horizontal[i];
+        if (candidate.sameAxisOverlap(other)) {
+          cost += 180.0;
+        } else if (candidate.nearAxisOverlap(other, near)) {
+          cost += 58.0;
+        }
+      }
+      final minX = math.min(a.dx, b.dx) - _epsilon;
+      final maxX = math.max(a.dx, b.dx) + _epsilon;
+      for (
+        var i = _lowerBound(_vertical, minX, (s) => s.a.dx);
+        i < _vertical.length && _vertical[i].a.dx <= maxX;
+        i++
+      ) {
+        if (candidate.crosses(_vertical[i])) cost += 28.0;
+      }
+    }
+    if (candidate.vertical) {
+      final x = a.dx;
+      for (
+        var i = _lowerBound(_vertical, x - near, (s) => s.a.dx);
+        i < _vertical.length && _vertical[i].a.dx <= x + near;
+        i++
+      ) {
+        final other = _vertical[i];
+        if (candidate.sameAxisOverlap(other)) {
+          cost += 180.0;
+        } else if (candidate.nearAxisOverlap(other, near)) {
+          cost += 58.0;
+        }
+      }
+      final minY = math.min(a.dy, b.dy) - _epsilon;
+      final maxY = math.max(a.dy, b.dy) + _epsilon;
+      for (
+        var i = _lowerBound(_horizontal, minY, (s) => s.a.dy);
+        i < _horizontal.length && _horizontal[i].a.dy <= maxY;
+        i++
+      ) {
+        if (candidate.crosses(_horizontal[i])) cost += 28.0;
+      }
+    }
+    return cost;
+  }
+
+  /// Purpose: Find the first index whose key is at least `value`.
+  /// Inputs: `sorted` — ascending by `key`; `value`; `key`.
+  /// Returns: `int` — the insertion point, `sorted.length` when none.
+  /// Side effects: None.
+  /// Notes: Binary search.
+  static int _lowerBound(
+    List<_Segment> sorted,
+    double value,
+    double Function(_Segment) key,
+  ) {
+    var low = 0;
+    var high = sorted.length;
+    while (low < high) {
+      final middle = (low + high) >> 1;
+      if (key(sorted[middle]) < value) {
+        low = middle + 1;
+      } else {
+        high = middle;
+      }
+    }
+    return low;
   }
 }
 

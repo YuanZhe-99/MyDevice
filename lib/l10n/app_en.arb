@@ -633,6 +633,7 @@
   "serviceTopologyClearSelection": "Clear selection",
   "serviceTopologyFit": "Fit",
   "serviceTopologyReset": "Reset",
+  "serviceTopologyGroupByDevice": "Group by device",
   "serviceTopologyRouteFocusHint": "Tap a route to highlight only it; tap it again for all.",
   "serviceTopologySelectNodeHint": "Select a node to see its details and routes.",
   "backupModuleServices": "Services",

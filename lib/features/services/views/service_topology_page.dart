@@ -32,6 +32,7 @@ class _ServiceTopologyView extends StatefulWidget {
   final List<ServiceNode> services;
   final List<Device> devices;
   final List<ServiceRoute> routes;
+  final ServiceTopologyLayoutOptions options;
   final _TopologyInteractionMode mode;
   final int quarterTurns;
   final GlobalKey? repaintBoundaryKey;
@@ -44,8 +45,9 @@ class _ServiceTopologyView extends StatefulWidget {
 
   /// Purpose: Create the topology canvas.
   /// Inputs: `graph` and the `services`, `devices` and `routes` it was built
-  /// from; `mode`; `quarterTurns`; `repaintBoundaryKey` — wraps the canvas for
-  /// export; `onLayoutReadyChanged`; `highlight` and `selectedNodeId` — the
+  /// from; `options` — the layout switches; `mode`; `quarterTurns`;
+  /// `repaintBoundaryKey` — wraps the canvas for export;
+  /// `onLayoutReadyChanged`; `highlight` and `selectedNodeId` — the
   /// selection to draw; `onNodeTap`, `onBackgroundTap` — the select-mode
   /// taps; `transformationController` — the move-mode viewer's transform.
   /// Returns: A new `_ServiceTopologyView`.
@@ -58,6 +60,7 @@ class _ServiceTopologyView extends StatefulWidget {
     required this.services,
     required this.devices,
     required this.routes,
+    this.options = const ServiceTopologyLayoutOptions(),
     this.mode = _TopologyInteractionMode.select,
     this.quarterTurns = 0,
     this.repaintBoundaryKey,
@@ -108,6 +111,7 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
           graph: widget.graph,
           routes: widget.routes,
           viewportWidth: viewportWidth.round(),
+          options: widget.options,
         );
         final ready = _completedRequest == request && _layout != null;
         if (!ready) _ensureLayout(request);
@@ -160,6 +164,7 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
       request.graph,
       request.routes,
       request.viewportWidth.toDouble(),
+      options: request.options,
     );
     if (!mounted ||
         generation != _layoutGeneration ||
@@ -233,8 +238,10 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
   /// the background (keyed `topology-canvas`); move mode drops the taps and
   /// hands the canvas to an `InteractiveViewer` on the page's transform.
   /// With a highlight, the nodes it leaves out are dimmed and the painter
-  /// fades their edges. The repaint boundary wraps the rotated canvas, so an
-  /// export shows the highlight.
+  /// fades their edges. A device node heading a container is drawn as a
+  /// header strip; the painter draws the containers under the edges. The
+  /// repaint boundary wraps the rotated canvas, so an export shows the
+  /// highlight and the containers.
   Widget _buildViewer(
     BuildContext context,
     ServiceTopologyLayout layout,
@@ -270,6 +277,7 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
                     widget.devices,
                   ),
                   selected: node.id == widget.selectedNodeId,
+                  header: layout.groupRects.containsKey(node.id),
                   dimmed:
                       highlight != null && !highlight.nodeIds.contains(node.id),
                   onTap: select && onNodeTap != null
@@ -312,16 +320,20 @@ class _TopologyLayoutRequest {
   final ServiceTopologyGraph graph;
   final List<ServiceRoute> routes;
   final int viewportWidth;
+  final ServiceTopologyLayoutOptions options;
 
   /// Purpose: Create a topology layout request cache key.
-  /// Inputs: `graph`, `routes`, `viewportWidth`.
+  /// Inputs: `graph`, `routes`, `viewportWidth`, `options`.
   /// Returns: A new `_TopologyLayoutRequest` instance.
   /// Side effects: None.
-  /// Notes: Uses graph and route list identity so mode-only rebuilds reuse the cached layout.
+  /// Notes: Uses graph and route list identity so mode-only rebuilds reuse
+  /// the cached layout; the options compare by value, so flipping a layout
+  /// switch re-lays out the same graph without rebuilding it.
   const _TopologyLayoutRequest({
     required this.graph,
     required this.routes,
     required this.viewportWidth,
+    required this.options,
   });
 
   /// Purpose: Compare layout request keys for cache reuse.
@@ -335,18 +347,21 @@ class _TopologyLayoutRequest {
       other is _TopologyLayoutRequest &&
           identical(other.graph, graph) &&
           identical(other.routes, routes) &&
-          other.viewportWidth == viewportWidth;
+          other.viewportWidth == viewportWidth &&
+          other.options == options;
 
   /// Purpose: Produce a hash for the layout request cache key.
   /// Inputs: None.
   /// Returns: An integer hash code.
   /// Side effects: None.
-  /// Notes: Matches the equality contract for graph identity, route identity, and viewport width.
+  /// Notes: Matches the equality contract: graph identity, route identity,
+  /// viewport width and options.
   @override
   int get hashCode => Object.hash(
     identityHashCode(graph),
     identityHashCode(routes),
     viewportWidth,
+    options,
   );
 }
 
@@ -401,6 +416,9 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   bool _exporting = false;
   bool _layoutReady = false;
   bool _legendOpen = false;
+
+  /// Whether devices are drawn as containers. Session state, on by default.
+  bool _groupByDevice = true;
   ServiceTopologyFilter _filter = const ServiceTopologyFilter();
   String? _selectedNodeId;
 
@@ -687,8 +705,9 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
   /// Side effects: None; `_visible` and `_selectionIn` only fill their caches.
-  /// Notes: App bar: filters (with a badge counting the active parts),
-  /// rotation, export. Body: the mode row, the legend strip and the canvas;
+  /// Notes: App bar: filters (with a badge counting the active parts), the
+  /// "Group by device" toggle (resets the move-mode transform), rotation,
+  /// export. Body: the mode row, the legend strip and the canvas;
   /// on `useDetailTwoPane` windows the details pane sits to the right at
   /// `topologyDetailPaneWidth`, present even with nothing selected so a
   /// selection never changes the canvas width and forces a relayout.
@@ -714,6 +733,9 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
                     services: widget.services,
                     devices: widget.devices,
                     routes: visible.routes,
+                    options: ServiceTopologyLayoutOptions(
+                      groupByDevice: _groupByDevice,
+                    ),
                     mode: _mode,
                     quarterTurns: _quarterTurns,
                     repaintBoundaryKey: _captureKey,
@@ -744,6 +766,17 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
               label: Text('${_filter.activeCount}'),
               child: const Icon(Icons.filter_list),
             ),
+          ),
+          IconButton(
+            key: const Key('topology-group-by-device'),
+            tooltip: l10n.serviceTopologyGroupByDevice,
+            isSelected: _groupByDevice,
+            onPressed: () {
+              setState(() => _groupByDevice = !_groupByDevice);
+              _transform.value = Matrix4.identity();
+            },
+            icon: const Icon(Icons.dashboard_outlined),
+            selectedIcon: const Icon(Icons.dashboard),
           ),
           IconButton(
             tooltip: l10n.serviceRotateTopology,

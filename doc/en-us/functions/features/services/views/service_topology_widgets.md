@@ -2,10 +2,10 @@
 
 What the full-screen topology ([`service_topology_page.md`](service_topology_page.md)) draws with,
 split out of `service_list_page.dart` in 1.5.6: `ServiceTopologyNodeCard` (a full card, or a
-small port chip for compact nodes — selected with a heavier border, dimmed when a selection
-leaves it out, and announced to screen readers by label, role and lane),
-`ServiceTopologyEdgePainter` (the routed edges with arrow heads, coloured by access lane, the
-selection's edges emphasized), `ServiceTopologyLegend` (the key to the lane and role colours),
+small port chip for compact nodes, or the header tab of a device container — selected with a
+heavier border, dimmed when a selection leaves it out, and announced to screen readers by label,
+role and lane), `ServiceTopologyEdgePainter` (the device containers, then the routed edges with
+arrow heads, coloured by access lane, the selection's edges emphasized), `ServiceTopologyLegend` (the key to the lane and role colours),
 `fitTransform` (the move mode's Fit), and the icon and colour helpers behind them.
 `serviceAccessLaneColor` — which moved here from the guided access-path page — is the one lane
 colour rule for the painter, the legend and that page's preview. `iconForServiceIcon` and
@@ -14,8 +14,8 @@ colour rule for the painter, the legend and that page's preview. `iconForService
 ([`service_edit_page.md`](service_edit_page.md)) and the guided access-path page
 ([`service_access_path_page.md`](service_access_path_page.md)) draw service icons with them.
 
-**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **25**, one per
-declaration below (**7 Tier A / 18 Tier B**; the nested `offset` of `fitTransform` counts). The
+**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **28**, one per
+declaration below (**8 Tier A / 20 Tier B**; the nested `offset` of `fitTransform` counts). The
 public constants `topologyDimmedNodeOpacity` (0.35) and `topologyDimmedEdgeAlpha` (0.18) are
 documented in source and not listed. The English-only `topologyLaneLabel` and
 `topologyRoleLabel` of the extraction are gone: cards and details use the localized
@@ -27,18 +27,21 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| `ServiceTopologyNodeCard` (constructor) | constructor | B | Create the node card widget (node, icon, tap handler, selected, dimmed). |
-| [`build`](#cardbuild) | method (widget, `ServiceTopologyNodeCard`) | A | Render the card or chip with its semantics, selection border and dimming. |
+| `ServiceTopologyNodeCard` (constructor) | constructor | B | Create the node card widget (node, icon, tap handler, selected, dimmed, header). |
+| [`build`](#cardbuild) | method (widget, `ServiceTopologyNodeCard`) | A | Render the card, chip or header tab with its semantics, selection border and dimming. |
+| `_buildHeader` | method (widget helper, `ServiceTopologyNodeCard`) | B | A device container's header tab: icon, then name and localized category in one ellipsized line. |
 | `_buildChip` | method (widget helper, `ServiceTopologyNodeCard`) | B | The compact port chip: icon over the short label, full text in the tooltip. |
 | `_buildCard` | method (widget helper, `ServiceTopologyNodeCard`) | B | The full card: icon avatar, label, subtitle and lane. |
 | `ServiceTopologyEdgePainter` (constructor) | constructor | B | Create the edge painter (graph, layout, color scheme, highlight). |
-| [`paint`](#paint) | method (`ServiceTopologyEdgePainter`, `CustomPainter` override) | A | Draw every edge's routed polyline and arrowhead, the selection's edges emphasized. |
+| [`paint`](#paint) | method (`ServiceTopologyEdgePainter`, `CustomPainter` override) | A | Draw the device containers, then every edge's routed polyline and arrowhead, the selection's edges emphasized. |
+| [`_paintContainers`](#paintcontainers) | method (`ServiceTopologyEdgePainter`) | A | Fill and outline each device container, dashed for remote and VPS devices. |
+| `_dashed` | static method (`ServiceTopologyEdgePainter`) | B | A dashed copy of a path (7 px dashes, 5 px gaps). |
 | `_paintEdge` | method (`ServiceTopologyEdgePainter`) | B | Stroke one edge's path at a given alpha and width. |
 | [`_drawPolyline`](#drawpolyline) | method (`ServiceTopologyEdgePainter`) | A | Draw one edge's path plus a triangular arrowhead at its end. |
 | `_edgeColor` | method (`ServiceTopologyEdgePainter`) | B | An edge's lane colour, the outline colour without a lane. |
 | `shouldRepaint` | method (`ServiceTopologyEdgePainter`) | B | Repaint only when the graph, layout, color scheme or highlight changed. |
 | `serviceAccessLaneColor` | top-level function | B | The colour of an access lane (local tertiary, VPN secondary, public primary). |
-| [`_nodeSubtitle`](#nodesubtitle) | top-level function | A | The subtitle a topology node card shows: a relay's localized method or hop type, else the builder's detail. |
+| [`_nodeSubtitle`](#nodesubtitle) | top-level function | A | The subtitle a topology node card shows: a relay's localized method or hop type, a device's localized category, else the builder's detail. |
 | [`_compactTopologyLabel`](#compacttopologylabel) | top-level function | A | Shorten a topology node's label/detail to a compact chip-sized string. |
 | [`iconForTopologyNode`](#iconfortopologynode) | top-level function | A | Resolve the icon for a topology node, by kind and its resolved device/service. |
 | `iconForRouteMethod` | top-level function | B | Map a `ServiceRouteMethod` to its display icon (null → the generic route icon). |
@@ -57,31 +60,34 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `Widget build(BuildContext context)` (`ServiceTopologyNodeCard`) <a id="cardbuild"></a>
 - **Kind:** method (widget build) of `ServiceTopologyNodeCard`.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 58).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 64).
 - **Purpose:** Render a node as a full card or a port chip, with its selection state.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
 - **Side effects:** None.
 - **Algorithm:** Resolve the localized lane label and the role's border colour; build
-  `_buildChip` for a compact node, `_buildCard` otherwise (the selected card's border 3.0 wide,
-  the chip's 2.4, instead of 1.4 and 1.2); wrap it in an `Opacity` of
+  `_buildHeader` when `header` is set, else `_buildChip` for a compact node, `_buildCard`
+  otherwise (the selected card's border 3.0 wide, the chip's and header's 2.4, instead of 1.4
+  and 1.2); wrap it in an `Opacity` of
   `topologyDimmedNodeOpacity` when `dimmed`; wrap that in a `Semantics` container whose label is
   "label, role, lane", with `selected`, `button` and the tap action, excluding the children's own
   semantics.
-- **Usage:** One per laid-out node in the page's `_buildViewer`.
+- **Usage:** One per laid-out node in the page's `_buildViewer`, with `header` set for a device
+  node that heads a container (`layout.groupRects`).
 - **Notes:** Excluding the children keeps the tooltip and the texts from being read a second
   time; the `Semantics` supplies the tap action itself.
 
 ### `void paint(Canvas canvas, Size size)` <a id="paint"></a>
 - **Kind:** method of `ServiceTopologyEdgePainter` (`CustomPainter` override).
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 242).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 309).
 - **Purpose:** Draw every graph edge's routed polyline and arrowhead onto the canvas, emphasizing
   the selection's edges when there is one.
 - **Inputs:** `canvas`; `size` (not used directly — the layout already carries absolute
   coordinates).
 - **Returns:** None.
 - **Side effects:** Draws onto `canvas`.
-- **Algorithm:** Without a highlight, every edge through `_paintEdge` at 0.62 alpha and 2.2 wide.
+- **Algorithm:** First [`_paintContainers`](#paintcontainers). Then, without a highlight, every
+  edge through `_paintEdge` at 0.62 alpha and 2.2 wide.
   With one, first the edges it leaves out at `topologyDimmedEdgeAlpha` (0.18) and 2.2 wide, then
   its lit edges on top at full alpha and 3.0 wide. `_paintEdge` looks the edge's points up in
   `layout.edgePaths`, skips fewer than two, and strokes them in `_edgeColor(edge)` with round
@@ -91,11 +97,28 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 - **Notes:** The routed points (the orthogonal path with obstacle avoidance) come from
   [`ServiceTopologyLayout.build`](../services/service_topology_layout.md#build) — this painter only
   draws the path it's given; it does no routing itself. Drawing the lit edges last keeps a
-  highlighted route visible where it crosses faded ones.
+  highlighted route visible where it crosses faded ones. Hidden edges (`layout.hiddenEdges`, the
+  device-to-service edges a container implies) have no path and so are never drawn.
+
+### `void _paintContainers(Canvas canvas)` <a id="paintcontainers"></a>
+- **Kind:** method of `ServiceTopologyEdgePainter`.
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 335).
+- **Purpose:** Paint the device containers of the layout.
+- **Inputs:** `canvas`.
+- **Returns:** `void`.
+- **Side effects:** Draws onto `canvas`.
+- **Algorithm:** For each `layout.groupRects` entry, look up the device node; draw an 18 px
+  rounded rect filled with `_roleFill` of its role at alpha 0.22, then its outline in
+  `_roleBorder` at alpha 0.55, 1.2 wide — through `_dashed` when the device is remote
+  (`remoteDevice` role) or a VPS (its `detail` is `DeviceCategory.vps.name`). When a highlight
+  leaves the device out, the fill drops to 0.08 and the border to 0.25.
+- **Usage:** First step of [`paint`](#paint), so edges run over containers.
+- **Notes:** The container's label is not painted here: the device node's own card, drawn in
+  its header variant, sits on the container's top-left corner.
 
 ### `void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points)` <a id="drawpolyline"></a>
 - **Kind:** method of `ServiceTopologyEdgePainter`.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 288).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 417).
 - **Purpose:** Draw one edge's multi-segment path plus a triangular arrowhead at its end.
 - **Inputs:** `canvas`, `paint`, `points` — the routed polyline (2 or more points).
 - **Returns:** `void`.
@@ -112,21 +135,24 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node)` <a id="nodesubtitle"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 366).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 496).
 - **Purpose:** Return the subtitle a topology node card shows under its label.
 - **Inputs:** `context`, `node`.
 - **Returns:** `String?` — null when there is nothing to show.
 - **Side effects:** None.
-- **Algorithm:** For a relay node, return the localized method (`serviceRouteMethodUiLabel`) when
-  the node has one, else the localized hop type when `detail` is a raw hop-type name. Every other
-  node returns its trimmed `detail`, or null when empty.
-- **Usage:** `ServiceTopologyNodeCard._buildCard`'s subtitle, joined with the lane label.
-- **Notes:** The graph builder stores raw enum names in a relay's `detail`; localizing at render
-  time keeps [`service_analysis.dart`](../services/service_analysis.md) language-free.
+- **Algorithm:** For a device node whose `detail` is a `DeviceCategory` name, return
+  `deviceCategoryLabel`. For a relay node, return the localized method
+  (`serviceRouteMethodUiLabel`) when the node has one, else the localized hop type when `detail`
+  is a raw hop-type name. Every other node returns its trimmed `detail`, or null when empty.
+- **Usage:** `ServiceTopologyNodeCard._buildCard`'s subtitle, joined with the lane label, and
+  `_buildHeader`'s category.
+- **Notes:** The graph builder stores raw enum names in a relay's and a device's `detail`;
+  localizing at render time keeps [`service_analysis.dart`](../services/service_analysis.md)
+  language-free. Before 1.5.6 device cards showed the raw category name (e.g. `vps`).
 
 ### `String _compactTopologyLabel(ServiceTopologyNode node)` <a id="compacttopologylabel"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 387).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 525).
 - **Purpose:** Shorten a topology node's label/detail to a short string that fits inside a compact
   port-chip.
 - **Inputs:** `node`.
@@ -146,7 +172,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `IconData iconForTopologyNode(ServiceTopologyNode node, List<ServiceNode> services, List<Device> devices)` <a id="iconfortopologynode"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 409).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 547).
 - **Purpose:** Resolve the icon to show for a topology node, based on its kind and, when
   resolvable, its underlying device/service.
 - **Inputs:** `node`, `services`, `devices`.
@@ -164,7 +190,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `Matrix4 fitTransform(Size canvas, Size viewport, {required double minScale, required double maxScale, double boundaryMargin = 0})` <a id="fittransform"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 687).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 825).
 - **Purpose:** Compute the transform that fits a canvas into an `InteractiveViewer`.
 - **Inputs:** `canvas` — the child as the viewer lays it out (turned when the canvas is rotated);
   `viewport` — the viewer's size; `minScale`, `maxScale` — the viewer's zoom limits;

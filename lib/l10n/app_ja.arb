@@ -596,6 +596,7 @@
   "serviceTopologyClearSelection": "選択を解除",
   "serviceTopologyFit": "全体表示",
   "serviceTopologyReset": "リセット",
+  "serviceTopologyGroupByDevice": "デバイスごとにまとめる",
   "serviceTopologyRouteFocusHint": "ルートをタップするとそれだけを強調し、もう一度タップすると全体に戻ります。",
   "serviceTopologySelectNodeHint": "ノードを選ぶと詳細とルートが表示されます。",
   "backupModuleServices": "サービス",

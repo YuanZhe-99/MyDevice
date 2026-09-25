@@ -151,6 +151,9 @@ Not copied to the other repos — no other app has these.
 | guided editor / advanced editor | 引导式编辑器 / 高级编辑器 | the two route editors |
 | device container | 设备分组框 | the topology frame grouping a device's services and ports |
 | route highlight | 路由高亮 | the topology's emphasis of a selected node's routes |
+| container header | 分组框标题 | the device's tab on the top-left of its device container |
+| crossing sweep | 交叉消减扫描 | the layout pass that reorders ranks to remove edge crossings |
+| domain sink | 终点域名 | a domain node with no outgoing edges, aligned to the last rank |
 
 ## 6. Review checklist (run before committing a Chinese page)
 

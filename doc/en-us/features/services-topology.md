@@ -74,6 +74,10 @@ to read at preview size. The full-screen topology (`service_topology_page.dart`)
   drawing, so the layout packs what remains.
 - **Legend.** A collapsible strip under the mode switch explains the lane colours and the node
   roles. It sits outside the canvas and is not exported.
+- **Group by device.** On by default: each device that hosts a service becomes a container
+  around its services, endpoint chips and remote entries, with the device as a header tab, so
+  the device-to-service edges are not drawn. An app-bar toggle turns it off for the session
+  (flat layout, device cards on the left); the choice is not saved.
 - **Move / zoom mode** with **Fit** (the whole graph in view, within the zoom limits) and
   **Reset**, internal 90-degree rotation (without changing system orientation), and PNG
   export/share (platform-specific mechanism — see
@@ -87,9 +91,14 @@ hear each node's label, role and lane.
 
 Topology layout is **semantic and compact rather than fixed-column**: dynamic graph
 ranks are derived from actual edges and compressed per graph so unused role columns
-don't waste canvas space. The full-screen topology defers expensive layout until after
-the first frame and caches layouts by graph, routes, width, and rotation-derived
-viewport, so mode changes (e.g. entering move/zoom mode) don't rerun routing.
+don't waste canvas space. Final domains line up on the last rank; each row is only as
+tall as its tallest node, so rows of port chips are shorter than rows of cards; a
+barycenter sweep reorders ranks when that removes edge crossings, and never adds any;
+with grouping on, devices become containers (see
+[Device containers](../algorithms/service-topology-layout.md#device-containers)). The
+full-screen topology defers expensive layout until after the first frame and caches
+layouts by graph, routes, width, rotation-derived viewport and layout options, so mode
+changes (e.g. entering move/zoom mode) don't rerun routing.
 
 Edges are precomputed by a **fast clear-path orthogonal router with an A* fallback**,
 inflated node obstacles, turn costs, congestion costs, explicit exit/entry stubs, and

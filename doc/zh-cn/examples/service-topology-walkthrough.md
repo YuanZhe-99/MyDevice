@@ -81,10 +81,11 @@ ServiceRoute(
 
 按 [服务拓扑布局](../algorithms/service-topology-layout.md)：
 
-1. `svc-jellyfin` 和 `svc-caddy` 是 `dev-home` 下的本地服务节点；因为路由经过 Jellyfin → Caddy，Caddy 位于比 Jellyfin 端点 chip 更晚的等级，所以即使两者运行在同一台机器上，箭头仍保持从左到右读。
-2. `dev-vps`、`svc-frp` 及其端口 chip 位于更晚的等级（远程/公共侧）。`_alignSiblingPortRanks` 把入口 chip 和公网入口 chip 拉到同一等级，使两个 FRP 端口 chip 并排出现而非一个拖在另一个后面。
-3. 边正交路由：`ep-jellyfin → svc-caddy → ep-caddy`（短本地边）、`ep-caddy → ep-frp-ingress`（跨到 VPS 侧）、`svc-frp → :443` 和 `:443 → media.example.com`（域/URL 叶节点）——每条都由带转弯/拥塞代价的 `_fastRouteBetween`/`_routeBetween` 计算，使它们即使都流经画布相同一般区域也不视觉重叠。
-4. 两个 FRP 端口 chip 按端口 chip 渲染规则渲染为小圆角方块 chip（端口图标 + 数字）而非完整节点卡片。
+1. 打开"按设备分组"（默认）时，`dev-home` 是一个设备分组框，其名称位于标题标签页上，框内包含 `svc-jellyfin`、`svc-caddy` 及其端口 chip；设备到服务边由分组框隐含，不再绘制。因为路由经过 Jellyfin → Caddy，Caddy 位于比 Jellyfin 端点 chip 更晚的等级，所以即使两者运行在同一台机器上，箭头仍保持从左到右读。
+2. `dev-vps` 是第二个分组框，位于第一个下方，以虚线边框绘制（远程 VPS），框内包含 `svc-frp` 及其两个端口 chip。`_alignSiblingPortRanks` 把入口 chip 和公网入口 chip 拉到同一等级，使两个 FRP 端口 chip 在同一列中并排堆叠，而非一个拖在另一个后面。
+3. `media.example.com` 是没有出边的域名，位于最后一层等级，在两个分组框的右侧。
+4. 边正交路由：`ep-jellyfin → svc-caddy → ep-caddy`（短本地边）、`ep-caddy → ep-frp-ingress`（向下进入 VPS 分组框）、`svc-frp → :443` 和 `:443 → media.example.com`（域/URL 叶节点）——每条都由带转弯/拥塞代价的 `_fastRouteBetween`/`_routeBetween` 计算，使它们即使都流经画布相同一般区域也不视觉重叠。
+5. 两个 FRP 端口 chip 按端口 chip 渲染规则渲染为小圆角方块 chip（端口图标 + 数字）而非完整节点卡片。
 
 ## 相关
 

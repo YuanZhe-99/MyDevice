@@ -32,9 +32,13 @@ class ServiceTopologyNodeCard extends StatelessWidget {
   /// Whether a selection leaves this node out, drawn faded.
   final bool dimmed;
 
+  /// Whether this device node heads a container, drawn as a one-line strip.
+  final bool header;
+
   /// Purpose: Create a topology node card.
   /// Inputs: `node`; `icon` — from `iconForTopologyNode`; `onTap` — null in move
-  /// mode, so the card does not take the pan gesture; `selected`; `dimmed`.
+  /// mode, so the card does not take the pan gesture; `selected`; `dimmed`;
+  /// `header` — for a device node the layout made a container header.
   /// Returns: A new `ServiceTopologyNodeCard`.
   /// Side effects: None.
   /// Notes: The layout sizes the card; it fills the rect it is given.
@@ -45,9 +49,11 @@ class ServiceTopologyNodeCard extends StatelessWidget {
     required this.onTap,
     this.selected = false,
     this.dimmed = false,
+    this.header = false,
   });
 
-  /// Purpose: Build the card or chip with its semantics and dimming.
+  /// Purpose: Build the card, chip or header strip with its semantics and
+  /// dimming.
   /// Inputs: `context`.
   /// Returns: The widget tree.
   /// Side effects: None.
@@ -75,9 +81,68 @@ class ServiceTopologyNodeCard extends StatelessWidget {
       excludeSemantics: true,
       child: Opacity(
         opacity: dimmed ? topologyDimmedNodeOpacity : 1,
-        child: node.compact
+        child: header
+            ? _buildHeader(context, cs, border)
+            : node.compact
             ? _buildChip(context, cs, border, lane)
             : _buildCard(context, cs, border, lane),
+      ),
+    );
+  }
+
+  /// Purpose: Build the header strip of a device container.
+  /// Inputs: `context`, `cs`, `border` — the role colour.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: One line — icon, device name, then its category in a lighter
+  /// style — on the container's top edge, so it reads as the container's
+  /// title rather than as a node of its own. Fills the rect's width.
+  Widget _buildHeader(BuildContext context, ColorScheme cs, Color border) {
+    final subtitle = _nodeSubtitle(context, node);
+    final text = Theme.of(context).textTheme;
+    return Tooltip(
+      message: [node.label, subtitle].whereType<String>().join('\n'),
+      child: Card(
+        margin: EdgeInsets.zero,
+        color: _roleFill(cs, node.role),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: border, width: selected ? 2.4 : 1.2),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: border),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(
+                      text: node.label,
+                      style: text.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                      children: [
+                        if (subtitle != null)
+                          TextSpan(
+                            text: '  $subtitle',
+                            style: text.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -230,16 +295,19 @@ class ServiceTopologyEdgePainter extends CustomPainter {
     this.highlight,
   });
 
-  /// Purpose: Paint every edge that has a routed path.
+  /// Purpose: Paint the device containers, then every edge that has a routed
+  /// path.
   /// Inputs: `canvas`, `size`.
   /// Returns: None.
   /// Side effects: Draws on the canvas.
-  /// Notes: Without a selection every edge is drawn at 0.62 alpha and 2.2
-  /// wide. With one, the edges it leaves out are drawn first at
-  /// [topologyDimmedEdgeAlpha], then the lit edges on top at full alpha and
-  /// 3.0 wide, so a lit route is never hidden under a faded one.
+  /// Notes: Containers go first, so edges run over them. Without a selection
+  /// every edge is drawn at 0.62 alpha and 2.2 wide. With one, the edges it
+  /// leaves out are drawn first at [topologyDimmedEdgeAlpha], then the lit
+  /// edges on top at full alpha and 3.0 wide, so a lit route is never hidden
+  /// under a faded one. Hidden edges have no path and are never drawn.
   @override
   void paint(Canvas canvas, Size size) {
+    _paintContainers(canvas);
     final lit = highlight?.edges;
     if (lit == null) {
       for (final edge in graph.edges) {
@@ -255,6 +323,67 @@ class ServiceTopologyEdgePainter extends CustomPainter {
     for (final edge in graph.edges) {
       if (lit.contains(edge)) _paintEdge(canvas, edge, alpha: 1, width: 3);
     }
+  }
+
+  /// Purpose: Paint the device containers of the layout.
+  /// Inputs: `canvas`.
+  /// Returns: `void`.
+  /// Side effects: Draws on the canvas.
+  /// Notes: A low-alpha fill in the device role's colour and a thin border in
+  /// its role colour — dashed for a remote device or a VPS, solid for a local
+  /// one. A container whose device a selection leaves out is drawn fainter.
+  void _paintContainers(Canvas canvas) {
+    if (layout.groupRects.isEmpty) return;
+    final nodes = {for (final node in graph.nodes) node.id: node};
+    for (final entry in layout.groupRects.entries) {
+      final node = nodes[entry.key];
+      if (node == null) continue;
+      final faded = highlight != null && !highlight!.nodeIds.contains(node.id);
+      final remote =
+          node.role == ServiceTopologyNodeRole.remoteDevice ||
+          node.detail == DeviceCategory.vps.name;
+      final shape = RRect.fromRectAndRadius(
+        entry.value,
+        const Radius.circular(18),
+      );
+      canvas.drawRRect(
+        shape,
+        Paint()
+          ..color = _roleFill(
+            colorScheme,
+            node.role,
+          ).withValues(alpha: faded ? 0.08 : 0.22),
+      );
+      final stroke = Paint()
+        ..color = _roleBorder(
+          colorScheme,
+          node.role,
+        ).withValues(alpha: faded ? 0.25 : 0.55)
+        ..strokeWidth = 1.2
+        ..style = PaintingStyle.stroke;
+      final outline = Path()..addRRect(shape);
+      canvas.drawPath(remote ? _dashed(outline) : outline, stroke);
+    }
+  }
+
+  /// Purpose: Return a dashed copy of a path.
+  /// Inputs: `source`.
+  /// Returns: `Path` — 7 px dashes with 5 px gaps along every contour.
+  /// Side effects: None.
+  /// Notes: Used for the border of remote and VPS containers.
+  static Path _dashed(Path source) {
+    final dashed = Path();
+    for (final metric in source.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        dashed.addPath(
+          metric.extractPath(distance, math.min(distance + 7, metric.length)),
+          Offset.zero,
+        );
+        distance += 12;
+      }
+    }
+    return dashed;
   }
 
   /// Purpose: Paint one edge's routed path in its lane colour.
@@ -361,10 +490,19 @@ Color serviceAccessLaneColor(ColorScheme cs, ServiceAccessLane lane) =>
 /// Returns: `String?` — null when there is nothing to show.
 /// Side effects: None.
 /// Notes: A relay node shows its localized route method, or its localized hop
-/// type when the builder only recorded the raw type name; every other node
-/// shows the builder's `detail` unchanged.
+/// type when the builder only recorded the raw type name; a device node its
+/// localized category, which the builder records as the raw enum name; every
+/// other node shows the builder's `detail` unchanged.
 String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node) {
   final detail = node.detail?.trim();
+  if (node.kind == ServiceTopologyNodeKind.device) {
+    final category = DeviceCategory.values
+        .where((value) => value.name == detail)
+        .firstOrNull;
+    if (category != null) {
+      return deviceCategoryLabel(AppLocalizations.of(context)!, category);
+    }
+  }
   if (node.kind == ServiceTopologyNodeKind.relay) {
     final l10n = AppLocalizations.of(context)!;
     final method = node.method;

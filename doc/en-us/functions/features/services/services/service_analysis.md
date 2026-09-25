@@ -8,8 +8,11 @@ dangling references, and provides the access-target/route-naming helpers shared 
 `import_export_service.dart`'s Markdown export. Since 1.5.6 it also owns the route access-lane
 override (`extraJson['accessLane']`, see
 [Data Formats](../../../../data-formats.md#extrajson-unknown-field-preservation)), the default
-FRP ingress shared with [service_access_patterns.md](service_access_patterns.md), and
-`relatedRoutesForNode`, which the topology uses for node details.
+FRP ingress shared with [service_access_patterns.md](service_access_patterns.md),
+`relatedRoutesForNode`, which the topology uses for node details, and the full-screen topology's
+selection and filter logic: every edge records all the routes along it (`routeIds`),
+`serviceTopologyHighlight` works out what a selection lights up, and `ServiceTopologyFilter` with
+`filterServiceTopologyInput` narrows the inventory a graph is built from.
 
 **Row-count note:** `grep -c 'Purpose:' service_analysis.dart` returns **37**, but 2 of those
 blocks are misattached to non-declarations by the doc-comment tool that authored them — one sits
@@ -21,7 +24,12 @@ members + 49 top-level/nested functions), so **24** are undocumented — the sam
 reconciles (35 documented + 24 undocumented = 59; 35 documented + 2 misattached = 37 raw grep
 matches). 1.5.6 added ten blocks: `buildServiceTopology`, `serviceAccessLaneForRoute` and
 `_portMappingIngressEndpoint` gained theirs, and the seven new declarations below came with
-theirs.
+theirs. The topology's selection and filters then added **17** more declarations, each with its
+block (`ServiceTopologyEdge.withRoute`, the `ServiceTopologyFilter` class's constructor, five
+getters, `copyWith`, `==` and `hashCode`, `_sameSet`, `filterServiceTopologyInput` and its three
+nested helpers, `ServiceTopologyHighlight`'s constructor and `serviceTopologyHighlight`): the
+file now returns **54** raw matches, **52** documented declarations, and **76** declarations in
+all (**44 Tier A / 32 Tier B**).
 
 ## Declarations
 
@@ -31,6 +39,7 @@ theirs.
 | [`mergeRoute`](#mergeroute) | method (`ServiceTopologyNode`) | A | Attach a route id to a node, merging if it already exists. |
 | [`merge`](#merge) | method (`ServiceTopologyNode`) | A | Combine two node instances that share an id. |
 | [`ServiceTopologyEdge` constructor](#servicetopologyedge-new) | constructor | A | Create an immutable topology edge. |
+| `withRoute` | method (`ServiceTopologyEdge`) | B | Return the edge with one more route along it (`routeIds`), keeping `routeId`. |
 | [`ServiceTopologyGraph` constructor](#servicetopologygraph-new) | constructor | A | Create the graph result value. |
 | `isEmpty` | getter (`ServiceTopologyGraph`) | B | Whether the graph has no nodes. |
 | [`ServicePortUse` constructor](#serviceportuse-new) | constructor | A | Create one endpoint/port/transport usage record. |
@@ -41,7 +50,7 @@ theirs.
 | [`findServicePortConflicts`](#findserviceportconflicts) | top-level function | A | Group port uses and flag overlapping bind addresses on the same device/transport/port. |
 | [`buildServiceTopology`](#buildservicetopology) | top-level function | A | Build the full topology graph from services, routes, and devices. |
 | [`addNode`](#addnode) (nested in `buildServiceTopology`) | local function | A | Insert or merge a node by id. |
-| [`addEdge`](#addedge) (nested in `buildServiceTopology`) | local function | A | Insert a deduplicated edge. |
+| [`addEdge`](#addedge) (nested in `buildServiceTopology`) | local function | A | Insert a deduplicated edge, or record another route on the one already there. |
 | `deviceNodeId` (nested) | local function | B | Format a device node id. |
 | `serviceNodeId` (nested) | local function | B | Format a service node id. |
 | `endpointNodeId` (nested) | local function | B | Format an endpoint node id. |
@@ -68,6 +77,22 @@ theirs.
 | [`serviceRouteExtraJsonWithAccessLane`](#serviceroutextrajsonwithaccesslane) | top-level function | A | Write or remove the `accessLane` override. |
 | [`relatedRoutesForNode`](#relatedroutesfornode) | top-level function | A | The routes a topology node takes part in. |
 | `matches` (nested in `relatedRoutesForNode`) | local function | B | Decide whether one route belongs to the node. |
+| [`ServiceTopologyFilter` constructor](#servicetopologyfilter-new) | constructor | A | Create a topology filter: devices, lanes, search text; the default narrows nothing. |
+| `narrowsDevices` | getter (`ServiceTopologyFilter`) | B | Whether the filter narrows the devices. |
+| `narrowsLanes` | getter (`ServiceTopologyFilter`) | B | Whether the filter leaves out a lane. |
+| `hasQuery` | getter (`ServiceTopologyFilter`) | B | Whether the filter has (non-blank) search text. |
+| `activeCount` | getter (`ServiceTopologyFilter`) | B | How many of devices, lanes and search are active, 0 to 3. |
+| `isActive` | getter (`ServiceTopologyFilter`) | B | Whether the filter narrows anything. |
+| `copyWith` | method (`ServiceTopologyFilter`) | B | Copy with parts replaced; `clearDeviceIds` returns to every device. |
+| `==` | operator (`ServiceTopologyFilter`) | B | Compare by value: sets by content, the query as typed. |
+| `hashCode` | getter (`ServiceTopologyFilter`) | B | Hash consistently with `==`, order-independent over the sets. |
+| `_sameSet` | top-level function | B | Compare two optional sets by content. |
+| [`filterServiceTopologyInput`](#filterservicetopologyinput) | top-level function | A | Narrow the services and routes a topology is built from. |
+| `onChosenDevice` (nested in `filterServiceTopologyInput`) | local function | B | Whether a service runs on a chosen device. |
+| `hit` (nested in `filterServiceTopologyInput`) | local function | B | Whether a text contains the search text. |
+| `routeMatches` (nested in `filterServiceTopologyInput`) | local function | B | Whether a route matches the search text. |
+| `ServiceTopologyHighlight` constructor | constructor | B | Create a highlight: lit node ids and lit edges. |
+| [`serviceTopologyHighlight`](#servicetopologyhighlight) | top-level function | A | Work out which nodes and edges a set of routes lights up. |
 | `_isPortMappingHop` | top-level function | B | Whether a hop is an FRP/port-forward-style hop. |
 | `_hasRemoteEntry` | top-level function | B | Whether a hop has a remote host/port worth rendering. |
 | `_relayNodeId` | top-level function | B | Format a stable id for a relay node. |
@@ -129,16 +154,20 @@ theirs.
   with a "more remote" role touches it, without losing existing good detail otherwise.
 
 ### `const ServiceTopologyEdge({...})` <a id="servicetopologyedge-new"></a>
-- **Kind:** constructor. **Source:** line 130.
+- **Kind:** constructor. **Source:** line 138.
 - **Purpose:** Create an immutable directed edge between two node ids.
-- **Inputs:** `from`, `to` required; `label`/`routeId`/`lane`/`method` optional.
+- **Inputs:** `from`, `to` required; `label`/`routeId`/`lane`/`method` optional; `routeIds` —
+  every route along the edge, empty by default.
 - **Returns:** A new `ServiceTopologyEdge`. **Side effects:** None.
 - **Algorithm:** Plain field assignment.
-- **Usage:** Constructed by `addEdge`.
-- **Notes:** None.
+- **Usage:** Constructed by `addEdge` and `withRoute`.
+- **Notes:** `routeId` names only the route that added the edge first; `routeIds` (since 1.5.6)
+  names them all, because routes through the same two nodes in the same lane and method share one
+  edge, and selection highlighting must light that edge for each of them. Structural
+  device-to-service edges have none.
 
 ### `const ServiceTopologyGraph({required this.nodes, required this.edges})` <a id="servicetopologygraph-new"></a>
-- **Kind:** constructor. **Source:** line 149.
+- **Kind:** constructor. **Source:** line 177.
 - **Purpose:** Wrap the final sorted node/edge lists as the `buildServiceTopology` result.
 - **Inputs:** `nodes`, `edges`. **Returns:** A new `ServiceTopologyGraph`. **Side effects:** None.
 - **Algorithm:** Plain field assignment.
@@ -147,7 +176,7 @@ theirs.
 - **Notes:** None.
 
 ### `const ServicePortUse({...})` <a id="serviceportuse-new"></a>
-- **Kind:** constructor. **Source:** line 171.
+- **Kind:** constructor. **Source:** line 199.
 - **Purpose:** Record one concrete `(service, endpoint, transport, port, bindAddress)` usage,
   expanded from a possibly-ranged endpoint.
 - **Inputs:** all five fields, required. **Returns:** A new `ServicePortUse`.
@@ -157,7 +186,7 @@ theirs.
 - **Notes:** None.
 
 ### `const ServicePortConflict({...})` <a id="serviceportconflict-new"></a>
-- **Kind:** constructor. **Source:** line 199.
+- **Kind:** constructor. **Source:** line 227.
 - **Purpose:** Record a detected (or potential) port collision between two or more service uses.
 - **Inputs:** `deviceId`, `port`, `transport`, `uses` required; `potential` (default `false`).
 - **Returns:** A new `ServicePortConflict`. **Side effects:** None.
@@ -168,7 +197,7 @@ theirs.
   this repo's documented "port conflict detection is advisory only" rule.
 
 ### `const ServiceWarning(this.kind, this.name, {this.detail})` <a id="servicewarning-new"></a>
-- **Kind:** constructor. **Source:** line 232.
+- **Kind:** constructor. **Source:** line 260.
 - **Purpose:** Record one reference-integrity warning for the Services overview.
 - **Inputs:** `kind` (`ServiceWarningKind`), `name`, optional `detail`.
 - **Returns:** A new `ServiceWarning`. **Side effects:** None.
@@ -177,7 +206,7 @@ theirs.
 - **Notes:** None.
 
 ### `List<ServicePortUse> listServicePortUses(List<ServiceNode> services)` <a id="listserviceportuses"></a>
-- **Kind:** top-level function. **Source:** line 235.
+- **Kind:** top-level function. **Source:** line 263.
 - **Purpose:** Expand every service endpoint's (possibly-ranged) port into individual concrete
   `ServicePortUse` records, one per transport when an endpoint declares `tcpUdp`.
 - **Inputs:** `services`. **Returns:** `List<ServicePortUse>`, sorted by device id, then
@@ -190,7 +219,7 @@ theirs.
 - **Notes:** None.
 
 ### `List<ServicePortConflict> findServicePortConflicts(List<ServiceNode> services)` <a id="findserviceportconflicts"></a>
-- **Kind:** top-level function. **Source:** line 280.
+- **Kind:** top-level function. **Source:** line 308.
 - **Purpose:** Group port uses by `(deviceId, transport, port)` and flag groups where at least
   two entries have overlapping bind addresses.
 - **Inputs:** `services`. **Returns:** `List<ServicePortConflict>`.
@@ -203,7 +232,7 @@ theirs.
 - **Notes:** Advisory only, per this repo's documented rule — conflicts never block saves.
 
 ### `ServiceTopologyGraph buildServiceTopology({required List<ServiceNode> services, required List<ServiceRoute> routes, required List<Device> devices})` <a id="buildservicetopology"></a>
-- **Kind:** top-level function. **Source:** line 328.
+- **Kind:** top-level function. **Source:** line 356.
 - **Purpose:** The core topology-graph builder: turns saved services and access routes into the
   node/edge graph the layout engine renders.
 - **Inputs:** `services`, `routes`, `devices`. **Returns:** `ServiceTopologyGraph` (nodes sorted
@@ -230,7 +259,7 @@ theirs.
   reverse proxies was never read by the layout after v0.5.9 and was removed in 1.5.6.
 
 ### `void addNode(ServiceTopologyNode node, {String? routeId})` (nested) <a id="addnode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 343.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 371.
 - **Purpose:** Insert a node by id, merging with any existing node of the same id.
 - **Inputs:** `node`, optional `routeId`. **Returns:** `void`.
 - **Side effects:** Mutates the enclosing `nodes` map.
@@ -240,20 +269,23 @@ theirs.
 - **Notes:** None.
 
 ### `void addEdge(String from, String to, {String? label, String? routeId})` (nested) <a id="addedge"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 356.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 389.
 - **Purpose:** Insert a deduplicated edge between two already-added nodes.
 - **Inputs:** `from`, `to`; optional `label`/`routeId`. **Returns:** `void`.
 - **Side effects:** Mutates the enclosing `edges` map.
 - **Algorithm:** No-op if `from == to` or either endpoint isn't in `nodes` yet. Resolve the
   route's access lane and first hop method (if any); build a composite dedup key from
-  `from/to/label/lane/method`; `putIfAbsent` a new `ServiceTopologyEdge`.
+  `from/to/label/lane/method`. An edge already under the key gets the route appended to its
+  `routeIds` (`withRoute`, replacing the map entry in place); otherwise a new
+  `ServiceTopologyEdge` is stored with `routeIds: [routeId]` (or none).
 - **Usage:** Called throughout `buildServiceTopology`'s route-walking loop.
 - **Notes:** The composite key (not just `from->to`) is what allows multiple distinct edges
   between the same two nodes when they differ by lane or method (e.g. one route via public FRP
-  and another via VPN between the same two services).
+  and another via VPN between the same two services). Replacing an entry keeps its position in
+  the map, so edge order — and the layout — is unchanged by the route list.
 
 ### `String addDeviceNode(String deviceId)` (nested) <a id="adddevicenode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 410.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 446.
 - **Purpose:** Add (or reuse) a local-device node.
 - **Inputs:** `deviceId`. **Returns:** the node id.
 - **Side effects:** Calls `addNode`.
@@ -263,7 +295,7 @@ theirs.
 - **Notes:** None.
 
 ### `String addRemoteDeviceNode(String deviceId, {String? routeId})` (nested) <a id="addremotedevicenode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 431.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 467.
 - **Purpose:** Add (or reuse) a remote-device node, tagged with a route id.
 - **Inputs:** `deviceId`; optional `routeId`. **Returns:** the node id.
 - **Side effects:** Calls `addNode`.
@@ -275,7 +307,7 @@ theirs.
 - **Notes:** None.
 
 ### `String addServiceNode(ServiceNode service, {bool remote = false, String? routeId, String? detailOverride})` (nested) <a id="addservicenode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 453.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 489.
 - **Purpose:** Add (or reuse) a service node, its owning device node, and the edge between them.
 - **Inputs:** `service`; `remote` (default `false`); optional `routeId`/`detailOverride`.
   **Returns:** the node id.
@@ -288,7 +320,7 @@ theirs.
 - **Notes:** None.
 
 ### `String addEndpointNode(ServiceNode service, ServiceEndpoint endpoint, {bool remote = false, String? routeId})` (nested) <a id="addendpointnode"></a>
-- **Kind:** local function inside `buildServiceTopology`. **Source:** line 498.
+- **Kind:** local function inside `buildServiceTopology`. **Source:** line 534.
 - **Purpose:** Add (or reuse) an endpoint node and wire it to its parent service node.
 - **Inputs:** `service`, `endpoint`; `remote`; optional `routeId`. **Returns:** the node id.
 - **Side effects:** Calls `addNode`, `addEdge`.
@@ -302,7 +334,7 @@ theirs.
   [service_topology_layout.md](service_topology_layout.md)).
 
 ### `List<ServiceWarning> findServiceReferenceWarnings({required List<ServiceNode> services, required List<ServiceRoute> routes, required List<Device> devices, required List<Network> networks})` <a id="findservicereferencewarnings"></a>
-- **Kind:** top-level function. **Source:** line 709.
+- **Kind:** top-level function. **Source:** line 745.
 - **Purpose:** Scan saved services and routes for broken or ambiguous references, for display in
   the Services overview.
 - **Inputs:** `services`, `routes`, `devices`, `networks`. **Returns:** `List<ServiceWarning>`.
@@ -321,7 +353,7 @@ theirs.
   `_publicTargetRoutesConflict`/`_endpointPortsOverlap`.
 
 ### `String normalizedBindAddress(String? bindAddress)` <a id="normalizedbindaddress"></a>
-- **Kind:** top-level function. **Source:** line 821.
+- **Kind:** top-level function. **Source:** line 857.
 - **Purpose:** Canonicalize any wildcard-meaning bind address form to the single sentinel `'*'`.
 - **Inputs:** `bindAddress` (nullable). **Returns:** `String`.
 - **Side effeffects:** None.
@@ -332,7 +364,7 @@ theirs.
   recognized as the same "listens on everything" case for conflict detection.
 
 ### `List<ServiceRoute> _conflictingPublicTargetRoutes(List<ServiceRoute> routes, Map<String, ServiceNode> serviceMap)` <a id="conflictingpublictargetroutes"></a>
-- **Kind:** top-level function. **Source:** line 836.
+- **Kind:** top-level function. **Source:** line 872.
 - **Purpose:** Given a set of routes sharing one canonical access target, return only the subset
   actually in conflict with each other.
 - **Inputs:** `routes`, `serviceMap`. **Returns:** the conflicting subset, original order.
@@ -344,7 +376,7 @@ theirs.
 - **Notes:** None.
 
 ### `bool _publicTargetRoutesConflict(ServiceRoute a, ServiceRoute b, Map<String, ServiceNode> serviceMap)` <a id="publictargetroutesconflict"></a>
-- **Kind:** top-level function. **Source:** line 860.
+- **Kind:** top-level function. **Source:** line 896.
 - **Purpose:** Decide whether two routes sharing a public target are ambiguous enough to warn
   about.
 - **Inputs:** `a`, `b`, `serviceMap`. **Returns:** `bool`.
@@ -358,7 +390,7 @@ theirs.
   — matching the comment on `findServiceReferenceWarnings`'s doc block.
 
 ### `ServiceEndpoint? _sourceEndpointForDuplicateTargetCheck(ServiceNode service, ServiceRoute route)` <a id="sourceendpointforduplicatetargetcheck"></a>
-- **Kind:** top-level function. **Source:** line 881.
+- **Kind:** top-level function. **Source:** line 917.
 - **Purpose:** Resolve the endpoint to use when comparing two routes' source ports for the
   duplicate-target check.
 - **Inputs:** `service`, `route`. **Returns:** `ServiceEndpoint?`.
@@ -371,7 +403,7 @@ theirs.
   ambiguous rather than guessing.
 
 ### `bool _endpointPortsOverlap(ServiceEndpoint a, ServiceEndpoint b)` <a id="endpointportsoverlap"></a>
-- **Kind:** top-level function. **Source:** line 898.
+- **Kind:** top-level function. **Source:** line 934.
 - **Purpose:** Test whether two endpoints' (possibly-ranged) port intervals overlap.
 - **Inputs:** `a`, `b`. **Returns:** `bool` — `true` (conservatively) if either side has no port
   at all.
@@ -383,7 +415,7 @@ theirs.
 - **Notes:** None.
 
 ### `ServiceTopologyNodeRole _preferTopologyRole(ServiceTopologyNodeRole current, ServiceTopologyNodeRole incoming)` <a id="prefertopologyrole"></a>
-- **Kind:** top-level function. **Source:** line 909.
+- **Kind:** top-level function. **Source:** line 945.
 - **Purpose:** Pick the more informative of two roles when merging two node observations for the
   same id.
 - **Inputs:** `current`, `incoming`. **Returns:** `ServiceTopologyNodeRole`.
@@ -395,7 +427,7 @@ theirs.
   treat it as remote everywhere," rather than the first-seen role winning arbitrarily.
 
 ### `bool _isRemoteHopService({required ServiceNode source, required ServiceNode hopService, required Map<String, Device> deviceMap})` <a id="isremotehopservice"></a>
-- **Kind:** top-level function. **Source:** line 924.
+- **Kind:** top-level function. **Source:** line 960.
 - **Purpose:** Decide whether a hop's referenced service should be rendered as remote.
 - **Inputs:** `source` (route's source service), `hopService`, `deviceMap`.
 - **Returns:** `bool`.
@@ -407,7 +439,7 @@ theirs.
 - **Notes:** None.
 
 ### `ServiceAccessLane serviceAccessLaneForRoute(ServiceRoute route)` <a id="serviceaccesslaneforroute"></a>
-- **Kind:** top-level function. **Source:** line 943.
+- **Kind:** top-level function. **Source:** line 979.
 - **Purpose:** Classify a route into one of three access lanes (local/VPN/public) for topology
   rendering and edge grouping.
 - **Inputs:** `route`. **Returns:** `ServiceAccessLane`.
@@ -426,7 +458,7 @@ theirs.
   override means exactly the old inference.
 
 ### `ServiceEndpoint? _portMappingIngressEndpoint(ServiceNode service, ServiceRouteHop hop)` <a id="portmappingingressendpoint"></a>
-- **Kind:** top-level function. **Source:** line 994.
+- **Kind:** top-level function. **Source:** line 1030.
 - **Purpose:** Resolve which endpoint on the hop's service represents the FRP/port-forward
   ingress port.
 - **Inputs:** `service`, `hop`. **Returns:** `ServiceEndpoint?`.
@@ -441,7 +473,7 @@ theirs.
   port rendered via `_hasRemoteEntry`/`addRemoteDeviceNode`.
 
 ### `ServiceEndpoint? serviceDefaultIngressEndpoint(ServiceNode service)` <a id="servicedefaultingressendpoint"></a>
-- **Kind:** top-level function. **Source:** line 1010.
+- **Kind:** top-level function. **Source:** line 1046.
 - **Purpose:** Pick the endpoint a relay service receives tunnelled traffic on when a route does
   not name one.
 - **Inputs:** `service`. **Returns:** The primary endpoint, else the first, else null.
@@ -453,7 +485,7 @@ theirs.
   records the ingress the topology already inferred, so saving it does not move any edge.
 
 ### `ServiceAccessLane? serviceRouteExplicitAccessLane(ServiceRoute route)` <a id="serviceroutexplicitaccesslane"></a>
-- **Kind:** top-level function. **Source:** line 1021.
+- **Kind:** top-level function. **Source:** line 1057.
 - **Purpose:** Read a route's explicit access-lane override.
 - **Inputs:** `route`. **Returns:** The lane named by `extraJson['accessLane']`, or null when the
   key is absent, not a string, or not one of `local` / `vpn` / `public`.
@@ -464,7 +496,7 @@ theirs.
   break an older reader.
 
 ### `Map<String, dynamic> serviceRouteExtraJsonWithAccessLane(Map<String, dynamic> extraJson, ServiceAccessLane? lane)` <a id="serviceroutextrajsonwithaccesslane"></a>
-- **Kind:** top-level function. **Source:** line 1036.
+- **Kind:** top-level function. **Source:** line 1072.
 - **Purpose:** Write or remove the access-lane override in a route's `extraJson`.
 - **Inputs:** `extraJson` — the route's existing map; `lane` — the lane to pin, or null to
   return the route to inference.
@@ -476,7 +508,7 @@ theirs.
   `serviceRouteExtraJsonWithTargets`.
 
 ### `List<ServiceRoute> relatedRoutesForNode(ServiceTopologyNode node, List<ServiceRoute> routes, {List<ServiceNode> services = const []})` <a id="relatedroutesfornode"></a>
-- **Kind:** top-level function. **Source:** line 1058.
+- **Kind:** top-level function. **Source:** line 1094.
 - **Purpose:** List the routes a topology node takes part in, for the node details and for
   selection highlighting.
 - **Inputs:** `node`; `routes` — the routes the graph was built from; `services` — optional, lets
@@ -486,13 +518,68 @@ theirs.
   matches routes it is the source of or a hop of. A device node also matches routes whose source
   or hop service runs on it, or whose hop names it as `deviceId`. Endpoint chips, relays, remote
   entries and domains match their `routeIds` only.
-- **Usage:** The topology's node-details sheet lists these routes.
+- **Usage:** The topology page's `_selectionIn` (the details list and the highlight) and
+  `_showDetailsSheet`.
 - **Notes:** Replaces the inline rule the node-details sheet used before 1.5.6, which compared
   `hop.serviceId == node.serviceId` even when both were null — so tapping a domain listed every
   route with a free-form hop. A missing id never matches a missing reference now.
 
+### `const ServiceTopologyFilter({Set<String>? deviceIds, Set<ServiceAccessLane> lanes = {...all}, String query = ''})` <a id="servicetopologyfilter-new"></a>
+- **Kind:** constructor. **Source:** line 1164.
+- **Purpose:** Create what the full-screen topology is narrowed to.
+- **Inputs:** `deviceIds` — the devices whose services and routes show, null for every device;
+  `lanes` — the access lanes whose routes show, all three by default; `query` — search text,
+  compared case-insensitively.
+- **Returns:** A new `ServiceTopologyFilter`. **Side effects:** None.
+- **Algorithm:** Plain field assignment.
+- **Usage:** The topology page's `_filter` (the default instance narrows nothing) and its filter
+  sheet, through `copyWith`.
+- **Notes:** Compared by value (`==`/`hashCode`), so the page can memoize the graph it builds for
+  a filter. `activeCount` feeds the app-bar badge: devices, lanes and search count once each, and
+  whitespace alone is no search.
+
+### `({List<ServiceNode> services, List<ServiceRoute> routes}) filterServiceTopologyInput({required List<ServiceNode> services, required List<ServiceRoute> routes, required ServiceTopologyFilter filter})` <a id="filterservicetopologyinput"></a>
+- **Kind:** top-level function. **Source:** line 1275.
+- **Purpose:** Narrow the services and routes a topology is built from — filters produce a
+  subgraph, never a paint-time mask.
+- **Inputs:** `services`, `routes` — the whole inventory; `filter`.
+- **Returns:** The services and routes to hand to `buildServiceTopology`; the inputs themselves
+  when the filter narrows nothing.
+- **Side effects:** None.
+- **Algorithm:** 1. A route stays when its source service runs on a chosen device, its lane
+  (`serviceAccessLaneForRoute`) is chosen, and the search text is found in its source or a hop
+  service's name, a hop's label or host, or one of its targets. 2. A service stays when a kept
+  route runs through it (as source or hop), or when it runs on a chosen device and neither lanes
+  nor search narrow anything — or the search text is in its own name.
+- **Usage:** The topology page's `_visible`.
+- **Notes:** Hop services on devices that were not chosen stay: `buildServiceTopology` only draws
+  a hop's service — an FRP server's ingress chip, say — when the service is in the list it is
+  given, so dropping it would change the route's shape. Lanes and search are about routes, so
+  they hide the services no kept route touches; the device filter alone keeps a chosen device's
+  route-less services.
+
+### `ServiceTopologyHighlight serviceTopologyHighlight(ServiceTopologyGraph graph, List<ServiceRoute> routes, {String? selectedNodeId})` <a id="servicetopologyhighlight"></a>
+- **Kind:** top-level function. **Source:** line 1372.
+- **Purpose:** Work out which nodes and edges a set of routes lights up on the topology.
+- **Inputs:** `graph`; `routes` — the highlighted routes, e.g. from `relatedRoutesForNode`, or
+  one of them; `selectedNodeId` — lit even when it takes part in none of them.
+- **Returns:** `ServiceTopologyHighlight` — lit node ids and lit edges (the graph's own
+  instances).
+- **Side effects:** None.
+- **Algorithm:** 1. A node is lit when one of its `routeIds` is highlighted, when it is the
+  selected node, or when it is a service node whose service is a highlighted route's source or
+  hop. 2. A device node is lit when it hosts a lit service, endpoint, relay or entry. 3. An edge
+  is lit when one of its `routeIds` is highlighted, and a structural edge (no routes) when both
+  its ends are lit.
+- **Usage:** The topology page's `_selectionIn`; the view dims unlit node cards and the edge
+  painter fades unlit edges.
+- **Notes:** The source-service rule exists because the builder records routes on hops, chips
+  and targets but not on a route's source service node. Edge identity is enough for the painter:
+  `ServiceTopologyEdge` has no value equality, and the highlight is always computed on the graph
+  being drawn.
+
 ### `String _relayLabel(ServiceRouteHop hop, Map<String, ServiceNode> services)` <a id="relaylabel"></a>
-- **Kind:** top-level function. **Source:** line 1129.
+- **Kind:** top-level function. **Source:** line 1440.
 - **Purpose:** Compute the display label for a generic (non-service, non-port-mapping) relay
   node.
 - **Inputs:** `hop`, `services`. **Returns:** `String`.
@@ -506,7 +593,7 @@ theirs.
 - **Notes:** None.
 
 ### `List<String> serviceRouteAccessTargets(ServiceRoute route)` <a id="servicerouteaccesstargets"></a>
-- **Kind:** top-level function. **Source:** line 1169.
+- **Kind:** top-level function. **Source:** line 1480.
 - **Purpose:** Collect a route's deduplicated public access targets: its `finalUrl` plus any
   grouped targets stored in `extraJson.publicTargets`.
 - **Inputs:** `route`. **Returns:** `List<String>`, original-encounter order, first occurrence
@@ -523,7 +610,7 @@ theirs.
   documented compatibility rule that `finalUrl` remains "the first target for compatibility."
 
 ### `void addTarget(Object? value)` (nested) <a id="addtarget"></a>
-- **Kind:** local function inside `serviceRouteAccessTargets`. **Source:** line 1177.
+- **Kind:** local function inside `serviceRouteAccessTargets`. **Source:** line 1488.
 - **Purpose:** Add one candidate target to the enclosing `targets` list if it's a non-empty,
   non-duplicate string.
 - **Inputs:** `value` (untyped — tolerates non-string JSON values). **Returns:** `void`.
@@ -538,7 +625,7 @@ theirs.
   the top of this page).
 
 ### `Map<String, dynamic> serviceRouteExtraJsonWithTargets(Map<String, dynamic> extraJson, List<String> targets)` <a id="servicerouteextrajsonwithtargets"></a>
-- **Kind:** top-level function. **Source:** line 1205.
+- **Kind:** top-level function. **Source:** line 1516.
 - **Purpose:** Write a route's grouped extra access targets back into its `extraJson`, ready for
   persistence.
 - **Inputs:** `extraJson` (existing map), `targets`. **Returns:** a new
@@ -551,7 +638,7 @@ theirs.
 - **Notes:** None.
 
 ### `String serviceRouteDisplayTarget(ServiceRoute route)` <a id="serviceroutedisplaytarget"></a>
-- **Kind:** top-level function. **Source:** line 1217.
+- **Kind:** top-level function. **Source:** line 1528.
 - **Purpose:** Pick the single string used to display a route's primary target (e.g. as a
   Markdown section heading, per `import_export_service.md`).
 - **Inputs:** `route`. **Returns:** `String`.
@@ -564,7 +651,7 @@ theirs.
 - **Notes:** None.
 
 ### `String serviceRouteGeneratedName({required String sourceName, required List<ServiceRouteHop> hops, required List<String> targets})` <a id="serviceroutegeneratedname"></a>
-- **Kind:** top-level function. **Source:** line 1224.
+- **Kind:** top-level function. **Source:** line 1535.
 - **Purpose:** Generate the route's internal display name (`"<source> via <method> - <target>"`)
   used when the user hasn't written a custom description.
 - **Inputs:** `sourceName`, `hops`, `targets`. **Returns:** `String`.
@@ -579,7 +666,7 @@ theirs.
   user-facing route descriptions belong in `notes`, not this generated name.
 
 ### `String serviceRouteChainPreview(ServiceRoute route, {required List<ServiceNode> services, List<Device> devices = const [], String Function(ServiceRouteHop hop)? hopFallback})` <a id="serviceroutechainpreview"></a>
-- **Kind:** top-level function. **Source:** line 1263.
+- **Kind:** top-level function. **Source:** line 1574.
 - **Purpose:** Describe a route's whole chain on one line.
 - **Inputs:** `route`; `services`; `devices` — optional, names the device of a hop service that
   runs somewhere other than the source; `hopFallback` — names a hop that has neither a service
@@ -598,7 +685,7 @@ theirs.
   route in the same words.
 
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **Kind:** top-level function. **Source:** line 1321.
+- **Kind:** top-level function. **Source:** line 1551.
 - **Purpose:** Join a list of access targets into a compact, truncated summary string.
 - **Inputs:** `targets`; `maxItems` (default 3). **Returns:** `String` — empty if `targets` is
   empty.
@@ -609,7 +696,7 @@ theirs.
 - **Notes:** None.
 
 ### `String compactAccessTargetLabel(String target)` <a id="compactaccesstargetlabel"></a>
-- **Kind:** top-level function. **Source:** line 1329.
+- **Kind:** top-level function. **Source:** line 1640.
 - **Purpose:** Shorten a URL-like access target to a compact `host[:port][path]` label for
   display, or return it unchanged if it isn't a parseable absolute URL.
 - **Inputs:** `target`. **Returns:** `String`.

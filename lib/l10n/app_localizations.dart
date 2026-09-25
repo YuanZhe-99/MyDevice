@@ -2456,7 +2456,7 @@ abstract class AppLocalizations {
   /// No description provided for @serviceTopologyHint.
   ///
   /// In en, this message translates to:
-  /// **'Open the topology for node details, zooming, rotation, or PNG export.'**
+  /// **'Open the topology to select a node and see its routes, filter by device, lane or text, zoom, rotate, or export a PNG.'**
   String get serviceTopologyHint;
 
   /// No description provided for @serviceOpenTopology.
@@ -3232,6 +3232,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto (from the method)'**
   String get serviceAccessLaneAuto;
+
+  /// No description provided for @serviceTopologyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get serviceTopologyFilters;
+
+  /// No description provided for @serviceTopologyFilterDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get serviceTopologyFilterDevices;
+
+  /// No description provided for @serviceTopologyFilterAllDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'All devices'**
+  String get serviceTopologyFilterAllDevices;
+
+  /// No description provided for @serviceTopologyFilterLanes.
+  ///
+  /// In en, this message translates to:
+  /// **'Lanes'**
+  String get serviceTopologyFilterLanes;
+
+  /// No description provided for @serviceTopologyFilterSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search services, nodes or domains'**
+  String get serviceTopologyFilterSearch;
+
+  /// No description provided for @serviceTopologyFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get serviceTopologyFilterClear;
+
+  /// No description provided for @serviceTopologyNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches these filters.'**
+  String get serviceTopologyNoMatch;
+
+  /// No description provided for @serviceTopologyLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Legend'**
+  String get serviceTopologyLegend;
+
+  /// No description provided for @serviceTopologySelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {name}'**
+  String serviceTopologySelected(String name);
+
+  /// No description provided for @serviceTopologyClearSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear selection'**
+  String get serviceTopologyClearSelection;
+
+  /// No description provided for @serviceTopologyFit.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit'**
+  String get serviceTopologyFit;
+
+  /// No description provided for @serviceTopologyReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get serviceTopologyReset;
+
+  /// No description provided for @serviceTopologyRouteFocusHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a route to highlight only it; tap it again for all.'**
+  String get serviceTopologyRouteFocusHint;
+
+  /// No description provided for @serviceTopologySelectNodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a node to see its details and routes.'**
+  String get serviceTopologySelectNodeHint;
 
   /// No description provided for @backupModuleServices.
   ///

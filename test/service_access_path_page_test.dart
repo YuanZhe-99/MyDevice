@@ -173,15 +173,20 @@ void main() {
           matching: find.byType(Scrollable),
         )
         .first;
-    if (finder.evaluate().isNotEmpty) {
-      await tester.ensureVisible(finder);
-    } else {
-      try {
+    if (finder.evaluate().isEmpty) {
+      // Search from the top, downwards: guessing a direction and dragging
+      // past the list's end first left the widget misplaced above the
+      // viewport, under the app bar, where taps missed it.
+      tester.state<ScrollableState>(scrollable).position.jumpTo(0);
+      await tester.pump();
+      if (finder.evaluate().isEmpty) {
         await tester.scrollUntilVisible(finder, 200, scrollable: scrollable);
-      } on StateError {
-        await tester.scrollUntilVisible(finder, -200, scrollable: scrollable);
+        await tester.pump();
       }
     }
+    // scrollUntilVisible stops once the widget is built, which can be in the
+    // cache extent outside the viewport; finish with ensureVisible either way.
+    await tester.ensureVisible(finder);
     await tester.pump();
   }
 
@@ -399,10 +404,16 @@ void main() {
     await reveal(tester, find.byKey(const Key('access-targets')));
     expect(targets().controller!.text, isEmpty);
 
-    // A typed address is the user's and stays.
+    // Back on direct, the empty field gets the suggestion again.
     await tapKey(tester, const ValueKey('access-pattern-direct'));
+    await reveal(tester, find.byKey(const Key('access-targets')));
+    expect(targets().controller!.text, 'http://192.168.1.10:8096');
+
+    // A typed address is the user's and stays.
     await enterKey(tester, const Key('access-targets'), 'http://jf.lan');
     await tapKey(tester, const ValueKey('access-pattern-frp'));
+    await reveal(tester, find.byKey(const Key('access-public-port')));
+    expect(find.byKey(const Key('access-public-port')), findsOneWidget);
     await reveal(tester, find.byKey(const Key('access-targets')));
     expect(targets().controller!.text, 'http://jf.lan');
   });
@@ -423,9 +434,12 @@ void main() {
       ),
     );
     // Wait for the new endpoint's chip, which only exists once the service
-    // was saved with it and the page reloaded.
+    // was saved with it and the page reloaded: six disk operations in a row
+    // (re-read, load and write inside addOrUpdateService, three reloads), so
+    // this wait gets more time than a page load.
     await pumpUntil(
       tester,
+      attempts: 150,
       find.byWidgetPredicate(
         (widget) =>
             widget is ChoiceChip &&

@@ -67,7 +67,6 @@ user backs out.
 | `_buildActions` | method (widget helper) | B | Cancel, Advanced editor, Save. |
 | `_showServicePicker` | method (`_ServiceAccessPathPageState`) | B | Open `_ServicePickerSheet` and return the picked service. |
 | `serviceAccessPatternIcon` | top-level function | B | The icon of a pattern card, matching the route-method icons. |
-| `serviceAccessLaneColor` | top-level function | B | The topology's lane colour (local tertiary, VPN secondary, public primary). |
 | `_splitTargets` | top-level function | B | Split the targets field by line or comma. |
 | `_ServiceTile` constructor | constructor | B | Tile showing a chosen service, or a prompt to choose one. |
 | `build` | method (widget build, `_ServiceTile`) | B | Card with icon, name, device and ports; error text below. |
@@ -271,7 +270,7 @@ user backs out.
 
 ### `Widget build(BuildContext context)` (`_ServicePickerSheetState`) <a id="pickerbuild"></a>
 - **Kind:** method (widget build) of `_ServicePickerSheetState`
-- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1711)
+- **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1698)
 - **Purpose:** Render the searchable service picker.
 - **Inputs:** `context`. **Returns:** The widget tree. **Side effects:** None.
 - **Algorithm:** Filter by the search text (service name, device name, ports); sort by device,

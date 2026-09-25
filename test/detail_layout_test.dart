@@ -132,4 +132,27 @@ void main() {
       expect(dataSetEditLeftPaneHeight, lessThan(480 - 56));
     });
   });
+
+  group('topology details pane', () {
+    test('is proportional between its clamps', () {
+      expect(topologyDetailPaneWidth(600), 280); // split floor: 180 → 280
+      expect(topologyDetailPaneWidth(933), 280); // Z Fold 8: 279.9 → 280
+      expect(topologyDetailPaneWidth(1100), closeTo(330, 0.01));
+      expect(topologyDetailPaneWidth(1600), 380); // desktop: 480 → 380
+    });
+
+    test('never outgrows the phone sheet it replaces', () {
+      for (var width = 600.0; width <= 3000; width += 1) {
+        expect(topologyDetailPaneWidth(width), lessThanOrEqualTo(412 - 32));
+      }
+    });
+
+    test('leaves the canvas most of the window', () {
+      expect(600 - 1 - topologyDetailPaneWidth(600), 319);
+      expect(933 - 1 - topologyDetailPaneWidth(933), 652);
+      for (var width = 934.0; width <= 3000; width += 1) {
+        expect(topologyDetailPaneWidth(width) / width, lessThanOrEqualTo(0.3));
+      }
+    });
+  });
 }

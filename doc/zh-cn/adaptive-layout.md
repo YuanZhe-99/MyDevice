@@ -139,6 +139,8 @@ double detailLeftPaneWidth(double totalWidth) => (totalWidth * 0.36).clamp(260.0
 | 手机 412 × 915 / 915 × 412 | 否 | — | — |
 | 桌面 1600 × 900 | 是 | 420 | 1179 |
 
+全屏服务拓扑使用同一门控，只是固定窗格在另一侧。在分栏窗口上，它的节点详情从底部面板移到画布右侧一个非模态窗格中，宽 `topologyDetailPaneWidth`：窗口的 0.3，钳到 280–380。上限是 412 dp 手机上底部面板的内容宽度，所以详情的排版永远不比手机上更宽；下限让路由行的两行副标题和两个服务按钮保持在一行；比例让画布至少占窗口的 70 %——600 dp 下限时 319，Z Fold 8 横屏时 652。
+
 ## 不能滚动的窗格：设备编辑页
 
 设备编辑页经由同一个 `useDetailTwoPane` 委托和 `detailLeftPaneWidth` 分栏，但它的左窗格有详情页没有的要求：它装着正在编辑的东西——头像选择器、名称字段和类别下拉——应当留在屏幕上，而品牌以下的一切在右侧滚动。两个窗格都在同一个 `Form` 里，所以 `validate()` 仍能触及两侧的字段；每个控制器本来就住在 `State` 里，所以编辑到一半折叠或展开时输入了一半的值不会丢。
@@ -284,6 +286,7 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `device_edit_page.dart` | `useDetailTwoPane`、`detailLeftPaneWidth`、`editAvatarSize` | 左窗格按构造不滚动；见上文。推到壳外。 |
 | `service_edit_page.dart`、`service_route_edit_page.dart` | `useDetailTwoPane`、`editFormLeftPaneWidth` | **两栏都滚动**：身份 / 源那半边（七块和六块，约 476 和 410 dp——链路编辑器在 1.5.6 多了车道下拉）太高，无法像设备编辑页钉住三件套那样在 480 dp 下限钉住，所以左窗格是普通滚动视图。窗格是窗口的 0.42 钳到 300–480，比详情窗格宽，因为它装的是下拉——最长日文标签在 32 内边距内需要 268；600 dp 下限时右窗格给 Docker Compose 编辑器留 299。推到壳外。 |
 | `service_access_path_page.dart` | `useDetailTwoPane`、`editFormLeftPaneWidth`、`accessPatternColumns` | 两栏都滚动，按角色而非按表单的两半拆分：左窗格（窗口的 0.42，300–480）放选择——源 tile 和模式卡片——右窗格放详细设置、带警告的预览和动作。若把整张表单都放在左边，右窗格就只剩一张短短的预览卡片。模式卡片每行 `accessPatternColumns` 张：以 150 dp 算 `columnCapacity`，最多 3，所以 360 dp 手机每行两张，600 dp 下限处的左窗格（内边距内 268）每行一张。每行是一个 `IntrinsicHeight`，所以同行卡片等高。推到壳外。 |
+| `service_topology_page.dart` | `useDetailTwoPane`、`topologyDetailPaneWidth` | 分栏窗口在画布右侧放一个非模态详情窗格——窗口的 0.3，280–380，永不宽于它所取代的手机底部面板；手机保留底部面板。没有选中任何内容时窗格仍在（显示提示），因为布局以画布宽度为键，时有时无的窗格会让每次点按都重新布局。画布本身是 `LayoutBuilder` 驱动的滚动视图或 `InteractiveViewer`，其布局缓存以自身宽度为键。推到壳外。 |
 | `dataset_edit_page.dart` | `useDetailTwoPane`、`editFormLeftPaneWidth` | 固定左窗格（56 dp emoji 块加名称字段，含内边距 88 dp——远低于下限处窗格的 424，无需算式）配同样的滚动视图兜底；存储清单在右侧滚动。推到壳外。 |
 | `network_edit_page.dart` | `formMaxWidth` | 仅宽度，不是分栏规则：六个字段的单列封顶 600 dp 并居中，桌面窗口不再把每个字段拉到整个宽度，手机不变。 |
 | 五个 `DraggableScrollableSheet` 选择器（设备模板、CPU 与 GPU 预设、服务模板、访问路径页的服务选择器） | `sheetInitialSize`、`sheetMaxSize` | 高度低于 480 dp 时表单以 0.95 而非首选的 0.6 / 0.82 打开：五者都是 `isScrollControlled` 且带搜索框，在 412 dp 高的窗口上弹出键盘后 0.6 的表单只剩约 100 dp 结果。 |
@@ -294,7 +297,6 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 | `device_finance_overview_page.dart`（摘要与图表并排） | `canSplitLayout`、`useFinanceSideBySide`、`financeSummaryPaneWidth` | 双重门控，外加非空分布；见上文。 |
 | `device_finance_overview_page.dart`（摘要卡） | `financeSummaryColumns` | 仅宽度，下限 2；在并排窗格内强制为一列。推到壳外：测量自己的 `LayoutBuilder`。 |
 | `device_search_dialog.dart`、`chip_search_dialog.dart` | `dialogBodyHeight`、`dialogMaxWidth` | 高度来自窗口减键盘。 |
-| `service_topology_page.dart`（`ServiceTopologyPage` / `_ServiceTopologyView`） | 无需 | 已是 `LayoutBuilder` 驱动的全幅 `InteractiveViewer`；布局缓存以视口宽度为键。 |
 | `device_map_page.dart`、`map_picker_page.dart` | 无需 | 全幅地图填满给它的任何空间；选点器的搜索行已是按钮旁的 `Expanded` 输入框。 |
 | 网络详情的设备选择表单、数据集编辑的 emoji `SimpleDialog` | 无需 | 十六个 emoji 的 `Wrap` 和一个短设备列表；两者在手机上放得下，并被 Material 3 的 640 dp 表单宽和 560 dp 对话框宽封顶。 |
 
@@ -309,10 +311,11 @@ Google 的自适应布局指南说窗口尺寸类别「明确不由设备屏幕�
 ## 测试
 
 - `test/adaptive_layout_test.dart` — 门控、导航栏规则、内容宽度、容量与行数算术、四个列表的列数与偏好钳制、两条概览规则、访问模式卡片的列数、财务下限和对话框高度，钉在上表每台设备的真实逻辑像素几何上，注释里写设备名，回归时报出它会弄坏的设备。它还断言 `serviceMetricColumns` 与被替换的内联算术仍一致。
-- `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限、从门控到 2000 dp 图表永不低于最小值的循环不变量，以及从 480 到 1200 的每个窗口高度上编辑页左列都放得进窗格的循环不变量。
+- `test/detail_layout_test.dart` — 详情委托与分栏规则一致、窗格宽度的钳制、命名设备上的财务宽度下限、从门控到 2000 dp 图表永不低于最小值的循环不变量、从 480 到 1200 的每个窗口高度上编辑页左列都放得进窗格的循环不变量，以及拓扑详情窗格的宽度、它相对手机底部面板的上限和它占窗口的比例。
 - `test/device_edit_two_pane_ui_test.dart` — 在 Z Fold 8 横竖、手机、600 × 480 下限和 300 dp 软键盘内缩下渲染编辑页：哪些字段共享左窗格、同一个 `Form` 仍包住两侧、没有溢出。
 - `test/settings_two_pane_ui_test.dart` — 设置页在 Z Fold 8 横竖和手机上：列表旁的占位、某行在列表旁宿主其页面且无返回箭头、同一行推入全屏且有返回箭头，以及桌面窗口上许可证正文的封顶。
 - `test/service_access_path_page_test.dart` — 引导式访问路径页在手机（单列）和展开横屏的 Z Fold 8（双栏，预览在右窗格）上的布局，此外还有它的行为测试。
+- `test/service_topology_page_test.dart` — 全屏拓扑在手机（详情在底部面板中）和桌面窗口（详情窗格、路由聚焦、窗格的关闭按钮）上的布局，此外还有它的选择、筛选、图例、语义和适应窗口测试。
 - `test/edit_pages_two_pane_ui_test.dart` — 服务、链路、数据集和网络编辑页在 Z Fold 8 横竖、手机、下限和桌面上：哪半边落在哪里、下限处的数据集窗格、网络表单的 600 dp 上限对比手机的全宽。emoji 网格、表单比例和 `editFormLeftPaneWidth` 由纯函数测试钉住。
 - `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart`、`test/finance_overview_layout_ui_test.dart` — 在 Z Fold 8 横竖、Z Fold 7 竖屏、手机横竖、平板和 600 × 480 下限上渲染页面：哪个窗格放什么、右侧滚动时左窗格不动、无规格与无数据的回退。
 - `test/list_columns_prefs_test.dart` — 四个列数偏好各自独立往返，默认值不写入文件而是缺席，非法值读作自动。

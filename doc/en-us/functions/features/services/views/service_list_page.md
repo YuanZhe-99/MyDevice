@@ -142,9 +142,10 @@ editor and the guided access-path page share.
   ```
   Also called from `_buildOverview`'s add-access button and `_topologyCard`'s action row
   (without a draft), from `_serviceRouteGroupCard` and `_serviceTile`'s popup menu (with the
-  service as source), and passed through as the `onAddAccess` callback to
-  `ServiceTopologyPage`/`_ServiceTopologyView`/[`_showNodeDetails`](service_topology_page.md#shownodedetails),
-  whose type is `Future<void> Function({ServiceAccessDraft? draft})`.
+  service as source), and passed through as the `onAddAccess` callback to `ServiceTopologyPage`,
+  whose node details ([`_showDetailsSheet`](service_topology_page.md#showdetailssheet),
+  [`_buildDetailsPane`](service_topology_page.md#builddetailspane)) call it; its type is
+  `Future<void> Function({ServiceAccessDraft? draft})`.
 - **Notes:** Replaced `_addAccessRoute` and the `_QuickAccessRouteDialog` it opened in 1.5.6. The
   page persists the route itself, so this method only reloads.
 

@@ -58,10 +58,30 @@ local devices. The graph distinguishes:
 The overview card's header/actions layout is responsive so titles like "service
 topology" don't collapse vertically on narrow screens, and it uses an **open-topology
 button** rather than a scaled-down embedded preview, because real graphs are too dense
-to read at preview size. The full-screen topology adds selectable node details, a
-separate move/zoom mode, internal 90-degree rotation (without changing system
-orientation), and PNG export/share (platform-specific mechanism —
-see [Platform Notes](../platform-notes.md#android)).
+to read at preview size. The full-screen topology (`service_topology_page.dart`) adds:
+
+- **Selection.** Tapping a node selects it and highlights every route through it — the
+  routes' nodes and edges stay at full strength, everything else fades. A tap on the empty
+  canvas, or the × of the selection chip, clears it.
+- **Node details.** On a phone the tap also opens a bottom sheet: the node, its device and
+  service with "Edit service" and "Add access", and its routes, each opening its editor. On a
+  split window ([Adaptive Layout](../adaptive-layout.md#detail-pages-two-panes)) the same details
+  sit in a pane beside the canvas; there a route row narrows the highlight to that one route (tap
+  again for all) and its edit button opens the editor.
+- **Filters.** A filter action narrows the graph to chosen devices, access lanes and a search
+  text (service names, hop labels and hosts, domains); a badge counts the active filters.
+  Filtering rebuilds the graph from the narrowed inventory rather than hiding parts of the
+  drawing, so the layout packs what remains.
+- **Legend.** A collapsible strip under the mode switch explains the lane colours and the node
+  roles. It sits outside the canvas and is not exported.
+- **Move / zoom mode** with **Fit** (the whole graph in view, within the zoom limits) and
+  **Reset**, internal 90-degree rotation (without changing system orientation), and PNG
+  export/share (platform-specific mechanism — see
+  [Platform Notes](../platform-notes.md#android)). The export captures the current highlight,
+  so a single route can be exported on its own.
+
+Role, lane, device-category and access-level labels are localized throughout; screen readers
+hear each node's label, role and lane.
 
 ## Topology graph layout (high level)
 

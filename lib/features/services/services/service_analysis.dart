@@ -122,6 +122,14 @@ class ServiceTopologyEdge {
   final ServiceAccessLane? lane;
   final ServiceRouteMethod? method;
 
+  /// Every route that runs along this edge, in the order they added it.
+  ///
+  /// Edges are shared: two routes through the same pair of nodes in the same
+  /// lane and method produce one edge, whose [routeId] names only the first.
+  /// Selection highlighting needs all of them. Empty for the structural
+  /// device-to-service edges no route adds.
+  final List<String> routeIds;
+
   /// Purpose: Create a service topology edge instance.
   /// Inputs: None.
   /// Returns: A new `ServiceTopologyEdge` instance.
@@ -134,7 +142,27 @@ class ServiceTopologyEdge {
     this.routeId,
     this.lane,
     this.method,
+    this.routeIds = const [],
   });
+
+  /// Purpose: Return this edge with one more route running along it.
+  /// Inputs: `routeId`.
+  /// Returns: `ServiceTopologyEdge` — this edge itself when the route is
+  /// already listed.
+  /// Side effects: None.
+  /// Notes: Keeps [routeId], the route that added the edge first.
+  ServiceTopologyEdge withRoute(String routeId) {
+    if (routeIds.contains(routeId)) return this;
+    return ServiceTopologyEdge(
+      from: from,
+      to: to,
+      label: label,
+      routeId: this.routeId,
+      lane: lane,
+      method: method,
+      routeIds: [...routeIds, routeId],
+    );
+  }
 }
 
 class ServiceTopologyGraph {
@@ -348,11 +376,16 @@ ServiceTopologyGraph buildServiceTopology({
     );
   }
 
-  /// Purpose: Add edge through the current flow.
-  /// Inputs: `from`, `to`.
+  /// Purpose: Add an edge between two existing nodes, or record another route
+  /// on the edge already there.
+  /// Inputs: `from`, `to` — node ids; `label`; `routeId` — the route adding the
+  /// edge, null for a structural edge.
   /// Returns: None.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Side effects: Adds to or replaces an entry of the local `edges` map.
+  /// Notes: Edges are keyed by endpoints, label, lane and method, so routes that
+  /// share all four share one edge; a later route is appended to its `routeIds`
+  /// in place, which keeps the edge order — and so the layout — unchanged. A
+  /// self-loop or an unknown node is ignored.
   void addEdge(String from, String to, {String? label, String? routeId}) {
     if (from == to || !nodes.containsKey(from) || !nodes.containsKey(to)) {
       return;
@@ -367,16 +400,19 @@ ServiceTopologyGraph buildServiceTopology({
         .firstOrNull;
     final key =
         '$from->$to:${label ?? ''}:${lane?.name ?? ''}:${method?.name ?? ''}';
-    edges.putIfAbsent(
-      key,
-      () => ServiceTopologyEdge(
-        from: from,
-        to: to,
-        label: label,
-        routeId: routeId,
-        lane: lane,
-        method: method,
-      ),
+    final existing = edges[key];
+    if (existing != null) {
+      if (routeId != null) edges[key] = existing.withRoute(routeId);
+      return;
+    }
+    edges[key] = ServiceTopologyEdge(
+      from: from,
+      to: to,
+      label: label,
+      routeId: routeId,
+      lane: lane,
+      method: method,
+      routeIds: routeId == null ? const [] : [routeId],
     );
   }
 
@@ -1101,6 +1137,281 @@ List<ServiceRoute> relatedRoutesForNode(
     for (final route in routes)
       if (matches(route)) route,
   ];
+}
+
+/// What the full-screen topology is narrowed to: some devices, some access
+/// lanes, a search text. The default narrows nothing.
+///
+/// Compared by value, so the page can memoize the graph it builds for a
+/// filter and rebuild only when the filter really changed.
+class ServiceTopologyFilter {
+  /// The devices whose services and routes are shown; null shows every device.
+  final Set<String>? deviceIds;
+
+  /// The access lanes whose routes are shown.
+  final Set<ServiceAccessLane> lanes;
+
+  /// Text a route or service must contain, compared case-insensitively.
+  final String query;
+
+  /// Purpose: Create a topology filter.
+  /// Inputs: `deviceIds` — null for every device; `lanes` — every lane by
+  /// default; `query` — empty by default.
+  /// Returns: A new `ServiceTopologyFilter`.
+  /// Side effects: None.
+  /// Notes: An empty `deviceIds` set is kept as given; the page never makes
+  /// one, since clearing the last device chip means "every device".
+  const ServiceTopologyFilter({
+    this.deviceIds,
+    this.lanes = const {
+      ServiceAccessLane.local,
+      ServiceAccessLane.vpn,
+      ServiceAccessLane.public,
+    },
+    this.query = '',
+  });
+
+  /// Purpose: Report whether the filter narrows the devices.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
+  bool get narrowsDevices => deviceIds != null;
+
+  /// Purpose: Report whether the filter leaves out a lane.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
+  bool get narrowsLanes => !ServiceAccessLane.values.every(lanes.contains);
+
+  /// Purpose: Report whether the filter has search text.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Whitespace alone does not count.
+  bool get hasQuery => query.trim().isNotEmpty;
+
+  /// Purpose: Count the filter's active parts, for the app-bar badge.
+  /// Inputs: None.
+  /// Returns: `int`, 0 to 3 — devices, lanes and search count once each.
+  /// Side effects: None.
+  /// Notes: None.
+  int get activeCount =>
+      (narrowsDevices ? 1 : 0) + (narrowsLanes ? 1 : 0) + (hasQuery ? 1 : 0);
+
+  /// Purpose: Report whether the filter narrows anything.
+  /// Inputs: None.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
+  bool get isActive => activeCount > 0;
+
+  /// Purpose: Create a copy with selected parts replaced.
+  /// Inputs: `deviceIds`, `clearDeviceIds` — back to every device; `lanes`;
+  /// `query`.
+  /// Returns: `ServiceTopologyFilter`.
+  /// Side effects: None.
+  /// Notes: None.
+  ServiceTopologyFilter copyWith({
+    Set<String>? deviceIds,
+    bool clearDeviceIds = false,
+    Set<ServiceAccessLane>? lanes,
+    String? query,
+  }) => ServiceTopologyFilter(
+    deviceIds: clearDeviceIds ? null : (deviceIds ?? this.deviceIds),
+    lanes: lanes ?? this.lanes,
+    query: query ?? this.query,
+  );
+
+  /// Purpose: Compare two filters by value.
+  /// Inputs: `other`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Sets compare by content; the query compares as typed.
+  @override
+  bool operator ==(Object other) =>
+      other is ServiceTopologyFilter &&
+      _sameSet(other.deviceIds, deviceIds) &&
+      _sameSet(other.lanes, lanes) &&
+      other.query == query;
+
+  /// Purpose: Hash a filter consistently with `==`.
+  /// Inputs: None.
+  /// Returns: `int`.
+  /// Side effects: None.
+  /// Notes: Order-independent over both sets.
+  @override
+  int get hashCode => Object.hash(
+    deviceIds == null ? null : Object.hashAllUnordered(deviceIds!),
+    Object.hashAllUnordered(lanes),
+    query,
+  );
+}
+
+/// Purpose: Compare two optional sets by content.
+/// Inputs: `a`, `b`.
+/// Returns: `bool` — true when both are null or both hold the same elements.
+/// Side effects: None.
+/// Notes: Internal helper of [ServiceTopologyFilter].
+bool _sameSet<T>(Set<T>? a, Set<T>? b) {
+  if (a == null || b == null) return a == b;
+  return a.length == b.length && a.containsAll(b);
+}
+
+/// Purpose: Narrow the services and routes a topology is built from.
+/// Inputs: `services`, `routes` — the whole inventory; `filter`.
+/// Returns: The services and routes to hand to [buildServiceTopology]; the
+/// inputs themselves when the filter narrows nothing.
+/// Side effects: None.
+/// Notes: A route stays when its source service runs on a chosen device, its
+/// lane is chosen, and the search text is found in its source or a hop
+/// service's name, a hop's label or host, or one of its targets. A service
+/// stays when a kept route runs through it — also on a device that was not
+/// chosen, so an FRP server on a VPS still draws its ingress chip — or when
+/// it runs on a chosen device and neither the lanes nor the search narrow
+/// anything (or the search text is in its name). Lanes and search are about
+/// routes, so they hide the services no kept route touches.
+({List<ServiceNode> services, List<ServiceRoute> routes})
+filterServiceTopologyInput({
+  required List<ServiceNode> services,
+  required List<ServiceRoute> routes,
+  required ServiceTopologyFilter filter,
+}) {
+  if (!filter.isActive) return (services: services, routes: routes);
+  final byId = {for (final service in services) service.id: service};
+  final query = filter.query.trim().toLowerCase();
+  final deviceIds = filter.deviceIds;
+
+  /// Purpose: Report whether a service runs on a chosen device.
+  /// Inputs: `service`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [filterServiceTopologyInput].
+  bool onChosenDevice(ServiceNode? service) =>
+      deviceIds == null ||
+      (service != null && deviceIds.contains(service.deviceId));
+
+  /// Purpose: Report whether a text contains the search text.
+  /// Inputs: `text`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [filterServiceTopologyInput].
+  bool hit(String? text) => text != null && text.toLowerCase().contains(query);
+
+  /// Purpose: Report whether a route matches the search text.
+  /// Inputs: `route`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Local helper of [filterServiceTopologyInput].
+  bool routeMatches(ServiceRoute route) {
+    if (query.isEmpty) return true;
+    if (hit(byId[route.sourceServiceId]?.name)) return true;
+    for (final hop in route.hops) {
+      if (hit(byId[hop.serviceId]?.name) || hit(hop.label) || hit(hop.host)) {
+        return true;
+      }
+    }
+    return serviceRouteAccessTargets(route).any(hit);
+  }
+
+  final keptRoutes = [
+    for (final route in routes)
+      if (onChosenDevice(byId[route.sourceServiceId]) &&
+          filter.lanes.contains(serviceAccessLaneForRoute(route)) &&
+          routeMatches(route))
+        route,
+  ];
+  final routeServiceIds = <String>{
+    for (final route in keptRoutes) ...[
+      route.sourceServiceId,
+      for (final hop in route.hops)
+        if (hop.serviceId != null) hop.serviceId!,
+    ],
+  };
+  final narrowsRoutes = filter.narrowsLanes || filter.hasQuery;
+  final keptServices = [
+    for (final service in services)
+      if (routeServiceIds.contains(service.id) ||
+          (onChosenDevice(service) &&
+              (!narrowsRoutes || (filter.hasQuery && hit(service.name)))))
+        service,
+  ];
+  return (services: keptServices, routes: keptRoutes);
+}
+
+/// The nodes and edges a selection lights up on the topology.
+class ServiceTopologyHighlight {
+  /// Ids of the nodes that stay fully opaque.
+  final Set<String> nodeIds;
+
+  /// The edges drawn emphasized.
+  final Set<ServiceTopologyEdge> edges;
+
+  /// Purpose: Create a highlight.
+  /// Inputs: `nodeIds`, `edges`.
+  /// Returns: A new `ServiceTopologyHighlight`.
+  /// Side effects: None.
+  /// Notes: Edges are the graph's own instances, compared by identity.
+  const ServiceTopologyHighlight({required this.nodeIds, required this.edges});
+}
+
+/// Purpose: Work out which nodes and edges a set of routes lights up.
+/// Inputs: `graph`; `routes` — the highlighted routes, e.g. from
+/// [relatedRoutesForNode]; `selectedNodeId` — the selected node, lit even
+/// when it takes part in none of them.
+/// Returns: `ServiceTopologyHighlight`.
+/// Side effects: None.
+/// Notes: A node is lit when one of its `routeIds` is highlighted, and a
+/// service node also when it is a highlighted route's source or hop service
+/// — the builder does not record routes on the source service node. A device
+/// node is lit when it hosts a lit service, endpoint, relay or entry, so a
+/// route's own machine never fades behind it. An edge is lit when one of its
+/// `routeIds` is highlighted, and a structural edge (no routes) when both its
+/// ends are lit.
+ServiceTopologyHighlight serviceTopologyHighlight(
+  ServiceTopologyGraph graph,
+  List<ServiceRoute> routes, {
+  String? selectedNodeId,
+}) {
+  final routeIds = {for (final route in routes) route.id};
+  final serviceIds = <String>{
+    for (final route in routes) ...[
+      route.sourceServiceId,
+      for (final hop in route.hops)
+        if (hop.serviceId != null) hop.serviceId!,
+    ],
+  };
+  final nodeIds = <String>{
+    for (final node in graph.nodes)
+      if (node.id == selectedNodeId ||
+          node.routeIds.any(routeIds.contains) ||
+          (node.kind == ServiceTopologyNodeKind.service &&
+              serviceIds.contains(node.serviceId)))
+        node.id,
+  };
+  final hostDeviceIds = <String>{
+    for (final node in graph.nodes)
+      if (node.kind != ServiceTopologyNodeKind.device &&
+          node.deviceId != null &&
+          nodeIds.contains(node.id))
+        node.deviceId!,
+  };
+  for (final node in graph.nodes) {
+    if (node.kind == ServiceTopologyNodeKind.device &&
+        hostDeviceIds.contains(node.deviceId)) {
+      nodeIds.add(node.id);
+    }
+  }
+  final edges = <ServiceTopologyEdge>{
+    for (final edge in graph.edges)
+      if (edge.routeIds.any(routeIds.contains) ||
+          (edge.routeIds.isEmpty &&
+              nodeIds.contains(edge.from) &&
+              nodeIds.contains(edge.to)))
+        edge,
+  };
+  return ServiceTopologyHighlight(nodeIds: nodeIds, edges: edges);
 }
 
 bool _isPortMappingHop(ServiceRouteHop hop) =>

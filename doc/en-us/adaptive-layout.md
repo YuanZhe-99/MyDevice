@@ -204,6 +204,14 @@ page's 260 dp info card a long DNS list wraps, which is acceptable.
 | Phone 412 × 915 / 915 × 412 | no | — | — |
 | Desktop 1600 × 900 | yes | 420 | 1179 |
 
+The full-screen service topology uses the same gate with the fixed pane on the other side. On a
+split window its node details move from the bottom sheet into a non-modal pane right of the
+canvas, `topologyDetailPaneWidth` wide: 0.3 of the window, clamped to 280–380. The cap is the
+sheet's content width on a 412 dp phone, so the details are never laid out wider than on the
+phone; the floor keeps a route row's two-line subtitle and the two service buttons on one line;
+the share leaves the canvas at least 70 % of the window — 319 at the 600 dp floor, 652 on a Z Fold
+8 in landscape.
+
 ## A pane that must not scroll: the device edit page
 
 The device edit page splits through the same `useDetailTwoPane` delegate and
@@ -455,6 +463,7 @@ to save and restore.
 | `device_edit_page.dart` | `useDetailTwoPane`, `detailLeftPaneWidth`, `editAvatarSize` | The left pane is non-scrolling by construction; see above. Pushed outside the shell. |
 | `service_edit_page.dart`, `service_route_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | Two panes that **both scroll**: the identity / source half (seven and six blocks, ~476 and ~410 dp — the route editor gained its lane dropdown in 1.5.6) is too tall to pin at the 480 dp floor the way the device edit page pins its three, so the left pane is a plain scroll view. The pane is 0.42 of the window clamped 300–480, wider than a detail pane because it holds dropdowns whose longest Japanese label needs 268 inside 32 of padding; at the 600 dp floor the right pane keeps 299 for the Docker Compose editor. Pushed outside the shell. |
 | `service_access_path_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth`, `accessPatternColumns` | Two panes that both scroll, split by role rather than by half of the form: the left pane (0.42 of the window, 300–480) holds the choices — the source tile and the pattern cards — and the right pane the details, the preview with its warnings, and the actions. The whole form on the left would leave the right pane holding only a short preview card. The pattern cards come `accessPatternColumns` to a row: `columnCapacity` at 150 dp, at most 3, so a 360 dp phone keeps two cards per row and the left pane at the 600 dp floor (268 inside its padding) one. Each row is an `IntrinsicHeight`, so its cards share a height. Pushed outside the shell. |
+| `service_topology_page.dart` | `useDetailTwoPane`, `topologyDetailPaneWidth` | Split windows put a non-modal details pane — 0.3 of the window, 280–380, never wider than the phone's sheet it replaces — right of the canvas; phones keep the bottom sheet. The pane stays with nothing selected (a hint), because the layout is keyed on the canvas width and a pane that came and went would relayout on every tap. The canvas itself is a `LayoutBuilder`-driven scroll view or `InteractiveViewer` whose layout cache is keyed on its width. Pushed outside the shell. |
 | `dataset_edit_page.dart` | `useDetailTwoPane`, `editFormLeftPaneWidth` | A fixed left pane (the 56 dp emoji tile and the name field, 88 dp with padding — no arithmetic needed under the 424 a pane has at the floor) with the same scroll-view fallback; the storage checklist scrolls on the right. Pushed outside the shell. |
 | `network_edit_page.dart` | `formMaxWidth` | Width only, not the split rule: a lone column of six fields is capped at 600 dp and centred, so a desktop window stops stretching each field across its whole width and a phone is unchanged. |
 | The five `DraggableScrollableSheet` pickers (device template, CPU and GPU presets, service template, the access-path page's service picker) | `sheetInitialSize`, `sheetMaxSize` | Under 480 dp of height a sheet opens at 0.95 instead of its preferred 0.6 / 0.82: all five are `isScrollControlled` with a search field, and on a 412 dp window with the keyboard up a 0.6 sheet left about 100 dp of results. |
@@ -465,7 +474,6 @@ to save and restore.
 | `device_finance_overview_page.dart` (summary beside chart) | `canSplitLayout`, `useFinanceSideBySide`, `financeSummaryPaneWidth` | The double gate, plus a non-empty distribution; see above. |
 | `device_finance_overview_page.dart` (summary card) | `financeSummaryColumns` | Width only, floored at two; forced to one column inside the side-by-side pane. Pushed outside the shell: measures its own `LayoutBuilder`. |
 | `device_search_dialog.dart`, `chip_search_dialog.dart` | `dialogBodyHeight`, `dialogMaxWidth` | Height from the window less the keyboard. |
-| `service_topology_page.dart` (`ServiceTopologyPage` / `_ServiceTopologyView`) | none needed | Already a `LayoutBuilder`-driven, full-bleed `InteractiveViewer`; the layout cache is keyed on the viewport width. |
 | `device_map_page.dart`, `map_picker_page.dart` | none needed | A full-bleed map fills whatever it is given; the picker's search row is already an `Expanded` field beside a button. |
 | Network detail's device picker sheet, dataset edit's emoji `SimpleDialog` | none needed | A `Wrap` of sixteen emoji and a short device list; both fit a phone and are capped by Material 3's 640 dp sheet and 560 dp dialog widths. |
 
@@ -499,8 +507,9 @@ verbatim.
   replaced.
 - `test/detail_layout_test.dart` — the detail delegate's agreement with the split rule, the pane
   width's clamps, the finance width floor at named devices, the loop invariant that the chart
-  never falls under its minimum from the gate up to 2000 dp, and the loop invariant that the edit
-  page's left column fits its pane at every window height from 480 to 1200.
+  never falls under its minimum from the gate up to 2000 dp, the loop invariant that the edit
+  page's left column fits its pane at every window height from 480 to 1200, and the topology
+  details pane's width, its cap against the phone sheet and its share of the window.
 - `test/device_edit_two_pane_ui_test.dart` — the rendered edit page at a Z Fold 8 both ways, a
   phone, the 600 × 480 floor and under a 300 dp soft-keyboard inset: which fields share the left
   pane, that one `Form` still wraps both, and that nothing overflows.
@@ -510,6 +519,9 @@ verbatim.
 - `test/service_access_path_page_test.dart` — the guided access-path page at a phone (one
   column) and a Z Fold 8 unfolded in landscape (two panes, the preview in the right pane), besides
   its behaviour tests.
+- `test/service_topology_page_test.dart` — the full-screen topology at a phone (the details in a
+  bottom sheet) and a desktop window (the details pane, route focus, the pane's close button),
+  besides its selection, filter, legend, semantics and fit tests.
 - `test/edit_pages_two_pane_ui_test.dart` — the service, route, dataset and network edit pages at
   a Z Fold 8 both ways, a phone, the floor and a desktop: which half lands where, the dataset
   pane at the floor, and the network form's 600 dp cap against a phone's full width. The emoji

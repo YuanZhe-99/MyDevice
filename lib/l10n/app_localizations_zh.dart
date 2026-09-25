@@ -1234,7 +1234,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get serviceTopology => '服务拓扑';
 
   @override
-  String get serviceTopologyHint => '打开拓扑图可查看节点详情、缩放、旋转或导出 PNG。';
+  String get serviceTopologyHint =>
+      '打开拓扑图可选择节点查看其链路，按设备、车道或文字筛选，以及缩放、旋转或导出 PNG。';
 
   @override
   String get serviceOpenTopology => '打开拓扑图';
@@ -1654,6 +1655,50 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get serviceAccessLaneAuto => '自动（按方式推断）';
+
+  @override
+  String get serviceTopologyFilters => '筛选';
+
+  @override
+  String get serviceTopologyFilterDevices => '设备';
+
+  @override
+  String get serviceTopologyFilterAllDevices => '全部设备';
+
+  @override
+  String get serviceTopologyFilterLanes => '车道';
+
+  @override
+  String get serviceTopologyFilterSearch => '搜索服务、节点或域名';
+
+  @override
+  String get serviceTopologyFilterClear => '清除筛选';
+
+  @override
+  String get serviceTopologyNoMatch => '没有符合筛选条件的内容。';
+
+  @override
+  String get serviceTopologyLegend => '图例';
+
+  @override
+  String serviceTopologySelected(String name) {
+    return '已选择：$name';
+  }
+
+  @override
+  String get serviceTopologyClearSelection => '取消选择';
+
+  @override
+  String get serviceTopologyFit => '适应窗口';
+
+  @override
+  String get serviceTopologyReset => '重置';
+
+  @override
+  String get serviceTopologyRouteFocusHint => '点按一条链路只高亮它，再点一次恢复全部。';
+
+  @override
+  String get serviceTopologySelectNodeHint => '选择一个节点以查看其详情和链路。';
 
   @override
   String get backupModuleServices => '服务';
@@ -2903,7 +2948,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get serviceTopology => '服務拓撲';
 
   @override
-  String get serviceTopologyHint => '開啟拓撲圖可查看節點詳情、縮放、旋轉或匯出 PNG。';
+  String get serviceTopologyHint =>
+      '開啟拓撲圖可選取節點查看其鏈路，依裝置、車道或文字篩選，以及縮放、旋轉或匯出 PNG。';
 
   @override
   String get serviceOpenTopology => '開啟拓撲圖';
@@ -3323,6 +3369,50 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceAccessLaneAuto => '自動（依方式推斷）';
+
+  @override
+  String get serviceTopologyFilters => '篩選';
+
+  @override
+  String get serviceTopologyFilterDevices => '裝置';
+
+  @override
+  String get serviceTopologyFilterAllDevices => '全部裝置';
+
+  @override
+  String get serviceTopologyFilterLanes => '車道';
+
+  @override
+  String get serviceTopologyFilterSearch => '搜尋服務、節點或網域';
+
+  @override
+  String get serviceTopologyFilterClear => '清除篩選';
+
+  @override
+  String get serviceTopologyNoMatch => '沒有符合篩選條件的內容。';
+
+  @override
+  String get serviceTopologyLegend => '圖例';
+
+  @override
+  String serviceTopologySelected(String name) {
+    return '已選取：$name';
+  }
+
+  @override
+  String get serviceTopologyClearSelection => '取消選取';
+
+  @override
+  String get serviceTopologyFit => '符合視窗';
+
+  @override
+  String get serviceTopologyReset => '重設';
+
+  @override
+  String get serviceTopologyRouteFocusHint => '點按一條鏈路只醒目提示它，再點一次恢復全部。';
+
+  @override
+  String get serviceTopologySelectNodeHint => '選取一個節點以查看其詳情和鏈路。';
 
   @override
   String get backupModuleServices => '服務';

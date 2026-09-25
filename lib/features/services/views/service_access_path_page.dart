@@ -1346,19 +1346,6 @@ IconData serviceAccessPatternIcon(ServiceAccessPattern pattern) =>
       ServiceAccessPattern.tailscaleFunnel => Icons.vpn_lock,
     };
 
-/// Purpose: Return the colour the topology uses for an access lane.
-/// Inputs: `cs` — the colour scheme; `lane`.
-/// Returns: `Color`.
-/// Side effects: None.
-/// Notes: Local is tertiary, VPN secondary, public primary — the edge
-/// painter's lane colours.
-Color serviceAccessLaneColor(ColorScheme cs, ServiceAccessLane lane) =>
-    switch (lane) {
-      ServiceAccessLane.local => cs.tertiary,
-      ServiceAccessLane.vpn => cs.secondary,
-      ServiceAccessLane.public => cs.primary,
-    };
-
 /// Purpose: Split the targets field into trimmed, non-empty entries.
 /// Inputs: `value`.
 /// Returns: `List<String>`.

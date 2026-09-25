@@ -48,7 +48,6 @@
 | `_buildActions` | 方法（组件辅助） | B | 取消、高级编辑器、保存。 |
 | `_showServicePicker` | 方法（`_ServiceAccessPathPageState`） | B | 打开 `_ServicePickerSheet` 并返回选中的服务。 |
 | `serviceAccessPatternIcon` | 顶层函数 | B | 模式卡片的图标，与路由方法图标一致。 |
-| `serviceAccessLaneColor` | 顶层函数 | B | 拓扑的车道颜色（本地为 tertiary、VPN 为 secondary、公网为 primary）。 |
 | `_splitTargets` | 顶层函数 | B | 按行或逗号拆分目标字段。 |
 | `_ServiceTile` 构造函数 | 构造函数 | B | 显示所选服务或提示选择服务的块。 |
 | `build` | 方法（组件构建，`_ServiceTile`） | B | 带图标、名称、设备和端口的卡片；错误文本显示在下方。 |
@@ -196,7 +195,7 @@
 
 ### `Widget build(BuildContext context)` (`_ServicePickerSheetState`) <a id="pickerbuild"></a>
 - **种类：** `_ServicePickerSheetState` 的方法（组件构建）
-- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1711 行）
+- **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1698 行）
 - **用途：** 渲染可搜索的服务选择器。
 - **输入：** `context`。**返回：** 组件树。**副作用：** 无。
 - **算法：** 按搜索文本（服务名、设备名、端口）过滤；先按设备、再按名称排序；推荐的服务先显示在自己的标题下，其余在后；没有推荐时其余按设备分组。点击某行会弹出其服务。

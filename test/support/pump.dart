@@ -24,7 +24,10 @@ Future<void> settle(WidgetTester tester) async {
 /// event loop, so each attempt yields through `runAsync` before pumping.
 /// Waiting on the condition rather than a frame count removes the timing
 /// dependence that made fixed-frame waits flake under the parallel full-suite
-/// run.
+/// run. Each yield waits 10 ms of real time rather than a zero-length timer,
+/// so the default budget is at least 0.4 s of wall-clock time for disk I/O
+/// to finish on a loaded machine, not 40 event-loop turns that can pass in a
+/// few milliseconds.
 Future<void> pumpUntil(
   WidgetTester tester,
   Finder finder, {
@@ -32,7 +35,9 @@ Future<void> pumpUntil(
 }) async {
   for (var i = 0; i < attempts; i++) {
     if (finder.evaluate().isNotEmpty) return;
-    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
     await tester.pump(const Duration(milliseconds: 50));
   }
   fail('timed out waiting for: $finder');

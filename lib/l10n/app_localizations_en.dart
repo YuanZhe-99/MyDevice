@@ -1252,7 +1252,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceTopologyHint =>
-      'Open the topology for node details, zooming, rotation, or PNG export.';
+      'Open the topology to select a node and see its routes, filter by device, lane or text, zoom, rotate, or export a PNG.';
 
   @override
   String get serviceOpenTopology => 'Open Topology';
@@ -1686,6 +1686,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceAccessLaneAuto => 'Auto (from the method)';
+
+  @override
+  String get serviceTopologyFilters => 'Filters';
+
+  @override
+  String get serviceTopologyFilterDevices => 'Devices';
+
+  @override
+  String get serviceTopologyFilterAllDevices => 'All devices';
+
+  @override
+  String get serviceTopologyFilterLanes => 'Lanes';
+
+  @override
+  String get serviceTopologyFilterSearch => 'Search services, nodes or domains';
+
+  @override
+  String get serviceTopologyFilterClear => 'Clear filters';
+
+  @override
+  String get serviceTopologyNoMatch => 'Nothing matches these filters.';
+
+  @override
+  String get serviceTopologyLegend => 'Legend';
+
+  @override
+  String serviceTopologySelected(String name) {
+    return 'Selected: $name';
+  }
+
+  @override
+  String get serviceTopologyClearSelection => 'Clear selection';
+
+  @override
+  String get serviceTopologyFit => 'Fit';
+
+  @override
+  String get serviceTopologyReset => 'Reset';
+
+  @override
+  String get serviceTopologyRouteFocusHint =>
+      'Tap a route to highlight only it; tap it again for all.';
+
+  @override
+  String get serviceTopologySelectNodeHint =>
+      'Select a node to see its details and routes.';
 
   @override
   String get backupModuleServices => 'Services';

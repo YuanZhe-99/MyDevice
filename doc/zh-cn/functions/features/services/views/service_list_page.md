@@ -87,7 +87,7 @@
     onPressed: _services.isEmpty ? null : () => _addAccessPath(),
   ),
   ```
-  也（不带草稿）从 `_buildOverview` 的添加访问按钮和 `_topologyCard` 的操作行调用，（以该服务为源）从 `_serviceRouteGroupCard` 和 `_serviceTile` 的弹出菜单调用，并作为 `onAddAccess` 回调传给 `ServiceTopologyPage`/`_ServiceTopologyView`/[`_showNodeDetails`](service_topology_page.md#shownodedetails)，其类型为 `Future<void> Function({ServiceAccessDraft? draft})`。
+  也（不带草稿）从 `_buildOverview` 的添加访问按钮和 `_topologyCard` 的操作行调用，（以该服务为源）从 `_serviceRouteGroupCard` 和 `_serviceTile` 的弹出菜单调用，并作为 `onAddAccess` 回调传给 `ServiceTopologyPage`，由其节点详情（[`_showDetailsSheet`](service_topology_page.md#showdetailssheet)、[`_buildDetailsPane`](service_topology_page.md#builddetailspane)）调用；其类型为 `Future<void> Function({ServiceAccessDraft? draft})`。
 - **备注：** 1.5.6 中取代了 `_addAccessRoute` 及其打开的 `_QuickAccessRouteDialog`。页面自己持久化路由，因此此方法只负责重载。
 
 ### `List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService()` <a id="routesgroupedbyservice"></a>

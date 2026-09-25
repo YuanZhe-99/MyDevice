@@ -2,15 +2,15 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **1143**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1249** 个声明——比 1143 多 106——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，加 `device.dart` 的尾部小节）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **1188**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1294** 个声明——比 1188 多 106——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，加 `device.dart` 的尾部小节）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。
 
 `/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart`（排除 `lib/l10n/`）对源码核验。声明总数是手工维护的，且**已知存在偏差**：各文件行、「区域总计」表和下方的 Tier 表彼此并不完全一致，还有少数文件行与其自身页面的声明表也对不上。这些偏差早于 1.5.6 就已存在；1.5.6 的页面作为新行加入，各总数只按这些行的数量相应调整，并未重新审计。在完成全面核查之前，请以各文件行为准，并把所有总数都视为近似值。
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 730 |
-| Tier B（仅索引行） | 519 |
-| **总计** | **1249** |
+| Tier A（完整条目） | 746 |
+| Tier B（仅索引行） | 548 |
+| **总计** | **1294** |
 
 ## 根（`lib/`）
 
@@ -55,7 +55,7 @@
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 46 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
 | `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 7 | 0 |
-| `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 1 | 1 |
+| `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
 
 ## features/network/
 
@@ -73,18 +73,18 @@
 |---|---|---|---|
 | `lib/features/services/models/service.dart` | [features/services/models/service.md](features/services/models/service.md) | 42 | 33 |
 | `lib/features/services/services/service_access_patterns.dart` | [features/services/services/service_access_patterns.md](features/services/services/service_access_patterns.md) | 43 | 22 |
-| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 59 | 41 |
+| `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 76 | 44 |
 | `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 11 | 5 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 8 | 8 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
 | `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 87 | 34 |
-| `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 54 | 13 |
+| `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 53 | 13 |
 | `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
 | `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
-| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 16 | 7 |
-| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 18 | 5 |
+| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 36 | 16 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 25 | 7 |
 
 ## features/settings/
 
@@ -97,7 +97,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1143/1249 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1188/1294 手写声明）。
 
 ## shared/
 
@@ -116,7 +116,7 @@
 | `lib/shared/services/tray_service.dart` | [shared/services/tray_service.md](shared/services/tray_service.md) | 16 | 12 |
 | `lib/shared/services/webdav_service.dart` | [shared/services/webdav_service.md](shared/services/webdav_service.md) | 12 | 12 |
 | `lib/shared/utils/adaptive_layout.dart` | [shared/utils/adaptive_layout.md](shared/utils/adaptive_layout.md) | 16 | 16 |
-| `lib/shared/utils/detail_layout.dart` | [shared/utils/detail_layout.md](shared/utils/detail_layout.md) | 4 | 4 |
+| `lib/shared/utils/detail_layout.dart` | [shared/utils/detail_layout.md](shared/utils/detail_layout.md) | 5 | 5 |
 | `lib/shared/utils/json_preservation.dart` | [shared/utils/json_preservation.md](shared/utils/json_preservation.md) | 0 | 0 |
 | `lib/shared/views/device_map_page.dart` | [shared/views/device_map_page.md](shared/views/device_map_page.md) | 5 | 2 |
 | `lib/shared/views/webdav_config_page.dart` | [shared/views/webdav_config_page.md](shared/views/webdav_config_page.md) | 23 | 12 |
@@ -131,9 +131,9 @@
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 4 | 9 | 4 | 5 |
 | `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 15 | 381 | 201 | 180 |
+| `features/devices/` | 15 | 382 | 202 | 180 |
 | `features/network/` | 5 | 76 | 41 | 35 |
-| `features/services/` | 14 | 442 | 197 | 245 |
+| `features/services/` | 14 | 485 | 211 | 274 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 20 | 309 | 245 | 64 |
-| **总计** | **67** | **1313** | **755** | **558** |
+| `shared/` | 20 | 310 | 246 | 64 |
+| **总计** | **67** | **1358** | **771** | **587** |

@@ -1,8 +1,8 @@
 # lib/shared/utils/detail_layout.dart
 
-详情页与编辑页在 [`adaptive_layout.md`](adaptive_layout.md) 的全应用规则之上需要的助手：决定页面是否分栏的页面命名委托、其固定左窗格的宽度，以及让设备编辑页左窗格不滚动就放得下的头像尺寸（其背后三个常量 `deviceEditLeftPaneFieldBudget`、`deviceEditAvatarMinSize` 和 `deviceEditAvatarMaxSize` 在源码中记录）。与它 import 的模块一样，本模块只依赖 `dart:core`，所以每个助手都由 `test/detail_layout_test.dart` 在无组件树下覆盖；渲染后的页面由 `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart` 和 `test/device_edit_two_pane_ui_test.dart` 覆盖。推理见 [../../../adaptive-layout.md](../../../adaptive-layout.md#详情页双栏)。
+详情页与编辑页在 [`adaptive_layout.md`](adaptive_layout.md) 的全应用规则之上需要的助手：决定页面是否分栏的页面命名委托、其固定左窗格的宽度、服务拓扑详情窗格的宽度，以及让设备编辑页左窗格不滚动就放得下的头像尺寸（其背后三个常量 `deviceEditLeftPaneFieldBudget`、`deviceEditAvatarMinSize` 和 `deviceEditAvatarMaxSize` 在源码中记录）。与它 import 的模块一样，本模块只依赖 `dart:core`，所以每个助手都由 `test/detail_layout_test.dart` 在无组件树下覆盖；渲染后的页面由 `test/device_detail_layout_ui_test.dart`、`test/network_detail_layout_ui_test.dart` 和 `test/device_edit_two_pane_ui_test.dart` 覆盖。推理见 [../../../adaptive-layout.md](../../../adaptive-layout.md#detail-pages-two-panes)。
 
-使用方：`device_detail_page.dart`、`network_detail_page.dart` 和 `device_edit_page.dart`。
+使用方：`device_detail_page.dart`、`network_detail_page.dart` 和 `device_edit_page.dart`；服务、链路和数据集编辑页以及引导式访问路径页，使用 `editFormLeftPaneWidth`；以及服务拓扑页（`service_topology_page.dart`），使用 `useDetailTwoPane` 和 `topologyDetailPaneWidth`。
 
 ## 声明
 
@@ -12,6 +12,7 @@
 | [`detailLeftPaneWidth`](#detailleftpanewidth) | 顶层函数 | A | 返回详情页固定左窗格的宽度。 |
 | [`editAvatarSize`](#editavatarsize) | 顶层函数 | A | 返回设备编辑页左窗格的头像尺寸。 |
 | [`editFormLeftPaneWidth`](#editformleftpanewidth) | 顶层函数 | A | 返回编辑表单固定左窗格的宽度。 |
+| [`topologyDetailPaneWidth`](#topologydetailpanewidth) | 顶层函数 | A | 返回全屏拓扑详情窗格的宽度。 |
 
 ## 文档
 
@@ -54,3 +55,13 @@
 - **副作用：** 无。
 - **用法：** 服务、链路和数据集编辑页的 `LayoutBuilder`。
 - **备注：** 比 `detailLeftPaneWidth` 宽，因为这些窗格装的是表单字段而非一张文字卡片：最长本地化标签为日文的 `OutlineInputBorder` 下拉在窗格 32 dp 内边距内需要约 268，故下限 300。600 dp 分栏最小值时右窗格留 299。`dataSetEditLeftPaneHeight`（88）在源码中与之并列，让测试能钉住数据集页固定窗格放得进最矮的分栏窗口。
+
+### `double topologyDetailPaneWidth(double totalWidth)` <a id="topologydetailpanewidth"></a>
+- **种类：** 顶层函数。
+- **来源：** `lib/shared/utils/detail_layout.dart`。
+- **用途：** 返回全屏服务拓扑详情窗格的宽度。
+- **输入：** `totalWidth` — 页面 body 的宽度，即原始窗口（拓扑推到壳之上）。
+- **返回：** `double` — `(totalWidth × 0.3).clamp(280, 380)`。
+- **副作用：** 无。
+- **用法：** `_ServiceTopologyPageState.build`，在 `useDetailTwoPane` 窗口上为画布右侧的窗格定宽。
+- **备注：** 窗格取代手机上显示的底部面板，所以封顶 380——412 dp 手机上底部面板的内容宽度（412 减 2 × 16）——详情的排版永远不比手机上更宽。280 下限让路由行的两行副标题和「编辑服务」/「添加访问方式」按钮在中文和英文下都保持在一行。0.3 的比例让画布在大窗口上至少占 70 %：600 dp 分栏下限时 319，Z Fold 8 横屏（933）时 652。`test/detail_layout_test.dart` 钉住命名宽度、600–3000 dp 范围内相对手机底部面板的封顶，以及 0.3 的比例。

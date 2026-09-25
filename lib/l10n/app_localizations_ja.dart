@@ -1238,7 +1238,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get serviceTopology => 'サービストポロジー';
 
   @override
-  String get serviceTopologyHint => 'トポロジーを開くとノード詳細、ズーム、回転、PNGエクスポートを使えます。';
+  String get serviceTopologyHint =>
+      'トポロジーを開くと、ノードを選んでそのルートを確認したり、デバイス・レーン・テキストで絞り込んだり、ズーム、回転、PNGエクスポートができます。';
 
   @override
   String get serviceOpenTopology => 'トポロジーを開く';
@@ -1660,6 +1661,51 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceAccessLaneAuto => '自動（方式から判断）';
+
+  @override
+  String get serviceTopologyFilters => 'フィルター';
+
+  @override
+  String get serviceTopologyFilterDevices => 'デバイス';
+
+  @override
+  String get serviceTopologyFilterAllDevices => 'すべてのデバイス';
+
+  @override
+  String get serviceTopologyFilterLanes => 'レーン';
+
+  @override
+  String get serviceTopologyFilterSearch => 'サービス・ノード・ドメインを検索';
+
+  @override
+  String get serviceTopologyFilterClear => 'フィルターをクリア';
+
+  @override
+  String get serviceTopologyNoMatch => '条件に一致する項目がありません。';
+
+  @override
+  String get serviceTopologyLegend => '凡例';
+
+  @override
+  String serviceTopologySelected(String name) {
+    return '選択中：$name';
+  }
+
+  @override
+  String get serviceTopologyClearSelection => '選択を解除';
+
+  @override
+  String get serviceTopologyFit => '全体表示';
+
+  @override
+  String get serviceTopologyReset => 'リセット';
+
+  @override
+  String get serviceTopologyRouteFocusHint =>
+      'ルートをタップするとそれだけを強調し、もう一度タップすると全体に戻ります。';
+
+  @override
+  String get serviceTopologySelectNodeHint => 'ノードを選ぶと詳細とルートが表示されます。';
 
   @override
   String get backupModuleServices => 'サービス';

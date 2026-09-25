@@ -1,8 +1,8 @@
 # lib/features/services/services/service_analysis.dart
 
-[服务与拓扑](../../../../features/services-topology.md) 描述的服务功能的纯计算伴生和 [service_topology_layout.md](service_topology_layout.md) 的布局引擎：从保存的服务/路由构建 `ServiceTopologyGraph`（节点/边）、检测端口冲突和悬空引用，并提供 UI 和 `import_export_service.dart` 的 Markdown 导出共享的访问目标/路由命名辅助。自 1.5.6 起，它还负责路由访问车道覆盖（`extraJson['accessLane']`，见 [数据格式](../../../../data-formats.md#extrajson-unknown-field-preservation)）、与 [service_access_patterns.md](service_access_patterns.md) 共享的默认 FRP 入口，以及拓扑用于节点详情的 `relatedRoutesForNode`。
+[服务与拓扑](../../../../features/services-topology.md) 描述的服务功能的纯计算伴生和 [service_topology_layout.md](service_topology_layout.md) 的布局引擎：从保存的服务/路由构建 `ServiceTopologyGraph`（节点/边）、检测端口冲突和悬空引用，并提供 UI 和 `import_export_service.dart` 的 Markdown 导出共享的访问目标/路由命名辅助。自 1.5.6 起，它还负责路由访问车道覆盖（`extraJson['accessLane']`，见 [数据格式](../../../../data-formats.md#extrajson-unknown-field-preservation)）、与 [service_access_patterns.md](service_access_patterns.md) 共享的默认 FRP 入口、拓扑用于节点详情的 `relatedRoutesForNode`，以及全屏拓扑的选择与筛选逻辑：每条边都记录沿它经过的全部路由（`routeIds`），`serviceTopologyHighlight` 算出一次选择点亮哪些部分，`ServiceTopologyFilter` 配合 `filterServiceTopologyInput` 收窄构建图所用的清单。
 
-**行数说明：** `grep -c 'Purpose:' service_analysis.dart` 返回 **37**，但其中 2 个块被编写它们的文档注释工具错附到非声明——一个坐在 `listServicePortUses` 内调用 `uses.sort(...)` 上方（非声明），一个坐在 `serviceRouteAccessTargets` 内调用 `addTarget(route.finalUrl);` 上方（`addTarget` 的真实声明在几行上方，已带自己正确块）。因此只有 **35** 个块文档化真实声明。本文件共 **59** 个真实声明（10 个类成员 + 49 个顶层/嵌套函数），因此 **24** 个未文档化——同样的算术也对账（35 文档化 + 24 未文档化 = 59；35 文档化 + 2 错附 = 37 原始 grep 匹配）。1.5.6 新增了十个块：`buildServiceTopology`、`serviceAccessLaneForRoute` 和 `_portMappingIngressEndpoint` 补上了各自的块，下面七个新声明也自带块。
+**行数说明：** `grep -c 'Purpose:' service_analysis.dart` 返回 **37**，但其中 2 个块被编写它们的文档注释工具错附到非声明——一个坐在 `listServicePortUses` 内调用 `uses.sort(...)` 上方（非声明），一个坐在 `serviceRouteAccessTargets` 内调用 `addTarget(route.finalUrl);` 上方（`addTarget` 的真实声明在几行上方，已带自己正确块）。因此只有 **35** 个块文档化真实声明。本文件共 **59** 个真实声明（10 个类成员 + 49 个顶层/嵌套函数），因此 **24** 个未文档化——同样的算术也对账（35 文档化 + 24 未文档化 = 59；35 文档化 + 2 错附 = 37 原始 grep 匹配）。1.5.6 新增了十个块：`buildServiceTopology`、`serviceAccessLaneForRoute` 和 `_portMappingIngressEndpoint` 补上了各自的块，下面七个新声明也自带块。拓扑的选择与筛选随后又新增 **17** 个声明，各带自己的块（`ServiceTopologyEdge.withRoute`、`ServiceTopologyFilter` 类的构造函数、五个 getter、`copyWith`、`==` 和 `hashCode`、`_sameSet`、`filterServiceTopologyInput` 及其三个嵌套辅助、`ServiceTopologyHighlight` 的构造函数和 `serviceTopologyHighlight`）：本文件现在返回 **54** 个原始匹配、**52** 个文档化声明，共 **76** 个声明（**44 Tier A / 32 Tier B**）。
 
 ## 声明
 
@@ -12,6 +12,7 @@
 | [`mergeRoute`](#mergeroute) | 方法（`ServiceTopologyNode`） | A | 把路由 id 附加到节点，已存在则合并。 |
 | [`merge`](#merge) | 方法（`ServiceTopologyNode`） | A | 组合共享 id 的两个节点实例。 |
 | [`ServiceTopologyEdge` 构造函数](#servicetopologyedge-new) | 构造函数 | A | 创建不可变拓扑边。 |
+| `withRoute` | 方法（`ServiceTopologyEdge`） | B | 返回沿途多一条路由的边（`routeIds`），保留 `routeId`。 |
 | [`ServiceTopologyGraph` 构造函数](#servicetopologygraph-new) | 构造函数 | A | 创建图结果值。 |
 | `isEmpty` | getter（`ServiceTopologyGraph`） | B | 图是否无节点。 |
 | [`ServicePortUse` 构造函数](#serviceportuse-new) | 构造函数 | A | 创建一个端点/端口/传输使用记录。 |
@@ -22,7 +23,7 @@
 | [`findServicePortConflicts`](#findserviceportconflicts) | 顶层函数 | A | 分组端口使用并标记同设备/传输/端口上重叠绑定地址。 |
 | [`buildServiceTopology`](#buildservicetopology) | 顶层函数 | A | 从服务、路由和设备构建完整拓扑图。 |
 | [`addNode`](#addnode)（嵌套于 `buildServiceTopology`） | 本地函数 | A | 按 id 插入或合并节点。 |
-| [`addEdge`](#addedge)（嵌套于 `buildServiceTopology`） | 本地函数 | A | 插入去重边。 |
+| [`addEdge`](#addedge)（嵌套于 `buildServiceTopology`） | 本地函数 | A | 插入去重边，或在已有的边上再记录一条路由。 |
 | `deviceNodeId`（嵌套） | 本地函数 | B | 格式化设备节点 id。 |
 | `serviceNodeId`（嵌套） | 本地函数 | B | 格式化服务节点 id。 |
 | `endpointNodeId`（嵌套） | 本地函数 | B | 格式化端点节点 id。 |
@@ -49,6 +50,22 @@
 | [`serviceRouteExtraJsonWithAccessLane`](#serviceroutextrajsonwithaccesslane) | 顶层函数 | A | 写入或移除 `accessLane` 覆盖。 |
 | [`relatedRoutesForNode`](#relatedroutesfornode) | 顶层函数 | A | 拓扑节点参与的路由。 |
 | `matches`（嵌套于 `relatedRoutesForNode`） | 本地函数 | B | 判断一条路由是否属于该节点。 |
+| [`ServiceTopologyFilter` 构造函数](#servicetopologyfilter-new) | 构造函数 | A | 创建拓扑筛选：设备、车道、搜索文字；默认值什么都不收窄。 |
+| `narrowsDevices` | getter（`ServiceTopologyFilter`） | B | 筛选是否收窄了设备。 |
+| `narrowsLanes` | getter（`ServiceTopologyFilter`） | B | 筛选是否排除了某个车道。 |
+| `hasQuery` | getter（`ServiceTopologyFilter`） | B | 筛选是否有（非空白的）搜索文字。 |
+| `activeCount` | getter（`ServiceTopologyFilter`） | B | 设备、车道和搜索中生效的有几项，0 到 3。 |
+| `isActive` | getter（`ServiceTopologyFilter`） | B | 筛选是否收窄了任何内容。 |
+| `copyWith` | 方法（`ServiceTopologyFilter`） | B | 替换部分字段后复制；`clearDeviceIds` 回到全部设备。 |
+| `==` | 运算符（`ServiceTopologyFilter`） | B | 按值比较：集合比内容，查询按输入原样比较。 |
+| `hashCode` | getter（`ServiceTopologyFilter`） | B | 与 `==` 一致地求哈希，与集合内元素顺序无关。 |
+| `_sameSet` | 顶层函数 | B | 按内容比较两个可选集合。 |
+| [`filterServiceTopologyInput`](#filterservicetopologyinput) | 顶层函数 | A | 收窄构建拓扑所用的服务和路由。 |
+| `onChosenDevice`（嵌套于 `filterServiceTopologyInput`） | 本地函数 | B | 服务是否运行在所选设备上。 |
+| `hit`（嵌套于 `filterServiceTopologyInput`） | 本地函数 | B | 一段文字是否包含搜索文字。 |
+| `routeMatches`（嵌套于 `filterServiceTopologyInput`） | 本地函数 | B | 路由是否匹配搜索文字。 |
+| `ServiceTopologyHighlight` 构造函数 | 构造函数 | B | 创建高亮：点亮的节点 id 和点亮的边。 |
+| [`serviceTopologyHighlight`](#servicetopologyhighlight) | 顶层函数 | A | 算出一组路由在拓扑上点亮哪些节点和边。 |
 | `_isPortMappingHop` | 顶层函数 | B | 跳是否是 FRP/端口转发风格跳。 |
 | `_hasRemoteEntry` | 顶层函数 | B | 跳是否有值得渲染的远程主机/端口。 |
 | `_relayNodeId` | 顶层函数 | B | 格式化中继节点稳定 id。 |
@@ -99,16 +116,16 @@
 - **备注：** detail 偏好逻辑存在，使先以泛型 detail（如服务 kind）看到的节点在带"更远程"角色的路由触碰它时升级为更具体 detail（如其端点摘要），同时否则不丢失既有良好 detail。
 
 ### `const ServiceTopologyEdge({...})` <a id="servicetopologyedge-new"></a>
-- **种类：** 构造函数。**来源：** 第 130 行。
+- **种类：** 构造函数。**来源：** 第 138 行。
 - **用途：** 创建两个节点 id 间不可变有向边。
-- **输入：** `from`、`to` 必填；`label`/`routeId`/`lane`/`method` 可选。
+- **输入：** `from`、`to` 必填；`label`/`routeId`/`lane`/`method` 可选；`routeIds` — 沿该边经过的每条路由，默认为空。
 - **返回：** 新 `ServiceTopologyEdge`。**副作用：** 无。
 - **算法：** 普通字段赋值。
-- **用法：** 由 `addEdge` 构造。
-- **备注：** 无。
+- **用法：** 由 `addEdge` 和 `withRoute` 构造。
+- **备注：** `routeId` 只指名最先添加该边的路由；`routeIds`（1.5.6 起）指名全部路由，因为在同一车道、以同一方法经过同样两个节点的路由共用一条边，而选中高亮必须为其中每一条路由都点亮这条边。结构性的设备→服务边不带路由。
 
 ### `const ServiceTopologyGraph({required this.nodes, required this.edges})` <a id="servicetopologygraph-new"></a>
-- **种类：** 构造函数。**来源：** 第 149 行。
+- **种类：** 构造函数。**来源：** 第 177 行。
 - **用途：** 把最终排序节点/边列表包装为 `buildServiceTopology` 结果。
 - **输入：** `nodes`、`edges`。**返回：** 新 `ServiceTopologyGraph`。**副作用：** 无。
 - **算法：** 普通字段赋值。
@@ -116,7 +133,7 @@
 - **备注：** 无。
 
 ### `const ServicePortUse({...})` <a id="serviceportuse-new"></a>
-- **种类：** 构造函数。**来源：** 第 171 行。
+- **种类：** 构造函数。**来源：** 第 199 行。
 - **用途：** 记录一个具体 `(service, endpoint, transport, port, bindAddress)` 使用，从可能范围的端点展开。
 - **输入：** 全部五个字段必填。**返回：** 新 `ServicePortUse`。**副作用：** 无。
 - **算法：** 普通字段赋值。
@@ -124,7 +141,7 @@
 - **备注：** 无。
 
 ### `const ServicePortConflict({...})` <a id="serviceportconflict-new"></a>
-- **种类：** 构造函数。**来源：** 第 199 行。
+- **种类：** 构造函数。**来源：** 第 227 行。
 - **用途：** 记录两个或多个服务使用间检测到（或潜在）的端口碰撞。
 - **输入：** `deviceId`、`port`、`transport`、`uses` 必填；`potential`（默认 `false`）。
 - **返回：** 新 `ServicePortConflict`。**副作用：** 无。
@@ -133,7 +150,7 @@
 - **备注：** `potential` 区分软/建议冲突（所有使用绑定具体、非通配符地址，因此运行时可能实际不碰撞）与更硬的冲突——匹配本仓库文档化"端口冲突检测仅建议"规则。
 
 ### `const ServiceWarning(this.kind, this.name, {this.detail})` <a id="servicewarning-new"></a>
-- **种类：** 构造函数。**来源：** 第 232 行。
+- **种类：** 构造函数。**来源：** 第 260 行。
 - **用途：** 为服务总览记录一个引用完整性警告。
 - **输入：** `kind`（`ServiceWarningKind`）、`name`、可选 `detail`。
 - **返回：** 新 `ServiceWarning`。**副作用：** 无。
@@ -142,7 +159,7 @@
 - **备注：** 无。
 
 ### `List<ServicePortUse> listServicePortUses(List<ServiceNode> services)` <a id="listserviceportuses"></a>
-- **种类：** 顶层函数。**来源：** 第 235 行。
+- **种类：** 顶层函数。**来源：** 第 263 行。
 - **用途：** 把每个服务端点的（可能范围）端口展开为单个具体 `ServicePortUse` 记录，端点声明 `tcpUdp` 时每传输一个。
 - **输入：** `services`。**返回：** `List<ServicePortUse>`，按设备 id、然后传输、然后端口、然后服务名（不区分大小写）排序。
 - **副作用：** 无。
@@ -151,7 +168,7 @@
 - **备注：** 无。
 
 ### `List<ServicePortConflict> findServicePortConflicts(List<ServiceNode> services)` <a id="findserviceportconflicts"></a>
-- **种类：** 顶层函数。**来源：** 第 280 行。
+- **种类：** 顶层函数。**来源：** 第 308 行。
 - **用途：** 按 `(deviceId, transport, port)` 分组端口使用并标记至少两个条目绑定地址重叠的组。
 - **输入：** `services`。**返回：** `List<ServicePortConflict>`。
 - **副作用：** 无。
@@ -160,7 +177,7 @@
 - **备注：** 仅建议，按本仓库文档化规则——冲突绝不阻塞保存。
 
 ### `ServiceTopologyGraph buildServiceTopology({required List<ServiceNode> services, required List<ServiceRoute> routes, required List<Device> devices})` <a id="buildservicetopology"></a>
-- **种类：** 顶层函数。**来源：** 第 328 行。
+- **种类：** 顶层函数。**来源：** 第 356 行。
 - **用途：** 核心拓扑图构建器：把保存服务和访问路由变成布局引擎渲染的节点/边图。
 - **输入：** `services`、`routes`、`devices`。**返回：** `ServiceTopologyGraph`（节点按 kind 然后 label 排序）。
 - **副作用：** 无（对输入纯）。
@@ -169,7 +186,7 @@
 - **备注：** 这是编码 [服务与拓扑](../../../../features/services-topology.md) 描述每个拓扑建模规则的唯一函数——FRP 入口/公共端口区分和本地/远程角色分配都住在这里，不在布局或渲染代码。它过去为同设备公共反向代理写入的 `layoutColumn` 提示在 v0.5.9 之后从未被布局读取，已在 1.5.6 移除。
 
 ### `void addNode(ServiceTopologyNode node, {String? routeId})`（嵌套） <a id="addnode"></a>
-- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 343 行。
+- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 371 行。
 - **用途：** 按 id 插入节点，与任何同 id 既有节点合并。
 - **输入：** `node`、可选 `routeId`。**返回：** `void`。
 - **副作用：** 修改外层 `nodes` 映射。
@@ -178,16 +195,16 @@
 - **备注：** 无。
 
 ### `void addEdge(String from, String to, {String? label, String? routeId})`（嵌套） <a id="addedge"></a>
-- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 356 行。
+- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 389 行。
 - **用途：** 在两个已添加节点间插入去重边。
 - **输入：** `from`、`to`；可选 `label`/`routeId`。**返回：** `void`。
 - **副作用：** 修改外层 `edges` 映射。
-- **算法：** `from == to` 或任一端点尚不在 `nodes` 时空操作。解析路由访问车道和首跳方法（如有）；从 `from/to/label/lane/method` 构建复合去重键；`putIfAbsent` 新 `ServiceTopologyEdge`。
+- **算法：** `from == to` 或任一端点尚不在 `nodes` 时空操作。解析路由访问车道和首跳方法（如有）；从 `from/to/label/lane/method` 构建复合去重键。该键下已有边时，把路由追加到它的 `routeIds`（`withRoute`，原地替换映射条目）；否则存入新 `ServiceTopologyEdge`，带 `routeIds: [routeId]`（无路由时为空）。
 - **用法：** 贯穿 `buildServiceTopology` 路由走循环调用。
-- **备注：** 复合键（不只 `from->to`）正是让相同两节点间在车道或方法不同时允许多条不同边（如同一两服务间一条经公共 FRP、另一条经 VPN 的路由）。
+- **备注：** 复合键（不只 `from->to`）正是让相同两节点间在车道或方法不同时允许多条不同边（如同一两服务间一条经公共 FRP、另一条经 VPN 的路由）。替换条目会保留它在映射中的位置，所以边的顺序——以及布局——不受路由列表影响。
 
 ### `String addDeviceNode(String deviceId)`（嵌套） <a id="adddevicenode"></a>
-- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 410 行。
+- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 446 行。
 - **用途：** 添加（或复用）本地设备节点。
 - **输入：** `deviceId`。**返回：** 节点 id。
 - **副作用：** 调用 `addNode`。
@@ -196,7 +213,7 @@
 - **备注：** 无。
 
 ### `String addRemoteDeviceNode(String deviceId, {String? routeId})`（嵌套） <a id="addremotedevicenode"></a>
-- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 431 行。
+- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 467 行。
 - **用途：** 添加（或复用）带路由 id 标记的远程设备节点。
 - **输入：** `deviceId`；可选 `routeId`。**返回：** 节点 id。
 - **副作用：** 调用 `addNode`。
@@ -205,7 +222,7 @@
 - **备注：** 无。
 
 ### `String addServiceNode(ServiceNode service, {bool remote = false, String? routeId, String? detailOverride})`（嵌套） <a id="addservicenode"></a>
-- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 453 行。
+- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 489 行。
 - **用途：** 添加（或复用）服务节点、其拥有设备节点和它们之间的边。
 - **输入：** `service`；`remote`（默认 `false`）；可选 `routeId`/`detailOverride`。**返回：** 节点 id。
 - **副作用：** 调用 `addDeviceNode`/`addRemoteDeviceNode`、`addNode`、`addEdge`。
@@ -214,7 +231,7 @@
 - **备注：** 无。
 
 ### `String addEndpointNode(ServiceNode service, ServiceEndpoint endpoint, {bool remote = false, String? routeId})`（嵌套） <a id="addendpointnode"></a>
-- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 498 行。
+- **种类：** `buildServiceTopology` 内本地函数。**来源：** 第 534 行。
 - **用途：** 添加（或复用）端点节点并把它接到父服务节点。
 - **输入：** `service`、`endpoint`；`remote`；可选 `routeId`。**返回：** 节点 id。
 - **副作用：** 调用 `addNode`、`addEdge`。
@@ -223,7 +240,7 @@
 - **备注：** 总是标记 `compact: true`，在布局中视觉区分端点节点与完整设备/服务节点（见 [service_topology_layout.md](service_topology_layout.md)）。
 
 ### `List<ServiceWarning> findServiceReferenceWarnings({required List<ServiceNode> services, required List<ServiceRoute> routes, required List<Device> devices, required List<Network> networks})` <a id="findservicereferencewarnings"></a>
-- **种类：** 顶层函数。**来源：** 第 709 行。
+- **种类：** 顶层函数。**来源：** 第 745 行。
 - **用途：** 扫描保存服务和路由找损坏或含糊引用，供服务总览显示。
 - **输入：** `services`、`routes`、`devices`、`networks`。**返回：** `List<ServiceWarning>`。
 - **副作用：** 无。
@@ -232,7 +249,7 @@
 - **备注：** 重复目标警告收窄到真正含糊 case——同设备、源端口明显不同的路由不警告，按 `_publicTargetRoutesConflict`/`_endpointPortsOverlap`。
 
 ### `String normalizedBindAddress(String? bindAddress)` <a id="normalizedbindaddress"></a>
-- **种类：** 顶层函数。**来源：** 第 821 行。
+- **种类：** 顶层函数。**来源：** 第 857 行。
 - **用途：** 把任何通配符含义绑定地址形态规范化为单个哨兵 `'*'`。
 - **输入：** `bindAddress`（可空）。**返回：** `String`。
 - **副作用：** 无。
@@ -241,7 +258,7 @@
 - **备注：** 无此规范化，`0.0.0.0` 和未设绑定地址不会被识别为冲突检测的相同"监听一切" case。
 
 ### `List<ServiceRoute> _conflictingPublicTargetRoutes(List<ServiceRoute> routes, Map<String, ServiceNode> serviceMap)` <a id="conflictingpublictargetroutes"></a>
-- **种类：** 顶层函数。**来源：** 第 836 行。
+- **种类：** 顶层函数。**来源：** 第 872 行。
 - **用途：** 给定共享一个规范访问目标的路由集合，只返回实际互相冲突的子集。
 - **输入：** `routes`、`serviceMap`。**返回：** 冲突子集，原始顺序。
 - **副作用：** 无。
@@ -250,7 +267,7 @@
 - **备注：** 无。
 
 ### `bool _publicTargetRoutesConflict(ServiceRoute a, ServiceRoute b, Map<String, ServiceNode> serviceMap)` <a id="publictargetroutesconflict"></a>
-- **种类：** 顶层函数。**来源：** 第 860 行。
+- **种类：** 顶层函数。**来源：** 第 896 行。
 - **用途：** 决定共享公共目标的两条路由是否含糊到值得警告。
 - **输入：** `a`、`b`、`serviceMap`。**返回：** `bool`。
 - **副作用：** 无。
@@ -259,7 +276,7 @@
 - **备注：** "同设备、源端口明显不同"是不*警告*的唯一 case——匹配 `findServiceReferenceWarnings` 文档块注释。
 
 ### `ServiceEndpoint? _sourceEndpointForDuplicateTargetCheck(ServiceNode service, ServiceRoute route)` <a id="sourceendpointforduplicatetargetcheck"></a>
-- **种类：** 顶层函数。**来源：** 第 881 行。
+- **种类：** 顶层函数。**来源：** 第 917 行。
 - **用途：** 解析重复目标检查比较两条路由源端口时使用的端点。
 - **输入：** `service`、`route`。**返回：** `ServiceEndpoint?`。
 - **副作用：** 无。
@@ -268,7 +285,7 @@
 - **备注：** 多端点且无显式源端点的服务被当作含糊而非猜测。
 
 ### `bool _endpointPortsOverlap(ServiceEndpoint a, ServiceEndpoint b)` <a id="endpointportsoverlap"></a>
-- **种类：** 顶层函数。**来源：** 第 898 行。
+- **种类：** 顶层函数。**来源：** 第 934 行。
 - **用途：** 测试两个端点（可能范围）端口间隔是否重叠。
 - **输入：** `a`、`b`。**返回：** `bool` — 任一侧完全无端口时 `true`（保守）。
 - **副作用：** 无。
@@ -277,7 +294,7 @@
 - **备注：** 无。
 
 ### `ServiceTopologyNodeRole _preferTopologyRole(ServiceTopologyNodeRole current, ServiceTopologyNodeRole incoming)` <a id="prefertopologyrole"></a>
-- **种类：** 顶层函数。**来源：** 第 909 行。
+- **种类：** 顶层函数。**来源：** 第 945 行。
 - **用途：** 合并同 id 两个节点观察时挑更有信息的两个角色。
 - **输入：** `current`、`incoming`。**返回：** `ServiceTopologyNodeRole`。
 - **副作用：** 无。
@@ -286,7 +303,7 @@
 - **备注：** 编码规则"一旦共享节点经任何路由已知远程到达，处处当作远程"，而非首见角色任意胜出。
 
 ### `bool _isRemoteHopService({required ServiceNode source, required ServiceNode hopService, required Map<String, Device> deviceMap})` <a id="isremotehopservice"></a>
-- **种类：** 顶层函数。**来源：** 第 924 行。
+- **种类：** 顶层函数。**来源：** 第 960 行。
 - **用途：** 决定跳的引用服务是否应渲染为远程。
 - **输入：** `source`（路由源服务）、`hopService`、`deviceMap`。
 - **返回：** `bool`。
@@ -296,7 +313,7 @@
 - **备注：** 无。
 
 ### `ServiceAccessLane serviceAccessLaneForRoute(ServiceRoute route)` <a id="serviceaccesslaneforroute"></a>
-- **种类：** 顶层函数。**来源：** 第 943 行。
+- **种类：** 顶层函数。**来源：** 第 979 行。
 - **用途：** 为拓扑渲染和边分组把路由分类为三个访问车道（本地/VPN/公共）之一。
 - **输入：** `route`。**返回：** `ServiceAccessLane`。
 - **副作用：** 无。
@@ -305,7 +322,7 @@
 - **备注：** 无覆盖时，方法基础分类优先于路由自己 `accessLevel` 字段——标记为 `lan` 但经 Caddy 路由的路由仍分类为 `public`。因此引导式访问路径页总是写入覆盖，高级编辑器的车道下拉框可以写入或清除它。旧路由绝不会被重新解释：没有覆盖就意味着完全沿用旧推断。
 
 ### `ServiceEndpoint? _portMappingIngressEndpoint(ServiceNode service, ServiceRouteHop hop)` <a id="portmappingingressendpoint"></a>
-- **种类：** 顶层函数。**来源：** 第 994 行。
+- **种类：** 顶层函数。**来源：** 第 1030 行。
 - **用途：** 解析跳服务上哪个端点代表 FRP/端口转发入口端口。
 - **输入：** `service`、`hop`。**返回：** `ServiceEndpoint?`。
 - **副作用：** 无。
@@ -314,7 +331,7 @@
 - **备注：** 实现 [服务与拓扑](../../../../features/services-topology.md) 的 FRP 入口-vs-公共端口建模规则：入口端点是源连接的东西，区别于经 `_hasRemoteEntry`/`addRemoteDeviceNode` 渲染的单独公共远程入口端口。
 
 ### `ServiceEndpoint? serviceDefaultIngressEndpoint(ServiceNode service)` <a id="servicedefaultingressendpoint"></a>
-- **种类：** 顶层函数。**来源：** 第 1010 行。
+- **种类：** 顶层函数。**来源：** 第 1046 行。
 - **用途：** 挑选路由未指定端点时，中继服务接收隧道流量所用的端点。
 - **输入：** `service`。**返回：** 主端点，否则第一个端点，否则 null。
 - **副作用：** 无。
@@ -323,7 +340,7 @@
 - **备注：** 正因为共用这一个函数，才能保证用户不改动的 FRP 草稿记录的就是拓扑早已推断出的入口，因此保存它不会移动任何边。
 
 ### `ServiceAccessLane? serviceRouteExplicitAccessLane(ServiceRoute route)` <a id="serviceroutexplicitaccesslane"></a>
-- **种类：** 顶层函数。**来源：** 第 1021 行。
+- **种类：** 顶层函数。**来源：** 第 1057 行。
 - **用途：** 读取路由的显式访问车道覆盖。
 - **输入：** `route`。**返回：** `extraJson['accessLane']` 指定的车道；键缺失、不是字符串或不是 `local` / `vpn` / `public` 之一时为 null。
 - **副作用：** 无。
@@ -332,7 +349,7 @@
 - **备注：** 未知值被忽略而非拒绝，因此较新构建写入的值不会破坏较旧的读取方。
 
 ### `Map<String, dynamic> serviceRouteExtraJsonWithAccessLane(Map<String, dynamic> extraJson, ServiceAccessLane? lane)` <a id="serviceroutextrajsonwithaccesslane"></a>
-- **种类：** 顶层函数。**来源：** 第 1036 行。
+- **种类：** 顶层函数。**来源：** 第 1072 行。
 - **用途：** 在路由的 `extraJson` 中写入或移除访问车道覆盖。
 - **输入：** `extraJson` — 路由的既有映射；`lane` — 要固定的车道，或 null 让路由回到推断。
 - **返回：** 新映射。**副作用：** 无（不修改输入）。
@@ -341,16 +358,45 @@
 - **备注：** 其他每个键，无论已知与否，都原样带过——与 `serviceRouteExtraJsonWithTargets` 的约定相同。
 
 ### `List<ServiceRoute> relatedRoutesForNode(ServiceTopologyNode node, List<ServiceRoute> routes, {List<ServiceNode> services = const []})` <a id="relatedroutesfornode"></a>
-- **种类：** 顶层函数。**来源：** 第 1058 行。
+- **种类：** 顶层函数。**来源：** 第 1094 行。
 - **用途：** 列出拓扑节点参与的路由，供节点详情和选中高亮使用。
 - **输入：** `node`；`routes` — 构建图所用的路由；`services` — 可选，让设备节点能找到它承载的服务。
 - **返回：** 匹配的路由，保持原始顺序。**副作用：** 无。
 - **算法：** 每个节点都匹配记录在其 `routeIds` 中的路由。服务节点还匹配以它为源或为某一跳的路由。设备节点还匹配源服务或跳服务运行在它上面、或某跳以 `deviceId` 指名它的路由。端点 chip、中继、远程入口和域只匹配各自的 `routeIds`。
-- **用法：** 拓扑的节点详情面板列出这些路由。
+- **用法：** 拓扑页的 `_selectionIn`（详情列表和高亮）以及 `_showDetailsSheet`。
 - **备注：** 取代了 1.5.6 之前节点详情面板使用的内联规则；那条规则即使两者都为 null 也比较 `hop.serviceId == node.serviceId`——因此点击域节点会列出每条带自由形式跳的路由。现在缺失的 id 绝不会匹配缺失的引用。
 
+### `const ServiceTopologyFilter({Set<String>? deviceIds, Set<ServiceAccessLane> lanes = {...all}, String query = ''})` <a id="servicetopologyfilter-new"></a>
+- **种类：** 构造函数。**来源：** 第 1164 行。
+- **用途：** 创建全屏拓扑的收窄条件。
+- **输入：** `deviceIds` — 显示其服务和路由的设备，null 表示全部设备；`lanes` — 显示其路由的访问车道，默认全部三个；`query` — 搜索文字，不区分大小写比较。
+- **返回：** 新 `ServiceTopologyFilter`。**副作用：** 无。
+- **算法：** 普通字段赋值。
+- **用法：** 拓扑页的 `_filter`（默认实例什么都不收窄）及其筛选底部面板（经 `copyWith`）。
+- **备注：** 按值比较（`==`/`hashCode`），所以页面可以按筛选缓存它构建的图。`activeCount` 驱动应用栏徽章：设备、车道和搜索各计一次，只有空白不算搜索。
+
+### `({List<ServiceNode> services, List<ServiceRoute> routes}) filterServiceTopologyInput({required List<ServiceNode> services, required List<ServiceRoute> routes, required ServiceTopologyFilter filter})` <a id="filterservicetopologyinput"></a>
+- **种类：** 顶层函数。**来源：** 第 1275 行。
+- **用途：** 收窄构建拓扑所用的服务和路由——筛选产生的是子图，绝不是绘制时的遮罩。
+- **输入：** `services`、`routes` — 整个清单；`filter`。
+- **返回：** 交给 `buildServiceTopology` 的服务和路由；筛选什么都不收窄时直接返回输入本身。
+- **副作用：** 无。
+- **算法：** 1. 路由在三个条件同时满足时保留：其源服务运行在所选设备上；其车道（`serviceAccessLaneForRoute`）被选中；搜索文字出现在其源服务或某跳服务的名称、某跳的标签或主机，或其某个目标中。2. 服务在以下情况保留：有保留的路由经过它（作为源或跳）；或它运行在所选设备上，且车道和搜索都没有收窄任何内容——或搜索文字出现在它自己的名称中。
+- **用法：** 拓扑页的 `_visible`。
+- **备注：** 未选设备上的跳服务会保留：`buildServiceTopology` 只在跳的服务位于传给它的列表中时才绘制该服务（比如 FRP 服务端的入口 chip），所以丢掉它会改变路由的形状。车道和搜索针对的是路由，所以它们会隐藏没有任何保留路由触及的服务；只用设备筛选时，所选设备上没有路由的服务仍会保留。
+
+### `ServiceTopologyHighlight serviceTopologyHighlight(ServiceTopologyGraph graph, List<ServiceRoute> routes, {String? selectedNodeId})` <a id="servicetopologyhighlight"></a>
+- **种类：** 顶层函数。**来源：** 第 1372 行。
+- **用途：** 算出一组路由在拓扑上点亮哪些节点和边。
+- **输入：** `graph`；`routes` — 被高亮的路由，如来自 `relatedRoutesForNode` 的路由，或其中一条；`selectedNodeId` — 即使不参与其中任何一条路由也会点亮。
+- **返回：** `ServiceTopologyHighlight` — 点亮的节点 id 和点亮的边（图自己的实例）。
+- **副作用：** 无。
+- **算法：** 1. 节点在以下情况点亮：其 `routeIds` 中某条路由被高亮；它是所选节点；或它是服务节点，且其服务是某条被高亮路由的源服务或跳服务。2. 设备节点在承载点亮的服务、端点、中继或入口时点亮。3. 边在其 `routeIds` 中某条路由被高亮时点亮；结构性边（无路由）在两端都点亮时点亮。
+- **用法：** 拓扑页的 `_selectionIn`；视图把未点亮的节点卡片调暗，边绘制器把未点亮的边淡化。
+- **备注：** 源服务这条规则之所以存在，是因为构建器在跳、chip 和目标上记录路由，却不在路由的源服务节点上记录。对边绘制器而言，按边的同一性判断就够了：`ServiceTopologyEdge` 没有值相等性，而高亮总是在正在绘制的图上计算。
+
 ### `String _relayLabel(ServiceRouteHop hop, Map<String, ServiceNode> services)` <a id="relaylabel"></a>
-- **种类：** 顶层函数。**来源：** 第 1129 行。
+- **种类：** 顶层函数。**来源：** 第 1440 行。
 - **用途：** 计算泛型（非服务、非端口映射）中继节点显示标签。
 - **输入：** `hop`、`services`。**返回：** `String`。
 - **副作用：** 无。
@@ -359,7 +405,7 @@
 - **备注：** 无。
 
 ### `List<String> serviceRouteAccessTargets(ServiceRoute route)` <a id="servicerouteaccesstargets"></a>
-- **种类：** 顶层函数。**来源：** 第 1169 行。
+- **种类：** 顶层函数。**来源：** 第 1480 行。
 - **用途：** 收集路由去重公共访问目标：其 `finalUrl` 加 `extraJson.publicTargets` 中任何分组目标。
 - **输入：** `route`。**返回：** `List<String>`，原始遇到顺序，重复按规范形态先到先得。
 - **副作用：** 无。
@@ -368,7 +414,7 @@
 - **备注：** `finalUrl` 总是最先（或单独）出现在结果中，匹配本仓库文档化兼容规则 `finalUrl` 保持"兼容性第一目标"。
 
 ### `void addTarget(Object? value)`（嵌套） <a id="addtarget"></a>
-- **种类：** `serviceRouteAccessTargets` 内本地函数。**来源：** 第 1177 行。
+- **种类：** `serviceRouteAccessTargets` 内本地函数。**来源：** 第 1488 行。
 - **用途：** 是字符串且非空、非重复时把候选目标添加到外层 `targets` 列表。
 - **输入：** `value`（无类型——容忍非字符串 JSON 值）。**返回：** `void`。
 - **副作用：** 修改外层 `targets` 列表。
@@ -377,7 +423,7 @@
 - **备注：** 第二个 `/// Purpose:` 注释出现在此声明下方几行*调用* `addTarget(route.finalUrl);` 上方——那个文档化调用点，非第二个声明，不计数在本页声明表（见本页顶部行数说明）。
 
 ### `Map<String, dynamic> serviceRouteExtraJsonWithTargets(Map<String, dynamic> extraJson, List<String> targets)` <a id="servicerouteextrajsonwithtargets"></a>
-- **种类：** 顶层函数。**来源：** 第 1205 行。
+- **种类：** 顶层函数。**来源：** 第 1516 行。
 - **用途：** 把路由分组额外访问目标写回其 `extraJson`，准备好持久化。
 - **输入：** `extraJson`（既有映射）、`targets`。**返回：** 新 `Map<String, dynamic>`。
 - **副作用：** 无（返回副本）。
@@ -386,7 +432,7 @@
 - **备注：** 无。
 
 ### `String serviceRouteDisplayTarget(ServiceRoute route)` <a id="serviceroutedisplaytarget"></a>
-- **种类：** 顶层函数。**来源：** 第 1217 行。
+- **种类：** 顶层函数。**来源：** 第 1528 行。
 - **用途：** 挑用于显示路由主目标的单个字符串（如作为 Markdown 小节标题，按 `import_export_service.md`）。
 - **输入：** `route`。**返回：** `String`。
 - **副作用：** 无。
@@ -395,7 +441,7 @@
 - **备注：** 无。
 
 ### `String serviceRouteGeneratedName({required String sourceName, required List<ServiceRouteHop> hops, required List<String> targets})` <a id="serviceroutegeneratedname"></a>
-- **种类：** 顶层函数。**来源：** 第 1224 行。
+- **种类：** 顶层函数。**来源：** 第 1535 行。
 - **用途：** 生成路由内部显示名（`"<source> via <method> - <target>"`），用户未写自定义描述时使用。
 - **输入：** `sourceName`、`hops`、`targets`。**返回：** `String`。
 - **副作用：** 无。
@@ -404,7 +450,7 @@
 - **备注：** 按本仓库文档化约定，路由名内部生成——面向用户的路由描述属于 `notes`，非此生成名。
 
 ### `String serviceRouteChainPreview(ServiceRoute route, {required List<ServiceNode> services, List<Device> devices = const [], String Function(ServiceRouteHop hop)? hopFallback})` <a id="serviceroutechainpreview"></a>
-- **种类：** 顶层函数。**来源：** 第 1263 行。
+- **种类：** 顶层函数。**来源：** 第 1574 行。
 - **用途：** 用一行描述路由的整条链。
 - **输入：** `route`；`services`；`devices` — 可选，为运行在源以外位置的跳服务标出其设备；`hopFallback` — 为既没有服务也没有自身标签的跳命名。
 - **返回：** 用 `' -> '` 连接的各步；没有任何一步时为 `'-'`。
@@ -414,7 +460,7 @@
 - **备注：** 1.5.6 中取代了高级编辑器的内联预览，使两种编辑器用相同的措辞描述路由。
 
 ### `String _targetsSummary(List<String> targets, {int maxItems = 3})` <a id="targetssummary"></a>
-- **种类：** 顶层函数。**来源：** 第 1321 行。
+- **种类：** 顶层函数。**来源：** 第 1551 行。
 - **用途：** 把访问目标列表连接为紧凑、截断摘要字符串。
 - **输入：** `targets`；`maxItems`（默认 3）。**返回：** `String` — `targets` 为空时空。
 - **副作用：** 无。
@@ -423,7 +469,7 @@
 - **备注：** 无。
 
 ### `String compactAccessTargetLabel(String target)` <a id="compactaccesstargetlabel"></a>
-- **种类：** 顶层函数。**来源：** 第 1329 行。
+- **种类：** 顶层函数。**来源：** 第 1640 行。
 - **用途：** 把 URL 类访问目标缩短为紧凑 `host[:port][path]` 标签供显示，或非可解析绝对 URL 时原样返回。
 - **输入：** `target`。**返回：** `String`。
 - **副作用：** 无。

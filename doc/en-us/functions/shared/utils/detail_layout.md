@@ -2,8 +2,8 @@
 
 The helpers the detail and edit pages need on top of the app-wide rule in
 [`adaptive_layout.md`](adaptive_layout.md): a page-named delegate that decides whether the page
-splits, the width of its fixed left pane, and the avatar size that lets the device edit page's
-left pane fit without scrolling (with the three constants `deviceEditLeftPaneFieldBudget`,
+splits, the width of its fixed left pane, the width of the service topology's details pane,
+and the avatar size that lets the device edit page's left pane fit without scrolling (with the three constants `deviceEditLeftPaneFieldBudget`,
 `deviceEditAvatarMinSize` and `deviceEditAvatarMaxSize` behind it, documented in source). Like the
 module it imports, this one depends on nothing but `dart:core`, so every helper is covered by
 `test/detail_layout_test.dart` without a widget tree; the rendered pages are covered by
@@ -11,7 +11,10 @@ module it imports, this one depends on nothing but `dart:core`, so every helper 
 `test/device_edit_two_pane_ui_test.dart`. The reasoning is in
 [../../../adaptive-layout.md](../../../adaptive-layout.md#detail-pages-two-panes).
 
-Consumers: `device_detail_page.dart`, `network_detail_page.dart` and `device_edit_page.dart`.
+Consumers: `device_detail_page.dart`, `network_detail_page.dart` and `device_edit_page.dart`;
+the service, route and dataset edit pages and the guided access-path page for
+`editFormLeftPaneWidth`; and the service topology page (`service_topology_page.dart`) for
+`useDetailTwoPane` and `topologyDetailPaneWidth`.
 
 ## Declarations
 
@@ -21,6 +24,7 @@ Consumers: `device_detail_page.dart`, `network_detail_page.dart` and `device_edi
 | [`detailLeftPaneWidth`](#detailleftpanewidth) | top-level function | A | Return the width of a detail page's fixed left pane. |
 | [`editAvatarSize`](#editavatarsize) | top-level function | A | Return the avatar size for the device edit page's left pane. |
 | [`editFormLeftPaneWidth`](#editformleftpanewidth) | top-level function | A | Return the width of an edit form's fixed left pane. |
+| [`topologyDetailPaneWidth`](#topologydetailpanewidth) | top-level function | A | Return the width of the full-screen topology's details pane. |
 
 ## Documentation
 
@@ -77,3 +81,21 @@ Consumers: `device_detail_page.dart`, `network_detail_page.dart` and `device_edi
   about 268 inside the pane's 32 dp of padding, hence the 300 floor. At the 600 dp split minimum
   the right pane keeps 299. `dataSetEditLeftPaneHeight` (88) sits beside it in source so the
   test can pin that the dataset page's fixed pane fits the shortest split window.
+
+### `double topologyDetailPaneWidth(double totalWidth)` <a id="topologydetailpanewidth"></a>
+- **Kind:** top-level function.
+- **Source:** `lib/shared/utils/detail_layout.dart`.
+- **Purpose:** Return the width of the full-screen service topology's details pane.
+- **Inputs:** `totalWidth` — the page body's width, the raw window (the topology is pushed above
+  the shell).
+- **Returns:** `double` — `(totalWidth × 0.3).clamp(280, 380)`.
+- **Side effects:** None.
+- **Usage:** `_ServiceTopologyPageState.build`, sizing the pane to the right of the canvas on
+  `useDetailTwoPane` windows.
+- **Notes:** The pane replaces the bottom sheet a phone shows, so it is capped at 380 — the
+  sheet's content width on a 412 dp phone (412 less 2 × 16) — and never lays the details out wider
+  than there. The 280 floor keeps a route row's two-line subtitle and the "Edit service" / "Add
+  access" buttons on one row in Chinese and English. The 0.3 share leaves the canvas at least
+  70 % of a large window: 319 at the 600 dp split floor, 652 on a Z Fold 8 in landscape (933).
+  `test/detail_layout_test.dart` pins the named widths, the cap against the phone sheet across
+  600–3000 dp, and the 0.3 share.

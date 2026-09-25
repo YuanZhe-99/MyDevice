@@ -19,7 +19,7 @@
 |---|---|---|---|
 | 1 | Foundations: access patterns, lane override, labels, dead code, shared dialogs | done | Deviations: `fromRoute`/detection accept a route only when the guided form reproduces it field for field (hop notes, paths, a custom access level → advanced editor), and an `accessLane` that disagrees with the access level is not a reachability (stricter than "lane wins"). `relatedRoutesForNode` takes optional `services` and matches per node kind; it no longer matches null service ids. Also fixed pre-existing doc drift found on the way (list page row-count note, stale line citations). |
 | 2 | Guided "Add access path" page replaces the quick dialog | done | Deviations: the two-pane split is by role — choices (source, pattern cards) left, details + preview + actions right — because the whole form on the left left the right pane holding only the preview; pattern cards are vertical (icon row, two-line title, three-line description) in `IntrinsicHeight` rows of `accessPatternColumns` (150 dp, max 3). The endpoint and hop dialogs became stateful widgets that dispose their controllers (a latent use-after-dispose the inline-endpoint test caught). The advanced editor now drops a source service or endpoint id that no longer exists. A direct-access suggestion the page filled in is taken back out when the user switches to another pattern untouched; a draft with a preset source prefills it on open; a blocked save also shows a snackbar. Preview names hop fallbacks by method before type (`serviceHopFallbackLabel`), so a direct hop reads "Direct", not "Manual". |
-| 3 | Topology extraction + selection highlighting, legend, filters, fit/reset | in progress | Extraction (D11) committed on its own: `service_topology_page.dart` (page, view, layout request, details) and `service_topology_widgets.dart` (node card, edge painter, icon/label helpers; six helpers became public, the ten tail helpers gained Purpose blocks); `service_edit_page.dart` and the guided page import the widgets file instead of the list page. |
+| 3 | Topology extraction + selection highlighting, legend, filters, fit/reset | done | Two commits: the extraction on its own (no behavior change), then the features. Deviations: `ServiceTopologyEdge` gained an additive `routeIds` list (routes sharing an edge were otherwise lost to highlighting; `routeId` and the node/edge shape are unchanged). `serviceTopologyHighlight` takes the highlighted routes and also lights their source service nodes, which the builder never tags. `filterServiceTopologyInput` keeps hop services on unchosen devices — the builder only draws a hop service it is given, so the plan's "added by the builder as today" did not hold. The split-window details pane is always present (a hint when nothing is selected) because the layout is keyed on the canvas width. Fit/Reset are icon buttons so the mode row fits a 412 dp phone; `fitTransform` also takes the viewer's `boundaryMargin` and scales z (InteractiveViewer reads `getMaxScaleOnAxis`). `serviceAccessLaneColor` moved to the widgets file; `deviceCategoryLabel` added beside `deviceCategoryIcon`. Test support: `pumpUntil` waits 10 ms of real time per attempt, and the guided page test's `reveal` was fixed (a pattern-switch test had been passing without switching). |
 | 4 | Layout engine: row stride, domain alignment, crossing sweep, device containers | todo | |
 | 5 | Topology as a launchpad; editor parity; small list polish | todo | |
 | 6 | Release 1.5.6, doc sweep, delete PLAN.md | todo | |
@@ -37,6 +37,69 @@ Rules for every agent working from this plan:
    additive `extraJson` key in D3; facades untouched; `data_modules.dart` untouched.
 5. Do not widen scope. Anything noticed but out of scope goes into the final report, not the
    diff.
+
+### 0.1 Handover notes (2026-09-25, after Phase 3)
+
+Phases 1–3 were done in a cloud session; the owner asked for Phases 4–6 to be finished by a
+local agent. Everything below is the state at the Phase 3 commit.
+
+- **Branch:** `claude/amazing-clarke-nnahel` on GitHub (`git@github.com:YuanZhe-99/MyDevice.git`).
+  Commits on top of `master` `9c0b7a1`: `27037f5` (this plan), `35dddeb` (Phase 1), `9309888`
+  (Phase 2), `5b2a571` (Phase 3a, extraction), then the Phase 3 feature commit that adds these
+  notes. The cloud session pushed to GitHub only; the owner syncs the Gitea remote
+  (`<local_gitea_address>`) on their own. Nothing is tagged and the version is still `1.5.5+44`.
+- **Verified at the Phase 3 commit** with Flutter 3.44.2 on Linux: `flutter gen-l10n` (no
+  diff), `flutter analyze` (no issues), `flutter test` (349 tests, green in two consecutive
+  full runs), the inline-width grep of `adaptive-layout.md` (empty), and a Linux desktop build.
+  Nothing was run on Windows, macOS, iOS or Android: do a manual pass there before the release
+  (Phase 6), at least the guided page and the topology on a phone and a split window.
+- **zh-cn mirror pending at the Phase 3 commit:** `features/services-topology.md`,
+  `functions/features/services/views/service_topology_page.md` and
+  `service_topology_widgets.md` were still being translated when Phase 3 was committed; a
+  follow-up commit adds them. If the branch has no such commit, mirror those three pages
+  from the English first (same headings, rows, anchors, links and citations).
+- **Names changed since this plan was written** (read them into Phases 4 and 5):
+  `_ServiceTopologyPage` → `ServiceTopologyPage` and the view, `_TopologyLayoutRequest` and the
+  node details (`_TopologyNodeDetails`) live in `service_topology_page.dart`;
+  `_TopologyNodeCard` → `ServiceTopologyNodeCard` and `_ServiceTopologyEdgePainter` →
+  `ServiceTopologyEdgePainter` live in `service_topology_widgets.dart` with the legend,
+  `fitTransform`, `serviceAccessLaneColor`, `iconForRouteMethod`, `primaryRouteMethod`,
+  `iconForTopologyNode` and `iconForService`. The node card already has `selected` and
+  `dimmed`; Phase 4's header variant goes there.
+- **Invariants Phase 4 must keep:** `layout.edgePaths` and the highlight's edge set are keyed
+  by `ServiceTopologyEdge` identity, and the page memoizes the filtered graph so the view's
+  identity-keyed layout cache (`_TopologyLayoutRequest`) keeps hitting; adding layout options
+  to the request key must not rebuild the graph. Edges carry `routeIds` (all routes along
+  them); `hiddenEdges` should reuse the graph's edge instances. The details pane width is
+  `topologyDetailPaneWidth` in `detail_layout.dart`.
+- **Test harness:** widget tests drive the real pages in Simplified Chinese through
+  `test/support/pump.dart` (`pumpPageAt`, `pumpUntil`, `settle`) and seed storage with
+  `seedAppDir`. The guided and advanced editors are lazy `ListView`s: bring a widget into view
+  before tapping (see `reveal` in `test/service_access_path_page_test.dart`, which jumps to
+  the top and scrolls down, then `ensureVisible`), and treat any "tap() … would not hit test"
+  warning as a failure to fix, not noise.
+- **Known documentation drift, for the Phase 6 sweep** (none of it introduced by Phases 1–3):
+  - `functions/INDEX.md` totals: the per-file rows, the area table and the tier table do not
+    all agree (e.g. `device_storage` 30 vs 26, `auto_sync_service` 15 vs 11, `sync_merge` 11
+    vs 6); the 1.5.6 rows were added honestly and the totals moved by their amounts only.
+  - zh-cn pages outside the 1.5.6 set that `verify.py`-style parity checks flag:
+    `data-formats.md` (a missing "Location" bullet and Map link, a `#多少列` anchor),
+    `functions/app/theme.md` (a link target), `functions/features/datasets/services/dataset_storage.md`
+    and `functions/features/devices/services/device_storage.md` (anchor-level links),
+    `functions/features/devices/views/device_edit_page.md` and
+    `functions/features/devices/views/device_finance_overview_page.md` (citation lists).
+  - `functions/features/services/services/service_topology_layout.md`: the zh page has one
+    more line citation than the English (68 vs 69) — Phase 4 rewrites that page anyway.
+  - The historical notes in `service_analysis.md` (en and zh) mention `layoutColumn`, so
+    `grep -rn layoutColumn lib test doc` is not empty; `lib` and `test` are.
+  - Glossary candidates the translators hit: "network assignment" (网络分配 vs the older
+    网络赋值), "bottom sheet" (底部面板 vs 表单 — cross-cutting, §5.1 needs all four repos),
+    "proxy-like service" (类代理服务 / 代理类服务), "overlay network" (叠加网络 / 叠加网),
+    "hand over" (移交). The zh services pages mix ASCII "…" and 「」 quotes.
+- **Out-of-scope follow-ups noticed:** the device editor, device list and finance overview
+  each keep a private `_categoryLabel` that `deviceCategoryLabel` now duplicates; the
+  full-screen topology keeps the graph it was opened with, so an edit made from its details is
+  only visible after reopening it (Phase 5's launchpad work is the natural place to refresh).
 
 ## 1. Scope
 

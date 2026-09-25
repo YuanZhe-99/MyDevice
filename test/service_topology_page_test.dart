@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_device/l10n/app_localizations.dart';
 import 'package:my_device/features/devices/models/device.dart';
 import 'package:my_device/features/services/models/service.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
@@ -185,9 +186,12 @@ void main() {
     expect(edited, ['media']);
   });
 
-  testWidgets('move mode trades node taps for pan and zoom', (tester) async {
+  testWidgets('move mode trades node taps for pan and zoom, with fit', (
+    tester,
+  ) async {
     await pumpTopology(tester);
     expect(find.byType(InteractiveViewer), findsNothing);
+    expect(find.byKey(const Key('topology-fit')), findsNothing);
 
     await tester.tap(find.byIcon(Icons.open_with));
     await settle(tester);
@@ -195,5 +199,271 @@ void main() {
     expect(find.byType(InteractiveViewer), findsOneWidget);
     final card = tester.widget<ServiceTopologyNodeCard>(nodeCard('Jellyfin'));
     expect(card.onTap, isNull);
+
+    Matrix4 transform() => tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value;
+    expect(transform(), Matrix4.identity());
+    await tester.ensureVisible(find.byKey(const Key('topology-reset')));
+    await tester.tap(find.byKey(const Key('topology-fit')));
+    await settle(tester);
+    expect(transform(), isNot(Matrix4.identity()));
+    await tester.tap(find.byKey(const Key('topology-reset')));
+    await settle(tester);
+    expect(transform(), Matrix4.identity());
+  });
+
+  /// Purpose: Read whether a node card is drawn dimmed.
+  /// Inputs: `tester`, `label`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: None.
+  bool dimmed(WidgetTester tester, String label) =>
+      tester.widget<ServiceTopologyNodeCard>(nodeCard(label)).dimmed;
+
+  testWidgets('a selected service lights its route and dims the rest', (
+    tester,
+  ) async {
+    await pumpTopology(tester);
+    expect(dimmed(tester, 'Home Assistant'), isFalse);
+
+    await tester.ensureVisible(nodeCard('Jellyfin'));
+    await tester.tap(nodeCard('Jellyfin'));
+    await settle(tester);
+    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await settle(tester);
+
+    expect(
+      tester.widget<ServiceTopologyNodeCard>(nodeCard('Jellyfin')).selected,
+      isTrue,
+    );
+    expect(dimmed(tester, 'Jellyfin'), isFalse);
+    expect(dimmed(tester, 'media.example.com'), isFalse);
+    expect(dimmed(tester, 'Caddy'), isFalse);
+    expect(dimmed(tester, 'Home Assistant'), isTrue);
+    expect(find.byKey(const Key('topology-selection-chip')), findsOneWidget);
+
+    // The chip's delete button clears the selection.
+    final l10n = await AppLocalizations.delegate.load(const Locale('zh'));
+    await tester.tap(find.byTooltip(l10n.serviceTopologyClearSelection));
+    await settle(tester);
+    expect(dimmed(tester, 'Home Assistant'), isFalse);
+    expect(find.byKey(const Key('topology-selection-chip')), findsNothing);
+  });
+
+  testWidgets('a tap on the empty canvas clears the selection', (tester) async {
+    await pumpTopology(tester);
+    await tester.ensureVisible(nodeCard('Home Assistant'));
+    await tester.tap(nodeCard('Home Assistant'));
+    await settle(tester);
+    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await settle(tester);
+    expect(dimmed(tester, 'Jellyfin'), isTrue);
+
+    final canvas = find.byKey(const Key('topology-canvas'));
+    await tester.tapAt(tester.getTopLeft(canvas) + const Offset(3, 3));
+    await settle(tester);
+    expect(dimmed(tester, 'Jellyfin'), isFalse);
+  });
+
+  testWidgets('the lane filter removes public-lane nodes and clears back', (
+    tester,
+  ) async {
+    await pumpTopology(tester);
+    expect(nodeCard('media.example.com'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('topology-filter')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('topology-filter-lane-vpn')));
+    await settle(tester);
+    await tester.tap(find.byKey(const ValueKey('topology-filter-lane-public')));
+    await settle(tester);
+    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await pumpUntil(tester, find.byType(ServiceTopologyNodeCard));
+    await settle(tester);
+
+    expect(nodeCard('media.example.com'), findsNothing);
+    expect(nodeCard('Caddy'), findsNothing);
+    expect(nodeCard('Home Assistant'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('topology-filter')),
+        matching: find.text('1'),
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const Key('topology-filter')));
+    await settle(tester);
+    await tester.tap(find.byKey(const Key('topology-filter-clear')));
+    await settle(tester);
+    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await pumpUntil(tester, nodeCard('media.example.com'));
+    expect(nodeCard('media.example.com'), findsOneWidget);
+  });
+
+  testWidgets('a search that matches nothing offers to clear the filters', (
+    tester,
+  ) async {
+    await pumpTopology(tester);
+    await tester.tap(find.byKey(const Key('topology-filter')));
+    await settle(tester);
+    await tester.enterText(
+      find.byKey(const Key('topology-filter-search')),
+      'nothing-like-this',
+    );
+    await settle(tester);
+    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await settle(tester);
+
+    expect(find.byKey(const Key('topology-no-match')), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('topology-no-match')),
+        matching: find.byType(FilledButton),
+      ),
+    );
+    await pumpUntil(tester, find.byType(ServiceTopologyNodeCard));
+    expect(nodeCard('Jellyfin'), findsOneWidget);
+  });
+
+  testWidgets('the legend strip expands to lanes and roles', (tester) async {
+    await pumpTopology(tester);
+    expect(find.byKey(const Key('topology-legend-toggle')), findsOneWidget);
+    expect(find.byKey(const Key('topology-legend')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('topology-legend-toggle')));
+    await settle(tester);
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('zh'));
+    final legend = find.byKey(const Key('topology-legend'));
+    expect(legend, findsOneWidget);
+    for (final text in [
+      l10n.serviceLaneLocal,
+      l10n.serviceLaneVpn,
+      l10n.serviceLanePublic,
+      l10n.serviceRoleLocalDevice,
+      l10n.serviceRoleDomain,
+    ]) {
+      expect(
+        find.descendant(of: legend, matching: find.text(text)),
+        findsOneWidget,
+      );
+    }
+  });
+
+  testWidgets('node cards announce their label, role and lane', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await pumpTopology(tester);
+    final l10n = await AppLocalizations.delegate.load(const Locale('zh'));
+    expect(
+      find.bySemanticsLabel('Jellyfin, ${l10n.serviceRoleLocalService}'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(
+        'media.example.com, ${l10n.serviceRoleDomain}, ${l10n.serviceLanePublic}',
+      ),
+      findsOneWidget,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('a split window shows the details pane instead of a sheet', (
+    tester,
+  ) async {
+    final editedRoutes = <String>[];
+    await pumpTopology(
+      tester,
+      width: 1280,
+      height: 800,
+      editedRoutes: editedRoutes,
+    );
+    expect(find.byKey(const Key('topology-details-empty')), findsOneWidget);
+
+    await tester.tap(nodeCard('Jellyfin'));
+    await settle(tester);
+    expect(find.byType(BottomSheet), findsNothing);
+    final pane = find.byKey(const Key('topology-details-pane'));
+    expect(pane, findsOneWidget);
+
+    final routeRow = find.byKey(const ValueKey('topology-route-media'));
+    expect(find.descendant(of: pane, matching: routeRow), findsOneWidget);
+    await tester.tap(routeRow);
+    await settle(tester);
+    expect(tester.widget<ListTile>(routeRow).selected, isTrue);
+    await tester.tap(routeRow);
+    await settle(tester);
+    expect(tester.widget<ListTile>(routeRow).selected, isFalse);
+
+    await tester.tap(find.byKey(const ValueKey('topology-route-edit-media')));
+    await settle(tester);
+    expect(editedRoutes, ['media']);
+
+    await tester.tap(find.byKey(const Key('topology-details-close')));
+    await settle(tester);
+    expect(find.byKey(const Key('topology-details-empty')), findsOneWidget);
+    expect(dimmed(tester, 'Home Assistant'), isFalse);
+  });
+
+  group('fitTransform', () {
+    test('scales to the tighter axis and centres the other', () {
+      final m = fitTransform(
+        const Size(1000, 500),
+        const Size(500, 500),
+        minScale: 0.1,
+        maxScale: 4,
+        boundaryMargin: double.infinity,
+      );
+      expect(m.getMaxScaleOnAxis(), closeTo(0.5, 1e-9));
+      expect(m.getTranslation().x, closeTo(0, 1e-9));
+      expect(m.getTranslation().y, closeTo(125, 1e-9));
+    });
+
+    test('respects the zoom limits', () {
+      final small = fitTransform(
+        const Size(100, 100),
+        const Size(500, 500),
+        minScale: 0.35,
+        maxScale: 2.4,
+        boundaryMargin: 180,
+      );
+      expect(small.getMaxScaleOnAxis(), closeTo(2.4, 1e-9));
+      expect(small.getTranslation().x, closeTo(130, 1e-9)); // (500 − 240) / 2
+
+      final huge = fitTransform(
+        const Size(10000, 100),
+        const Size(500, 500),
+        minScale: 0.35,
+        maxScale: 2.4,
+        boundaryMargin: 180,
+      );
+      expect(huge.getMaxScaleOnAxis(), closeTo(0.35, 1e-9));
+      expect(huge.getTranslation().x, 0, reason: 'wider than the viewport');
+    });
+
+    test('starts at the edge when centring would leave the margin', () {
+      // 35 dp tall at 0.35 in 500: centring needs 232.5 > 180 × 0.35 = 63.
+      final m = fitTransform(
+        const Size(10000, 100),
+        const Size(500, 500),
+        minScale: 0.35,
+        maxScale: 2.4,
+        boundaryMargin: 180,
+      );
+      expect(m.getTranslation().y, 0);
+    });
+
+    test('an empty canvas or viewport gives the identity', () {
+      expect(
+        fitTransform(Size.zero, const Size(500, 500), minScale: 1, maxScale: 1),
+        Matrix4.identity(),
+      );
+      expect(
+        fitTransform(const Size(10, 10), Size.zero, minScale: 1, maxScale: 1),
+        Matrix4.identity(),
+      );
+    });
   });
 }

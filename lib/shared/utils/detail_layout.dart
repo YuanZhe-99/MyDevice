@@ -91,3 +91,20 @@ double editFormLeftPaneWidth(double totalWidth) {
 /// pane has at the 480 dp split floor — but it is stated so the test can pin
 /// it.
 const dataSetEditLeftPaneHeight = 88.0;
+
+/// Purpose: Return the width of the full-screen topology's details pane.
+/// Inputs: `totalWidth` — the page body's width, the raw window: the topology
+/// is pushed above the shell.
+/// Returns: `double`.
+/// Side effects: None.
+/// Notes: The pane sits on the right and replaces the bottom sheet a phone
+/// shows, so it is capped at 380 — the sheet's content width on a 412 dp
+/// phone (412 less 2 × 16) — and never lays the details out wider than on the
+/// phone. The 280 floor keeps a route row's two-line subtitle and the "Edit
+/// service" / "Add access" buttons on one row in Chinese and English. The
+/// 0.3 share leaves the canvas at least 70 % of a large window, since the
+/// graph is what the page is for; at the 600 dp split floor the canvas keeps
+/// 319, on a Z Fold 8 in landscape (933) 652.
+double topologyDetailPaneWidth(double totalWidth) {
+  return (totalWidth * 0.3).clamp(280.0, 380.0);
+}

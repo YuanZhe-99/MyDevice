@@ -1654,4 +1654,238 @@ void main() {
       reason: 'without services a local device only has its own route ids',
     );
   });
+
+  test('edges shared by routes list every route that runs along them', () {
+    final f = _selectionFixture();
+    final graph = buildServiceTopology(
+      services: f.services,
+      routes: f.routes,
+      devices: f.devices,
+    );
+    final shared = graph.edges.singleWhere(
+      (edge) => edge.from == 'endpoint:app:web' && edge.to == 'service:caddy',
+    );
+    expect(shared.routeId, 'via-caddy');
+    expect(shared.routeIds, ['via-caddy', 'via-caddy-2']);
+    final structural = graph.edges.singleWhere(
+      (edge) => edge.from == 'device:home' && edge.to == 'service:app',
+    );
+    expect(structural.routeIds, isEmpty);
+  });
+
+  test('a highlight lights its routes, their machines and nothing else', () {
+    final f = _selectionFixture();
+    final graph = buildServiceTopology(
+      services: f.services,
+      routes: f.routes,
+      devices: f.devices,
+    );
+    final lit = serviceTopologyHighlight(graph, [
+      f.routes.singleWhere((route) => route.id == 'via-caddy-2'),
+    ], selectedNodeId: 'domain:photos.example.com');
+
+    expect(
+      lit.nodeIds,
+      containsAll([
+        'device:home',
+        'service:app',
+        'endpoint:app:web',
+        'service:caddy',
+        'domain:photos.example.com',
+      ]),
+    );
+    expect(lit.nodeIds, isNot(contains('domain:app.example.com')));
+    expect(lit.nodeIds, isNot(contains('service:other')));
+    expect(lit.nodeIds, isNot(contains('service:frps')));
+    expect(
+      lit.edges.map((edge) => '${edge.from}->${edge.to}'),
+      containsAll([
+        'device:home->service:app',
+        'endpoint:app:web->service:caddy',
+      ]),
+      reason: 'the shared edge lights for its second route too',
+    );
+    expect(
+      lit.edges.where((edge) => edge.to == 'domain:app.example.com'),
+      isEmpty,
+    );
+
+    final none = serviceTopologyHighlight(graph, const [], selectedNodeId: 'x');
+    expect(none.nodeIds, isEmpty);
+    expect(none.edges, isEmpty);
+  });
+
+  test('the topology filter narrows routes and keeps their hop services', () {
+    final f = _selectionFixture();
+    List<String> ids(List<Object> items) => [
+      for (final item in items)
+        item is ServiceNode ? item.id : (item as ServiceRoute).id,
+    ];
+    ({List<String> services, List<String> routes}) run(
+      ServiceTopologyFilter filter,
+    ) {
+      final r = filterServiceTopologyInput(
+        services: f.services,
+        routes: f.routes,
+        filter: filter,
+      );
+      return (services: ids(r.services), routes: ids(r.routes));
+    }
+
+    const all = ServiceTopologyFilter();
+    expect(all.isActive, isFalse);
+    final unfiltered = filterServiceTopologyInput(
+      services: f.services,
+      routes: f.routes,
+      filter: all,
+    );
+    expect(identical(unfiltered.services, f.services), isTrue);
+
+    final lan = run(
+      const ServiceTopologyFilter(lanes: {ServiceAccessLane.local}),
+    );
+    expect(lan.routes, ['direct']);
+    expect(lan.services, ['other'], reason: 'lanes hide route-less services');
+
+    final vps = run(const ServiceTopologyFilter(deviceIds: {'vps'}));
+    expect(vps.routes, isEmpty);
+    expect(vps.services, ['frps']);
+
+    final home = run(const ServiceTopologyFilter(deviceIds: {'home'}));
+    expect(home.routes, ['via-caddy', 'via-caddy-2', 'direct', 'frp']);
+    expect(
+      home.services,
+      ['app', 'other', 'caddy', 'frps'],
+      reason: 'the FRP server on the VPS stays for the route through it',
+    );
+
+    final edge = run(const ServiceTopologyFilter(query: 'EDGE'));
+    expect(edge.routes, ['frp']);
+    expect(edge.services, ['caddy', 'frps']);
+
+    final byName = run(const ServiceTopologyFilter(query: 'other'));
+    expect(byName.routes, ['direct']);
+    expect(byName.services, ['other']);
+
+    expect(
+      const ServiceTopologyFilter(deviceIds: {'a', 'b'}),
+      const ServiceTopologyFilter(deviceIds: {'b', 'a'}),
+    );
+    expect(
+      const ServiceTopologyFilter(deviceIds: {'a', 'b'}).hashCode,
+      const ServiceTopologyFilter(deviceIds: {'b', 'a'}).hashCode,
+    );
+    expect(
+      const ServiceTopologyFilter(
+        deviceIds: {'a'},
+        lanes: {ServiceAccessLane.vpn},
+        query: ' x ',
+      ).activeCount,
+      3,
+    );
+    expect(const ServiceTopologyFilter(query: '   ').isActive, isFalse);
+  });
+}
+
+/// Purpose: Build a small inventory for the selection and filter tests.
+/// Inputs: None.
+/// Returns: Devices, services and routes.
+/// Side effects: None.
+/// Notes: App on the home server has two public routes through Caddy that
+/// share their first edge (`via-caddy` to app.example.com, `via-caddy-2` to
+/// photos.example.com); Other has a direct LAN route; Caddy itself is
+/// published through an FRP server on the VPS to edge.example.com.
+({List<Device> devices, List<ServiceNode> services, List<ServiceRoute> routes})
+_selectionFixture() {
+  final caddyHop = ServiceRouteHop(
+    type: ServiceRouteHopType.reverseProxy,
+    method: ServiceRouteMethod.caddy,
+    serviceId: 'caddy',
+    endpointId: 'https',
+  );
+  return (
+    devices: [
+      Device(id: 'home', name: 'Home', category: DeviceCategory.desktop),
+      Device(id: 'vps', name: 'VPS', category: DeviceCategory.vps),
+    ],
+    services: [
+      ServiceNode(
+        id: 'app',
+        deviceId: 'home',
+        name: 'App',
+        endpoints: [ServiceEndpoint(id: 'web', port: 8080)],
+      ),
+      ServiceNode(
+        id: 'other',
+        deviceId: 'home',
+        name: 'Other',
+        endpoints: [ServiceEndpoint(id: 'web', port: 9090)],
+      ),
+      ServiceNode(
+        id: 'caddy',
+        deviceId: 'home',
+        name: 'Caddy',
+        kind: ServiceKind.reverseProxy,
+        endpoints: [ServiceEndpoint(id: 'https', port: 443)],
+      ),
+      ServiceNode(
+        id: 'frps',
+        deviceId: 'vps',
+        name: 'frps',
+        kind: ServiceKind.tunnel,
+        endpoints: [ServiceEndpoint(id: 'bind', port: 7000)],
+      ),
+    ],
+    routes: [
+      ServiceRoute(
+        id: 'via-caddy',
+        name: 'App via Caddy',
+        sourceServiceId: 'app',
+        sourceEndpointId: 'web',
+        accessLevel: ServiceAccessLevel.public,
+        finalUrl: 'https://app.example.com',
+        hops: [caddyHop],
+      ),
+      ServiceRoute(
+        id: 'via-caddy-2',
+        name: 'App photos via Caddy',
+        sourceServiceId: 'app',
+        sourceEndpointId: 'web',
+        accessLevel: ServiceAccessLevel.public,
+        finalUrl: 'https://photos.example.com',
+        hops: [caddyHop],
+      ),
+      ServiceRoute(
+        id: 'direct',
+        name: 'Other direct',
+        sourceServiceId: 'other',
+        sourceEndpointId: 'web',
+        finalUrl: 'http://192.168.1.2:9090',
+        hops: [
+          ServiceRouteHop(
+            type: ServiceRouteHopType.manual,
+            method: ServiceRouteMethod.direct,
+            label: 'Direct',
+          ),
+        ],
+      ),
+      ServiceRoute(
+        id: 'frp',
+        name: 'Caddy via FRP',
+        sourceServiceId: 'caddy',
+        sourceEndpointId: 'https',
+        accessLevel: ServiceAccessLevel.public,
+        finalUrl: 'https://edge.example.com',
+        hops: [
+          ServiceRouteHop(
+            type: ServiceRouteHopType.portForward,
+            method: ServiceRouteMethod.frp,
+            serviceId: 'frps',
+            deviceId: 'vps',
+            port: 443,
+          ),
+        ],
+      ),
+    ],
+  );
 }

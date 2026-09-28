@@ -8,6 +8,7 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'app/app.dart';
+import 'features/ai/services/on_device_ai_service.dart';
 import 'features/devices/services/exchange_rate_service.dart';
 import 'shared/services/auto_sync_service.dart';
 import 'shared/services/backup_service.dart';
@@ -49,6 +50,7 @@ void main() async {
 
   // Start auto-sync lifecycle observer
   AutoSyncService.instance.start();
+  OnDeviceAiService.instance.start();
 
   runApp(
     DevicePreview(

@@ -1754,4 +1754,135 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsSelectItem => '左のリストから項目を選択してください';
+
+  @override
+  String get aiSectionTitle => 'オンデバイスAI';
+
+  @override
+  String get aiUseOnDevice => 'オンデバイスAIを使う';
+
+  @override
+  String get aiUseOnDeviceDesc =>
+      '初期状態ではオフです。この端末に内蔵されたモデルで、財務概要とサービスの各ページに短い要約と提案を書きます。何も端末の外に送信されず、結果もこの端末にだけ保存されます。';
+
+  @override
+  String get aiNotSupportedHere => 'このプラットフォームではオンデバイスAIを利用できません。';
+
+  @override
+  String get aiStatusAvailable => '利用可能';
+
+  @override
+  String get aiStatusUnavailable => 'この端末では利用できません';
+
+  @override
+  String get aiStatusUnreachable => 'オンデバイスモデルに接続できませんでした';
+
+  @override
+  String get aiStatusUnknown => 'このバージョンでは認識できない状態が端末から返されました';
+
+  @override
+  String get aiStatusDownloadable => '初回のみダウンロードが必要';
+
+  @override
+  String get aiStatusDownloading => 'モデルを準備中…';
+
+  @override
+  String get aiStatusNotEnabled => 'Apple Intelligence がオフになっています';
+
+  @override
+  String get aiStatusUnsupportedApple =>
+      'Apple Intelligence に対応した iOS 26 または macOS 26 が必要です';
+
+  @override
+  String get aiTurnOnAppleIntelligence =>
+      '設定アプリで Apple Intelligence をオンにしてから、再確認してください。';
+
+  @override
+  String get aiCheckAgain => '再確認';
+
+  @override
+  String get aiDownload => 'ダウンロード';
+
+  @override
+  String aiDownloadedBytes(String megabytes) {
+    return '$megabytes MB ダウンロード済み';
+  }
+
+  @override
+  String get aiDownloadNote =>
+      'モデルをダウンロードするのはこのアプリではなくAndroidで、「ダウンロード」をタップしたときだけです。';
+
+  @override
+  String get aiPreferFast => '高速なモデルを使う';
+
+  @override
+  String get aiPreferFastBody => '答えが早く返り、たいていは短めになります。';
+
+  @override
+  String get aiModelStorageNote =>
+      'モデルはAndroidが管理し、ほかのアプリとも共有されるため、ここから削除することはできません。';
+
+  @override
+  String get aiModelAppleNote => 'モデルは Apple Intelligence の一部で、システムが管理します。';
+
+  @override
+  String get aiTechnicalDetails => '技術情報';
+
+  @override
+  String aiCoreVersion(String version) {
+    return 'AICore $version';
+  }
+
+  @override
+  String get aiCoreMissing => 'この端末にはAICoreがインストールされていません。';
+
+  @override
+  String get aiGeneratedLabel => 'この端末で生成 — 誤りを含む可能性があります';
+
+  @override
+  String get aiClearInsights => '生成したインサイトを消去';
+
+  @override
+  String get aiClearInsightsBody => 'この端末にだけ保存されており、次にページを開いたときに再生成されます。';
+
+  @override
+  String get aiClearInsightsDone => '生成したインサイトを消去しました';
+
+  @override
+  String get aiInsightTitle => 'AIインサイト';
+
+  @override
+  String get aiRegenerate => '再生成';
+
+  @override
+  String get aiGenerating => '考え中…';
+
+  @override
+  String aiGeneratedAt(String time) {
+    return '$time に生成';
+  }
+
+  @override
+  String get aiInsightFailed => '今回はモデルが回答できませんでした。';
+
+  @override
+  String get aiInsightSkipped => 'モデルはこのデータへのコメントを控えました。';
+
+  @override
+  String get aiQuotaHint => 'この端末の本日のモデル利用上限に達しました。明日もう一度お試しください。';
+
+  @override
+  String get aiForegroundHint => 'モデルの処理中はアプリを開いたままにしてください。';
+
+  @override
+  String get aiLanguageUnsupported => 'オンデバイスモデルはこの言語で書けません。';
+
+  @override
+  String get aiOpenSettings => '設定';
+
+  @override
+  String get aiFinanceCosts => 'コスト';
+
+  @override
+  String get aiFinanceRecurring => '継続費用';
 }

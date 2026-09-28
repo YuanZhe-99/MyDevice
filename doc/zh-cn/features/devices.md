@@ -54,6 +54,8 @@ double _logTransform(double value) {
 
 （带符号 `log10(|x| + 1)` 变换，`_logInverse` 为轴标签和工具提示撤销它）——这让小每日成本与一次性大购买尖峰在同一图表上可读。
 
+端侧 AI 开启时，趋势之后会跟一张 **AI 洞察**卡片：*成本*下是整体成本概况、一条开支建议和一台值得复查的设备，*周期费用*下是周期费用总结。它只由汇总数据和设备名称构建——绝不含序列号、备注或位置——否则不渲染任何内容。见[端侧 AI](../on-device-ai.md#insight-cards)。
+
 ## 设备头像渲染 <a id="device-avatar-rendering"></a>
 
 `lib/features/devices/widgets/device_avatar.dart`（`DeviceAvatar`、`DeviceAvatar.fromDevice`）是任何设备需要图标时使用的共享圆形头像渲染器：

@@ -36,6 +36,7 @@ about to change, verify against the code, then fix the docs in the same commit.
 | When a layout splits, where navigation lives, how many columns fit; foldable rules | `doc/en-us/adaptive-layout.md` |
 | Windows/macOS/iOS/Android specifics, `file_picker` pin, Gradle/AGP state | `doc/en-us/platform-notes.md` |
 | CI jobs, build commands, fresh-clone steps | `doc/en-us/ci-cd.md` |
+| On-device AI rules, prompts, what each card is sent, the cache | `doc/en-us/on-device-ai.md` |
 | Why a behavior exists; past releases | `doc/en-us/version-history.md` |
 | English→Chinese terminology | `doc/en-us/translation-guide.md` |
 

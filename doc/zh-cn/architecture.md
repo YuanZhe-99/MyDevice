@@ -13,7 +13,8 @@
 5. 触发 `BackupService.runAutoBackupIfNeeded()`（即发即忘，每日一次自动备份）。
 6. 触发 `DeviceExchangeRateService.refreshIfNeeded()` 自动更新汇率。
 7. 启动 `AutoSyncService.instance.start()`，驱动自动同步触发器的生命周期观察者（见 [WebDAV 同步](sync.md)）。
-8. 调用 `runApp()`，把 `MyDeviceApp` 包在 `DevicePreview`（仅调试构建启用）和 Riverpod `ProviderScope` 中。
+8. 启动 `OnDeviceAiService.instance.start()`，可选端侧 AI 的生命周期监听器（见[端侧 AI](on-device-ai.md)）；在用户打开该功能之前它什么也不做。
+9. 调用 `runApp()`，把 `MyDeviceApp` 包在 `DevicePreview`（仅调试构建启用）和 Riverpod `ProviderScope` 中。
 
 ## 应用壳：`lib/app/`
 
@@ -57,6 +58,9 @@ lib/
     router.dart
     theme.dart
   features/
+    ai/
+      services/  (genai_backend, on_device_ai_service, insight_prompts, insight_service, …)
+      widgets/   (ai_insight_card, ai_settings_tiles)
     devices/
       models/device.dart
       services/chip_search_service.dart
@@ -98,6 +102,9 @@ lib/
     views/webdav_config_page.dart
     widgets/
   l10n/
+packages/
+  myapps_data/           (共享同步/备份引擎，git 子模块)
+  on_device_ai_apple/    (iOS/macOS 的 Foundation Models 桥接，v1.6.0)
 ```
 
 （改编自 `AGENTS.md`；`lib/shared/widgets/map_picker_page.dart` 和 `lib/features/devices/widgets/device_avatar.dart` 也住在那些目录下——见 [地图](features/map.md) 和 [设备](features/devices.md)。）
@@ -124,6 +131,7 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 - 可选 null/空字段经条件映射条目从 JSON 省略（如 `if (notes != null) 'notes': notes`），不写显式 `null`。
 - 每个模型的 `modifiedAt` 写为 `DateTime.now().toUtc()`。本地时间 `modifiedAt` 值破坏跨时区同步冲突检测；本地时间写的旧数据仍解析，但新写必须 UTC。见 [数据格式](data-formats.md)。
 - 未知/向前兼容 JSON 字段经 `extraJson` 模式（`lib/shared/utils/json_preservation.dart`）保留，使旧应用构建绝不静默丢弃新构建写的字段。见 [数据格式 — extraJson 未知字段保留](data-formats.md#extrajson-unknown-field-preservation)。
+- 端侧 AI 需用户主动开启且只属于本设备。只有纯函数 `*_insight_facts.dart` 构建器计算出的事实会到达模型，生成的文字只存放在 `ai_insights.json` 中，它不是已登记的数据模块（从不同步、备份或导出）。见[端侧 AI](on-device-ai.md)。
 
 ## 下一步去哪里
 

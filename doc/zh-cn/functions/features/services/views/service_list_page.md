@@ -28,7 +28,7 @@
 | `build` | 方法（组件，`_ServiceListPageState`） | B | 构建脚手架：应用栏操作、FAB、视图切换器、当前视图主体。 |
 | `_setColumnsPref` | 方法（`_ServiceListPageState`） | B | 存储新的列数偏好（`DeviceStorage.setServiceListColumns`）并重新渲染。 |
 | `_buildCurrentView` | 方法（组件辅助） | B | 分发到当前所选 `_ServiceView` 的构建器，把 `listColumnCount`（以 `shellContentWidth − 16` 和 `serviceCardMinWidth`）得到的列数传给三个列表视图。 |
-| `_buildOverview` | 方法（组件辅助） | B | 渲染总览视图：指标卡片（列数来自 `serviceMetricColumns`）、拓扑卡片、警告、路由组、服务列表。 |
+| `_buildOverview` | 方法（组件辅助） | B | 渲染总览视图：指标卡片（列数来自 `serviceMetricColumns`）、拓扑卡片、警告、端侧 AI [`AiInsightCard`](../../ai/widgets/ai_insight_card.md)（v1.6.0：模块 `services`、`top: 16` 外边距，事实来自 [`buildServiceInsightFacts`](../services/service_insight_facts.md)；除非端侧 AI 已打开，否则什么都不渲染）、路由组、服务列表。 |
 | `_buildDevices` | 方法（组件辅助） | B | 渲染按设备视图：每设备分组并可展开的服务，卡片按给定列数放入 `adaptiveTileRows`。 |
 | `_buildRoutes` | 方法（组件辅助，`_ServiceListPageState`） | B | 渲染路由视图：每路由一张卡片，放入 `adaptiveTileRows`。 |
 | `_buildPorts` | 方法（组件辅助） | B | 渲染端口视图：冲突提示及按设备分组的端口卡片，服务带品牌头像。 |
@@ -45,7 +45,7 @@
 | `_emptyState` | 方法（组件辅助） | B | 渲染居中空状态消息。 |
 | `_emptyInline` | 方法（组件辅助） | B | 渲染填充内联空状态消息。 |
 
-`enum _ServiceView { overview, devices, routes, ports }`（第 24 行）是简单、无成员枚举，无自己构造函数/方法，因此也不列出——它只作为 `_viewLabel` 和 `_buildCurrentView` 的参数/返回类型，以及在 `build` 中的 `SegmentedButton` 里出现。
+`enum _ServiceView { overview, devices, routes, ports }`（第 29 行）是简单、无成员枚举，无自己构造函数/方法，因此也不列出——它只作为 `_viewLabel` 和 `_buildCurrentView` 的参数/返回类型，以及在 `build` 中的 `SegmentedButton` 里出现。
 
 本页显示的服务和路由图标来自 [`service_topology_widgets.md`](service_topology_widgets.md)（`iconForService`），服务编辑器和引导式访问路径页也共用它。
 
@@ -53,7 +53,7 @@
 
 ### `void initState()` <a id="initstate"></a>
 - **种类：** `_ServiceListPageState` 的方法（组件生命周期覆盖）。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 58 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 63 行）。
 - **用途：** 把本页接入自动同步通知系统并启动初始服务/路由/设备/网络加载。
 - **输入：** 无。
 - **返回：** 无。
@@ -64,7 +64,7 @@
 
 ### `Future<void> _load()` <a id="load"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 89 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 94 行）。
 - **用途：** 从各自存储重载服务、路由、设备和网络并刷新页面状态。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -75,7 +75,7 @@
 
 ### `Future<void> _addAccessPath({ServiceAccessDraft? draft})` <a id="addaccesspath"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 191 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 196 行）。
 - **用途：** 为新访问路径打开引导式访问路径页。
 - **输入：** `draft` — 可选的起始草稿，如用 `ServiceAccessDraft(sourceServiceId: ...)` 预选源服务。
 - **返回：** `Future<void>`。
@@ -94,7 +94,7 @@
 
 ### `List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService()` <a id="routesgroupedbyservice"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 759 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 783 行）。
 - **用途：** 按源服务 id 分组所有路由，供总览逐服务路由卡片。
 - **输入：** 无。
 - **返回：** `List<MapEntry<String, List<ServiceRoute>>>`，按解析服务名（不区分大小写）排序；无法解析 id 按其自己原始文本排序。
@@ -105,7 +105,7 @@
 
 ### `String _hopLabel(ServiceRouteHop hop)` <a id="hoplabel"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 943 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 965 行）。
 - **用途：** 为一个路由跳计算短显示标签，供路由摘要行。
 - **输入：** `hop`。
 - **返回：** `String`。
@@ -116,7 +116,7 @@
 
 ### `String _routeSummary(ServiceRoute route, {ServiceNode? source, ServiceEndpoint? sourceEndpoint})` <a id="routesummary"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 962 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 984 行）。
 - **用途：** 构建每条路由卡片下显示的两行文本摘要：源到目标路径，然后访问级别和车道。
 - **输入：** `route`；`source`/`sourceEndpoint` — 已解析源服务/端点（使此方法不必重新解析）。
 - **返回：** `String` — 箭头连接的路径，然后是本地化访问级别（`serviceAccessLevelLabel`）和访问车道（`serviceAccessLaneForRoute` 的 `serviceAccessLaneLabel`）用 `' · '` 连接，两行之间用 `'\n'` 连接。
@@ -127,7 +127,7 @@
 
 ### `String? _routesForEndpoint(String serviceId, String endpointId)` <a id="routesforendpoint"></a>
 - **种类：** `_ServiceListPageState` 的方法。
-- **来源：** `lib/features/services/views/service_list_page.dart`（第 991 行）。
+- **来源：** `lib/features/services/views/service_list_page.dart`（第 1013 行）。
 - **用途：** 找使用给定服务端点（作为源或经跳）的每条路由显示名，供端口视图副标题。
 - **输入：** `serviceId`、`endpointId`。
 - **返回：** `String?` — 逗号连接路由显示目标列表，无路由引用此端点时 `null`。

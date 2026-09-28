@@ -11,9 +11,9 @@
 | [`initState`](#initstate) | 方法（组件生命周期） | A | 注册自动同步监听器并启动偏好/设备加载。 |
 | `dispose` | 方法（组件生命周期） | B | 注销自动同步监听器。 |
 | `_handleLocalDataChanged` | 方法（`_DeviceListPageState`） | B | 响应自动同步通知重载设备。 |
-| [`_loadSortPrefs`](#_loadsortprefs) | 方法（`_DeviceListPageState`） | A | 从设备存储配置加载持久化排序模式/分组/方向。 |
+| [`_loadSortPrefs`](#_loadsortprefs) | 方法（`_DeviceListPageState`） | A | 从设备存储配置加载持久化排序模式/分组/方向/状态筛选。 |
 | [`_loadFinancialPrefs`](#_loadfinancialprefs) | 方法（`_DeviceListPageState`） | A | 加载财务显示的持久化默认货币。 |
-| [`_saveSortPrefs`](#_savesortprefs) | 方法（`_DeviceListPageState`） | A | 把当前排序模式/分组/方向持久化到设备存储配置。 |
+| [`_saveSortPrefs`](#_savesortprefs) | 方法（`_DeviceListPageState`） | A | 把当前排序模式/分组/方向/状态筛选持久化到设备存储配置。 |
 | [`_visibleDevices`](#_visibledevices) | getter（`_DeviceListPageState`） | A | 按活动 `DeviceStatusFilter` 过滤 `_devices`。 |
 | [`_sortedDevices`](#_sorteddevices) | getter（`_DeviceListPageState`） | A | 按当前排序设置排序并可选择分组可见设备。 |
 | [`_loadDevices`](#_loaddevices) | 方法（`_DeviceListPageState`） | A | 从存储重载设备列表并刷新状态。 |
@@ -56,7 +56,7 @@
 
 ### `void initState()` <a id="initstate"></a>
 - **种类：** `_DeviceListPageState` 的方法（组件生命周期覆盖）
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 57 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 62 行）
 - **用途：** 把本页接入自动同步通知系统并启动初始偏好/设备加载。
 - **输入：** 无。
 - **返回：** `None`。
@@ -67,12 +67,12 @@
   3. 调用 `_loadFinancialPrefs()`（即发即忘——不 await）。
   4. 链 `_loadSortPrefs().then((_) => _loadDevices())`——先加载排序/分组/方向偏好，然后用已加载偏好加载并排序/分组设备（避免列表首次渲染后可见重新排序闪烁）。
 - **用法：** `_DeviceListPageState` 首次插入树时由 Flutter 框架自动调用；无直接调用点。
-- **备注：** 对应 `dispose()`（第 70 行）调用 `AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged)` 避免页面释放后泄漏监听器。
+- **备注：** 对应 `dispose()`（第 75 行）调用 `AutoSyncService.instance.removeOnLocalDataChanged(_handleLocalDataChanged)` 避免页面释放后泄漏监听器。
 
 ### `Future<void> _loadSortPrefs()` <a id="_loadsortprefs"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 89 行）
-- **用途：** 从设备存储配置加载持久化排序模式、类别分组标志和排序方向，回退合理默认。
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 96 行）
+- **用途：** 从设备存储配置加载持久化排序模式、类别分组标志、排序方向、首页状态筛选和列数偏好，回退合理默认。
 - **输入：** 无。
 - **返回：** `Future<void>`。
 - **副作用：** 经 `DeviceStorage.readConfig()` 读取配置；调用 `setState`。
@@ -80,13 +80,14 @@
   1. 读取配置映射。
   2. 把存储 `'sortMode'` 字符串对照 `SortMode.values` 按 `.name` 匹配解析 `_sortMode`，存储值缺失或无法识别回退 `SortMode.custom`（`firstOrNull ?? SortMode.custom`）。
   3. 直接把 `_groupByCategory`（默认 `false`）和 `_sortAscending`（默认 `false`）作为布尔解析。
-  4. 经单个 `setState` 应用三者。
+  4. 以同样方式从 `'deviceStatusFilter'`（`deviceStatusFilterConfigKey`）对照 `DeviceStatusFilter.values` 解析 `_statusFilter`，回退 `all`。
+  5. 连同列数偏好经单个 `setState` 应用。
 - **用法：** [`initState`](#initstate) 构造后链接：`_loadSortPrefs().then((_) => _loadDevices());`。
 - **备注：** 无。
 
 ### `Future<void> _loadFinancialPrefs()` <a id="_loadfinancialprefs"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 122 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 135 行）
 - **用途：** 加载用户配置的默认货币，使本页财务数字正确格式化。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -97,18 +98,18 @@
 
 ### `Future<void> _saveSortPrefs()` <a id="_savesortprefs"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 132 行）
-- **用途：** 把当前排序模式、分组标志和排序方向持久化回设备存储配置。
-- **输入：** 无（读取 `_sortMode`、`_groupByCategory`、`_sortAscending`）。
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 148 行）
+- **用途：** 把当前排序模式、分组标志、排序方向和首页状态筛选持久化回设备存储配置。
+- **输入：** 无（读取 `_sortMode`、`_groupByCategory`、`_sortAscending`、`_statusFilter`）。
 - **返回：** `Future<void>`。
 - **副作用：** 经 `DeviceStorage.readConfig()`/`writeConfig()` 读取然后写配置。
-- **算法：** 读取既有配置映射、覆盖三个排序相关键（`'sortMode'` 作为枚举 `.name`、`'groupByCategory'`、`'sortAscending'`）并写回整个映射——保留配置中任何其他键。
-- **用法：** 从 [`_setSortMode`](#)、`_toggleGroupByCategory` 和 `_toggleSortOrder` 在各修改其状态字段后调用。
-- **备注：** 无。
+- **算法：** 读取既有配置映射、覆盖三个排序相关键（`'sortMode'` 作为枚举 `.name`、`'groupByCategory'`、`'sortAscending'`），把 `'deviceStatusFilter'` 写为筛选的 `.name`——筛选为 `all` 时则移除该键——并写回整个映射，保留配置中任何其他键。
+- **用法：** 从 [`_setSortMode`](#)、`_toggleGroupByCategory`、`_toggleSortOrder` 以及 `_buildHomeHeader` 中状态 `SegmentedButton` 的 `onSelectionChanged` 在各修改其状态字段后调用。
+- **备注：** 仅限本机（`storage_config.json` 从不同步），因此每台设备各自记住上次的筛选。
 
 ### `List<Device> get _visibleDevices` <a id="_visibledevices"></a>
 - **种类：** `_DeviceListPageState` 的 getter
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 145 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 166 行）
 - **用途：** 对完整设备列表应用活动 `DeviceStatusFilter`。
 - **输入：** 无（读取 `_devices`、`_statusFilter`）。
 - **返回：** `List<Device>` — 匹配过滤器的子集。
@@ -119,7 +120,7 @@
 
 ### `List<Device> get _sortedDevices` <a id="_sorteddevices"></a>
 - **种类：** `_DeviceListPageState` 的 getter
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 164 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 185 行）
 - **用途：** 产生最终显示列表：按活动 `SortMode` 和方向排序的 `_visibleDevices`，可选按类别分组。
 - **输入：** 无（读取 `_visibleDevices`、`_sortMode`、`_sortAscending`、`_groupByCategory`、`_devices`）。
 - **返回：** `List<Device>`。
@@ -130,12 +131,12 @@
   3. 否则构建 `comparator`：`alphabetical` 比较小写名；`releaseDate`/`purchaseDate` 比较相应日期降序（最新在前），null 无论方向总是排最后（`a.releaseDate == null` → 返回 `1`，即 `a` 排在 `b` 后）。
   4. 包装比较器尊重 `_sortAscending`：升序时交换参数顺序（`comparator(b, a)`）反转（自然降序）比较器。
   5. `_groupByCategory` 开启时先按 `category.index` 排序，每类别内回退 `effectiveComparator`；否则直接按 `effectiveComparator` 排序整个列表。
-- **用法：** `_buildDeviceList` 中的 `final sorted = _sortedDevices;`（`lib/features/devices/views/device_list_page.dart`，第 728 行）。
+- **用法：** `_buildDeviceList` 中的 `final sorted = _sortedDevices;`（`lib/features/devices/views/device_list_page.dart`，第 756 行）。
 - **备注：** 日期比较器 null 处理方向不变——null 总是最后，升序降序都是，因为升序包装只是交换比较器两参数而非取反其结果。
 
 ### `Future<void> _loadDevices()` <a id="_loaddevices"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 220 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 241 行）
 - **用途：** 从存储重载完整设备列表并刷新页面状态。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -146,7 +147,7 @@
 
 ### `Future<bool> _confirmDeleteDevice(Device device)` <a id="_confirmdeletedevice"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 305 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 326 行）
 - **用途：** 显示删除设备确认对话框，确认时删除并刷新列表。
 - **输入：** `device` — 用户滑删的设备。
 - **返回：** `Future<bool>` — 设备被删除 `true`，取消 `false`。
@@ -155,12 +156,12 @@
   1. 显示带取消/删除操作的 `AlertDialog`，await `showDialog` 的 `bool?`。
   2. 结果恰好 `true` 时：经 `DeviceStorage.deleteDevice` 按 ID 删除设备、调用 `AutoSyncService.instance.notifySaved()`（标记本地数据已变使同步运行拾取删除——删除设备在模型层级联到什么见 [设备 — 退役/出售/删除的级联规则](../../../../features/devices.md#cascade-rules-on-retiresell-delete)）、重载设备列表并返回 `true`。
   3. 否则无副作用返回 `false`。
-- **用法：** `_buildDismissibleCard` 中的 `confirmDismiss: (direction) async { ... return _confirmDeleteDevice(device); }`（`lib/features/devices/views/device_list_page.dart`，第 1061 行）——`Dismissible` 的 `confirmDismiss` 用返回 `bool` 决定是否实际移除滑动块。
+- **用法：** `_buildDismissibleCard` 中的 `confirmDismiss: (direction) async { ... return _confirmDeleteDevice(device); }`（`lib/features/devices/views/device_list_page.dart`，第 1093 行）——`Dismissible` 的 `confirmDismiss` 用返回 `bool` 决定是否实际移除滑动块。
 - **备注：** 无。
 
 ### `Future<void> _addFromTemplate()` <a id="_addfromtemplate"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 338 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 359 行）
 - **用途：** 让用户挑捆绑设备模板，然后为结果设备打开预填编辑页。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -170,45 +171,45 @@
   2. 未挂载提前返回。
   3. 在滚动控制模态底部面板显示 `_TemplatePicker`，await 所选 `DeviceTemplate?`。
   4. 挑了模板且组件仍挂载时：await `PresetService.loadCpus()`/`loadGpus()`（也惰性缓存），解析后未挂载提前返回，然后调用 `template.toDevice(cpuPresets: cpus, gpuPresets: gpus)` 从模板构建具体 `Device`、压入 `DeviceEditPage(device: device)` 并重载。
-- **用法：** `build` 中"从模板添加"FAB 的 `onPressed: _addFromTemplate,`（`lib/features/devices/views/device_list_page.dart`，第 637 行）。
+- **用法：** `build` 中"从模板添加"FAB 的 `onPressed: _addFromTemplate,`（`lib/features/devices/views/device_list_page.dart`，第 662 行）。
 - **备注：** 三个单独 `mounted` 检查守卫三个 await 步骤（模板加载、选择器结果、cpu/gpu 预设加载），因为用户可在任一期间导航离开页面。
 
 ### `int _statusCount(DeviceLifecycleStatus status)` <a id="_statuscount"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 393 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 415 行）
 - **用途：** 统计当前有多少设备有给定生命周期状态。
 - **输入：** `status`。
 - **返回：** `int`。
 - **副作用：** 无。
 - **算法：** `_devices.where((d) => d.lifecycleStatus == status).length`。
-- **用法：** `_buildHomeHeader` 中的 `_statusCount(DeviceLifecycleStatus.inService)` 等（`lib/features/devices/views/device_list_page.dart`，第 817–819 行），供给三个状态进度条。
+- **用法：** `_buildHomeHeader` 中的 `_statusCount(DeviceLifecycleStatus.inService)` 等（`lib/features/devices/views/device_list_page.dart`，第 848–850 行），供给三个状态进度条。
 - **备注：** 无。
 
 ### `double _totalFinancialCost()` <a id="_totalfinancialcost-list"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 401 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 423 行）
 - **用途：** 跨每个设备求和 `Device.totalCost()`（截至现在），供主页页头"总成本"指标。
 - **输入：** 无。
 - **返回：** `double`。
 - **副作用：** 无。
 - **算法：** `_devices.fold(0, (sum, device) => sum + device.totalCost())`。
-- **用法：** `_buildHomeHeader` 中的 `_moneyText(_totalFinancialCost())`（`lib/features/devices/views/device_list_page.dart`，第 864 行）。
+- **用法：** `_buildHomeHeader` 中的 `_moneyText(_totalFinancialCost())`（`lib/features/devices/views/device_list_page.dart`，第 895 行）。
 - **备注：** 与 `DeviceFinanceOverviewPage._totalFinancialCost` 相同形态（本文件列表页页头显示财务总览页摘要卡片显示的相同聚合）。
 
 ### `double _totalDailyCost()` <a id="_totaldailycost-list"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 409 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 431 行）
 - **用途：** 跨每个设备求和 `Device.averageDailyCost()`（截至现在），供主页页头"每日成本"指标。
 - **输入：** 无。
 - **返回：** `double`。
 - **副作用：** 无。
 - **算法：** `_devices.fold(0, (sum, device) => sum + (device.averageDailyCost() ?? 0))`。
-- **用法：** `_buildHomeHeader` 中的 `_moneyText(_totalDailyCost())`（`lib/features/devices/views/device_list_page.dart`，第 872 行）。
+- **用法：** `_buildHomeHeader` 中的 `_moneyText(_totalDailyCost())`（`lib/features/devices/views/device_list_page.dart`，第 903 行）。
 - **备注：** 无。
 
 ### `String _moneyText(double amount)` <a id="_moneytext-list"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 417 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 439 行）
 - **用途：** 用页面配置的默认货币符号格式化普通金额。
 - **输入：** `amount` — 已在 `_defaultCurrency`。
 - **返回：** `String` — `"{symbol}{amount.toStringAsFixed(2)}"`。
@@ -219,29 +220,29 @@
 
 ### `Future<void> _onReorder(int oldIndex, int newIndex)` <a id="_onreorder"></a>
 - **种类：** `_DeviceListPageState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 457 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 479 行）
 - **用途：** 把设备移到自定义（存储）顺序新位置并持久化变更。
 - **输入：** `oldIndex`、`newIndex` — 由 `ReorderableListView.builder` 的 `onReorderItem` 回调提供。
 - **返回：** `Future<void>`。
 - **副作用：** 原地修改 `_devices`；`setState`；经 `DeviceStorage.save` 持久化。
 - **算法：** 移除 `oldIndex` 处设备并在 `newIndex` 重新插入、调用 `setState` 立即反映重排，然后 await `DeviceStorage.save(DeviceData(devices: _devices))` 持久化新顺序。
-- **用法：** `build` 中 `_reordering` 为 true 时显示的 `ReorderableListView.builder` 上的 `onReorderItem: _onReorder,`（`lib/features/devices/views/device_list_page.dart`，第 605 行）。
+- **用法：** `build` 中 `_reordering` 为 true 时显示的 `ReorderableListView.builder` 上的 `onReorderItem: _onReorder,`（`lib/features/devices/views/device_list_page.dart`，第 627 行）。
 - **备注：** 源码文档注释说明 `onReorderItem`（而非较旧 `onReorder` 回调）已在移除后调整 `newIndex`，因此此方法不需要自己的索引调整逻辑——Flutter 重排回调常见的差一错误源。
 
 ### `List<DeviceTemplate> get _filtered` <a id="_filtered"></a>
 - **种类：** `_TemplatePickerState` 的 getter
-- **来源：** `lib/features/devices/views/device_list_page.dart`（第 1181 行）
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 1217 行）
 - **用途：** 按当前搜索查询过滤捆绑设备模板列表。
 - **输入：** 无（读取 `_query`、`widget.templates`）。
 - **返回：** `List<DeviceTemplate>` — 查询为空时所有模板，否则名称、品牌、型号、CPU、GPU 或内存中含（不区分大小写）查询的模板。
 - **副作用：** 无。
 - **算法：** `_query` 为空时返回未过滤 `widget.templates`；否则把每个模板的 `name`、`brand`、`model`、`cpu`、`gpu` 和 `ram` 拼成一个小写字符串，并保留其中 `contains` 查询的模板。
-- **用法：** `_TemplatePickerState.build` 中的 `final items = _filtered;`（`lib/features/devices/views/device_list_page.dart`，第 1237 行），驱动选择器 `ListView`。
+- **用法：** `_TemplatePickerState.build` 中的 `final items = _filtered;`（`lib/features/devices/views/device_list_page.dart`，第 1274 行），驱动选择器 `ListView`。
 - **备注：** 参与匹配的字段有意与列表项所显示的内容一致。仅按 `name` 过滤意味着输入副标题里正在显示的芯片名——「Snapdragon」「Apple M4」——却什么都搜不到。
 
 ### `Future<void> _choose(DeviceTemplate t)` <a id="_choose"></a>
 - **种类：** `_TemplatePickerState` 的方法
-- **来源：** `lib/features/devices/views/device_list_page.dart`
+- **来源：** `lib/features/devices/views/device_list_page.dart`（第 1241 行）
 - **用途：** 确定选中模板应使用哪一个存储容量，然后关闭面板。
 - **输入：** `t` —— 被点击的模板。
 - **返回：** `Future<void>`；以 `_TemplateChoice` 弹出面板。

@@ -17,7 +17,9 @@ overall repository layout of MyDevice!!!!!. For data-level details see
 6. Fires `DeviceExchangeRateService.refreshIfNeeded()` for automatic exchange-rate updates.
 7. Starts `AutoSyncService.instance.start()`, the lifecycle observer that drives
    auto-sync triggers (see [WebDAV Sync](sync.md)).
-8. Calls `runApp()`, wrapping `MyDeviceApp` in `DevicePreview` (enabled only in debug
+8. Starts `OnDeviceAiService.instance.start()`, the lifecycle listener of the optional on-device
+   AI (see [On-device AI](on-device-ai.md)); it does nothing until the user turns the feature on.
+9. Calls `runApp()`, wrapping `MyDeviceApp` in `DevicePreview` (enabled only in debug
    builds) and a Riverpod `ProviderScope`.
 
 ## App shell: `lib/app/`
@@ -83,6 +85,9 @@ lib/
     router.dart
     theme.dart
   features/
+    ai/
+      services/  (genai_backend, on_device_ai_service, insight_prompts, insight_service, …)
+      widgets/   (ai_insight_card, ai_settings_tiles)
     devices/
       models/device.dart
       services/chip_search_service.dart
@@ -124,6 +129,9 @@ lib/
     views/webdav_config_page.dart
     widgets/
   l10n/
+packages/
+  myapps_data/           (shared sync/backup engines, git submodule)
+  on_device_ai_apple/    (Foundation Models bridge for iOS/macOS, v1.6.0)
 ```
 
 (Adapted from `AGENTS.md`; `lib/shared/widgets/map_picker_page.dart` and
@@ -177,6 +185,9 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
 - Unknown/forward-compatible JSON fields are preserved via the `extraJson` pattern
   (`lib/shared/utils/json_preservation.dart`) so an older app build never silently drops
   fields a newer build wrote. See [Data Formats](data-formats.md#extrajson-unknown-field-preservation).
+- On-device AI is opt-in and device-local. Nothing reaches the model but facts computed by the pure
+  `*_insight_facts.dart` builders, and generated text lives only in `ai_insights.json`, which is not
+  a registered data module (never synced, backed up or exported). See [On-device AI](on-device-ai.md).
 
 ## Where to go next
 

@@ -162,6 +162,14 @@ Not copied to the other repos — no other app has these.
 | unmoved entry | 未移动条目 | a file a storage-location change left in the old folder |
 | device thumbnail | 设备缩略图 | a template's bundled `image` photo of the device itself, shown in avatars |
 | circle-safe | 圆内安全 | every visible pixel lies inside the avatar's inscribed circle |
+| on-device AI | 端侧 AI | the optional insight cards run by the device's own model; never 本地 AI or 设备端 AI (zh-TW UI uses 裝置端 AI) |
+| insight card | 洞察卡片 | the AI card on the Financial Overview and Services Overview |
+| fingerprint | 指纹 | the SHA-256 that decides whether a cached insight is still current |
+| slot | 槽位 | one numbered answer a card asks the model for |
+| quoted term | 引用词 | a word removed before the script check so it may stay in Latin letters |
+| fallback facts | 回退事实 | the plainer second try sent when the model declines the first facts |
+| regenerate | 重新生成 | the card's refresh action |
+| weak linking | 弱链接 | linking FoundationModels so the app still launches where it does not exist |
 
 ## 6. Review checklist (run before committing a Chinese page)
 

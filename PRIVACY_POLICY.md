@@ -42,6 +42,16 @@ These services have their own privacy policies, which we encourage you to review
 
 **Note:** Versions distributed through the App Store and Google Play (store flavor) do not include the online chip or device search features, and do not connect to TechPowerUp, AMD, Intel, Startpage, Notebookcheck, or PhoneDB.
 
+## On-Device AI (optional, since 1.6.0)
+
+The Financial Overview and Services pages can optionally show short summaries and suggestions written by the language model built into your device — Gemini Nano through Android AICore, or the model that is part of Apple Intelligence on iOS 26 and macOS 26 or later. This is off by default and runs only after you turn on **Use on-device AI** in Settings. It is not available on Windows or Linux.
+
+- Everything the model does happens on your device. It is given only figures the app has already calculated: for the Financial Overview, cost totals and daily costs, cost by category, recurring-cost totals and the names of a few devices; for Services, counts of services, endpoints, access paths, ports and warnings by type. Serial numbers, notes, locations, host names, IP addresses, URLs and port numbers are never given to it.
+
+- On Android, the model is downloaded by the AICore system service from Google, and only when you tap Download in Settings. On Apple devices the model is part of Apple Intelligence and is managed by the system.
+
+- Generated results stay on your device: they are neither synced, backed up nor exported, and you can clear them in Settings. No cloud model is used, including Apple's Private Cloud Compute.
+
 ## Data Backup
 
 The app provides a local backup feature. Backup files are stored on your device and include all your device data and cover images. The storage and management of backup files is entirely under your control.

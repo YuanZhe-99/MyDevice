@@ -60,7 +60,7 @@ Route-method and device icons keep their existing Material rendering.
 | `build` | method (widget, `_ServiceListPageState`) | B | Build the scaffold: app bar actions, FAB, view switcher, current view body. |
 | `_setColumnsPref` | method (`_ServiceListPageState`) | B | Store a new column preference (`DeviceStorage.setServiceListColumns`) and re-render. |
 | `_buildCurrentView` | method (widget helper) | B | Dispatch to the builder for the currently selected `_ServiceView`, passing the column count from `listColumnCount` (at `shellContentWidth − 16` and `serviceCardMinWidth`) to the three list views. |
-| `_buildOverview` | method (widget helper) | B | Render the overview view: metric cards (columns from `serviceMetricColumns`), topology card, warnings, route groups, service list. |
+| `_buildOverview` | method (widget helper) | B | Render the overview view: metric cards (columns from `serviceMetricColumns`), topology card, warnings, the on-device AI [`AiInsightCard`](../../ai/widgets/ai_insight_card.md) (v1.6.0: module `services`, a `top: 16` margin, facts from [`buildServiceInsightFacts`](../services/service_insight_facts.md); renders nothing unless on-device AI is on), route groups, service list. |
 | `_buildDevices` | method (widget helper) | B | Render the by-device view: services grouped and expandable per device, the cards in `adaptiveTileRows` at the given column count. |
 | `_buildRoutes` | method (widget helper, `_ServiceListPageState`) | B | Render the routes view: one card per route, in `adaptiveTileRows`. |
 | `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage cards with brand-aware service avatars, the cards in `adaptiveTileRows`. |
@@ -77,7 +77,7 @@ Route-method and device icons keep their existing Material rendering.
 | `_emptyState` | method (widget helper) | B | Render a centered empty-state message. |
 | `_emptyInline` | method (widget helper) | B | Render a padded inline empty-state message. |
 
-`enum _ServiceView { overview, devices, routes, ports }` (line 24) is a simple, member-less enum
+`enum _ServiceView { overview, devices, routes, ports }` (line 29) is a simple, member-less enum
 with no constructor/methods of its own, so it isn't listed either — it only appears as the
 parameter/return type of `_viewLabel` and `_buildCurrentView` and in the `SegmentedButton` in
 `build`.
@@ -90,7 +90,7 @@ editor and the guided access-path page share.
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_ServiceListPageState` (widget lifecycle override).
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 58).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 63).
 - **Purpose:** Wire this page into the auto-sync notification system and kick off the initial
   services/routes/devices/networks load.
 - **Inputs:** None.
@@ -108,7 +108,7 @@ editor and the guided access-path page share.
 
 ### `Future<void> _load()` <a id="load"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 89).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 94).
 - **Purpose:** Reload services, routes, devices, and networks from their respective storages and
   refresh the page's state.
 - **Inputs:** None.
@@ -130,7 +130,7 @@ editor and the guided access-path page share.
 
 ### `Future<void> _addAccessPath({ServiceAccessDraft? draft})` <a id="addaccesspath"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 191).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 196).
 - **Purpose:** Open the guided access-path page for a new access path.
 - **Inputs:** `draft` — optional starting draft, e.g. `ServiceAccessDraft(sourceServiceId: ...)`
   to preselect the source service.
@@ -157,7 +157,7 @@ editor and the guided access-path page share.
 
 ### `List<MapEntry<String, List<ServiceRoute>>> _routesGroupedByService()` <a id="routesgroupedbyservice"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 759).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 783).
 - **Purpose:** Group all routes by their source service id, for the overview's per-service route
   cards.
 - **Inputs:** None.
@@ -174,7 +174,7 @@ editor and the guided access-path page share.
 
 ### `String _hopLabel(ServiceRouteHop hop)` <a id="hoplabel"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 943).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 965).
 - **Purpose:** Compute a short display label for one route hop, for the route summary line.
 - **Inputs:** `hop`.
 - **Returns:** `String`.
@@ -192,7 +192,7 @@ editor and the guided access-path page share.
 
 ### `String _routeSummary(ServiceRoute route, {ServiceNode? source, ServiceEndpoint? sourceEndpoint})` <a id="routesummary"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 962).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 984).
 - **Purpose:** Build the two-line textual summary shown under each route card: the source-to-target
   path, then the access level and the lane.
 - **Inputs:** `route`; `source`/`sourceEndpoint` — already-resolved source service/endpoint (so this
@@ -214,7 +214,7 @@ editor and the guided access-path page share.
 
 ### `String? _routesForEndpoint(String serviceId, String endpointId)` <a id="routesforendpoint"></a>
 - **Kind:** method of `_ServiceListPageState`.
-- **Source:** `lib/features/services/views/service_list_page.dart` (line 991).
+- **Source:** `lib/features/services/views/service_list_page.dart` (line 1013).
 - **Purpose:** Find the display names of every route that uses a given service endpoint, either as
   its source or via a hop, for the ports view's subtitle.
 - **Inputs:** `serviceId`, `endpointId`.

@@ -4,13 +4,14 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1227** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1358** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1347** declarations — 120 more than
-1227 — because a number of real declarations across several files (especially the two large
-algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus the tail
-section of `device.dart`) have no `/// Purpose:` doc comment in
-source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1502** declarations — 144 more than
+1358 — because a number of real declarations across several files (especially the two large
+algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the tail
+section of `device.dart`, and the constants, enums, typedefs and private regular expressions of the
+1.6.0 on-device AI files under `features/ai/` and the two insight fact builders) have no
+`/// Purpose:` doc comment in source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
 call-site statement rather than a real declaration. Every such case is called out explicitly on
 its file page with a reconciling row-count note; nothing is silently invented to force a round
 number.
@@ -24,9 +25,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 722 |
-| Tier B (index row only) | 625 |
-| **Total** | **1347** |
+| Tier A (full entry) | 799 |
+| Tier B (index row only) | 703 |
+| **Total** | **1502** |
 
 ## Root (`lib/`)
 
@@ -43,6 +44,20 @@ its per-file row and both total tables in the same commit.
 | `lib/app/router.dart` | [app/router.md](app/router.md) | 1 | 0 |
 | `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 14 | 14 |
 | `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 3 | 3 |
+
+## features/ai/
+
+| Source file | Page | Declarations | Tier A |
+|---|---|---|---|
+| `lib/features/ai/services/ai_insights_cache.dart` | [features/ai/services/ai_insights_cache.md](features/ai/services/ai_insights_cache.md) | 12 | 10 |
+| `lib/features/ai/services/genai_backend.dart` | [features/ai/services/genai_backend.md](features/ai/services/genai_backend.md) | 27 | 7 |
+| `lib/features/ai/services/insight_language.dart` | [features/ai/services/insight_language.md](features/ai/services/insight_language.md) | 3 | 3 |
+| `lib/features/ai/services/insight_prompts.dart` | [features/ai/services/insight_prompts.md](features/ai/services/insight_prompts.md) | 18 | 10 |
+| `lib/features/ai/services/insight_service.dart` | [features/ai/services/insight_service.md](features/ai/services/insight_service.md) | 18 | 13 |
+| `lib/features/ai/services/on_device_ai_service.dart` | [features/ai/services/on_device_ai_service.md](features/ai/services/on_device_ai_service.md) | 26 | 9 |
+| `lib/features/ai/services/output_validation.dart` | [features/ai/services/output_validation.md](features/ai/services/output_validation.md) | 6 | 4 |
+| `lib/features/ai/widgets/ai_insight_card.dart` | [features/ai/widgets/ai_insight_card.md](features/ai/widgets/ai_insight_card.md) | 13 | 8 |
+| `lib/features/ai/widgets/ai_settings_tiles.dart` | [features/ai/widgets/ai_settings_tiles.md](features/ai/widgets/ai_settings_tiles.md) | 6 | 2 |
 
 ## features/datasets/
 
@@ -61,8 +76,9 @@ its per-file row and both total tables in the same commit.
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 25 | 24 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
-| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 44 | 26 |
+| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 49 | 27 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
+| `lib/features/devices/services/finance_insight_facts.dart` | [features/devices/services/finance_insight_facts.md](features/devices/services/finance_insight_facts.md) | 5 | 1 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 16 | 13 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
@@ -90,6 +106,7 @@ its per-file row and both total tables in the same commit.
 | `lib/features/services/models/service.dart` | [features/services/models/service.md](features/services/models/service.md) | 42 | 33 |
 | `lib/features/services/services/service_access_patterns.dart` | [features/services/services/service_access_patterns.md](features/services/services/service_access_patterns.md) | 47 | 25 |
 | `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 76 | 44 |
+| `lib/features/services/services/service_insight_facts.dart` | [features/services/services/service_insight_facts.md](features/services/services/service_insight_facts.md) | 6 | 2 |
 | `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 11 | 5 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 8 | 8 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
@@ -116,13 +133,13 @@ its per-file row and both total tables in the same commit.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1227/1347 hand-documented declarations above).
+the 1358/1502 hand-documented declarations above).
 
 ## shared/
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
-| `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 6 | 6 |
+| `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 9 | 9 |
 | `lib/shared/services/auto_sync_service.dart` | [shared/services/auto_sync_service.md](shared/services/auto_sync_service.md) | 20 | 5 |
 | `lib/shared/services/backup_service.dart` | [shared/services/backup_service.md](shared/services/backup_service.md) | 12 | 12 |
 | `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 5 | 5 |
@@ -135,6 +152,8 @@ the 1227/1347 hand-documented declarations above).
 | `lib/shared/services/tray_service.dart` | [shared/services/tray_service.md](shared/services/tray_service.md) | 16 | 12 |
 | `lib/shared/services/webdav_service.dart` | [shared/services/webdav_service.md](shared/services/webdav_service.md) | 12 | 12 |
 | `lib/shared/utils/adaptive_layout.dart` | [shared/utils/adaptive_layout.md](shared/utils/adaptive_layout.md) | 16 | 16 |
+| `lib/shared/utils/chinese_convert.dart` | [shared/utils/chinese_convert.md](shared/utils/chinese_convert.md) | 5 | 4 |
+| `lib/shared/utils/chinese_convert_data.dart` | [shared/utils/chinese_convert_data.md](shared/utils/chinese_convert_data.md) | 2 | 0 |
 | `lib/shared/utils/detail_layout.dart` | [shared/utils/detail_layout.md](shared/utils/detail_layout.md) | 5 | 5 |
 | `lib/shared/utils/json_preservation.dart` | [shared/utils/json_preservation.md](shared/utils/json_preservation.md) | 0 | 0 |
 | `lib/shared/views/device_map_page.dart` | [shared/views/device_map_page.md](shared/views/device_map_page.md) | 5 | 2 |
@@ -150,10 +169,11 @@ the 1227/1347 hand-documented declarations above).
 |---|---|---|---|---|
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 23 | 18 | 5 |
+| `features/ai/` | 9 | 129 | 66 | 63 |
 | `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 15 | 399 | 224 | 175 |
+| `features/devices/` | 16 | 409 | 226 | 183 |
 | `features/network/` | 5 | 75 | 41 | 34 |
-| `features/services/` | 16 | 527 | 228 | 299 |
+| `features/services/` | 17 | 533 | 230 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 21 | 227 | 159 | 68 |
-| **Total** | **71** | **1347** | **722** | **625** |
+| `shared/` | 23 | 237 | 166 | 71 |
+| **Total** | **84** | **1502** | **799** | **703** |

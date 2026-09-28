@@ -100,12 +100,15 @@ VPS 模板没有实体设备，保留其提供商标志。
   照片本身不透明时，工具从边缘向内泛洪以去除纯色背景（只处理与边框相连的像素，因此设备内部的白色屏幕会保留）。
   随后裁切到设备本身，缩放进边长为画布 64% 的正方形（0.64·√2 < 1，因此连四角也位于圆内），
   并居中放到 256 px 的透明画布上。重采样使用预乘 alpha，因此不会残留背景色光晕。
-  工具会校验结果，不合格时以退出码 1 退出。
+  工具会校验结果，不合格时以退出码 1 退出。`--crop=x,y,w,h` 先从源图中裁出一个区域（多视图拼图中的一个视图，或合影中的一部手机），
+  `--roundrect=R` 则用圆角矩形遮罩代替背景去除，圆角半径为短边的 R 倍——用于正面拍摄、背景是木纹或布料的手机，
+  泛洪无法把这种背景与设备分开（自 1.6.0 起）。
 - **规则**，由 `tool/validate_json.dart` 和 `test/device_image_test.dart` 通过共享的
   `tool/device_image_check.dart` 强制执行：正方形、至少 128 px、带 alpha 通道、四角完全透明，
   且内切圆外没有 alpha > 8 的像素。
-- **许可：** 只使用自由许可的来源（公有领域、CC0、CC BY、CC BY-SA）。每个文件的来源、作者和许可证记录在
-  `assets/device_images/SOURCES.md`。没有合适自由照片的模板不带 `image`，回退到其品牌标志。
+- **许可：** 只要有自由许可的来源（公有领域、CC0、CC BY、CC BY-SA）就使用它。自 1.6.0 起有少数产品图不是自由许可：
+  ASUS 的 NUC 渲染图，以及仓库所有者提供的厂商产品图（Razer Blade 14、Intel NUC 11、Galaxy Z Fold6 和 Fold8、AirPods 4、iPad Pro、Surface Laptop 7）。它们在 `SOURCES.md` 中的行会注明这一点并写出版权方，
+  以便出现自由图片时替换。每个文件的来源、作者和许可证记录在 `assets/device_images/SOURCES.md`。没有合适照片的模板不带 `image`，回退到其品牌标志。
 - **显示位置：**
   - 模板选择器（完整直径，`TemplateIcon(circleSafe: true)`）；
   - 每个设备自身没有表情或照片、且身份与模板匹配的 `DeviceAvatar`

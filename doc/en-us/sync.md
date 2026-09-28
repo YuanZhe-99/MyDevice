@@ -125,6 +125,9 @@ block the others from syncing. Local files are re-read after network I/O to dete
 concurrent user edits made *during* the sync. `_atomicWrite()` uses tmp-then-rename to
 avoid corrupting local files. `_syncing` prevents concurrent sync runs.
 
+`ai_insights.json` (the on-device AI insight cache, v1.6.0) is deliberately not a registered module,
+so it is never uploaded, downloaded or merged. See [On-device AI](on-device-ai.md).
+
 ## NetworkDevice composite-key merge
 
 `NetworkDevice` has no `id` and no `modifiedAt` (see

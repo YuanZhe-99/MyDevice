@@ -27,6 +27,7 @@
   },
   {
     "name": "Apple AirPods 4",
+    "image": "assets/device_images/apple-airpods-4.png",
     "category": "headphone",
     "brand": "Apple",
     "model": "AirPods 4",
@@ -34,6 +35,7 @@
   },
   {
     "name": "Apple AirPods 4 (ANC)",
+    "image": "assets/device_images/apple-airpods-4.png",
     "category": "headphone",
     "brand": "Apple",
     "model": "AirPods 4 (Active Noise Cancellation)",
@@ -160,6 +162,7 @@
   },
   {
     "name": "ASUS NUC 14 Pro (Core Ultra 5)",
+    "image": "assets/device_images/asus-nuc-14-pro.png",
     "category": "desktop",
     "brand": "ASUS",
     "model": "NUC 14 Pro (Core Ultra 5 125H)",
@@ -173,6 +176,7 @@
   },
   {
     "name": "ASUS NUC 14 Pro+ (Core Ultra 9)",
+    "image": "assets/device_images/asus-nuc-14-pro-plus.png",
     "category": "desktop",
     "brand": "ASUS",
     "model": "NUC 14 Pro+ (Core Ultra 9 185H)",
@@ -688,6 +692,7 @@
   },
   {
     "name": "Intel NUC 11 (NUC11PAHi5)",
+    "image": "assets/device_images/intel-nuc-11-performance.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC11PAHi5",
@@ -701,6 +706,7 @@
   },
   {
     "name": "Intel NUC 11 (NUC11PAHi7)",
+    "image": "assets/device_images/intel-nuc-11-performance.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC11PAHi7",
@@ -714,6 +720,7 @@
   },
   {
     "name": "Intel NUC 12 Pro (NUC12WSHi5)",
+    "image": "assets/device_images/asus-nuc-13-pro.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC12WSHi5",
@@ -727,6 +734,7 @@
   },
   {
     "name": "Intel NUC 12 Pro (NUC12WSHi7)",
+    "image": "assets/device_images/asus-nuc-13-pro.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC12WSHi7",
@@ -740,6 +748,7 @@
   },
   {
     "name": "Intel NUC 13 Pro (NUC13ANHi5)",
+    "image": "assets/device_images/asus-nuc-13-pro.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC13ANHi5",
@@ -843,6 +852,7 @@
   },
   {
     "name": "iPad Pro 11\" (M4)",
+    "image": "assets/device_images/apple-ipad-pro-11.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad Pro 11-inch (M4)",
@@ -863,6 +873,7 @@
   },
   {
     "name": "iPad Pro 13\" (M4)",
+    "image": "assets/device_images/apple-ipad-pro-11.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad Pro 13-inch (M4)",
@@ -923,7 +934,7 @@
   },
   {
     "name": "iPhone 12 Pro",
-    "image": "assets/device_images/iphone-12-pro-gold.png",
+    "image": "assets/device_images/iphone-12-pro-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 12 Pro",
@@ -943,6 +954,7 @@
   },
   {
     "name": "iPhone 12 Pro Max",
+    "image": "assets/device_images/iphone-12-pro-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 12 Pro Max",
@@ -962,7 +974,7 @@
   },
   {
     "name": "iPhone 13",
-    "image": "assets/device_images/iphone-13-vector.png",
+    "image": "assets/device_images/iphone-13-mini-gr-n-freigestellt.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 13",
@@ -1044,7 +1056,7 @@
   },
   {
     "name": "iPhone 14",
-    "image": "assets/device_images/iphone-14-vector.png",
+    "image": "assets/device_images/iphone-14-plus-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14",
@@ -1064,7 +1076,7 @@
   },
   {
     "name": "iPhone 14 Plus",
-    "image": "assets/device_images/iphone-14-vector.png",
+    "image": "assets/device_images/iphone-14-plus-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14 Plus",
@@ -1126,7 +1138,7 @@
   },
   {
     "name": "iPhone 15",
-    "image": "assets/device_images/iphone-15-vector.png",
+    "image": "assets/device_images/iphone-15-plus-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15",
@@ -1146,7 +1158,7 @@
   },
   {
     "name": "iPhone 15 Plus",
-    "image": "assets/device_images/iphone-15-plus-vector.png",
+    "image": "assets/device_images/iphone-15-plus-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15 Plus",
@@ -1207,7 +1219,7 @@
   },
   {
     "name": "iPhone 16",
-    "image": "assets/device_images/iphone-16-vector.png",
+    "image": "assets/device_images/iphone-16-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16",
@@ -1228,7 +1240,7 @@
   },
   {
     "name": "iPhone 16 Plus",
-    "image": "assets/device_images/iphone-16-plus-vector.png",
+    "image": "assets/device_images/iphone-16-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16 Plus",
@@ -1331,7 +1343,7 @@
   },
   {
     "name": "iPhone 17 Pro",
-    "image": "assets/device_images/iphone-17-pro-vector.png",
+    "image": "assets/device_images/iphone-17-pro-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17 Pro",
@@ -1351,7 +1363,7 @@
   },
   {
     "name": "iPhone 17 Pro Max",
-    "image": "assets/device_images/iphone-17-pro-max-vector.png",
+    "image": "assets/device_images/iphone-17-pro-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17 Pro Max",
@@ -1564,6 +1576,7 @@
   },
   {
     "name": "MacBook Pro 14\" (M4 Pro)",
+    "image": "assets/device_images/macbook-pro-16-2021.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 14-inch (M4 Pro)",
@@ -1584,6 +1597,7 @@
   },
   {
     "name": "MacBook Pro 14\" (M4)",
+    "image": "assets/device_images/macbook-pro-16-2021.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 14-inch (M4)",
@@ -1603,6 +1617,7 @@
   },
   {
     "name": "MacBook Pro 14\" (M5)",
+    "image": "assets/device_images/macbook-pro-16-2021.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 14-inch (M5)",
@@ -1620,6 +1635,7 @@
   },
   {
     "name": "MacBook Pro 16\" (M4 Pro)",
+    "image": "assets/device_images/macbook-pro-16-2021.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 16-inch (M4 Pro)",
@@ -1640,6 +1656,7 @@
   },
   {
     "name": "Microsoft Surface Laptop 7",
+    "image": "assets/device_images/microsoft-surface-laptop-7.png",
     "category": "laptop",
     "brand": "Microsoft",
     "model": "Surface Laptop 7 15\"",
@@ -1675,6 +1692,21 @@
     "screenResolutionH": 1920,
     "battery": "53.0 Wh",
     "os": "Windows 11"
+  },
+  {
+    "name": "Microsoft Windows Dev Kit 2023",
+    "image": "assets/device_images/windows-dev-kit-2023.png",
+    "category": "desktop",
+    "brand": "Microsoft",
+    "model": "Windows Dev Kit 2023",
+    "cpu": "Qualcomm Snapdragon 8cx Gen 3",
+    "gpu": "Qualcomm Adreno 690",
+    "ram": "32 GB",
+    "storage": [
+      "512 GB"
+    ],
+    "os": "Windows 11 (Arm64)",
+    "releaseDate": "2022-10-24"
   },
   {
     "name": "NETGEAR Nighthawk RAXE500",
@@ -1867,6 +1899,7 @@
   },
   {
     "name": "Razer Blade 14 (2025)",
+    "image": "assets/device_images/razer-blade-14-2025.png",
     "category": "laptop",
     "brand": "Razer",
     "model": "Blade 14 (2025)",
@@ -2224,6 +2257,7 @@
   },
   {
     "name": "Samsung Galaxy Z Flip 6",
+    "image": "assets/device_images/samsung-galaxy-z-flip6-unfolded.png",
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy Z Flip 6",
@@ -2242,6 +2276,7 @@
   },
   {
     "name": "Samsung Galaxy Z Flip7",
+    "image": "assets/device_images/samsung-galaxy-z-flip7-unfolded.png",
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy Z Flip7",
@@ -2260,6 +2295,7 @@
   },
   {
     "name": "Samsung Galaxy Z Fold 6",
+    "image": "assets/device_images/samsung-galaxy-z-fold6-pink.png",
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy Z Fold 6",
@@ -2299,6 +2335,7 @@
   },
   {
     "name": "Samsung Galaxy Z Fold8",
+    "image": "assets/device_images/samsung-galaxy-z-fold8-white.png",
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy Z Fold8",

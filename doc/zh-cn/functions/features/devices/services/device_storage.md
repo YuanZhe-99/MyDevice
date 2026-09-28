@@ -1,6 +1,6 @@
 # lib/features/devices/services/device_storage.dart
 
-`DeviceStorage` 持久化设备列表（`device_data.json`），并兼作应用规范存储位置/配置服务：`getAppDir()` 被 `DataSetStorage` 和 `NetworkStorage`（`../../../network/services/network_storage.dart`、`../../../datasets/services/dataset_storage.dart`）调用，解析那些模块自己数据文件所在的*相同*应用目录，`readConfig`/`writeConfig` 支撑一个小的通用键/值存储（`themeMode`、`locale`、`defaultCurrency`、`autoUpdateExchangeRates`、列表列数等），`AppSettings`（`../../../../shared/providers/app_settings.md`）和 [`exchange_rate_service.md`](exchange_rate_service.md) 也经它读写。该存储就是平台默认文件夹中唯一的 `storage_config.json`，它还保存自定义存储路径，因此移动数据从不触及偏好；其规则见 [数据格式](../../../../data-formats.md#storage_configjson)。本文件序列化的 `DeviceData`/`Device` JSON 形态见 [数据格式](../../../../data-formats.md)，`deleteDevice`/`addOrUpdate` 实现的级联删除规则见 [设备](../../../../features/devices.md)。
+`DeviceStorage` 持久化设备列表（`device_data.json`），并兼作应用规范存储位置/配置服务：`getAppDir()` 被 `DataSetStorage` 和 `NetworkStorage`（`../../../network/services/network_storage.dart`、`../../../datasets/services/dataset_storage.dart`）调用，解析那些模块自己数据文件所在的*相同*应用目录，`readConfig`/`writeConfig` 支撑一个小的通用键/值存储（`themeMode`、`locale`、`defaultCurrency`、`autoUpdateExchangeRates`、列表列数、端侧 AI 开关等），`AppSettings`（`../../../../shared/providers/app_settings.md`）和 [`exchange_rate_service.md`](exchange_rate_service.md) 也经它读写。该存储就是平台默认文件夹中唯一的 `storage_config.json`，它还保存自定义存储路径，因此移动数据从不触及偏好；其规则见 [数据格式](../../../../data-formats.md#storage_configjson)。本文件序列化的 `DeviceData`/`Device` JSON 形态见 [数据格式](../../../../data-formats.md)，`deleteDevice`/`addOrUpdate` 实现的级联删除规则见 [设备](../../../../features/devices.md)。
 
 ## 声明
 
@@ -34,6 +34,11 @@
 | [`setThemeMode`](#setthememode) | 静态方法 | A | 持久化（或清除）主题模式字符串。 |
 | [`getLocaleTag`](#getlocaletag) | 静态方法 | A | 读取持久化语言区域标签。 |
 | [`setLocaleTag`](#setlocaletag) | 静态方法 | A | 持久化（或清除）语言区域标签。 |
+| `getOnDeviceAiEnabled` | 静态方法 | B | 读取端侧 AI 开关（`onDeviceAiEnabled`）；缺失时为 false。 |
+| `setOnDeviceAiEnabled` | 静态方法 | B | `_setFlag('onDeviceAiEnabled', enabled)`。 |
+| `getOnDeviceAiPreferFast` | 静态方法 | B | 读取更快模型偏好（`onDeviceAiPreferFast`）；缺失时为 false。 |
+| `setOnDeviceAiPreferFast` | 静态方法 | B | `_setFlag('onDeviceAiPreferFast', enabled)`。 |
+| [`_setFlag`](#_setflag) | 私有静态方法 | A | 存储默认为 false 的布尔偏好：写入 `true` 或移除该键。 |
 | [`_getListColumns`](#getlistcolumns) | 静态方法（私有） | A | 从 `storage_config.json` 读取一个列表页的列数偏好。 |
 | [`_setListColumns`](#setlistcolumns) | 静态方法（私有） | A | 持久化一个列表页的列数偏好，自动时删除该键。 |
 | `getDeviceListColumns` | 静态方法 | B | `_getListColumns('deviceListColumns')`：设备列表的列数偏好。 |
@@ -51,7 +56,7 @@
 | [`StoragePathResult`](#storagepathresult-new) | 构造函数 | A | 创建结果；`saved` 默认为 true，`unmoved` 默认为空。 |
 | [`complete`](#complete) | getter（`StoragePathResult`） | A | 变更是否完全成功：已保存且未留下任何东西。 |
 
-行数（44）比 `grep -c '/// Purpose:' device_storage.dart`（34）多十。32 个静态方法（包括八个列表列数访问器中的每一个）各有自己的行和自己的 `Purpose:` 块，`StoragePathResult` 构造函数及其 `complete` getter 也是。多出的十行是 `DeviceStorage` 类本身、私有静态常量 `_dataFileName` 和 `_configFileName`、私有静态字段 `_customPath`、`_configLoaded` 和 `_strayCheckedFor`、`StoragePathResult` 类，以及其字段 `saved`、`unmoved` 和 `from`，它们带普通 `///` 描述或没有注释，因每个声明都出现在表中而列出。Tier A：26 行。
+行数（49）比 `grep -c '/// Purpose:' device_storage.dart`（39）多十。37 个静态方法（包括八个列表列数访问器和四个端侧 AI 访问器（v1.6.0）中的每一个）各有自己的行和自己的 `Purpose:` 块，`StoragePathResult` 构造函数及其 `complete` getter 也是。多出的十行是 `DeviceStorage` 类本身、私有静态常量 `_dataFileName` 和 `_configFileName`、私有静态字段 `_customPath`、`_configLoaded` 和 `_strayCheckedFor`、`StoragePathResult` 类，以及其字段 `saved`、`unmoved` 和 `from`，它们带普通 `///` 描述或没有注释，因每个声明都出现在表中而列出。Tier A：27 行。
 
 ## 文档
 
@@ -348,9 +353,20 @@
   （来自 `AppSettings` 的语言区域变更处理器）
 - **备注：** 无。
 
+### `static Future<void> _setFlag(String key, bool enabled)` <a id="_setflag"></a>
+- **种类：** 私有静态方法（v1.6.0）。
+- **来源：** `lib/features/devices/services/device_storage.dart`（第 483 行）。
+- **用途：** 存储默认为 false 的布尔偏好。
+- **输入：** `key`——`storage_config.json` 键；`enabled`。
+- **返回：** `Future<void>`。
+- **副作用：** 读取并重写 `storage_config.json`。
+- **算法：** 读取配置；`enabled` 时设 `config[key] = true`，否则 `remove(key)`；经 [`writeConfig`](#writeconfig) 写回。
+- **用法：** `setOnDeviceAiEnabled`（`onDeviceAiEnabled`）和 `setOnDeviceAiPreferFast`（`onDeviceAiPreferFast`），由 `AppSettingsNotifier` 即发即忘调用（[`app_settings.md`](../../../shared/providers/app_settings.md#setondeviceaienabled)）。
+- **备注：** 默认安装的配置从不包含该键，因此对应 getter 把缺失的键（或 `true` 以外的任何值）视为 false。两个键都像所有 `storage_config.json` 偏好一样仅限本设备：从不同步、备份或导出。
+
 ### `static Future<int> _getListColumns(String key)` <a id="getlistcolumns"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_storage.dart`（第 451 行）。
+- **来源：** `lib/features/devices/services/device_storage.dart`（第 501 行）。
 - **用途：** 读取一个列表页的列数偏好。
 - **输入：** `key` — 该页在 `storage_config.json` 中的键。
 - **返回：** `Future<int>` — 已存的列数，键缺席、不是整数或超出 1..`listMaxColumns` 时为 `listColumnsAuto`。
@@ -360,7 +376,7 @@
 
 ### `static Future<void> _setListColumns(String key, int columns)` <a id="setlistcolumns"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/devices/services/device_storage.dart`（第 466 行）。
+- **来源：** `lib/features/devices/services/device_storage.dart`（第 516 行）。
 - **用途：** 持久化一个列表页的列数偏好。
 - **输入：** `key`；`columns` — `listColumnsAuto` 或钉住的列数。
 - **返回：** 无。
@@ -370,7 +386,7 @@
 
 ### `const StoragePathResult({bool saved = true, List<String> unmoved = const [], String? from})` <a id="storagepathresult-new"></a>
 - **种类：** `StoragePathResult` 的构造函数；该顶层类告诉调用方 [`setStoragePath`](#setstoragepath) 做了什么。
-- **来源：** `lib/features/devices/services/device_storage.dart`（第 560 行）。
+- **来源：** `lib/features/devices/services/device_storage.dart`（第 610 行）。
 - **用途：** 创建结果。
 - **输入：** `saved` — 新路径是否已记录（默认 `true`；`false` 表示什么都没变）；`unmoved` — 移动留在旧文件夹中的相对路径（默认为空）；`from` — 存放它们的旧文件夹（未移动任何东西时为 null）。
 - **返回：** 新的 `StoragePathResult`。
@@ -381,7 +397,7 @@
 
 ### `bool get complete` <a id="complete"></a>
 - **种类：** `StoragePathResult` 的 getter。
-- **来源：** `lib/features/devices/services/device_storage.dart`（第 571 行）。
+- **来源：** `lib/features/devices/services/device_storage.dart`（第 621 行）。
 - **用途：** 报告变更是否完全成功。
 - **输入：** 无。
 - **返回：** `bool` — `saved && unmoved.isEmpty`。

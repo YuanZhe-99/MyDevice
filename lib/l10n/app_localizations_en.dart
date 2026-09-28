@@ -1784,4 +1784,143 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSelectItem => 'Select an item from the list';
+
+  @override
+  String get aiSectionTitle => 'On-device AI';
+
+  @override
+  String get aiUseOnDevice => 'Use on-device AI';
+
+  @override
+  String get aiUseOnDeviceDesc =>
+      'Off by default. Writes short summaries and suggestions on the Financial Overview and Services pages with the model built into this device. Nothing leaves the device, and the results are kept only on this device.';
+
+  @override
+  String get aiNotSupportedHere =>
+      'On-device AI is not available on this platform.';
+
+  @override
+  String get aiStatusAvailable => 'Ready';
+
+  @override
+  String get aiStatusUnavailable => 'Not available on this device';
+
+  @override
+  String get aiStatusUnreachable => 'The on-device model could not be reached';
+
+  @override
+  String get aiStatusUnknown =>
+      'The device reported a status this version does not recognise';
+
+  @override
+  String get aiStatusDownloadable => 'Needs a one-time download';
+
+  @override
+  String get aiStatusDownloading => 'Preparing the model…';
+
+  @override
+  String get aiStatusNotEnabled => 'Apple Intelligence is turned off';
+
+  @override
+  String get aiStatusUnsupportedApple =>
+      'Needs iOS 26 or macOS 26 with Apple Intelligence';
+
+  @override
+  String get aiTurnOnAppleIntelligence =>
+      'Turn on Apple Intelligence in the Settings app, then check again.';
+
+  @override
+  String get aiCheckAgain => 'Check again';
+
+  @override
+  String get aiDownload => 'Download';
+
+  @override
+  String aiDownloadedBytes(String megabytes) {
+    return '$megabytes MB so far';
+  }
+
+  @override
+  String get aiDownloadNote =>
+      'Android downloads the model, not this app, and only when you tap Download.';
+
+  @override
+  String get aiPreferFast => 'Use the faster model';
+
+  @override
+  String get aiPreferFastBody =>
+      'Answers come sooner, and are usually shorter.';
+
+  @override
+  String get aiModelStorageNote =>
+      'The model belongs to Android and is shared with other apps that use it, so it cannot be removed from here.';
+
+  @override
+  String get aiModelAppleNote =>
+      'The model is part of Apple Intelligence and is managed by the system.';
+
+  @override
+  String get aiTechnicalDetails => 'Technical details';
+
+  @override
+  String aiCoreVersion(String version) {
+    return 'AICore $version';
+  }
+
+  @override
+  String get aiCoreMissing => 'AICore is not installed on this device.';
+
+  @override
+  String get aiGeneratedLabel => 'Generated on this device — may be wrong';
+
+  @override
+  String get aiClearInsights => 'Clear generated insights';
+
+  @override
+  String get aiClearInsightsBody =>
+      'They are kept only on this device and are written again the next time a page opens.';
+
+  @override
+  String get aiClearInsightsDone => 'Generated insights cleared';
+
+  @override
+  String get aiInsightTitle => 'AI insight';
+
+  @override
+  String get aiRegenerate => 'Regenerate';
+
+  @override
+  String get aiGenerating => 'Thinking…';
+
+  @override
+  String aiGeneratedAt(String time) {
+    return 'Generated at $time';
+  }
+
+  @override
+  String get aiInsightFailed => 'The model could not answer this time.';
+
+  @override
+  String get aiInsightSkipped => 'The model declined to comment on this data.';
+
+  @override
+  String get aiQuotaHint =>
+      'This device\'s daily limit for the model has been reached. Try again tomorrow.';
+
+  @override
+  String get aiForegroundHint =>
+      'Keep the app open while the model is working.';
+
+  @override
+  String get aiLanguageUnsupported =>
+      'The on-device model cannot write in this language.';
+
+  @override
+  String get aiOpenSettings => 'Settings';
+
+  @override
+  String get aiFinanceCosts => 'Costs';
+
+  @override
+  String get aiFinanceRecurring => 'Recurring Costs';
 }

@@ -44,6 +44,11 @@ Full field lists: [Data Formats](../data-formats.md).
 
 The Services tab has four views: **overview**, **by-device**, **route**, and **port**.
 
+When on-device AI is on (Android, iOS/macOS 26), the overview also shows an **AI insight** card
+after the warnings card: a summary of the setup and suggestions about the warnings and exposure,
+built from counts only — never names, addresses, URLs or port numbers. It renders nothing
+otherwise. See [On-device AI](../on-device-ai.md#insight-cards).
+
 The overview generates a manual service topology graph from saved services/routes,
 grouped by local devices while allowing shared remote devices/VPS nodes across multiple
 local devices. The graph distinguishes:

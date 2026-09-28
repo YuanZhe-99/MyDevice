@@ -71,5 +71,13 @@ Key points:
 - Any distributed or modified version must also be released under
   GPLv3 with source code available.
 - You may NOT incorporate this software into proprietary programs.
-- There is NO WARRANTY for this software.''';
+- There is NO WARRANTY for this software.
+
+---
+
+Simplified/Traditional Chinese conversion tables (used by the optional
+on-device AI insight cards) are derived from OpenCC
+(https://github.com/BYVoid/OpenCC), Copyright (c) Carbo Kuo and contributors,
+licensed under the Apache License, Version 2.0. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0.''';
 }

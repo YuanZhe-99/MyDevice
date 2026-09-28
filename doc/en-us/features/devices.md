@@ -77,6 +77,11 @@ double _logTransform(double value) {
 tooltips) — this keeps small daily costs readable on the same chart as large one-time
 purchase spikes.
 
+When on-device AI is on, an **AI insight** card follows the trend: the overall cost picture, one
+spending suggestion and one device worth reviewing under *Costs*, and a recurring-cost summary under
+*Recurring Costs*. It is built from aggregates and device names only — never serial numbers, notes
+or locations — and renders nothing otherwise. See [On-device AI](../on-device-ai.md#insight-cards).
+
 ## Device avatar rendering
 
 `lib/features/devices/widgets/device_avatar.dart` (`DeviceAvatar`,

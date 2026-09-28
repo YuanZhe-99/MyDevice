@@ -127,13 +127,21 @@ VPS templates have no physical device and keep their provider logo.
   survives). It then trims to the device, scales it into a square 64% of the canvas
   (0.64·√2 < 1, so even its corners are inside the circle), and centres it on a transparent
   256 px canvas. Resampling uses premultiplied alpha, so no background-coloured halo remains.
-  It verifies the result and exits 1 if the result fails.
+  It verifies the result and exits 1 if the result fails. `--crop=x,y,w,h` first cuts one region
+  out of the source (one view from a sheet of several, or one phone from a group shot), and
+  `--roundrect=R` replaces the background removal with a rounded-rectangle mask whose corner
+  radius is R times the shorter side — for a phone photographed straight on against wood grain or
+  cloth, which a flood fill cannot separate from the device (since 1.6.0).
 - **Rules**, enforced by `tool/validate_json.dart` and `test/device_image_test.dart` through the
   shared `tool/device_image_check.dart`: square, at least 128 px, alpha channel, fully
   transparent corners, and no pixel with alpha > 8 outside the inscribed circle.
-- **Licensing:** only freely licensed sources (public domain, CC0, CC BY, CC BY-SA). Each file's
-  source, author and license is recorded in `assets/device_images/SOURCES.md`. A template with no
-  suitable free photo has no `image` and falls back to its brand logo.
+- **Licensing:** freely licensed sources (public domain, CC0, CC BY, CC BY-SA) wherever one exists.
+  Since 1.6.0 some product images are not freely licensed: ASUS's NUC renders, and manufacturer
+  product images supplied by the repository owner (Razer Blade 14, Intel NUC 11, Galaxy Z Fold6 and
+  Fold8, AirPods 4, iPad Pro, Surface Laptop 7). Their rows in `SOURCES.md` say
+  so and name the copyright holder, so they can be replaced when a free image appears. Each
+  file's source, author and license is recorded in `assets/device_images/SOURCES.md`. A template
+  with no suitable photo has no `image` and falls back to its brand logo.
 - **Where it shows:**
   - the template picker (full diameter, `TemplateIcon(circleSafe: true)`);
   - every `DeviceAvatar` whose device has no emoji or photo of its own and whose identity matches

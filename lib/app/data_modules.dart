@@ -7,6 +7,8 @@
 /// Notes: Registry order is the sync/backup/progress order and
 /// matches the previous `_dataFileNames` list exactly. File names and module
 /// IDs are persisted compatibility contracts (I1/I2) and must never change.
+/// `ai_insights.json` (the on-device AI cache, v1.6.0) is deliberately not a
+/// module here: it is device-local, never synced, backed up or exported.
 library;
 
 import 'dart:convert';

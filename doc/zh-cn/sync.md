@@ -60,6 +60,8 @@ WebDAV 页前台同步操作——手动同步、冲突终定上传、强制上�
 
 每个数据文件合并有**逐文件错误处理**——一个格式错误文件不阻塞其他文件同步。网络 IO 后重新读取本地文件检测*同步期间*发生的并发用户编辑。`_atomicWrite()` 用 tmp-然后-重命名避免损坏本地文件。`_syncing` 防止并发同步运行。
 
+`ai_insights.json`（端侧 AI 洞察缓存，v1.6.0）刻意不是已登记的模块，因此从不上传、下载或合并。见[端侧 AI](on-device-ai.md)。
+
 ## NetworkDevice 复合键合并 <a id="networkdevice-composite-key-merge"></a>
 
 `NetworkDevice` 无 `id` 无 `modifiedAt`（见 [数据格式](data-formats.md#network--networkdevice-libfeaturesnetworkmodelsnetworkdart)），因此其合并（`sync_merge.dart` 的 `mergeAssignments`）用复合键 `(networkId, deviceId)` 并对照基础快照比较*序列化 JSON 内容*检测哪侧（些）变了，因为无可比较时间戳。精确算法见 [三方合并 — mergeAssignments 复合键内容比较合并](algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)，完整示例见 [同步演练 — NetworkDevice 赋值示例](examples/sync-walkthrough.md#networkdevice-assignment-example)。

@@ -98,6 +98,8 @@ class RestoreResult {
 
 **文档化 v1.2.2 修复：** 此检查的早期版本只测试 `normalizedName.startsWith('images/')`——它对 `images/` 下*任何*嵌套路径（如某些规范化后的 `images/../../evil.txt`，或简单 `images/sub/dir/file`）都为 `true`，因此总是通过并放行允许列表本应拒绝的嵌套条目。当前检查额外要求 `images/` 前缀后恰好一个路径段（`split('/').length == 2`），封住那个缺口。这是 `AGENTS.md` "ZIP import must keep path traversal protection" 规则引用的路径遍历保护。
 
+**不在捆绑或 ZIP 导出中：** `ai_insights.json`（端侧 AI 洞察缓存，v1.6.0）。捆绑和导出只遍历模块注册表，而它没有登记，因此恢复从不带回已生成的洞察；卡片会根据恢复后的数据重新生成。见[端侧 AI](on-device-ai.md)。
+
 ## Markdown 导出 <a id="markdown-export"></a>
 
 `import_export_service.dart` 也产生覆盖设备、网络、数据集和服务的 LLM 友好 Markdown 导出——含服务端点、路由、跳、Docker Compose 备注和分组公共目标（`extraJson.publicTargets`，见 [服务与拓扑](features/services-topology.md)）。设备导出相关时含生命周期和财务信息（`v0.4.0` 随设备生命周期/财务添加；服务数据 `v0.5.6` 添加）。

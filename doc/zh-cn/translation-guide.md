@@ -138,6 +138,14 @@
 | unmoved entry | 未移动条目 | 更改存储位置时留在旧文件夹中的文件 |
 | device thumbnail | 设备缩略图 | 模板自带的设备本身照片（`image`），显示在头像中 |
 | circle-safe | 圆内安全 | 所有可见像素都位于头像的内切圆内 |
+| on-device AI | 端侧 AI | 由设备自身模型运行的可选洞察卡片；不要译作本地 AI 或设备端 AI（繁体界面用 裝置端 AI） |
+| insight card | 洞察卡片 | 财务总览和服务总览上的 AI 卡片 |
+| fingerprint | 指纹 | 决定缓存的洞察是否仍然最新的 SHA-256 |
+| slot | 槽位 | 卡片向模型索要的一个带编号的回答 |
+| quoted term | 引用词 | 在文字系统检查前移除、因此可以保持拉丁字母的词语 |
+| fallback facts | 回退事实 | 模型拒绝第一组事实时发送的更朴素的第二次尝试 |
+| regenerate | 重新生成 | 卡片的刷新操作 |
+| weak linking | 弱链接 | 链接 FoundationModels 的方式，使应用在没有该框架的系统上仍能启动 |
 
 ## 6. 复核清单（提交中文页前运行）
 

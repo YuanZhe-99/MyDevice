@@ -1747,6 +1747,135 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get settingsSelectItem => '从左侧列表中选择一项';
+
+  @override
+  String get aiSectionTitle => '端侧 AI';
+
+  @override
+  String get aiUseOnDevice => '使用端侧 AI';
+
+  @override
+  String get aiUseOnDeviceDesc =>
+      '默认关闭。借助本设备内置的模型，在财务总览和服务页面写出简短的总结与建议。任何内容都不会离开本设备，结果也只保存在本设备上。';
+
+  @override
+  String get aiNotSupportedHere => '此平台不支持端侧 AI。';
+
+  @override
+  String get aiStatusAvailable => '可以使用';
+
+  @override
+  String get aiStatusUnavailable => '本设备不支持';
+
+  @override
+  String get aiStatusUnreachable => '无法访问端侧模型';
+
+  @override
+  String get aiStatusUnknown => '设备返回了本版本无法识别的状态';
+
+  @override
+  String get aiStatusDownloadable => '需要下载一次';
+
+  @override
+  String get aiStatusDownloading => '正在准备模型…';
+
+  @override
+  String get aiStatusNotEnabled => 'Apple Intelligence 已关闭';
+
+  @override
+  String get aiStatusUnsupportedApple =>
+      '需要支持 Apple Intelligence 的 iOS 26 或 macOS 26';
+
+  @override
+  String get aiTurnOnAppleIntelligence =>
+      '请在系统设置中开启 Apple Intelligence，然后重新检查。';
+
+  @override
+  String get aiCheckAgain => '重新检查';
+
+  @override
+  String get aiDownload => '下载';
+
+  @override
+  String aiDownloadedBytes(String megabytes) {
+    return '已下载 $megabytes MB';
+  }
+
+  @override
+  String get aiDownloadNote => '模型由 Android 下载，不是本应用，并且只在你点「下载」时才开始。';
+
+  @override
+  String get aiPreferFast => '使用更快的模型';
+
+  @override
+  String get aiPreferFastBody => '回答来得更快，通常也更简短。';
+
+  @override
+  String get aiModelStorageNote => '模型属于 Android，与使用它的其他应用共用，因此无法在这里删除。';
+
+  @override
+  String get aiModelAppleNote => '模型属于 Apple Intelligence，由系统管理。';
+
+  @override
+  String get aiTechnicalDetails => '技术详情';
+
+  @override
+  String aiCoreVersion(String version) {
+    return 'AICore $version';
+  }
+
+  @override
+  String get aiCoreMissing => '本设备未安装 AICore。';
+
+  @override
+  String get aiGeneratedLabel => '在本设备上生成——可能有误';
+
+  @override
+  String get aiClearInsights => '清除已生成的洞察';
+
+  @override
+  String get aiClearInsightsBody => '它们只保存在本设备上，下次打开页面时会重新生成。';
+
+  @override
+  String get aiClearInsightsDone => '已清除生成的洞察';
+
+  @override
+  String get aiInsightTitle => 'AI 洞察';
+
+  @override
+  String get aiRegenerate => '重新生成';
+
+  @override
+  String get aiGenerating => '正在思考…';
+
+  @override
+  String aiGeneratedAt(String time) {
+    return '生成于 $time';
+  }
+
+  @override
+  String get aiInsightFailed => '模型这次没能给出回答。';
+
+  @override
+  String get aiInsightSkipped => '模型拒绝对这些数据发表意见。';
+
+  @override
+  String get aiQuotaHint => '本设备今天的模型使用次数已达上限，请明天再试。';
+
+  @override
+  String get aiForegroundHint => '模型工作时请保持应用在前台。';
+
+  @override
+  String get aiLanguageUnsupported => '端侧模型无法使用这种语言写作。';
+
+  @override
+  String get aiOpenSettings => '设置';
+
+  @override
+  String get aiFinanceCosts => '成本';
+
+  @override
+  String get aiFinanceRecurring => '周期费用';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -3492,4 +3621,133 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get settingsSelectItem => '從左側清單中選擇一項';
+
+  @override
+  String get aiSectionTitle => '裝置端 AI';
+
+  @override
+  String get aiUseOnDevice => '使用裝置端 AI';
+
+  @override
+  String get aiUseOnDeviceDesc =>
+      '預設關閉。借助本裝置內建的模型，在財務總覽和服務頁面寫出簡短的總結與建議。任何內容都不會離開本裝置，結果也只儲存在本裝置上。';
+
+  @override
+  String get aiNotSupportedHere => '此平台不支援裝置端 AI。';
+
+  @override
+  String get aiStatusAvailable => '可以使用';
+
+  @override
+  String get aiStatusUnavailable => '本裝置不支援';
+
+  @override
+  String get aiStatusUnreachable => '無法存取裝置端模型';
+
+  @override
+  String get aiStatusUnknown => '裝置回報了本版本無法辨識的狀態';
+
+  @override
+  String get aiStatusDownloadable => '需要下載一次';
+
+  @override
+  String get aiStatusDownloading => '正在準備模型…';
+
+  @override
+  String get aiStatusNotEnabled => 'Apple Intelligence 已關閉';
+
+  @override
+  String get aiStatusUnsupportedApple =>
+      '需要支援 Apple Intelligence 的 iOS 26 或 macOS 26';
+
+  @override
+  String get aiTurnOnAppleIntelligence =>
+      '請在系統設定中開啟 Apple Intelligence，然後重新檢查。';
+
+  @override
+  String get aiCheckAgain => '重新檢查';
+
+  @override
+  String get aiDownload => '下載';
+
+  @override
+  String aiDownloadedBytes(String megabytes) {
+    return '已下載 $megabytes MB';
+  }
+
+  @override
+  String get aiDownloadNote => '模型由 Android 下載，不是本應用程式，而且只在你點「下載」時才開始。';
+
+  @override
+  String get aiPreferFast => '使用較快的模型';
+
+  @override
+  String get aiPreferFastBody => '回答來得更快，通常也更簡短。';
+
+  @override
+  String get aiModelStorageNote => '模型屬於 Android，與使用它的其他應用程式共用，因此無法在這裡刪除。';
+
+  @override
+  String get aiModelAppleNote => '模型屬於 Apple Intelligence，由系統管理。';
+
+  @override
+  String get aiTechnicalDetails => '技術詳情';
+
+  @override
+  String aiCoreVersion(String version) {
+    return 'AICore $version';
+  }
+
+  @override
+  String get aiCoreMissing => '本裝置未安裝 AICore。';
+
+  @override
+  String get aiGeneratedLabel => '在本裝置上生成——可能有誤';
+
+  @override
+  String get aiClearInsights => '清除已生成的洞察';
+
+  @override
+  String get aiClearInsightsBody => '它們只儲存在本裝置上，下次開啟頁面時會重新生成。';
+
+  @override
+  String get aiClearInsightsDone => '已清除生成的洞察';
+
+  @override
+  String get aiInsightTitle => 'AI 洞察';
+
+  @override
+  String get aiRegenerate => '重新生成';
+
+  @override
+  String get aiGenerating => '正在思考…';
+
+  @override
+  String aiGeneratedAt(String time) {
+    return '生成於 $time';
+  }
+
+  @override
+  String get aiInsightFailed => '模型這次沒能給出回答。';
+
+  @override
+  String get aiInsightSkipped => '模型拒絕對這些資料發表意見。';
+
+  @override
+  String get aiQuotaHint => '本裝置今天的模型使用次數已達上限，請明天再試。';
+
+  @override
+  String get aiForegroundHint => '模型運作時請讓應用程式保持在前景。';
+
+  @override
+  String get aiLanguageUnsupported => '裝置端模型無法使用這種語言寫作。';
+
+  @override
+  String get aiOpenSettings => '設定';
+
+  @override
+  String get aiFinanceCosts => '成本';
+
+  @override
+  String get aiFinanceRecurring => '週期費用';
 }

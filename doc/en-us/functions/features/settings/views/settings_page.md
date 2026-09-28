@@ -2,7 +2,10 @@
 
 `SettingsPage` is the app's top-level Settings screen: theme/locale/currency preferences (via
 [`appSettingsProvider`](../../../shared/providers/app_settings.md)), data export/import/storage
-location, the desktop-only tray/auto-start/local-API-server section, and links out to
+location, the on-device AI section (since 1.6.0, between Data and Desktop:
+[`AiSettingsTiles`](../../ai/widgets/ai_settings_tiles.md) where `platformMayHaveOnDeviceModel`,
+otherwise a single `aiNotSupportedHere` line), the desktop-only tray/auto-start/local-API-server
+section, and links out to
 [`WebDAVConfigPage`](../../../shared/views/webdav_config_page.md),
 [`BackupPage`](backup_page.md), [`PrivacyPolicyPage`](privacy_policy_page.md), and
 [`LicensePage`](license_page.md). It surfaces WebDAV sync health inline via
@@ -41,7 +44,7 @@ are no misattached blocks and no undocumented declarations in this file.
 | [`_showApiSettingsDialog`](#_showapisettingsdialog) | method (`_SettingsPageState`) | A | Let the user edit and save local API server settings, then restart the server. |
 | [`_refreshExchangeRates`](#_refreshexchangerates) | method (`_SettingsPageState`) | A | Manually refresh and save the latest exchange rates. |
 | `build` | method (widget) | B | Read the split rule (`canSplitLayout` on the screen) into `_twoPane`, then render either `_buildSettingsList` alone or a `Row` of it at `settingsLeftPaneWidth` beside `_buildDetailPane`. |
-| `_buildSettingsList` | method (widget helper) | B | The General/Data/Desktop/About sections, extracted from `build` unchanged so the list can be the whole body or the left pane. |
+| `_buildSettingsList` | method (widget helper) | B | The General/Data/On-device AI/Desktop/About sections, extracted from `build` unchanged so the list can be the whole body or the left pane. |
 | `_detailPage` | method (widget helper) | B | Map a `_SettingsDetail` to its page: WebDAV config, backup, privacy policy, license. |
 | `_open` | method (`_SettingsPageState`) | B | Select the detail pane's page when `_twoPane`, else push it on the root navigator — the one path every row uses. |
 | `_buildDetailPane` | method (widget helper) | B | The placeholder (`settingsSelectItem`) before a selection, else a nested `Navigator` keyed on the selection hosting `_detailPage`. |
@@ -50,7 +53,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_SettingsPageState` (widget lifecycle override)
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 68)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 70)
 - **Purpose:** Register this page for background sync status changes and kick off every settings
   load the page needs, including the desktop-only ones.
 - **Inputs:** None.
@@ -67,13 +70,13 @@ are no misattached blocks and no undocumented declarations in this file.
      `_loadAutoStartStatus()`, `_loadApiSettings()`.
 - **Usage:** Invoked automatically by the Flutter framework when `_SettingsPageState` is first
   inserted into the tree.
-- **Notes:** The counterpart `dispose()` (line 96) calls
+- **Notes:** The counterpart `dispose()` (line 98) calls
   `AutoSyncService.instance.removeOnStatusChanged(_refreshSyncStatus)` to avoid leaking the
   listener.
 
 ### `String? _webDavStatusText(AppLocalizations l10n)` <a id="_webdavstatustext"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 106)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 108)
 - **Purpose:** Produce a one-line WebDAV sync health summary for the settings tile subtitle, or
   `null` if there's nothing to report yet.
 - **Inputs:** `l10n`.
@@ -85,7 +88,7 @@ are no misattached blocks and no undocumented declarations in this file.
   2. Else if `lastSuccessAt` is set, returns a last-success line with the local timestamp.
   3. Else returns `null` (no sync has run yet).
 - **Usage:** `final webDavStatus = _webDavStatusText(l10n);` at the top of `build`
-  (`lib/features/settings/views/settings_page.dart`, line 660), shown as the WebDAV Sync tile's
+  (`lib/features/settings/views/settings_page.dart`, line 662), shown as the WebDAV Sync tile's
   subtitle, styled in the error color when `lastError` is set.
 - **Notes:** Structurally identical to `_syncStatusText` in
   [`webdav_config_page.dart`](../../../shared/views/webdav_config_page.md#_syncstatustext) — both
@@ -94,7 +97,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _loadStoragePath()` <a id="_loadstoragepath"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 124)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 126)
 - **Purpose:** Load the currently configured device-data storage path for display.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -106,7 +109,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _loadVersion()` <a id="_loadversion"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 134)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 136)
 - **Purpose:** Load the running app's version and build number for the About section.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -119,7 +122,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _loadExchangeRateSettings()` <a id="_loadexchangeratesettings"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 146)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 148)
 - **Purpose:** Load the user's default currency and whether automatic exchange-rate updates are
   enabled.
 - **Inputs:** None.
@@ -133,7 +136,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _exportData()` <a id="_exportdata"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 273)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 275)
 - **Purpose:** Let the user choose ZIP or Markdown export format, pick a destination folder, and
   write the export.
 - **Inputs:** None.
@@ -149,14 +152,14 @@ are no misattached blocks and no undocumented declarations in this file.
      choice.
   4. Shows `exportSuccess` if a non-null path was returned.
 - **Usage:** `onTap: _exportData` on the "Export data" tile in `build`
-  (`lib/features/settings/views/settings_page.dart`, line 840).
+  (`lib/features/settings/views/settings_page.dart`, line 842).
 - **Notes:** No failure snackbar path — if `path` is `null` the method just falls through without
   feedback; see [`import_export_service.dart`](../../../shared/services/import_export_service.md)
   for when export can return `null`.
 
 ### `Future<void> _importData()` <a id="_importdata"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 332)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 334)
 - **Purpose:** Let the user pick a ZIP backup file and, after confirmation, import it.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -168,14 +171,14 @@ are no misattached blocks and no undocumented declarations in this file.
   3. Awaits `ImportExportService.importZip(path)` and shows `importSuccess`/`importFailed`
      depending on the boolean result.
 - **Usage:** `onTap: _importData` on the "Import data" tile in `build`
-  (`lib/features/settings/views/settings_page.dart`, line 845).
+  (`lib/features/settings/views/settings_page.dart`, line 847).
 - **Notes:** The path-traversal protection for the ZIP's entry names lives in
   `ImportExportService.importZip` itself, not here — see
   [Backup, Restore, and Export](../../../../backup-restore.md#zip-exportimport).
 
 ### `Future<void> _openDataFolder()` <a id="_opendatafolder"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 373)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 375)
 - **Purpose:** Open the app's data directory in the platform's native file manager (desktop only).
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -184,13 +187,13 @@ are no misattached blocks and no undocumented declarations in this file.
   `isMacOS` / `isLinux` to run the matching OS command with the directory path (Linux uses the
   `file://` URI form via `uri.toFilePath()`).
 - **Usage:** `onTap: _openDataFolder` on the "Data Migration" tile in `build`
-  (`lib/features/settings/views/settings_page.dart`, line 865), shown only when `_isDesktop`.
+  (`lib/features/settings/views/settings_page.dart`, line 867), shown only when `_isDesktop`.
 - **Notes:** No error handling around `Process.run` — a failure to launch the file manager is not
   surfaced to the user.
 
 ### `Future<void> _showStoragePathDialog(BuildContext context)` <a id="_showstoragepathdialog"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 394)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 396)
 - **Purpose:** Let the user type a custom storage directory or reset to the default, apply it, and
   report the outcome.
 - **Inputs:** `context`.
@@ -213,7 +216,7 @@ are no misattached blocks and no undocumented declarations in this file.
      then returns.
   7. Otherwise shows either `settingsResetDefaultLocation` or `settingsStoragePathUpdated`.
 - **Usage:** `onTap: () => _showStoragePathDialog(context)` on the "Storage Location" tile in
-  `build` (`lib/features/settings/views/settings_page.dart`, line 858), shown only when
+  `build` (`lib/features/settings/views/settings_page.dart`, line 860), shown only when
   `_isDesktop`.
 - **Notes:** Uses the local `context` parameter's `.mounted` (`context.mounted`, lines 441, 449
   and 482) rather than the State's own `mounted`, since this method receives `context`
@@ -222,7 +225,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _loadTraySettings()` <a id="_loadtraysettings"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 499)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 501)
 - **Purpose:** Load the persisted minimize-to-tray and close-to-tray preferences.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -234,7 +237,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _loadAutoStartStatus()` <a id="_loadautostartstatus"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 517)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 519)
 - **Purpose:** Query the OS-level launch-at-startup registration state.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
@@ -249,7 +252,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _loadApiSettings()` <a id="_loadapisettings"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 533)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 535)
 - **Purpose:** Load the persisted local API server configuration (enabled flag, port, listen
   address, credentials).
 - **Inputs:** None.
@@ -264,7 +267,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _showApiSettingsDialog()` <a id="_showapisettingsdialog"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 550)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 552)
 - **Purpose:** Let the user edit the local API server's listen address, port, username, and
   password, persist the change, and restart the server with the new settings.
 - **Inputs:** None.
@@ -282,7 +285,7 @@ are no misattached blocks and no undocumented declarations in this file.
      into local state, then awaits `LocalApiServer.restart()` and shows
      `settingsApiRestarted(LocalApiServer.port)`.
 - **Usage:** `onTap: _apiEnabled ? _showApiSettingsDialog : null` on the "API Server" settings tile
-  in `build` (`lib/features/settings/views/settings_page.dart`, line 940) — only tappable while the
+  in `build` (`lib/features/settings/views/settings_page.dart`, line 954) — only tappable while the
   API server is enabled.
 - **Notes:** Storing `null` rather than `''` for blank username/password matters because
   `LocalApiServer` treats a configured (non-null) credential pair as "Basic Auth required" — see
@@ -290,7 +293,7 @@ are no misattached blocks and no undocumented declarations in this file.
 
 ### `Future<void> _refreshExchangeRates()` <a id="_refreshexchangerates"></a>
 - **Kind:** method of `_SettingsPageState`
-- **Source:** `lib/features/settings/views/settings_page.dart` (line 634)
+- **Source:** `lib/features/settings/views/settings_page.dart` (line 636)
 - **Purpose:** Manually fetch and persist the latest exchange rates for the configured default
   currency.
 - **Inputs:** None.
@@ -300,5 +303,5 @@ are no misattached blocks and no undocumented declarations in this file.
 - **Algorithm:** Awaits the fetch/save call and shows `exchangeRateUpdated` if it returned non-null,
   otherwise `exchangeRateUpdateFailed`.
 - **Usage:** `onTap: _refreshExchangeRates` on the "Refresh Exchange Rates" tile in `build`
-  (`lib/features/settings/views/settings_page.dart`, line 805).
+  (`lib/features/settings/views/settings_page.dart`, line 807).
 - **Notes:** None.

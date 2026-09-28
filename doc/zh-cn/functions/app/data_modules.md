@@ -1,6 +1,6 @@
 # lib/app/data_modules.dart
 
-**本应用与共享 `myapps_data` 包之间的接缝**，MyDevice 四个数据文件的单一真相源。硬编码 `_dataFileNames` 列表和备份模块映射现在都从这里声明的注册表读取。
+**本应用与共享 `myapps_data` 包之间的接缝**，MyDevice 四个数据文件的单一真相源。硬编码 `_dataFileNames` 列表和备份模块映射现在都从这里声明的注册表读取。库注释还记录了（自 1.6.0 起）端侧 AI 缓存 `ai_insights.json`（[`ai_insights_cache.md`](../features/ai/services/ai_insights_cache.md)）刻意**不是**这里的模块：它仅限本设备，从不同步、备份或导出。
 
 ## 声明
 

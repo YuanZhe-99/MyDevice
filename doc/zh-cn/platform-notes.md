@@ -9,6 +9,7 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - 应用图标：`windows/runner/resources/app_icon.ico`。
 - MSIX 配置住在 `pubspec.yaml` 的 `msix_config` 下，带 `internetClient`。
 - CI 的 Windows x64 和 ARM64 作业设 `CL=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS`，作为仍触及弃用 WinRT `<experimental/coroutine>` 页头依赖链的临时 VS/MSVC 18 兼容变通。
+- 没有端侧 AI：洞察卡片从不渲染，设置只显示一行「本平台不可用」（见[端侧 AI](on-device-ai.md)）。
 
 ## macOS
 
@@ -18,6 +19,7 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - `AppDelegate.swift` 在最后一个窗口关闭时保持应用存活，并暴露 **dock 可见性**方法通道（`com.yuanzhe.my_device/dock`——在 `tray_service.dart` 方法 `setDockIconVisible` 确认）。
 - `DebugProfile.entitlements` 和 `Release.entitlements` 都必须含 `com.apple.security.network.client` 和 `com.apple.security.network.server`；没有它们，沙盒网络请求和本地 API 服务器会坏。
 - 应用图标用 `flutter_launcher_icons` 生成；保持 `flutter_launcher_icons.yaml` 中 macOS 小节同步。
+- 端侧 AI（v1.6.0）使用本地 `packages/on_device_ai_apple` 插件，与 iOS 共用；FoundationModels 框架弱链接，CI 用 `tool/check_weak_link.sh` 检查。不添加任何 entitlement。见[端侧 AI](on-device-ai.md#apple-the-foundation-models-framework)。
 
 ## iOS
 
@@ -27,6 +29,7 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - 默认图标源用不透明白背景；深色和着色源用透明背景。着色源必须保持灰度，使 iOS 能应用用户所选着色。
 - 不要添加原生 Icon Composer 或 Liquid Glass Clear 特定资产；依赖默认/深色/着色回退集合。
 - App Store IPA 需要签名/预置且不由 CI 构建。
+- 端侧 AI（v1.6.0）需要带 Apple Intelligence 的 iOS 26；部署目标保持 13.0，因为 FoundationModels 是弱链接的（CI 中检查）。见[端侧 AI](on-device-ai.md#weak-linking)。
 
 ## Android
 
@@ -34,7 +37,8 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - Kotlin 迁移状态（应用侧已迁移）：Gradle 包装 `9.3.1`、AGP `9.1.1`、无应用级 `kotlin-android` 插件。Kotlin `jvmTarget` 经顶层 `kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_17 } }` 块设置（非需要真实 JDK 17 安装的 `jvmToolchain`；非已移除的 `kotlinOptions`）。`android/gradle.properties` 保持 `android.builtInKotlin=false` 和 `android.newDsl=false`，因为几个插件仍直接应用 KGP——翻转 `builtInKotlin=true` 破坏每个 KGP 应用插件。`org.jetbrains.kotlin.android` 保持声明（`apply false`）在 `settings.gradle.kts` 供那些插件解析。
 - `file_picker` **精确钉在 `10.3.7`**（无脱字符）：它是既自己应用 KGP（`builtInKotlin=false` 时需要）又对照 `flutter.compileSdkVersion` 编译（AGP 9 AAR 元数据检查所需）的最后发布。`10.3.9+`/`11.x` 需要 AGP 内置 Kotlin；`10.3.2` 和更早钉 `compileSdk 34` 并失败元数据检查。
 - Keystore 属性用可空转换（`as String?`）。
-- 核心库脱糖**未**启用——MyDevice 不调度通知且无需要它的依赖。
+- 核心库脱糖**未**启用——MyDevice 不调度通知且无需要它的依赖（ML Kit GenAI 也不需要）。
+- 自 1.6.0 起 `minSdk` 为 **26**（原为 `flutter.minSdkVersion`，即 24）：端侧 AI 库 `com.google.mlkit:genai-prompt:1.0.0-beta4` 需要它，因此放弃 Android 7.0 和 7.1。`GenAiChannel.kt` 与 `MainActivity.kt` 并列，`proguard-rules.pro` 为 release 构建中的 R8 保留 ML Kit 和 kotlinx.coroutines，manifest 的 `<queries>` 列出 `com.google.android.aicore`。见[端侧 AI](on-device-ai.md#android-ml-kit-genai-over-aicore)。
 - 本地经 `key.properties` 签名可选；CI 用 GitHub Secrets。
 - 拓扑 PNG 导出 iOS 用 `share_plus`、Android 用 `com.yuanzhe.my_device/share` 方法通道加 `FileProvider`、桌面用带复制/保存操作的预览（见 [服务与拓扑](features/services-topology.md)）。
 

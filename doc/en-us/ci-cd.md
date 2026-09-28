@@ -15,8 +15,8 @@ in CI, so the default `GITHUB_TOKEN` is sufficient.
 | `android` | `ubuntu-latest` | APK (full) + AAB (store) | Java 17, optional signing secrets |
 | `windows-x64` | `windows-latest` | Inno x64 installer | Stable Flutter `3.44.2`, `iscc installer.iss` |
 | `windows-arm64` | `windows-11-arm` | Inno ARM64 installer | Flutter master for the ARM64 engine, `iscc /DARM64 installer.iss` |
-| `ios` | `macos-latest` | Sideload IPA | Release, no codesign |
-| `macos` | `macos-latest` | DMG | Uses `create-dmg` |
+| `ios` | `macos-latest` | Sideload IPA | Release, no codesign; FoundationModels weak-link check |
+| `macos` | `macos-latest` | DMG | Uses `create-dmg`; FoundationModels weak-link check |
 
 GitHub Release artifacts are uploaded on tag push.
 
@@ -36,6 +36,11 @@ GitHub Release artifacts are uploaded on tag push.
   remaining warning is plugin-side only and, as of 2026-07, even the latest releases of those plugins
   still apply KGP. Full elimination requires flipping `android.builtInKotlin=true` once every plugin
   ships Built-in Kotlin support; verify with real APK/AAB builds when attempting it.
+- The `ios` and `macos` jobs run `tool/check_weak_link.sh` on the built app (v1.6.0). It fails the
+  build unless every binary linking FoundationModels links it weakly, and also when nothing links it
+  (the `on_device_ai_apple` plugin did not make it in). The macOS bundle name contains `!`, so the
+  path is always quoted. A failure on an older Xcode means the runner image lacks the 26 SDK — fix
+  the runner, not the code. See [On-device AI](on-device-ai.md#weak-linking).
 
 ## Commands
 
@@ -56,7 +61,8 @@ iscc /DARM64 installer.iss
 
 Use the narrowest relevant command set for verification. For model or sync changes, include targeted
 tests such as `flutter test test/sync_unknown_fields_test.dart` or
-`flutter test test/device_finance_test.dart`.
+`flutter test test/device_finance_test.dart`. For on-device AI changes run
+`flutter test test/on_device_ai_test.dart test/insight_facts_test.dart test/insight_service_test.dart test/ai_insights_cache_test.dart test/ai_insight_card_ui_test.dart test/ai_settings_tiles_ui_test.dart`.
 
 ## Fresh clone
 

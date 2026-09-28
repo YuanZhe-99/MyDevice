@@ -2,7 +2,8 @@
 
 The app's entry point: initializes desktop-only startup services (launch-at-startup, the local
 API server, the system tray) before running the widget tree, and kicks off fire-and-forget
-background tasks (auto-backup, exchange-rate refresh, the auto-sync lifecycle observer).
+background tasks (auto-backup, exchange-rate refresh, the auto-sync lifecycle observer) and the
+on-device AI lifecycle listener.
 
 ## Declarations
 
@@ -14,14 +15,15 @@ background tasks (auto-backup, exchange-rate refresh, the auto-sync lifecycle ob
 
 ### `void main() async` <a id="main"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/main.dart` (line 22).
+- **Source:** `lib/main.dart` (line 23).
 - **Purpose:** Perform desktop-only startup wiring and launch the Flutter app.
 - **Inputs:** None.
 - **Returns:** None.
 - **Side effects:** Calls `WidgetsFlutterBinding.ensureInitialized()`; on Windows/macOS/Linux,
   configures `launch_at_startup` and starts `LocalApiServer` and `TrayService`; calls
-  `BackupService.runAutoBackupIfNeeded()`, `DeviceExchangeRateService.refreshIfNeeded()`, and
-  `AutoSyncService.instance.start()`; runs the widget tree via `runApp`.
+  `BackupService.runAutoBackupIfNeeded()`, `DeviceExchangeRateService.refreshIfNeeded()`,
+  `AutoSyncService.instance.start()` and `OnDeviceAiService.instance.start()`; runs the widget
+  tree via `runApp`.
 - **Algorithm:**
   1. Ensure the Flutter binding is initialized.
   2. On desktop platforms (`!kIsWeb` and Windows/macOS/Linux), read `PackageInfo` and configure
@@ -31,7 +33,10 @@ background tasks (auto-backup, exchange-rate refresh, the auto-sync lifecycle ob
   4. On the same desktop platforms, initialize the system tray via `TrayService.instance.init()`.
   5. Fire-and-forget `BackupService.runAutoBackupIfNeeded()` and
      `DeviceExchangeRateService.refreshIfNeeded()` (neither is awaited before `runApp`).
-  6. Start the auto-sync lifecycle observer, `AutoSyncService.instance.start()`.
+  6. Start the auto-sync lifecycle observer, `AutoSyncService.instance.start()`, then the on-device
+     AI lifecycle listener, `OnDeviceAiService.instance.start()` (v1.6.0; registers an
+     `AppLifecycleListener` only and never calls the model backend — see
+     [features/ai/services/on_device_ai_service.md](features/ai/services/on_device_ai_service.md#ondeviceaiservice-start)).
   7. `runApp` wraps `MyDeviceApp` in a `ProviderScope` and `DevicePreview` (enabled only in debug
      mode).
 - **Usage:** Called once by the Flutter engine at process start; not called from anywhere in app

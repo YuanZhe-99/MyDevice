@@ -23,6 +23,7 @@
 - [备份与恢复](backup-restore.md) — 备份格式 v2、blob 去重/GC、恢复安全规则、ZIP 导出/导入、Markdown 导出。
 - [平台说明](platform-notes.md) — Windows/macOS/iOS/Android 注意、桌面本地 API 服务器、系统托盘、启动时启动。
 - [CI/CD](ci-cd.md) — CI 作业和工作流注意、构建/验证命令集和全新克隆（子模块）步骤。
+- [端侧 AI](on-device-ai.md) — 可选的洞察卡片：规则、布局、每张卡片发送与绝不发送的内容、缓存与指纹、Android 和 Apple 的具体情况。
 - [版本历史](version-history.md) — 逐发布摘要。改变看起来奇怪的行为前值得查看；几个条目记录刻意安全修复。
 
 ### 功能区

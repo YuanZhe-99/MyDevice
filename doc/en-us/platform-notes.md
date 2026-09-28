@@ -16,6 +16,8 @@ local API server, system tray, and launch-at-startup integration. See
   `CL=/D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS` as a temporary VS/MSVC 18
   compatibility workaround for dependency chains that still reach deprecated WinRT
   `<experimental/coroutine>` headers.
+- No on-device AI: the insight cards never render and Settings shows one "not available on this
+  platform" line (see [On-device AI](on-device-ai.md)).
 
 ## macOS
 
@@ -32,6 +34,9 @@ local API server, system tray, and launch-at-startup integration. See
   them, sandboxed network requests and the local API server break.
 - App icons are generated with `flutter_launcher_icons`; keep the macOS section in
   `flutter_launcher_icons.yaml` in sync.
+- On-device AI (v1.6.0) uses the local `packages/on_device_ai_apple` plugin, shared with iOS; the
+  FoundationModels framework is weak-linked and CI checks it with `tool/check_weak_link.sh`. No
+  entitlement is added. See [On-device AI](on-device-ai.md#apple-the-foundation-models-framework).
 
 ## iOS
 
@@ -47,6 +52,9 @@ local API server, system tray, and launch-at-startup integration. See
 - Do not add native Icon Composer or Liquid Glass Clear-specific assets; rely on the
   default/dark/tinted fallback set.
 - App Store IPA requires signing/provisioning and is not built by CI.
+- On-device AI (v1.6.0) needs iOS 26 with Apple Intelligence; the deployment target stays 13.0
+  because FoundationModels is weak-linked (checked in CI). See
+  [On-device AI](on-device-ai.md#weak-linking).
 
 ## Android
 
@@ -66,7 +74,12 @@ local API server, system tray, and launch-at-startup integration. See
   check.
 - Keystore properties use nullable casts (`as String?`).
 - Core library desugaring is **not** enabled — MyDevice schedules no notifications and
-  has no dependency that requires it.
+  has no dependency that requires it (ML Kit GenAI does not).
+- `minSdk` is **26** since 1.6.0 (was `flutter.minSdkVersion`, 24): the on-device AI library
+  `com.google.mlkit:genai-prompt:1.0.0-beta4` requires it, so Android 7.0 and 7.1 are dropped.
+  `GenAiChannel.kt` sits next to `MainActivity.kt`, `proguard-rules.pro` keeps ML Kit and
+  kotlinx.coroutines for R8 in release builds, and the manifest `<queries>` lists
+  `com.google.android.aicore`. See [On-device AI](on-device-ai.md#android-ml-kit-genai-over-aicore).
 - Signing is optional locally via `key.properties`; CI uses GitHub Secrets.
 - Topology PNG export uses `share_plus` on iOS, a
   `com.yuanzhe.my_device/share` Android method channel plus `FileProvider`, and a

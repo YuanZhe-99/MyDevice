@@ -440,6 +440,56 @@ class DeviceStorage {
     await writeConfig(config);
   }
 
+  // ── On-device AI (device-local, never synced; off by default, v1.6.0) ──
+
+  /// Purpose: Read whether the user turned on on-device AI.
+  /// Inputs: None.
+  /// Returns: `Future<bool>` — false when the key is absent.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Device-local, never synced; off by default.
+  static Future<bool> getOnDeviceAiEnabled() async =>
+      (await readConfig())['onDeviceAiEnabled'] == true;
+
+  /// Purpose: Persist the on-device AI switch.
+  /// Inputs: `enabled`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Stored only when true; false removes the key.
+  static Future<void> setOnDeviceAiEnabled(bool enabled) =>
+      _setFlag('onDeviceAiEnabled', enabled);
+
+  /// Purpose: Read whether the faster on-device model is preferred.
+  /// Inputs: None.
+  /// Returns: `Future<bool>` — false when the key is absent.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Android only in effect.
+  static Future<bool> getOnDeviceAiPreferFast() async =>
+      (await readConfig())['onDeviceAiPreferFast'] == true;
+
+  /// Purpose: Persist the faster-model preference.
+  /// Inputs: `enabled`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Stored only when true; false removes the key.
+  static Future<void> setOnDeviceAiPreferFast(bool enabled) =>
+      _setFlag('onDeviceAiPreferFast', enabled);
+
+  /// Purpose: Store a boolean preference that defaults to false.
+  /// Inputs: `key`, `enabled`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Internal helper used within this file only. Writes `true` or
+  /// removes the key, so a default install's config stays free of it.
+  static Future<void> _setFlag(String key, bool enabled) async {
+    final config = await readConfig();
+    if (enabled) {
+      config[key] = true;
+    } else {
+      config.remove(key);
+    }
+    await writeConfig(config);
+  }
+
   // ── List column preferences (device-local, never synced) ──
 
   /// Purpose: Read a stored list column preference.

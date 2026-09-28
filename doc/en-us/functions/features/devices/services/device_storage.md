@@ -5,7 +5,8 @@ canonical storage-location/config service: `getAppDir()` is called by `DataSetSt
 `NetworkStorage` (`../../../network/services/network_storage.dart`,
 `../../../datasets/services/dataset_storage.dart`) to resolve the *same* app directory those
 modules' own data files live in, and `readConfig`/`writeConfig` back a small generic key/value
-store (`themeMode`, `locale`, `defaultCurrency`, `autoUpdateExchangeRates`, list columns, etc.)
+store (`themeMode`, `locale`, `defaultCurrency`, `autoUpdateExchangeRates`, list columns, the
+on-device AI switches, etc.)
 that `AppSettings` (`../../../../shared/providers/app_settings.md`) and
 [`exchange_rate_service.md`](exchange_rate_service.md) also read/write through. That store is the
 one `storage_config.json` in the platform default folder, which also holds the custom storage
@@ -47,6 +48,11 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`setThemeMode`](#setthememode) | static method | A | Persist (or clear) the theme mode string. |
 | [`getLocaleTag`](#getlocaletag) | static method | A | Read the persisted locale tag. |
 | [`setLocaleTag`](#setlocaletag) | static method | A | Persist (or clear) the locale tag. |
+| `getOnDeviceAiEnabled` | static method | B | Read the on-device AI switch (`onDeviceAiEnabled`); false when absent. |
+| `setOnDeviceAiEnabled` | static method | B | `_setFlag('onDeviceAiEnabled', enabled)`. |
+| `getOnDeviceAiPreferFast` | static method | B | Read the faster-model preference (`onDeviceAiPreferFast`); false when absent. |
+| `setOnDeviceAiPreferFast` | static method | B | `_setFlag('onDeviceAiPreferFast', enabled)`. |
+| [`_setFlag`](#_setflag) | static method (private) | A | Store a boolean preference that defaults to false: write `true` or remove the key. |
 | [`_getListColumns`](#getlistcolumns) | static method (private) | A | Read one list page's column preference from `storage_config.json`. |
 | [`_setListColumns`](#setlistcolumns) | static method (private) | A | Persist one list page's column preference, removing the key for auto. |
 | `getDeviceListColumns` | static method | B | `_getListColumns('deviceListColumns')`: the device list's column preference. |
@@ -64,14 +70,15 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`StoragePathResult`](#storagepathresult-new) | constructor | A | Create a result; `saved` defaults to true, `unmoved` to empty. |
 | [`complete`](#complete) | getter (`StoragePathResult`) | A | Whether the change fully succeeded: saved and nothing left behind. |
 
-Row count (44) is ten more than `grep -c '/// Purpose:' device_storage.dart` (34). Each of the 32
-static methods, including each of the eight list-column accessors, has its own row and its own
+Row count (49) is ten more than `grep -c '/// Purpose:' device_storage.dart` (39). Each of the 37
+static methods, including each of the eight list-column accessors and the four on-device AI
+accessors (v1.6.0), has its own row and its own
 `Purpose:` block, and so do the `StoragePathResult` constructor and its `complete` getter. The ten
 extra rows are the `DeviceStorage` class itself, the private static consts `_dataFileName` and
 `_configFileName`, the private static fields `_customPath`, `_configLoaded` and
 `_strayCheckedFor`, the `StoragePathResult` class, and its fields `saved`, `unmoved` and `from`,
 which carry an ordinary `///` description or none and are listed because every declaration
-appears in the table. Tier A: 26 rows.
+appears in the table. Tier A: 27 rows.
 
 ## Documentation
 
@@ -506,9 +513,25 @@ appears in the table. Tier A: 26 rows.
   (from `AppSettings`'s locale-change handler)
 - **Notes:** None.
 
+### `static Future<void> _setFlag(String key, bool enabled)` <a id="_setflag"></a>
+- **Kind:** private static method (v1.6.0).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 483).
+- **Purpose:** Store a boolean preference that defaults to false.
+- **Inputs:** `key` — the `storage_config.json` key; `enabled`.
+- **Returns:** `Future<void>`.
+- **Side effects:** Reads and rewrites `storage_config.json`.
+- **Algorithm:** Read config; set `config[key] = true` when `enabled`, otherwise `remove(key)`;
+  write back through [`writeConfig`](#writeconfig).
+- **Usage:** `setOnDeviceAiEnabled` (`onDeviceAiEnabled`) and `setOnDeviceAiPreferFast`
+  (`onDeviceAiPreferFast`), which `AppSettingsNotifier` calls fire-and-forget
+  ([`app_settings.md`](../../../shared/providers/app_settings.md#setondeviceaienabled)).
+- **Notes:** A default install's config never contains the key, so the matching getters treat an
+  absent key (or any value other than `true`) as false. Both keys are device-local like every
+  `storage_config.json` preference: never synced, backed up or exported.
+
 ### `static Future<int> _getListColumns(String key)` <a id="getlistcolumns"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 451).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 501).
 - **Purpose:** Read one list page's column preference.
 - **Inputs:** `key` — the `storage_config.json` key for that page.
 - **Returns:** `Future<int>` — the stored count, or `listColumnsAuto` when the key is absent, not
@@ -520,7 +543,7 @@ appears in the table. Tier A: 26 rows.
 
 ### `static Future<void> _setListColumns(String key, int columns)` <a id="setlistcolumns"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 466).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 516).
 - **Purpose:** Persist one list page's column preference.
 - **Inputs:** `key`; `columns` — `listColumnsAuto` or a pinned count.
 - **Returns:** None.
@@ -532,7 +555,7 @@ appears in the table. Tier A: 26 rows.
 ### `const StoragePathResult({bool saved = true, List<String> unmoved = const [], String? from})` <a id="storagepathresult-new"></a>
 - **Kind:** constructor of `StoragePathResult`, the top-level class that tells the caller what
   [`setStoragePath`](#setstoragepath) did.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 560).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 610).
 - **Purpose:** Create a result.
 - **Inputs:** `saved` — whether the new path was recorded (default `true`; `false` means nothing
   changed); `unmoved` — relative paths the move left in the old folder (default empty); `from` —
@@ -548,7 +571,7 @@ appears in the table. Tier A: 26 rows.
 
 ### `bool get complete` <a id="complete"></a>
 - **Kind:** getter of `StoragePathResult`.
-- **Source:** `lib/features/devices/services/device_storage.dart` (line 571).
+- **Source:** `lib/features/devices/services/device_storage.dart` (line 621).
 - **Purpose:** Report whether the change fully succeeded.
 - **Inputs:** None.
 - **Returns:** `bool` — `saved && unmoved.isEmpty`.

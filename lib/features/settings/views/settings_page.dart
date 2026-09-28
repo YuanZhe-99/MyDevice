@@ -15,6 +15,8 @@ import '../../../shared/services/local_api_server.dart';
 import '../../../shared/services/tray_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/views/webdav_config_page.dart';
+import '../../ai/services/genai_backend.dart';
+import '../../ai/widgets/ai_settings_tiles.dart';
 import '../../devices/services/device_storage.dart';
 import '../../devices/services/exchange_rate_service.dart';
 import 'backup_page.dart';
@@ -863,6 +865,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               title: Text(l10n.dataMigration),
               subtitle: Text(l10n.dataMigrationDesc),
               onTap: _openDataFolder,
+            ),
+        ]),
+
+        // ── On-device AI (v1.6.0): the full rows where a model can exist,
+        // otherwise (Windows, Linux) a single note. ──
+        _buildSection(l10n.aiSectionTitle, [
+          if (platformMayHaveOnDeviceModel)
+            const AiSettingsTiles()
+          else
+            ListTile(
+              leading: const Icon(Icons.auto_awesome_outlined),
+              title: Text(l10n.aiNotSupportedHere),
             ),
         ]),
 

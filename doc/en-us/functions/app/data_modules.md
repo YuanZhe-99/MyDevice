@@ -2,7 +2,10 @@
 
 **The seam between this app and the shared `myapps_data` package**, and the single source of truth
 for MyDevice's four data files. The hardcoded `_dataFileNames` list and the backup module map now
-both read from the registry declared here.
+both read from the registry declared here. The library comment also records (since 1.6.0) that
+`ai_insights.json`, the on-device AI cache
+([`ai_insights_cache.md`](../features/ai/services/ai_insights_cache.md)), is deliberately **not** a
+module here: it is device-local and never synced, backed up or exported.
 
 ## Declarations
 

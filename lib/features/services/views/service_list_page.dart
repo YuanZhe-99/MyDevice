@@ -6,6 +6,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/widgets/adaptive_tile_grid.dart';
+import '../../ai/services/insight_prompts.dart';
+import '../../ai/services/insight_service.dart';
+import '../../ai/widgets/ai_insight_card.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../../network/models/network.dart';
@@ -13,6 +16,7 @@ import '../../network/services/network_storage.dart';
 import '../models/service.dart';
 import '../services/service_access_patterns.dart';
 import '../services/service_analysis.dart';
+import '../services/service_insight_facts.dart';
 import '../services/service_labels.dart';
 import '../services/service_storage.dart';
 import '../widgets/service_avatar.dart';
@@ -440,6 +444,25 @@ class _ServiceListPageState extends State<ServiceListPage> {
             ),
           ),
         ],
+        // On-device AI suggestions (v1.6.0). Renders nothing unless the
+        // platform has a model and the user turned it on, so the Overview is
+        // unchanged otherwise; the top margin travels with the card.
+        AiInsightCard(
+          module: InsightModule.services,
+          margin: const EdgeInsets.only(top: 16),
+          buildRequest: (language, now) {
+            final facts = buildServiceInsightFacts(
+              now: now,
+              services: _services,
+              routes: _routes,
+              devices: _devices,
+              networks: _networks,
+            );
+            return facts == null
+                ? null
+                : AiInsightRequest(facts: facts, language: language, now: now);
+          },
+        ),
         const SizedBox(height: 16),
         Text(l10n.serviceRoutes, style: Theme.of(context).textTheme.titleLarge),
         Align(

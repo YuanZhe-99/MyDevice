@@ -22,6 +22,10 @@ enum SortMode { custom, alphabetical, purchaseDate, releaseDate }
 
 enum DeviceStatusFilter { all, inService, retired, sold }
 
+/// `storage_config.json` key holding the home list's last status filter (the
+/// enum value's `name`); absent means [DeviceStatusFilter.all].
+const deviceStatusFilterConfigKey = 'deviceStatusFilter';
+
 class DeviceListPage extends StatefulWidget {
   /// Purpose: Create a device list page instance.
   /// Inputs: None.
@@ -82,16 +86,19 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (mounted) _loadDevices();
   }
 
-  /// Purpose: Load sort prefs into the current workflow or state.
+  /// Purpose: Load the list's local view preferences (sort, grouping, order,
+  /// status filter and columns) into state.
   /// Inputs: None.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. An absent or unknown
+  /// `deviceStatusFilter` falls back to [DeviceStatusFilter.all].
   Future<void> _loadSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     final mode = config['sortMode'] as String?;
     final group = config['groupByCategory'] as bool? ?? false;
     final asc = config['sortAscending'] as bool? ?? false;
+    final filter = config[deviceStatusFilterConfigKey] as String?;
     final columns = await DeviceStorage.getDeviceListColumns();
     if (!mounted) return;
     setState(() {
@@ -100,6 +107,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
           SortMode.custom;
       _groupByCategory = group;
       _sortAscending = asc;
+      _statusFilter =
+          DeviceStatusFilter.values
+              .where((e) => e.name == filter)
+              .firstOrNull ??
+          DeviceStatusFilter.all;
       _columnsPref = columns;
     });
   }
@@ -125,16 +137,24 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (mounted) setState(() => _defaultCurrency = currency);
   }
 
-  /// Purpose: Save sort prefs to the relevant storage or service layer.
+  /// Purpose: Save the list's view preferences (sort, grouping, order and
+  /// status filter) to `storage_config.json`.
   /// Inputs: None.
   /// Returns: `Future<void>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: Writes `storage_config.json`.
+  /// Notes: Internal helper used within this file only. The status filter is
+  /// stored only when it is not the default "All", so the key disappears
+  /// again when the user goes back to All. Local only; never synced.
   Future<void> _saveSortPrefs() async {
     final config = await DeviceStorage.readConfig();
     config['sortMode'] = _sortMode.name;
     config['groupByCategory'] = _groupByCategory;
     config['sortAscending'] = _sortAscending;
+    if (_statusFilter == DeviceStatusFilter.all) {
+      config.remove(deviceStatusFilterConfigKey);
+    } else {
+      config[deviceStatusFilterConfigKey] = _statusFilter.name;
+    }
     await DeviceStorage.writeConfig(config);
   }
 
@@ -942,6 +962,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
                     _reordering = false;
                   }
                 });
+                _saveSortPrefs();
               },
             ),
           ),

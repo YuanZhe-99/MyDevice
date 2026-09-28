@@ -45,6 +45,8 @@ the `myapps_data` package embedded at `packages/myapps_data`, documented at
   local API server, system tray, launch-at-startup.
 - [CI/CD](ci-cd.md) — CI jobs and workflow caveats, the build/verify command set, and
   fresh-clone (submodule) steps.
+- [On-device AI](on-device-ai.md) — the optional insight cards: rules, layout, what each card is
+  sent and never sent, the cache and fingerprint, Android and Apple specifics.
 - [Version History](version-history.md) — release-by-release summary. Worth checking
   before changing a behavior that looks odd; several entries record deliberate safety
   fixes.

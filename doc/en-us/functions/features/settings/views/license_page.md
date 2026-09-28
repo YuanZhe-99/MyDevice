@@ -1,7 +1,11 @@
 # lib/features/settings/views/license_page.dart
 
 `LicensePage` is a static settings sub-page that displays the app's GNU GPLv3 license text
-(embedded as a literal Dart string) in a scrollable, selectable text view. It has no state, no
+(embedded as a literal Dart string) in a scrollable, selectable text view. Since 1.6.0 the same
+string ends with a notice that the Simplified/Traditional Chinese conversion tables used by the
+optional on-device AI insight cards
+([`chinese_convert_data.md`](../../../shared/utils/chinese_convert_data.md)) are derived from
+OpenCC, Copyright (c) Carbo Kuo and contributors, under the Apache License 2.0. It has no state, no
 network or storage access, and no branching logic — it is pushed from
 [`settings_page.dart`](settings_page.md) via the "License" list tile.
 
@@ -13,7 +17,7 @@ network or storage access, and no branching logic — it is pushed from
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `LicensePage` (constructor) | constructor | B | Create the page widget (no parameters). |
-| `build` | method (widget) | B | Render an app bar and the scrollable, selectable GPLv3 license text, capped at `readingMaxWidth` and centred. |
+| `build` | method (widget) | B | Render an app bar and the scrollable, selectable GPLv3 license text (plus the OpenCC notice), capped at `readingMaxWidth` and centred. |
 
 ## Documentation
 

@@ -6,7 +6,11 @@ import 'package:intl/intl.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/adaptive_layout.dart';
+import '../../ai/services/insight_prompts.dart';
+import '../../ai/services/insight_service.dart';
+import '../../ai/widgets/ai_insight_card.dart';
 import '../models/device.dart';
+import '../services/finance_insight_facts.dart';
 import '../widgets/device_category_icon.dart';
 import '../services/exchange_rate_service.dart';
 
@@ -97,6 +101,42 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
               ],
               const SizedBox(height: 12),
               _buildTrendCard(l10n, theme),
+              // On-device AI (v1.6.0). Renders nothing unless the platform
+              // has a model and the user turned it on; the top margin
+              // travels with the card so a hidden card leaves no gap.
+              AiInsightCard(
+                module: InsightModule.deviceFinance,
+                compact: !sideBySide,
+                margin: const EdgeInsets.only(top: 12),
+                sections: [
+                  AiInsightSection(l10n.aiFinanceCosts, const {
+                    'costSummary',
+                    'costAdvice',
+                    'reviewDevice',
+                  }),
+                  AiInsightSection(l10n.aiFinanceRecurring, const {
+                    'recurringSummary',
+                  }),
+                ],
+                buildRequest: (language, now) {
+                  InsightFacts? facts({required bool names}) =>
+                      buildDeviceFinanceInsightFacts(
+                        now: now,
+                        devices: widget.devices,
+                        defaultCurrency: widget.defaultCurrency,
+                        includeNames: names,
+                      );
+                  final full = facts(names: true);
+                  return full == null
+                      ? null
+                      : AiInsightRequest(
+                          facts: full,
+                          language: language,
+                          now: now,
+                          fallbackFacts: facts(names: false),
+                        );
+                },
+              ),
             ],
           );
         },

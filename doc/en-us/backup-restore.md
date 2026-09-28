@@ -164,6 +164,11 @@ after the `images/` prefix (`split('/').length == 2`), closing that gap. This is
 path-traversal protection referenced in `AGENTS.md`'s "ZIP import must keep path
 traversal protection" rule.
 
+**Not in a bundle or a ZIP export:** `ai_insights.json` (the on-device AI insight cache, v1.6.0).
+Bundles and exports iterate the module registry only, and it is not registered, so a restore never
+brings back generated insights; the cards regenerate from the restored data. See
+[On-device AI](on-device-ai.md).
+
 ## Markdown export
 
 `import_export_service.dart` also produces an LLM-friendly Markdown export covering

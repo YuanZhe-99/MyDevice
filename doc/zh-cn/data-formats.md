@@ -168,16 +168,17 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 | 数据集 | `dataset_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录 |
 | 服务与服务路由 | `service_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录服务/路由 |
 | 图像 | `images/` | 是 | 仅引用文件名比较 |
-| 主题、语言区域、备份设置、排序偏好、列表列数偏好、默认货币、汇率设置、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
+| 主题、语言区域、备份设置、排序偏好、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
 | WebDAV 凭据 | `webdav_config.json` | 否 | 仅本地机密/配置 |
 | 同步基础快照 | `.sync_base/*.json` | 否 | 本地合并跟踪 |
 | 备份 | `backups/backup_*.json` | 否 | 本地恢复；v2 捆绑引用去重图像 blob |
 | 备份图像 blob | `backups/blobs/` | 否 | 内容寻址（`sha256`），跨备份共享，引用计数 GC |
 | 汇率缓存 | `exchange_rates.json` | 否 | 本地缓存/回退数据 |
+| 端侧 AI 洞察 | `ai_insights.json` | 否 | 本设备已生成洞察卡片的缓存（v1.6.0）；从不同步、备份或导出；可重建，因此不可读的文件读作空 |
 
-默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`，而它本身总是留在默认文件夹；更改路径会移动存储文件夹中的其他一切——数据文件、备份、图像、`.sync_base/`、`webdav_config.json`——并报告留下的任何东西（见 [`storage_config.json`](#storage_configjson)、[架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
+默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`，而它本身总是留在默认文件夹；更改路径会移动存储文件夹中的其他一切——数据文件、备份、图像、`.sync_base/`、`webdav_config.json`、`ai_insights.json`——并报告留下的任何东西（见 [`storage_config.json`](#storage_configjson)、[架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
 
-- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)）。
+- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、首页列表上次的状态筛选 `deviceStatusFilter`（为“全部”时缺席）、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)），以及端侧 AI 开关 `onDeviceAiEnabled` 和 `onDeviceAiPreferFast`（v1.6.0）——只在为 `true` 时写入、关闭时移除，属于本设备，因为是否有模型是设备的属性；见[端侧 AI](on-device-ai.md)）。
 - **`webdav_config.json`** — 仅本地 WebDAV 凭据/配置；绝不同步。
 - **`.sync_base/`** — 上次成功同步的逐数据文件基础快照（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`），用于三方合并；也持有 `upload_lock.json`，用于下次启动检测中断上传的进行中上传本地记录。见 [WebDAV 同步](sync.md)。
 - **`backups/`** — 完整 v2 捆绑格式和 blob 存储布局见 [备份与恢复](backup-restore.md)。
@@ -188,6 +189,34 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 - **`storagePath` 归 `setStoragePath` 所有。** 偏好写入会把映射中 `storagePath` 下的任何内容替换为当前自定义路径，没有自定义路径时删除该键，因此保存主题或列数选择永远不会移动或丢失数据。
 - **收编游离副本（1.5.7）。** 1.5.7 之前，`readConfig`/`writeConfig` 使用当前存储文件夹，而自定义路径位于默认文件夹，因此移动后偏好读作默认值，新偏好写进自定义文件夹里的第二个 `storage_config.json`。现在对某个自定义路径的首次配置访问会检查该文件夹：那里的游离 `storage_config.json` 被合并进默认文件——它的键较新，因此胜出，`storagePath` 除外——然后被删除。无法读取或解析的游离文件保持不动。
 - **更改存储路径。** 旧文件夹中除顶层 `storage_config.json` 外的一切都移到新文件夹（见 [`DeviceStorage.setStoragePath`](functions/features/devices/services/device_storage.md#setstoragepath)）。目标位置已存在的文件胜出，其源副本留在原处。留在旧文件夹中的每个文件——复制失败的，或因目标已有同名文件而被跳过的——都会被报告回来，设置页连同旧文件夹路径一起列出它们，因为应用在新位置看不到它们。
+
+## `ai_insights.json` <a id="ai_insightsjson"></a>
+
+端侧 AI 洞察缓存（v1.6.0），通过 `AiInsightsCache` 以其自己的写队列原子写入存储文件夹（`DeviceStorage.getAppDir()`），因此会随自定义存储路径一起移动。它**不是**已登记的数据模块：从不同步，从不出现在备份捆绑或 ZIP 导出中，也没有保留模式。与数据文件不同，不可读或格式错误的文件读作空——它是缓存，丢失它的代价只是每张卡片重新生成一次。设置中的*清除已生成的洞察*会删除它。
+
+```json
+{
+  "version": 1,
+  "insights": {
+    "deviceFinance": {
+      "fingerprint": "3f9a…",
+      "generatedAt": "2026-09-28T01:02:03.000Z",
+      "language": "zh_CN",
+      "lines": ["…", "…", "…", "…"],
+      "model": "stable/full · nano-v3",
+      "promptVersion": 1,
+      "slots": ["costSummary", "costAdvice", "recurringSummary", "reviewDevice"],
+      "status": "ok"
+    }
+  }
+}
+```
+
+- `insights` 下的键是 `deviceFinance` 和 `services`。未知键和格式错误的条目在读取时丢弃。
+- `fingerprint` 是 [on-device-ai.md](on-device-ai.md#cache-and-fingerprint) 中描述的十六进制 SHA-256；卡片只在它变化时重新生成。
+- `lines` 按槽位顺序保存经过校验的句子，`slots` 保存每句对应的槽位 id，因此即使前面的某个槽位被丢弃，卡片也能把各行归到对应的分区标题下。
+- `status` 为 `ok`，或在模型拒绝（`guardrail`）或无法使用该语言写作时为 `skipped`；跳过的条目没有行，在指纹变化之前不会重试。
+- `generatedAt` 是 UTC。
 
 ## 交叉引用规则 <a id="cross-reference-rules"></a>
 

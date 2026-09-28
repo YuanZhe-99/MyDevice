@@ -269,27 +269,32 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Datasets | `dataset_data.json` | Yes | Per-record by `id` and `modifiedAt` |
 | Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
 | Images | `images/` | Yes | Referenced-only filename comparison |
-| Theme, locale, backup settings, sort preferences, list column preferences, default currency, exchange-rate settings, custom storage path | `storage_config.json` (default folder) | No | Local preference |
+| Theme, locale, backup settings, sort preferences, home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
 | Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
 | Backup image blobs | `backups/blobs/` | No | Content-addressed (`sha256`), shared across backups, reference-counted GC |
 | Exchange-rate cache | `exchange_rates.json` | No | Local cache/fallback data |
+| On-device AI insights | `ai_insights.json` | No | Per-device cache of generated insight cards (v1.6.0); never synced, backed up or exported; rebuildable, so an unreadable file reads as empty |
 
 The default app data directory is `Documents/MyDevice` on desktop or the platform app
 documents directory on mobile. Custom storage paths are stored in `storage_config.json`, which
 itself always stays in the default folder; changing the path moves everything else in the storage
-folder — data files, backups, images, `.sync_base/`, `webdav_config.json` — and reports anything
+folder — data files, backups, images, `.sync_base/`, `webdav_config.json`, `ai_insights.json` — and reports anything
 it left behind (see [`storage_config.json`](#storage_configjson),
 [Architecture](architecture.md#core-architecture-rules), `DeviceStorage.getAppDir()`).
 
 - **`storage_config.json`** — one file in the platform default folder (see
   [below](#storage_configjson)) holding the local, unsynced preferences (theme, locale, backup
-  settings, sort preferences, default currency, exchange-rate settings, custom storage
+  settings, sort preferences, the home list's last status filter `deviceStatusFilter` (absent
+  when "All"), default currency, exchange-rate settings, custom storage
   path, tray/minimize/close-to-tray flags, local API port/credentials, and the four list
   column preferences `deviceListColumns`, `networkListColumns`, `dataSetListColumns` and
   `serviceListColumns` — an integer 1–4 when pinned, absent when auto; see
-  [Adaptive Layout](adaptive-layout.md#how-many-columns)).
+  [Adaptive Layout](adaptive-layout.md#how-many-columns)), and the on-device AI switches
+  `onDeviceAiEnabled` and `onDeviceAiPreferFast` (v1.6.0) — written only when `true` and removed
+  when switched off, device-local because whether a model exists is a property of the device; see
+  [On-device AI](on-device-ai.md)).
 - **`webdav_config.json`** — local WebDAV credentials/config only; never synced.
 - **`.sync_base/`** — per-data-file base snapshots (`device_data.json`,
   `network_data.json`, `dataset_data.json`, `service_data.json`) from the last
@@ -324,6 +329,43 @@ it left behind (see [`storage_config.json`](#storage_configjson),
   in the old folder — one that failed to copy, or one skipped because the destination already had
   a file of that name — is reported back, and Settings lists them with the old folder's path,
   because the app cannot see them at the new location.
+
+## `ai_insights.json`
+
+The on-device AI insight cache (v1.6.0), written atomically through `AiInsightsCache` with its own
+write queue, in the storage folder (`DeviceStorage.getAppDir()`), so it moves with a custom storage
+path. It is **not** a registered data module: never synced, never in a backup bundle or ZIP
+export, and it has no preservation schema. Unlike the data files, an unreadable or malformed file
+reads as empty — it is a cache, and losing it only costs one regeneration per card. *Clear
+generated insights* in Settings deletes it.
+
+```json
+{
+  "version": 1,
+  "insights": {
+    "deviceFinance": {
+      "fingerprint": "3f9a…",
+      "generatedAt": "2026-09-28T01:02:03.000Z",
+      "language": "zh_CN",
+      "lines": ["…", "…", "…", "…"],
+      "model": "stable/full · nano-v3",
+      "promptVersion": 1,
+      "slots": ["costSummary", "costAdvice", "recurringSummary", "reviewDevice"],
+      "status": "ok"
+    }
+  }
+}
+```
+
+- Keys under `insights` are `deviceFinance` and `services`. Unknown keys and malformed entries are
+  dropped on read.
+- `fingerprint` is the hex SHA-256 described in
+  [on-device-ai.md](on-device-ai.md#cache-and-fingerprint); a card regenerates only when it changes.
+- `lines` holds the validated sentences in slot order and `slots` the slot id of each, so a card can
+  group lines under its section headings even when an earlier slot was dropped.
+- `status` is `ok`, or `skipped` when the model refused (`guardrail`) or cannot write the language;
+  a skipped entry has no lines and is not retried until the fingerprint changes.
+- `generatedAt` is UTC.
 
 ## Cross-reference rules
 

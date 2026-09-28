@@ -1,10 +1,14 @@
 // Turns a product photo into a bundled device thumbnail.
 //
 // Run with:
-//   dart run tool/prepare_device_image.dart <input> <output.png> [...] [--tolerance=N]
+//   dart run tool/prepare_device_image.dart <input> <output.png> [...]
+//       [--tolerance=N] [--crop=x,y,w,h] [--roundrect=R]
 //
-// Steps: remove a plain background (flood fill from the edges) unless the
-// image is already transparent, trim to the visible content, fit it into the
+// Steps: optionally crop to one region of the source (a sheet of several
+// views, or a group shot), remove a plain background (flood fill from the
+// edges) unless the image is already transparent, trim to the visible
+// content (or, with --roundrect, cut a tightly cropped phone or tablet out
+// with a rounded-rectangle mask instead), fit it into the
 // circle-safe square, centre it on a transparent 256 px canvas, and verify
 // the result with `checkDeviceImage`. Exit code 1 when the result fails.
 
@@ -19,7 +23,11 @@ import 'device_image_check.dart';
 /// Purpose: Convert photos into checked, circle-safe thumbnails.
 /// Inputs: Command-line `args`: one or more `<input> <output.png>` pairs and
 /// an optional `--tolerance=N` (colour distance counted as background,
-/// default 28).
+/// default 28) and an optional `--crop=x,y,w,h` (a source-pixel rectangle
+/// applied to every input before anything else) and an optional
+/// `--roundrect=R` (mask the cropped image with a rounded rectangle whose
+/// corner radius is R times its shorter side, instead of removing the
+/// background).
 /// Returns: None.
 /// Side effects: Reads the inputs, writes the output PNGs, prints one result
 /// line per pair and sets `exitCode`.
@@ -30,7 +38,8 @@ void main(List<String> args) {
   if (positional.isEmpty || positional.length.isOdd) {
     stderr.writeln(
       'usage: dart run tool/prepare_device_image.dart <input> <output.png> '
-      '[<input> <output.png> ...] [--tolerance=N]',
+      '[<input> <output.png> ...] [--tolerance=N] [--crop=x,y,w,h] '
+      '[--roundrect=R]',
     );
     exitCode = 2;
     return;
@@ -38,6 +47,21 @@ void main(List<String> args) {
   var tolerance = 28;
   for (final a in args.where((a) => a.startsWith('--tolerance='))) {
     tolerance = int.parse(a.split('=').last);
+  }
+  (int, int, int, int)? crop;
+  for (final a in args.where((a) => a.startsWith('--crop='))) {
+    final v = a.split('=').last.split(',').map(int.parse).toList();
+    if (v.length != 4) {
+      stderr.writeln('--crop needs x,y,w,h');
+      exitCode = 2;
+      return;
+    }
+    crop = (v[0], v[1], v[2], v[3]);
+  }
+
+  double? roundRect;
+  for (final a in args.where((a) => a.startsWith('--roundrect='))) {
+    roundRect = double.parse(a.split('=').last);
   }
 
   for (var i = 0; i < positional.length; i += 2) {
@@ -53,7 +77,20 @@ void main(List<String> args) {
       exitCode = 1;
       continue;
     }
-    final result = prepareDeviceImage(decoded, tolerance: tolerance);
+    if (crop != null) {
+      decoded = img.copyCrop(
+        decoded,
+        x: crop.$1,
+        y: crop.$2,
+        width: crop.$3,
+        height: crop.$4,
+      );
+    }
+    final result = prepareDeviceImage(
+      decoded,
+      tolerance: tolerance,
+      roundRect: roundRect,
+    );
     File(output).writeAsBytesSync(img.encodePng(result, level: 9));
 
     final problems = checkDeviceImage(result);
@@ -67,12 +104,20 @@ void main(List<String> args) {
 }
 
 /// Purpose: Run the whole thumbnail pipeline on a decoded image.
-/// Inputs: `source`; `tolerance` for background colour matching.
+/// Inputs: `source`; `tolerance` for background colour matching;
+/// `roundRect` — when set, the corner-radius fraction for
+/// [applyRoundRectMask], used instead of background removal.
 /// Returns: A new [deviceImageSize] square RGBA image.
 /// Side effects: None.
 /// Notes: Large sources are first reduced to 1024 px so the flood fill stays
-/// fast; the output is far smaller than that anyway.
-img.Image prepareDeviceImage(img.Image source, {int tolerance = 28}) {
+/// fast; the output is far smaller than that anyway. The mask suits a phone
+/// or tablet photographed straight on against a busy surface (wood, cloth),
+/// where a flood fill cannot tell the background from the device.
+img.Image prepareDeviceImage(
+  img.Image source, {
+  int tolerance = 28,
+  double? roundRect,
+}) {
   var work = source.convert(format: img.Format.uint8, numChannels: 4);
   final longest = math.max(work.width, work.height);
   if (longest > 1024) {
@@ -83,9 +128,46 @@ img.Image prepareDeviceImage(img.Image source, {int tolerance = 28}) {
       interpolation: img.Interpolation.average,
     );
   }
-  if (!_edgesTransparent(work)) removeEdgeBackground(work, tolerance);
-  removeSpecks(work);
+  if (roundRect != null) {
+    applyRoundRectMask(work, roundRect);
+  } else {
+    if (!_edgesTransparent(work)) removeEdgeBackground(work, tolerance);
+    removeSpecks(work);
+  }
   return fitIntoCircle(work);
+}
+
+/// Purpose: Keep only a rounded rectangle filling the image.
+/// Inputs: `image` (RGBA, modified in place); `radiusFraction` — the corner
+/// radius as a fraction of the shorter side.
+/// Returns: None.
+/// Side effects: Scales alpha down outside the rounded rectangle.
+/// Notes: Coverage is sampled 4×4 per pixel, so the edge is antialiased
+/// rather than stair-stepped. The caller crops tightly to the device first.
+void applyRoundRectMask(img.Image image, double radiusFraction) {
+  final w = image.width, h = image.height;
+  final r = math.min(w, h) * radiusFraction;
+  double inside(double x, double y) {
+    final cx = x < r ? r : (x > w - r ? w - r : x);
+    final cy = y < r ? r : (y > h - r ? h - r : y);
+    final dx = x - cx, dy = y - cy;
+    return dx * dx + dy * dy <= r * r ? 1 : 0;
+  }
+
+  for (var y = 0; y < h; y++) {
+    for (var x = 0; x < w; x++) {
+      // Only pixels near a corner can be partly outside.
+      if ((x >= r && x < w - r) || (y >= r && y < h - r)) continue;
+      var cover = 0.0;
+      for (var sy = 0; sy < 4; sy++) {
+        for (var sx = 0; sx < 4; sx++) {
+          cover += inside(x + (sx + 0.5) / 4, y + (sy + 0.5) / 4);
+        }
+      }
+      final p = image.getPixel(x, y);
+      p.a = (p.a * cover / 16).round();
+    }
+  }
 }
 
 /// Purpose: Clear small opaque islands left behind by background removal.

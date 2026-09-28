@@ -121,3 +121,15 @@ editor repeatedly doesn't re-parse the bundled JSON every time.
 - [Devices](devices.md) for how `CpuInfo`/`GpuInfo`/device fields get filled in from
   search results or presets.
 - [Data Formats](../data-formats.md) for the exact `CpuInfo`/`GpuInfo` shapes.
+
+Template-picker icons use the bundled `brands.json` catalogue (case-insensitive exact brand
+matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
+transparent SVG in a square 64% of the avatar diameter; no part is cropped by the circle.
+Monochrome brand marks follow the theme foreground colour; CloudCone retains its original transparent PNG colours. Brands without an asset retain their
+category icon. This picker decoration does not modify the device's user-selected emoji or image.
+
+The device-template audit covers all 154 entries, enum/field validity, names, dates and preset
+references. CPU/GPU names without a matching detail preset remain usable names, not invalid
+foreign keys. Samsung S26 and Fold8 template dates use sales availability rather than the
+announcement: [S26: 2026-03-11](https://news.samsung.com/global/samsung-galaxy-s26-series-and-galaxy-buds4-series-now-available-worldwide)
+and [Fold8: 2026-08-07](https://news.samsung.com/global/samsung-officially-launches-galaxy-z-fold8-ultra-fold8-flip8-watch-ultra2-and-watch9).

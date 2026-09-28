@@ -15,6 +15,7 @@ import '../services/service_access_patterns.dart';
 import '../services/service_analysis.dart';
 import '../services/service_labels.dart';
 import '../services/service_storage.dart';
+import '../widgets/service_avatar.dart';
 import 'service_access_path_page.dart';
 import 'service_edit_page.dart';
 import 'service_route_edit_page.dart';
@@ -523,7 +524,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
-  /// Purpose: Build and return ports for the current context.
+  /// Purpose: Render port usage cards with brand-aware service avatars.
   /// Inputs: `l10n`, `columns` — per-device cards per row; the conflicts
   /// card and the heading stay full width.
   /// Returns: `Widget`.
@@ -589,7 +590,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
                   ))
                     ListTile(
                       dense: true,
-                      leading: Icon(iconForService(use.service)),
+                      leading: ServiceAvatar.fromService(use.service, size: 24),
                       title: Text('${use.transport.name}/${use.port}'),
                       subtitle: Text(
                         [
@@ -770,7 +771,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     return entries;
   }
 
-  /// Purpose: Provide the internal service route group card helper for this file.
+  /// Purpose: Render a service's route group with its brand-aware avatar.
   /// Inputs: `l10n`, `serviceId`, `routes`.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
@@ -787,11 +788,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
         .toList();
     return Card(
       child: ExpansionTile(
-        leading: CircleAvatar(
-          child: Icon(
-            service == null ? Icons.alt_route : iconForService(service),
-          ),
-        ),
+        leading: service == null
+            ? const CircleAvatar(child: Icon(Icons.alt_route))
+            : ServiceAvatar.fromService(service),
         title: Text(service?.name ?? serviceId),
         subtitle: Text(
           [
@@ -854,7 +853,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     );
   }
 
-  /// Purpose: Provide the internal service tile helper for this file.
+  /// Purpose: Render a service list tile with its brand-aware avatar.
   /// Inputs: `service`.
   /// Returns: `Widget`.
   /// Side effects: May update UI state or trigger user-facing flows.
@@ -868,7 +867,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
         .map((endpoint) => '${endpoint.protocol.name}/${endpoint.portText}')
         .join(', ');
     return ListTile(
-      leading: CircleAvatar(child: Icon(iconForService(service), size: 22)),
+      leading: ServiceAvatar.fromService(service, size: 40),
       title: Text(service.name),
       subtitle: Text(
         [

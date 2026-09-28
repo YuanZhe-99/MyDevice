@@ -26,6 +26,9 @@ from a node-specific draft (`ServiceAccessDraft.forNode`) — by `_editRoute` fo
 that fits it, and by the advanced editor's "Guided editor" action. It pops `true` after a save or a delete and nothing when the
 user backs out.
 
+Selected services and service-picker rows use `ServiceAvatar.fromService` for local brand artwork;
+empty picker slots retain their generic add icon. The numbered section headings remain unchanged.
+
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
@@ -70,8 +73,8 @@ user backs out.
 | `_showServicePicker` | method (`_ServiceAccessPathPageState`) | B | Open `_ServicePickerSheet` and return the picked service. |
 | `serviceAccessPatternIcon` | top-level function | B | The icon of a pattern card, matching the route-method icons. |
 | `_splitTargets` | top-level function | B | Split the targets field by line or comma. |
-| `_ServiceTile` constructor | constructor | B | Tile showing a chosen service, or a prompt to choose one. |
-| `build` | method (widget build, `_ServiceTile`) | B | Card with icon, name, device and ports; error text below. |
+| `_ServiceTile` constructor | constructor | B | Tile showing a chosen service with brand avatar, or a prompt to choose one. |
+| `build` | method (widget build, `_ServiceTile`) | B | Card with brand avatar, name, device and ports; error text below. |
 | `_EndpointChips` constructor | constructor | B | Endpoint choice chips plus an add chip. |
 | `build` | method (widget build, `_EndpointChips`) | B | Chips keyed `<prefix>-<endpoint id>`, optional "none" chip. |
 | `_PatternCard` constructor | constructor | B | One selectable pattern card. |
@@ -81,9 +84,9 @@ user backs out.
 | `dispose` | method (`_ServicePickerSheetState`) | B | Dispose the search controller. |
 | `_deviceName` | method (`_ServicePickerSheetState`) | B | A service's device name. |
 | `_matches` | method (`_ServicePickerSheetState`) | B | Search match on service name, device name and ports. |
-| [`build`](#pickerbuild) | method (widget build, `_ServicePickerSheetState`) | A | Suggested services first, then the rest grouped by device. |
+| [`build`](#pickerbuild) | method (widget build, `_ServicePickerSheetState`) | A | Brand-aware service rows, suggested services first, then the rest grouped by device. |
 | `_header` | method (widget helper) | B | Group heading. |
-| `_tile` | method (widget helper) | B | One service row, keyed `access-pick-<id>`. |
+| `_tile` | method (widget helper) | B | One service row with its brand avatar, keyed `access-pick-<id>`. |
 
 ## Documentation
 
@@ -278,7 +281,7 @@ user backs out.
 ### `Widget build(BuildContext context)` (`_ServicePickerSheetState`) <a id="pickerbuild"></a>
 - **Kind:** method (widget build) of `_ServicePickerSheetState`
 - **Source:** `lib/features/services/views/service_access_path_page.dart` (line 1724)
-- **Purpose:** Render the searchable service picker.
+- **Purpose:** Render the searchable service picker with brand-aware service rows.
 - **Inputs:** `context`. **Returns:** The widget tree. **Side effects:** None.
 - **Algorithm:** Filter by the search text (service name, device name, ports); sort by device,
   then name; show the suggested services first under their own heading and the others after,

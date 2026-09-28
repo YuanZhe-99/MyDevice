@@ -35,6 +35,9 @@ topology sub-flow out — 16 declarations to [`service_topology_page.md`](servic
 and 18 to [`service_topology_widgets.md`](service_topology_widgets.md), including the ten tail
 helpers that had no `/// Purpose:` block here.
 
+Service rows and route-group headers use `ServiceAvatar.fromService` for matching local brand SVGs.
+Route-method and device icons keep their existing Material rendering.
+
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
@@ -60,13 +63,13 @@ helpers that had no `/// Purpose:` block here.
 | `_buildOverview` | method (widget helper) | B | Render the overview view: metric cards (columns from `serviceMetricColumns`), topology card, warnings, route groups, service list. |
 | `_buildDevices` | method (widget helper) | B | Render the by-device view: services grouped and expandable per device, the cards in `adaptiveTileRows` at the given column count. |
 | `_buildRoutes` | method (widget helper, `_ServiceListPageState`) | B | Render the routes view: one card per route, in `adaptiveTileRows`. |
-| `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage cards, the cards in `adaptiveTileRows`. |
+| `_buildPorts` | method (widget helper) | B | Render the ports view: port-conflicts banner plus per-device port usage cards with brand-aware service avatars, the cards in `adaptiveTileRows`. |
 | `_topologyCard` | method (widget helper) | B | Render the overview's topology summary card; the header/actions row is gated by `useTopologyActionsRow` from `adaptive_layout.dart`. |
 | `_openTopology` | method (`_ServiceListPageState`) | B | Push `ServiceTopologyPage` for a built graph, with this page's editors and a `reload` that reloads and returns the inventory. |
 | [`_routesGroupedByService`](#routesgroupedbyservice) | method (`_ServiceListPageState`) | A | Group routes by source service id and sort the groups by service name. |
-| `_serviceRouteGroupCard` | method (widget helper) | B | Render one service's route group as an expandable card. |
+| `_serviceRouteGroupCard` | method (widget helper) | B | Render one service's route group as an expandable card with its brand avatar. |
 | `_metricCard` | method (widget helper) | B | Render one overview metric tile (icon, value, label). |
-| `_serviceTile` | method (widget helper) | B | Render one service's list tile (icon, device, endpoints, route count, menu). |
+| `_serviceTile` | method (widget helper) | B | Render one service's list tile (brand avatar, device, endpoints, route count, menu). |
 | `_routeCard` | method (widget helper) | B | Render one route's summary card, led by its primary method's icon (`iconForRouteMethod`). |
 | [`_hopLabel`](#hoplabel) | method (`_ServiceListPageState`) | A | Compute a display label for one route hop. |
 | [`_routeSummary`](#routesummary) | method (`_ServiceListPageState`) | A | Build the "source -> hops -> targets" summary line for a route. |

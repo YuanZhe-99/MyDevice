@@ -229,3 +229,9 @@ of whether it carries the auto-generated comment.
   the preset lookup because the VPS templates author `architecture` and core counts for chips such
   as `Intel Xeon` and `Ampere Altra` that are deliberately absent from `cpus.json`, so the preset
   lookup could never have recovered them.
+
+Template-picker icons use the bundled `brands.json` catalogue (case-insensitive exact brand
+matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
+transparent SVG in a square 64% of the avatar diameter; no part is cropped by the circle.
+Monochrome brand marks follow the theme foreground colour; CloudCone retains its original transparent PNG colours. Brands without an asset retain their
+category icon. This picker decoration does not modify the device's user-selected emoji or image.

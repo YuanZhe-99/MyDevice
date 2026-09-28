@@ -4,6 +4,8 @@
 
 **行数说明：** `grep -c 'Purpose:' service_list_page.dart` 返回 **34**，每个块都恰好坐在真实声明正上方，每个声明也都有块：下面共 **34** 行，分 **7 个 Tier A / 27 个 Tier B**。1.5.6 移除了快速访问对话框（`_QuickAccessMethod`——其第一个枚举常量携带着唯一一个不文档化任何声明的块——以及 `_QuickAccessRouteDialog` 及其状态）、`_warningText`（现为 `service_labels.dart` 中的 `serviceWarningLabel`），以及只有该对话框使用的两个尾部辅助（`_splitTargets`、`_emptyToNull`）；`_isFrpLikeService` 移到了 [`service_access_patterns.md`](../services/service_access_patterns.md)。随后它把整个拓扑子流程移出——16 个声明移到 [`service_topology_page.md`](service_topology_page.md)，18 个移到 [`service_topology_widgets.md`](service_topology_widgets.md)，其中包括此前在这里没有 `/// Purpose:` 块的十个尾部辅助。
 
+服务列表项和路径分组标题使用 `ServiceAvatar.fromService` 显示匹配的本地品牌 SVG；路径方法和设备图标仍使用原有 Material 图标。
+
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
@@ -29,13 +31,13 @@
 | `_buildOverview` | 方法（组件辅助） | B | 渲染总览视图：指标卡片（列数来自 `serviceMetricColumns`）、拓扑卡片、警告、路由组、服务列表。 |
 | `_buildDevices` | 方法（组件辅助） | B | 渲染按设备视图：每设备分组并可展开的服务，卡片按给定列数放入 `adaptiveTileRows`。 |
 | `_buildRoutes` | 方法（组件辅助，`_ServiceListPageState`） | B | 渲染路由视图：每路由一张卡片，放入 `adaptiveTileRows`。 |
-| `_buildPorts` | 方法（组件辅助） | B | 渲染端口视图：端口冲突横幅加逐设备端口使用卡片，卡片放入 `adaptiveTileRows`。 |
+| `_buildPorts` | 方法（组件辅助） | B | 渲染端口视图：冲突提示及按设备分组的端口卡片，服务带品牌头像。 |
 | `_topologyCard` | 方法（组件辅助） | B | 渲染总览拓扑摘要卡片；页头/操作行由 `adaptive_layout.dart` 的 `useTopologyActionsRow` 门控。 |
 | `_openTopology` | 方法（`_ServiceListPageState`） | B | 为构建图压入 `ServiceTopologyPage`，附带本页的编辑器和一个重载并返回清单的 `reload`。 |
 | [`_routesGroupedByService`](#routesgroupedbyservice) | 方法（`_ServiceListPageState`） | A | 按源服务 id 分组路由并按服务名排序组。 |
-| `_serviceRouteGroupCard` | 方法（组件辅助） | B | 渲染一个服务的路由组为可展开卡片。 |
+| `_serviceRouteGroupCard` | 方法（组件辅助） | B | 显示带品牌图标的服务访问路径分组卡片。 |
 | `_metricCard` | 方法（组件辅助） | B | 渲染一个总览指标块（图标、值、标签）。 |
-| `_serviceTile` | 方法（组件辅助） | B | 渲染一个服务列表块（图标、设备、端点、路由数、菜单）。 |
+| `_serviceTile` | 方法（组件辅助） | B | 显示服务列表项及其品牌图标、设备、端点、路径数和菜单。 |
 | `_routeCard` | 方法（组件辅助） | B | 渲染一个路由摘要卡片，以其主方法的图标（`iconForRouteMethod`）开头。 |
 | [`_hopLabel`](#hoplabel) | 方法（`_ServiceListPageState`） | A | 为一个路由跳计算显示标签。 |
 | [`_routeSummary`](#routesummary) | 方法（`_ServiceListPageState`） | A | 为路由构建"源 -> 跳 -> 目标"摘要行。 |

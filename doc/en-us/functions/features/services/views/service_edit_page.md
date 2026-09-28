@@ -15,6 +15,9 @@ after a save (carrying the saved node) or a delete, and nothing when the user ba
 endpoint dialog it opens is the shared `showServiceEndpointDialog`
 ([service_endpoint_dialog.md](service_endpoint_dialog.md)).
 
+The template picker and current-icon preview use `ServiceAvatar` to show a local brand SVG for the
+selected template, with the service icon key available as fallback.
+
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
@@ -37,14 +40,14 @@ endpoint dialog it opens is the shared `showServiceEndpointDialog`
 | `_editEndpoint` | method (`_ServiceEditPageState`) | B | Open `showServiceEndpointDialog` pre-filled from an existing endpoint and replace it in place. |
 | `build` | method (widget build, `_ServiceEditPageState`) | B | Render the scaffold (save/delete actions) around `_buildFormBody`. |
 | `_buildFormBody` | method (widget helper) | B | Choose the layout inside the one `Form`: a single `ListView` of both halves, or — when `useDetailTwoPane` passes — a `Row` of an `editFormLeftPaneWidth`-wide scrolling identity pane and a right `ListView` of the details. Both panes scroll. |
-| `_buildIdentityFields` | method (widget helper) | B | Name, device, template button, icon + kind, icon name, runtime, state — extracted from `build` unchanged. |
+| `_buildIdentityFields` | method (widget helper) | B | Name, device, template button, brand-aware icon preview + kind, icon name, runtime, state. |
 | `_buildDetailFields` | method (widget helper) | B | Endpoint cards, notes, the Compose editor and the save button — extracted from `build` unchanged. |
 | `_emptyToNull` | top-level function | B | Trim a string and convert an empty result to `null`. |
 | `_ServiceTemplatePicker` constructor | constructor (`_ServiceTemplatePicker`) | B | Create a service template picker instance. |
 | `createState` | method (`_ServiceTemplatePicker`) | B | Create the mutable state object for the template picker widget. |
 | `dispose` | method (`_ServiceTemplatePickerState`) | B | Dispose the search text controller. |
 | [`_filteredTemplates`](#filteredtemplates) | getter (`_ServiceTemplatePickerState`) | A | Filter templates by selected kind/search query and sort them (featured first, then kind, then name). |
-| `build` | method (widget build, `_ServiceTemplatePickerState`) | B | Render the draggable template picker sheet (search field, kind chips, template list); opens at `sheetInitialSize(window height, preferred: 0.82)`, capped at `sheetMaxSize`. |
+| `build` | method (widget build, `_ServiceTemplatePickerState`) | B | Render the draggable template picker sheet (search field, kind chips, template list with brand avatars); opens at `sheetInitialSize(window height, preferred: 0.82)`, capped at `sheetMaxSize`. |
 
 ## Documentation
 

@@ -2,6 +2,8 @@
 
 创建/编辑单个 `ServiceNode` 的 Flutter 视图（[服务与拓扑](../../../../features/services-topology.md) 描述的手动服务清单条目）。它托管增/改表单（名、设备、kind、runtime、state、端点列表、备注、Docker Compose 文本）加从 `service_template_service.dart` 模板预填字段的底部面板模板选择器（`_ServiceTemplatePicker`）——匹配仅手动清单约束（模板只预填；绝不执行发现）。持久化经 `ServiceStorage.addOrUpdateService`/`deleteService`（`lib/features/services/services/service_storage.dart`）；设备选择列表来自过滤到 `device.isInService` 的 `DeviceStorage.load()`。页面从 `lib/features/services/views/service_list_page.dart` 压入，也会——带 `template` 和 `deviceId`——从引导式访问路径流程的"新建中继服务…"操作压入。它在保存后（携带保存的节点）或删除后弹出 `ServiceEditOutcome`，用户直接返回时什么也不弹出。它打开的端点对话框是共享的 `showServiceEndpointDialog`（[service_endpoint_dialog.md](service_endpoint_dialog.md)）。
 
+模板选择器和当前图标预览使用 `ServiceAvatar` 显示所选模板对应的本地品牌 SVG，并保留服务图标键作为回退。
+
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
@@ -24,14 +26,14 @@
 | `_editEndpoint` | 方法（`_ServiceEditPageState`） | B | 打开带既有端点预填的 `showServiceEndpointDialog` 并原地替换。 |
 | `build` | 方法（组件构建，`_ServiceEditPageState`） | B | 围绕 `_buildFormBody` 渲染脚手架（保存/删除操作）。 |
 | `_buildFormBody` | 方法（组件辅助） | B | 在同一个 `Form` 内选择布局：两半合一的单个 `ListView`，或——`useDetailTwoPane` 通过时——一个 `Row`：`editFormLeftPaneWidth` 宽的可滚动身份窗格加右侧细节 `ListView`。两栏都滚动。 |
-| `_buildIdentityFields` | 方法（组件辅助） | B | 名称、设备、模板按钮、图标 + 种类、图标名、运行时、状态——从 `build` 原样抽出。 |
+| `_buildIdentityFields` | 方法（组件辅助） | B | 名称、设备、模板按钮、品牌图标预览与类型、图标名称、运行时和状态。 |
 | `_buildDetailFields` | 方法（组件辅助） | B | 端点卡片、备注、Compose 编辑器和保存按钮——从 `build` 原样抽出。 |
 | `_emptyToNull` | 顶层函数 | B | 修剪字符串并把空结果转换为 `null`。 |
 | `_ServiceTemplatePicker` 构造函数 | 构造函数（`_ServiceTemplatePicker`） | B | 创建服务模板选择器实例。 |
 | `createState` | 方法（`_ServiceTemplatePicker`） | B | 为模板选择器组件创建可变状态对象。 |
 | `dispose` | 方法（`_ServiceTemplatePickerState`） | B | 释放搜索文本控制器。 |
 | [`_filteredTemplates`](#filteredtemplates) | getter（`_ServiceTemplatePickerState`） | A | 按所选 kind/搜索查询过滤模板并排序（featured 先，然后 kind，然后名）。 |
-| `build` | 方法（组件构建，`_ServiceTemplatePickerState`） | B | 渲染可拖拽模板选择器面板（搜索字段、kind chips、模板列表）；以 `sheetInitialSize(窗口高度, preferred: 0.82)` 打开，上限 `sheetMaxSize`。 |
+| `build` | 方法（组件构建，`_ServiceTemplatePickerState`） | B | 构建可拖动的模板选择表单（搜索、类型筛选及带品牌图标的模板列表）；高度由 `sheetInitialSize` 与 `sheetMaxSize` 限制。 |
 
 ## 文档
 

@@ -187,3 +187,14 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
   export.
 - [Platform Notes](platform-notes.md) for Windows/macOS/iOS/Android-specific behavior and
   the desktop API/tray/startup integration.
+
+## Template icons
+
+Service template marks are bundled in `assets/service_icons/`; their source revisions and
+attribution are recorded in `SOURCES.md` there. `ServiceAvatar` resolves them using the stable
+`templateId` when the Material icon is unchanged, so existing services benefit without migration
+and custom icons keep precedence. `TemplateIcon` uses transparent SVG or raster image artwork with `BoxFit.contain`
+in a square 64% of the circle diameter. The full mark, including its corners, fits within the
+circle. Unknown templates and generic protocols retain Material icons. Device template pickers
+use the same containment with the existing `brands.json` assets. No remote image requests run
+inside the app.

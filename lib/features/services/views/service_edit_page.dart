@@ -9,8 +9,8 @@ import '../../devices/services/device_storage.dart';
 import '../models/service.dart';
 import '../services/service_storage.dart';
 import '../services/service_template_service.dart';
+import '../widgets/service_avatar.dart';
 import 'service_endpoint_dialog.dart';
-import 'service_topology_widgets.dart';
 
 /// What the service edit page did, returned when it pops.
 ///
@@ -387,8 +387,8 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     );
   }
 
-  /// Purpose: Build the identity half of the form: name, device, template,
-  /// icon and kind, icon name, runtime, state.
+  /// Purpose: Build the identity half of the form, including the brand-aware
+  /// service icon preview.
   /// Inputs: `l10n`.
   /// Returns: `List<Widget>` ready to spread into a list or column.
   /// Side effects: None beyond building widgets.
@@ -428,7 +428,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       const SizedBox(height: 12),
       Row(
         children: [
-          CircleAvatar(child: Icon(iconForServiceIcon(_icon))),
+          ServiceAvatar(templateId: _templateId, icon: _icon),
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButtonFormField<ServiceKind>(
@@ -641,7 +641,7 @@ class _ServiceTemplatePickerState extends State<_ServiceTemplatePicker> {
     return templates;
   }
 
-  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Purpose: Render the service template picker with brand-aware avatars.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
   /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
@@ -722,8 +722,9 @@ class _ServiceTemplatePickerState extends State<_ServiceTemplatePicker> {
                         )
                         .join(', ');
                     return ListTile(
-                      leading: CircleAvatar(
-                        child: Icon(iconForServiceIcon(template.icon)),
+                      leading: ServiceAvatar(
+                        templateId: template.id,
+                        icon: template.icon,
                       ),
                       title: Text(template.name),
                       subtitle: Text(

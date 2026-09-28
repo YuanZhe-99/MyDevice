@@ -6,6 +6,8 @@
 
 [service_list_page.md](service_list_page.md) 的每个「添加访问方式」入口——应用栏、总览、拓扑卡片、服务的路由组、服务块菜单和拓扑的节点操作，后者从特定于节点的草稿（`ServiceAccessDraft.forNode`）启动本页——以及 `_editRoute`（对每条适合本页的已保存路由）和高级编辑器的「引导式编辑器」操作，都会在根导航器上压入本页。保存或删除后它弹出 `true`，用户直接返回时什么也不弹出。
 
+已选服务和服务选择列表使用 `ServiceAvatar.fromService` 显示本地品牌图案；空选择位置仍显示通用添加图标，编号分节标题保持原样。
+
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
@@ -51,7 +53,7 @@
 | `serviceAccessPatternIcon` | 顶层函数 | B | 模式卡片的图标，与路由方法图标一致。 |
 | `_splitTargets` | 顶层函数 | B | 按行或逗号拆分目标字段。 |
 | `_ServiceTile` 构造函数 | 构造函数 | B | 显示所选服务或提示选择服务的块。 |
-| `build` | 方法（组件构建，`_ServiceTile`） | B | 带图标、名称、设备和端口的卡片；错误文本显示在下方。 |
+| `build` | 方法（组件构建，`_ServiceTile`） | B | 显示带品牌图标、名称、设备和端口的卡片，并在下方显示错误文本。 |
 | `_EndpointChips` 构造函数 | 构造函数 | B | 端点选择 chip 加一个添加 chip。 |
 | `build` | 方法（组件构建，`_EndpointChips`） | B | 以 `<prefix>-<endpoint id>` 为键的 chip，可选的「无」chip。 |
 | `_PatternCard` 构造函数 | 构造函数 | B | 一张可选择的模式卡片。 |
@@ -61,9 +63,9 @@
 | `dispose` | 方法（`_ServicePickerSheetState`） | B | 释放搜索控制器。 |
 | `_deviceName` | 方法（`_ServicePickerSheetState`） | B | 服务的设备名。 |
 | `_matches` | 方法（`_ServicePickerSheetState`） | B | 按服务名、设备名和端口做搜索匹配。 |
-| [`build`](#pickerbuild) | 方法（组件构建，`_ServicePickerSheetState`） | A | 推荐的服务在前，其余按设备分组。 |
+| [`build`](#pickerbuild) | 方法（组件构建，`_ServicePickerSheetState`） | A | 构建带品牌图标的服务行；建议服务优先，其余按设备分组。 |
 | `_header` | 方法（组件辅助） | B | 分组标题。 |
-| `_tile` | 方法（组件辅助） | B | 一行服务，以 `access-pick-<id>` 为键。 |
+| `_tile` | 方法（组件辅助） | B | 构建带品牌图标的服务选择列表项，键为 `access-pick-<id>`。 |
 
 ## 文档
 
@@ -197,7 +199,7 @@
 ### `Widget build(BuildContext context)` (`_ServicePickerSheetState`) <a id="pickerbuild"></a>
 - **种类：** `_ServicePickerSheetState` 的方法（组件构建）
 - **来源：** `lib/features/services/views/service_access_path_page.dart`（第 1724 行）
-- **用途：** 渲染可搜索的服务选择器。
+- **用途：** 渲染包含品牌服务图标的可搜索服务选择器。
 - **输入：** `context`。**返回：** 组件树。**副作用：** 无。
 - **算法：** 按搜索文本（服务名、设备名、端口）过滤；先按设备、再按名称排序；推荐的服务先显示在自己的标题下，其余在后；没有推荐时其余按设备分组。点击某行会弹出其服务。
 - **用法：** `_showServicePicker`。

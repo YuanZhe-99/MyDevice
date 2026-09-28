@@ -275,3 +275,9 @@ to different interfaces on the same port).
   service endpoints, routes, hops, Compose notes, and grouped public targets.
 - [Platform Notes](../platform-notes.md#desktop-local-api-server) — read-only
   `/service/*` API endpoints.
+
+Brand icons in the template picker, service editor, lists and access-path selectors are bundled
+images shown through `ServiceAvatar`. A stored icon differing from its template keeps its Material
+glyph. The topology graph's semantic role glyphs are unchanged. Template defaults are editable
+starting points, not a discovery result; deployment-specific ports and runtimes must match the
+user's installation.

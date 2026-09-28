@@ -1,8 +1,8 @@
 # lib/features/services/views/service_topology_widgets.dart
 
-全屏拓扑（[`service_topology_page.md`](service_topology_page.md)）用来绘制的部件，于 1.5.6 从 `service_list_page.dart` 拆出：`ServiceTopologyNodeCard`（完整卡片，或紧凑节点的小端口 chip，或设备分组框的标题标签页——选中时边框更粗，选择不包含它时变暗，并按标签、角色和车道向屏幕阅读器播报）、`ServiceTopologyEdgePainter`（先绘制设备分组框，再绘制带箭头、按访问车道着色的已路由边，选择所涉及的边会被强调）、`ServiceTopologyLegend`（说明车道和角色颜色的图例）、`fitTransform`（移动模式的「适应窗口」），以及其背后的图标和颜色辅助。`serviceAccessLaneColor` 从引导式访问路径页移到这里，是边画家、图例和该页预览共用的唯一车道颜色规则。`iconForServiceIcon` 和 `iconForService` 的用途不止拓扑：服务列表（[`service_list_page.md`](service_list_page.md)）、服务编辑器及其模板选择器（[`service_edit_page.md`](service_edit_page.md)）和引导式访问路径页（[`service_access_path_page.md`](service_access_path_page.md)）都用它们绘制服务图标。
+全屏拓扑（[`service_topology_page.md`](service_topology_page.md)）用来绘制的部件，于 1.5.6 从 `service_list_page.dart` 拆出：`ServiceTopologyNodeCard`（完整卡片，或紧凑节点的小端口 chip，或设备分组框的标题标签页——选中时边框更粗，选择不包含它时变暗，并按标签、角色和车道向屏幕阅读器播报）、`ServiceTopologyEdgePainter`（先绘制设备分组框，再绘制带箭头、按访问车道着色的已路由边，选择所涉及的边会被强调）、`ServiceTopologyLegend`（说明车道和角色颜色的图例）、`fitTransform`（移动模式的「适应窗口」），以及其背后的图标和颜色辅助。`serviceAccessLaneColor` 从引导式访问路径页移到这里，是边画家、图例和该页预览共用的唯一车道颜色规则。拓扑保留 `iconForService` 作为节点的 Material 图标入口；共享的图标键解析函数位于 [`service_icon.md`](../widgets/service_icon.md)，也供 `ServiceAvatar` 使用。
 
-**行数说明：** `grep -c 'Purpose:' service_topology_widgets.dart` 返回 **28**，下面每个声明一块（**8 个 Tier A / 20 个 Tier B**；`fitTransform` 的嵌套函数 `offset` 也计入）。公共常量 `topologyDimmedNodeOpacity`（0.35）和 `topologyDimmedEdgeAlpha`（0.18）在源码中有文档，不单列。拆分时只输出英文的 `topologyLaneLabel` 和 `topologyRoleLabel` 已移除：卡片和详情改用 [`../services/service_labels.md`](../services/service_labels.md) 中本地化的 `serviceAccessLaneLabel` 和 `serviceTopologyRoleLabel`；`_nodeFill` / `_nodeBorder` 则变为以角色为键的 `_roleFill` / `_roleBorder`，以便图例使用。
+**行数说明：** `grep -c 'Purpose:' service_topology_widgets.dart` 返回 **27**，下面每个声明一块（**8 个 Tier A / 19 个 Tier B**；`fitTransform` 的嵌套函数 `offset` 也计入）。公共常量 `topologyDimmedNodeOpacity`（0.35）和 `topologyDimmedEdgeAlpha`（0.18）在源码中有文档，不单列。拆分时只输出英文的 `topologyLaneLabel` 和 `topologyRoleLabel` 已移除：卡片和详情改用 [`../services/service_labels.md`](../services/service_labels.md) 中本地化的 `serviceAccessLaneLabel` 和 `serviceTopologyRoleLabel`；`_nodeFill` / `_nodeBorder` 则变为以角色为键的 `_roleFill` / `_roleBorder`，以便图例使用。
 
 ## 声明
 
@@ -29,8 +29,7 @@
 | `primaryRouteMethod` | 顶层函数 | B | 返回路由首跳方法（如有）。 |
 | `_roleFill` | 顶层函数 | B | 把节点角色映射到其卡片填充色。 |
 | `_roleBorder` | 顶层函数 | B | 把节点角色映射到其卡片边框和图标颜色。 |
-| `iconForServiceIcon` | 顶层函数 | B | 把服务存储图标键映射到其 `IconData`（未知时为 `Icons.dns`）。 |
-| `iconForService` | 顶层函数 | B | 经 `iconForServiceIcon` 解析服务图标。 |
+| `iconForService` | 顶层函数 | B | 将服务 Material 图标解析委托给 `service_icon.dart`。 |
 | `ServiceTopologyLegend`（构造函数） | 构造函数 | B | 创建图例。 |
 | `build` | 方法（组件，`ServiceTopologyLegend`） | B | 把三种车道的线条样本和六种角色的色块连同本地化标签自动换行排列。 |
 | `_entry` | 方法（组件辅助，`ServiceTopologyLegend`） | B | 一个图例条目：色块及其标签。 |

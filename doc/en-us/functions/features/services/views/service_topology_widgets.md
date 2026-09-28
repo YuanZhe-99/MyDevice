@@ -8,14 +8,12 @@ role and lane), `ServiceTopologyEdgePainter` (the device containers, then the ro
 arrow heads, coloured by access lane, the selection's edges emphasized), `ServiceTopologyLegend` (the key to the lane and role colours),
 `fitTransform` (the move mode's Fit), and the icon and colour helpers behind them.
 `serviceAccessLaneColor` — which moved here from the guided access-path page — is the one lane
-colour rule for the painter, the legend and that page's preview. `iconForServiceIcon` and
-`iconForService` reach beyond the topology: the service list
-([`service_list_page.md`](service_list_page.md)), the service editor and its template picker
-([`service_edit_page.md`](service_edit_page.md)) and the guided access-path page
-([`service_access_path_page.md`](service_access_path_page.md)) draw service icons with them.
+colour rule for the painter, the legend and that page's preview. `iconForService` remains here
+for topology callers and delegates Material icon lookup to
+[`service_icon.md`](../widgets/service_icon.md), which is also used by `ServiceAvatar`.
 
-**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **28**, one per
-declaration below (**8 Tier A / 20 Tier B**; the nested `offset` of `fitTransform` counts). The
+**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **27**, one per
+declaration below (**8 Tier A / 19 Tier B**; the nested `offset` of `fitTransform` counts). The
 public constants `topologyDimmedNodeOpacity` (0.35) and `topologyDimmedEdgeAlpha` (0.18) are
 documented in source and not listed. The English-only `topologyLaneLabel` and
 `topologyRoleLabel` of the extraction are gone: cards and details use the localized
@@ -48,7 +46,6 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 | `primaryRouteMethod` | top-level function | B | Return a route's first hop method, if any. |
 | `_roleFill` | top-level function | B | Map a node role to its card fill colour. |
 | `_roleBorder` | top-level function | B | Map a node role to its card border and icon colour. |
-| `iconForServiceIcon` | top-level function | B | Map a service's stored icon key to its `IconData` (`Icons.dns` when unknown). |
 | `iconForService` | top-level function | B | Resolve a service's icon via `iconForServiceIcon`. |
 | `ServiceTopologyLegend` (constructor) | constructor | B | Create the legend. |
 | `build` | method (widget, `ServiceTopologyLegend`) | B | A wrap of the three lane line samples and six role swatches with their localized labels. |

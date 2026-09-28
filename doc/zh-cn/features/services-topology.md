@@ -131,3 +131,7 @@
 - [数据格式](../data-formats.md) — 完整模型字段。
 - [备份与恢复 — Markdown 导出](../backup-restore.md#markdown-export) — Markdown 导出含服务端点、路由、跳、Compose 备注和分组公共目标。
 - [平台说明 — 桌面本地 API 服务器](../platform-notes.md#desktop-local-api-server) — 只读 `/service/*` API 端点。
+
+模板选择器、服务编辑器、列表和访问路径选择器中的品牌图标由 `ServiceAvatar` 显示内置图像。
+存储的图标若与模板不同，继续显示对应 Material 图标。拓扑图的语义角色图标保持不变。
+模板默认值是可编辑的起点，不是自动发现结果；具体端口与运行方式应与用户的部署一致。

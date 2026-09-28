@@ -12,9 +12,9 @@ class ServiceTemplate {
   final bool featured;
 
   /// Purpose: Create a service template instance.
-  /// Inputs: `endpoints`.
+  /// Inputs: Template identity, display fields, defaults, and optional Compose example.
   /// Returns: A new `ServiceTemplate` instance.
-  /// Side effects: May read or mutate application state, storage, or service resources.
+  /// Side effects: None.
   /// Notes: None.
   const ServiceTemplate({
     required this.id,
@@ -28,6 +28,11 @@ class ServiceTemplate {
     this.featured = false,
   });
 
+  /// Purpose: Convert this template into a fresh service instance for one device.
+  /// Inputs: `deviceId`.
+  /// Returns: A new `ServiceNode` with independent endpoint identities.
+  /// Side effects: None.
+  /// Notes: Endpoint IDs are regenerated so separate services never share endpoint IDs.
   ServiceNode toService(String deviceId) => ServiceNode(
     deviceId: deviceId,
     name: name,
@@ -57,11 +62,11 @@ class ServiceTemplate {
 }
 
 class ServiceTemplateService {
-  /// Purpose: Load templates into the current workflow or state.
+  /// Purpose: Return the built-in service template catalog.
   /// Inputs: None.
   /// Returns: `List<ServiceTemplate>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Side effects: None.
+  /// Notes: Returns the shared catalog list instance.
   static List<ServiceTemplate> loadTemplates() => _templates;
 
   static const _emptyCompose = null;
@@ -80,15 +85,57 @@ class ServiceTemplateService {
       'OpenCode',
       'terminal',
       ServiceKind.ai,
-      3000,
+      4096,
       featured: true,
+      runtime: null,
     ),
-    _template(
-      'moonlight',
-      'Moonlight',
-      'sports_esports',
-      ServiceKind.media,
-      47989,
+    ServiceTemplate(
+      id: 'moonlight', // Stable ID retained for existing service records.
+      name: 'Sunshine',
+      icon: 'sports_esports',
+      kind: ServiceKind.media,
+      runtime: null,
+      endpoints: [
+        ServiceEndpoint(
+          label: 'HTTP',
+          protocol: ServiceProtocol.http,
+          transport: ServiceTransport.tcp,
+          port: 47989,
+          scope: ServiceScope.lan,
+        ),
+        ServiceEndpoint(
+          label: 'HTTPS API',
+          protocol: ServiceProtocol.https,
+          transport: ServiceTransport.tcp,
+          port: 47984,
+          scope: ServiceScope.lan,
+        ),
+        ServiceEndpoint(
+          label: 'Web UI',
+          protocol: ServiceProtocol.https,
+          transport: ServiceTransport.tcp,
+          port: 47990,
+          scope: ServiceScope.lan,
+          isPrimary: true,
+        ),
+        ServiceEndpoint(
+          label: 'RTSP',
+          protocol: ServiceProtocol.rtsp,
+          transport: ServiceTransport.tcp,
+          port: 48010,
+          scope: ServiceScope.lan,
+        ),
+        ServiceEndpoint(
+          label: 'Streaming',
+          protocol: ServiceProtocol.udp,
+          transport: ServiceTransport.udp,
+          port: 47998,
+          portEnd: 48000,
+          scope: ServiceScope.lan,
+        ),
+      ],
+      tags: const ['media', 'game-streaming'],
+      featured: true,
     ),
     _template('termix', 'Termix', 'terminal', ServiceKind.dev, 8080),
     _template('sharelatex', 'ShareLaTeX', 'edit_document', ServiceKind.dev, 80),
@@ -121,6 +168,7 @@ class ServiceTemplateService {
       'keyboard_alt',
       ServiceKind.network,
       80,
+      runtime: null,
     ),
     _template(
       'nextcloud',
@@ -154,13 +202,6 @@ class ServiceTemplateService {
           scope: ServiceScope.lan,
           isPrimary: true,
         ),
-        ServiceEndpoint(
-          label: 'HTTPS',
-          protocol: ServiceProtocol.https,
-          transport: ServiceTransport.tcp,
-          port: 8920,
-          scope: ServiceScope.lan,
-        ),
       ],
       tags: const ['media', 'video'],
       featured: true,
@@ -193,13 +234,45 @@ class ServiceTemplateService {
       featured: true,
     ),
     _template('ariang', 'AriaNg', 'download', ServiceKind.web, 80),
-    _template('luci', 'LuCI', 'router', ServiceKind.network, 80),
     _template(
-      'adguard-home',
-      'AdGuard Home',
-      'shield',
+      'luci',
+      'LuCI',
+      'router',
       ServiceKind.network,
-      3000,
+      80,
+      runtime: ServiceRuntime.routerApp,
+    ),
+    ServiceTemplate(
+      id: 'adguard-home',
+      name: 'AdGuard Home',
+      icon: 'shield',
+      kind: ServiceKind.network,
+      runtime: ServiceRuntime.compose,
+      endpoints: [
+        ServiceEndpoint(
+          label: 'Initial setup UI',
+          protocol: ServiceProtocol.http,
+          transport: ServiceTransport.tcp,
+          port: 3000,
+          scope: ServiceScope.lan,
+        ),
+        ServiceEndpoint(
+          label: 'Web UI',
+          protocol: ServiceProtocol.http,
+          transport: ServiceTransport.tcp,
+          port: 80,
+          scope: ServiceScope.lan,
+          isPrimary: true,
+        ),
+        ServiceEndpoint(
+          label: 'DNS',
+          protocol: ServiceProtocol.udp,
+          transport: ServiceTransport.tcpUdp,
+          port: 53,
+          scope: ServiceScope.lan,
+        ),
+      ],
+      tags: const ['dns', 'network'],
     ),
     ServiceTemplate(
       id: 'caddy',
@@ -246,6 +319,8 @@ class ServiceTemplateService {
       ServiceKind.tunnel,
       7000,
       featured: true,
+      protocol: ServiceProtocol.tcp,
+      runtime: null,
     ),
     _template(
       'cloudflare-tunnel',
@@ -254,6 +329,7 @@ class ServiceTemplateService {
       ServiceKind.tunnel,
       null,
       featured: true,
+      runtime: null,
     ),
     ServiceTemplate(
       id: 'cloudflare-tunnel-compose',
@@ -266,12 +342,21 @@ class ServiceTemplateService {
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
-    command: tunnel --no-autoupdate run --token YOUR_TOKEN
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: \${TUNNEL_TOKEN}
     restart: unless-stopped''',
     ),
     _template('nginx', 'Nginx', 'alt_route', ServiceKind.reverseProxy, 80),
     _template('traefik', 'Traefik', 'alt_route', ServiceKind.reverseProxy, 80),
-    _template('portainer', 'Portainer', 'deployed_code', ServiceKind.dev, 9443),
+    _template(
+      'portainer',
+      'Portainer',
+      'deployed_code',
+      ServiceKind.dev,
+      9443,
+      protocol: ServiceProtocol.https,
+    ),
     _template(
       'home-assistant',
       'Home Assistant',
@@ -290,9 +375,24 @@ class ServiceTemplateService {
       'database',
       ServiceKind.database,
       5432,
+      protocol: ServiceProtocol.tcp,
     ),
-    _template('mysql', 'MySQL/MariaDB', 'database', ServiceKind.database, 3306),
-    _template('redis', 'Redis', 'database', ServiceKind.database, 6379),
+    _template(
+      'mysql',
+      'MySQL/MariaDB',
+      'database',
+      ServiceKind.database,
+      3306,
+      protocol: ServiceProtocol.tcp,
+    ),
+    _template(
+      'redis',
+      'Redis',
+      'database',
+      ServiceKind.database,
+      6379,
+      protocol: ServiceProtocol.tcp,
+    ),
     _template('grafana', 'Grafana', 'monitoring', ServiceKind.monitoring, 3000),
     _template(
       'prometheus',
@@ -311,15 +411,75 @@ class ServiceTemplateService {
     _template('open-webui', 'Open WebUI', 'smart_toy', ServiceKind.ai, 8080),
     _template('ollama', 'Ollama', 'memory', ServiceKind.ai, 11434),
     _template('jupyterlab', 'JupyterLab', 'science', ServiceKind.dev, 8888),
-    _template('ssh', 'SSH', 'terminal', ServiceKind.network, 22),
-    _template('rdp', 'RDP', 'desktop_windows', ServiceKind.network, 3389),
-    _template('vnc', 'VNC', 'desktop_windows', ServiceKind.network, 5900),
-    _template('wireguard', 'WireGuard', 'vpn_lock', ServiceKind.network, 51820),
+    _template(
+      'ssh',
+      'SSH',
+      'terminal',
+      ServiceKind.network,
+      22,
+      protocol: ServiceProtocol.ssh,
+      runtime: null,
+    ),
+    _template(
+      'rdp',
+      'RDP',
+      'desktop_windows',
+      ServiceKind.network,
+      3389,
+      protocol: ServiceProtocol.tcp,
+      transport: ServiceTransport.tcpUdp,
+      runtime: null,
+    ),
+    _template(
+      'vnc',
+      'VNC',
+      'desktop_windows',
+      ServiceKind.network,
+      5900,
+      protocol: ServiceProtocol.vnc,
+      runtime: null,
+    ),
+    _template(
+      'wireguard',
+      'WireGuard',
+      'vpn_lock',
+      ServiceKind.network,
+      51820,
+      protocol: ServiceProtocol.udp,
+      transport: ServiceTransport.udp,
+      runtime: null,
+    ),
     _template('tailscale', 'Tailscale', 'vpn_lock', ServiceKind.network, null),
     _template('headscale', 'Headscale', 'vpn_lock', ServiceKind.network, 8080),
-    _template('zerotier', 'ZeroTier', 'vpn_lock', ServiceKind.network, 9993),
-    _template('samba', 'Samba', 'folder_shared', ServiceKind.storage, 445),
-    _template('nfs', 'NFS', 'folder_shared', ServiceKind.storage, 2049),
+    _template(
+      'zerotier',
+      'ZeroTier',
+      'vpn_lock',
+      ServiceKind.network,
+      9993,
+      protocol: ServiceProtocol.udp,
+      transport: ServiceTransport.udp,
+      runtime: null,
+    ),
+    _template(
+      'samba',
+      'Samba',
+      'folder_shared',
+      ServiceKind.storage,
+      445,
+      protocol: ServiceProtocol.tcp,
+      runtime: null,
+    ),
+    _template(
+      'nfs',
+      'NFS',
+      'folder_shared',
+      ServiceKind.storage,
+      2049,
+      protocol: ServiceProtocol.tcp,
+      transport: ServiceTransport.tcpUdp,
+      runtime: null,
+    ),
     _template('webdav', 'WebDAV', 'cloud', ServiceKind.storage, 80),
     _template(
       'minecraft',
@@ -328,6 +488,7 @@ class ServiceTemplateService {
       ServiceKind.game,
       25565,
       featured: true,
+      protocol: ServiceProtocol.minecraft,
     ),
     _template(
       'palworld',
@@ -335,6 +496,8 @@ class ServiceTemplateService {
       'sports_esports',
       ServiceKind.game,
       8211,
+      protocol: ServiceProtocol.udp,
+      transport: ServiceTransport.udp,
     ),
     _template(
       'factorio',
@@ -342,6 +505,8 @@ class ServiceTemplateService {
       'sports_esports',
       ServiceKind.game,
       34197,
+      protocol: ServiceProtocol.udp,
+      transport: ServiceTransport.udp,
     ),
     _template(
       'valheim',
@@ -349,6 +514,9 @@ class ServiceTemplateService {
       'sports_esports',
       ServiceKind.game,
       2456,
+      protocol: ServiceProtocol.udp,
+      transport: ServiceTransport.udp,
+      portEnd: 2457,
     ),
     _template(
       'terraria',
@@ -356,6 +524,7 @@ class ServiceTemplateService {
       'sports_esports',
       ServiceKind.game,
       7777,
+      protocol: ServiceProtocol.tcp,
     ),
     _template(
       'filebrowser-https',
@@ -393,6 +562,7 @@ class ServiceTemplateService {
       'password',
       ServiceKind.web,
       80,
+      path: '/admin',
     ),
     _template('forgejo', 'Forgejo', 'source', ServiceKind.git, 3000),
     _template('gitlab', 'GitLab', 'source', ServiceKind.git, 80),
@@ -421,21 +591,24 @@ class ServiceTemplateService {
       'sports_esports',
       ServiceKind.game,
       19132,
+      protocol: ServiceProtocol.minecraft,
+      transport: ServiceTransport.udp,
     ),
     _template(
       'steamcmd',
       'SteamCMD Server',
       'sports_esports',
       ServiceKind.game,
-      27015,
+      null,
+      runtime: null,
     ),
   ];
 
-  /// Purpose: Provide the internal template helper for this file.
-  /// Inputs: `id`, `name`, `icon`, `kind`, plus related optional values from the signature.
-  /// Returns: `ServiceTemplate`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Construct a catalog template with one optional endpoint.
+  /// Inputs: Identity, display fields, endpoint defaults, and optional runtime metadata.
+  /// Returns: A `ServiceTemplate` with the specified endpoint defaults.
+  /// Side effects: None.
+  /// Notes: A null port creates no endpoint; a null runtime leaves deployment method unspecified.
   static ServiceTemplate _template(
     String id,
     String name,
@@ -443,23 +616,30 @@ class ServiceTemplateService {
     ServiceKind kind,
     int? port, {
     bool featured = false,
+    ServiceProtocol protocol = ServiceProtocol.http,
+    ServiceTransport transport = ServiceTransport.tcp,
+    ServiceRuntime? runtime = ServiceRuntime.compose,
+    int? portEnd,
+    String? path,
   }) {
     return ServiceTemplate(
       id: id,
       name: name,
       icon: icon,
       kind: kind,
-      runtime: ServiceRuntime.compose,
+      runtime: runtime,
       endpoints: port == null
           ? const []
           : [
               ServiceEndpoint(
                 label: 'Default',
-                protocol: port == 443
+                protocol: protocol == ServiceProtocol.http && port == 443
                     ? ServiceProtocol.https
-                    : ServiceProtocol.http,
-                transport: ServiceTransport.tcp,
+                    : protocol,
+                transport: transport,
                 port: port,
+                portEnd: portEnd,
+                path: path,
                 scope: ServiceScope.lan,
                 isPrimary: true,
               ),

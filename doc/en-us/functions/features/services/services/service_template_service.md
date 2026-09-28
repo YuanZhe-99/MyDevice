@@ -18,10 +18,7 @@ matching the manual-inventory-only constraint on the whole feature.
 | [`loadTemplates`](#loadtemplates) | static method (`ServiceTemplateService`) | A | Return the full built-in template catalog. |
 | [`_template`](#_template) | static method (private, `ServiceTemplateService`) | A | Build a `ServiceTemplate` from a compact id/name/icon/kind/port shorthand. |
 
-Row count (4) does not match `grep -c 'Purpose:' service_template_service.dart` (3):
-[`toService`](#servicetemplate-toservice) has no `/// Purpose:` doc comment in source at
-all (confirmed by reading the file directly — there is no comment of any kind above its
-declaration), while the other three declarations each carry one.
+All four documented declarations have a matching `/// Purpose:` comment in the source.
 
 ## Documentation
 
@@ -47,25 +44,19 @@ declaration), while the other three declarations each carry one.
     runtime: ServiceRuntime.compose,
     endpoints: [
       ServiceEndpoint(label: 'Web UI', protocol: ServiceProtocol.http, ...),
-      ServiceEndpoint(label: 'HTTPS', protocol: ServiceProtocol.https, ...),
     ],
     tags: const ['media', 'video'],
     featured: true,
     dockerCompose: '''services:\n  jellyfin:\n    image: jellyfin/jellyfin\n...''',
   ),
   ```
-  (one of three catalog entries — Jellyfin, Caddy, Cloudflare Tunnel (Docker) — built by
-  calling this constructor directly for templates that need multiple endpoints or a
-  Compose example; every other catalog entry goes through the [`_template`](#_template)
-  shorthand instead)
-- **Notes:** This constructor is not `const`-callable when `endpoints`/`tags` are
-  non-empty list literals built per entry (Dart still allows `const` collection literals
-  here since every argument is itself a compile-time constant), so every one of the ~90
-  catalog entries is a literal, not built at runtime.
+  (catalog entries with specialized endpoint lists or Compose examples are built directly;
+  the remaining one-endpoint entries use the [`_template`](#_template) shorthand)
+- **Notes:** Catalog entries are initialized as static literals when the library loads.
 
 ### `ServiceNode toService(String deviceId)` <a id="servicetemplate-toservice"></a>
 - **Kind:** method of `ServiceTemplate`.
-- **Source:** `lib/features/services/services/service_template_service.dart` (line 31).
+- **Source:** `lib/features/services/services/service_template_service.dart` (line 36).
 - **Purpose:** Convert this template into a fresh `ServiceNode` attached to a given
   device, copying every endpoint into a new `ServiceEndpoint` (with its own fresh
   auto-generated `id`, since `ServiceEndpoint`'s constructor mints one when none is
@@ -94,7 +85,7 @@ declaration), while the other three declarations each carry one.
 
 ### `static List<ServiceTemplate> loadTemplates()` <a id="loadtemplates"></a>
 - **Kind:** static method of `ServiceTemplateService`.
-- **Source:** `lib/features/services/services/service_template_service.dart` (line 65).
+- **Source:** `lib/features/services/services/service_template_service.dart` (line 70).
 - **Purpose:** Return the full built-in template catalog.
 - **Inputs:** None.
 - **Returns:** `List<ServiceTemplate>` — the static `_templates` list (~90 entries as of
@@ -116,25 +107,25 @@ declaration), while the other three declarations each carry one.
   this codebase mutates it, but a caller technically could, since `_templates` is
   `List<ServiceTemplate>`, not an unmodifiable view.
 
-### `static ServiceTemplate _template(String id, String name, String icon, ServiceKind kind, int? port, {bool featured = false})` <a id="_template"></a>
+### `static ServiceTemplate _template(String id, String name, String icon, ServiceKind kind, int? port, {bool featured = false, ServiceProtocol protocol = ServiceProtocol.http, ServiceTransport transport = ServiceTransport.tcp, ServiceRuntime? runtime = ServiceRuntime.compose, int? portEnd, String? path})` <a id="_template"></a>
 - **Kind:** private static method of `ServiceTemplateService`.
-- **Source:** `lib/features/services/services/service_template_service.dart` (line 439).
+- **Source:** `lib/features/services/services/service_template_service.dart` (line 560).
 - **Purpose:** Build a `ServiceTemplate` from a compact shorthand — an id, display name,
-  icon, `ServiceKind`, and a single default port — used for the large majority of catalog
-  entries that only need one endpoint and no Compose example.
+  icon, `ServiceKind`, and a single default port, with explicit protocol, transport, and
+  runtime overrides for non-HTTP and host-managed services.
 - **Inputs:** `id`, `name`, `icon`, `kind`, `port` (nullable — `null` means "no default
   endpoint", e.g. Cloudflare Tunnel/Tailscale which have no fixed listening port);
-  optional `featured`.
-- **Returns:** A new `ServiceTemplate` with `runtime: ServiceRuntime.compose`, `tags:
-  [kind.name]`, and (when `port` is non-null) a single default endpoint.
+  optional `featured`, `protocol`, `transport`, `runtime`, `portEnd`, and `path` (defaulting
+  to HTTP/TCP/Compose; `runtime: null` leaves the deployment method unspecified).
+- **Returns:** A new `ServiceTemplate` with `tags: [kind.name]` and (when `port` is
+  non-null) one endpoint. Port 443 upgrades the default HTTP protocol to HTTPS; an explicit
+  protocol override is retained.
 - **Side effects:** None.
 - **Algorithm:** 1. If `port` is `null`, `endpoints` is `[]`. 2. Otherwise, build one
-  `ServiceEndpoint` labeled `'Default'`, with `protocol` chosen as `https` when
-  `port == 443` else `http`, `transport: tcp`, `scope: lan`, `isPrimary: true`. 3.
-  `dockerCompose` is always `_emptyCompose` (a `const null`), so shorthand templates never
-  carry an example Compose file — only the templates built via the full
-  [`ServiceTemplate`](#servicetemplate-new) constructor directly (Jellyfin, Caddy,
-  Cloudflare Tunnel (Docker)) do.
+  `ServiceEndpoint` labeled `'Default'` using the supplied transport and protocol, with
+  the default HTTP protocol upgraded to HTTPS at port 443; set `scope: lan` and
+  `isPrimary: true`. 3. `dockerCompose` is always `_emptyCompose` (`null`); entries needing
+  multiple endpoints or Compose examples use direct constructor calls.
 - **Usage:**
   ```dart
   _template('gitea', 'Gitea', 'source', ServiceKind.git, 3000, featured: true),
@@ -142,6 +133,35 @@ declaration), while the other three declarations each carry one.
   _template('tailscale', 'Tailscale', 'vpn_lock', ServiceKind.network, null),
   ```
   (the majority of entries in the `_templates` list literal in this same file)
-- **Notes:** The `port == 443 ? https : http` inference is the only place protocol is
-  guessed rather than stated explicitly — every multi-endpoint template built via the
-  full constructor instead states each endpoint's `protocol` directly.
+- **Notes:** Protocol, transport, and runtime exceptions are stated at each affected
+  catalog entry; the defaults suit the common HTTP-over-TCP Compose deployment.
+
+## Catalog audit notes
+
+The catalog keeps endpoint protocol separate from transport. Non-HTTP defaults identify
+database TCP, SSH/VNC, RDP TCP/UDP, VPN UDP, SMB TCP, and NFS TCP/UDP. The displayed
+Sunshine host retains the historical `moonlight` ID so existing records continue to resolve.
+AdGuard Home records 3000/TCP for initial setup, 80/TCP for its web interface, and 53/TCP+UDP
+for DNS. OpenCode uses its documented `serve` port 4096; FRP uses TCP on 7000; Portainer's
+9443 endpoint is HTTPS. Jellyfin omits optional HTTPS port 8920 because its Compose example
+does not enable it. Runtime stays unset for platform-dependent SSH/RDP/VNC, NanoKVM USB
+Gateway, and SteamCMD; LuCI is a router app. SteamCMD has no single game-server port.
+Vaultwarden Admin uses `/admin` on the same web endpoint. Cloudflare Compose injects the
+token once through `TUNNEL_TOKEN`.
+
+### Verification references
+
+- [Sunshine Docker port mappings](https://docs.lizardbyte.dev/projects/sunshine/latest/md_DOCKER__README.html)
+- [AdGuard Home ports and Docker setup](https://adguard-dns.io/kb/adguard-home/docker/)
+- [Jellyfin networking](https://jellyfin.org/docs/general/networking/)
+- [Microsoft RDP ports](https://learn.microsoft.com/en-us/troubleshoot/windows-server/remote/ports-used-by-rds)
+- [Portainer HTTPS port 9443](https://docs.portainer.io/faqs/troubleshooting/access-and-authentication/client-sent-an-http-request-to-an-https-server)
+- [OpenCode server port](https://opencode.ai/docs/server/)
+- [FRP server default port](https://github.com/fatedier/frp/blob/dev/conf/frps_full_example.toml)
+- [WireGuard Docker port mapping](https://docs.linuxserver.io/images/docker-wireguard/)
+- [PostgreSQL protocol and port](https://www.postgresql.org/docs/current/protocol.html)
+- [SMB over TCP port 445](https://learn.microsoft.com/en-us/troubleshoot/windows-server/networking/direct-hosting-of-smb-over-tcpip)
+- [Linux NFS server listeners](https://docs.kernel.org/5.16/admin-guide/nfs/nfsd-admin-interfaces.html)
+- [Valheim dedicated-server ports](https://valheim.com/support/a-guide-to-dedicated-servers/)
+- [Factorio multiplayer transport](https://wiki.factorio.com/Multiplayer)
+- [Cloudflare Tunnel token environment variable](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/run-parameters/)

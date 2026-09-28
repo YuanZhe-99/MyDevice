@@ -6,6 +6,7 @@ import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/views/device_map_page.dart';
 import '../../../shared/widgets/adaptive_tile_grid.dart';
+import '../../../shared/widgets/template_icon.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
 import '../services/exchange_rate_service.dart';
@@ -330,18 +331,19 @@ class _DeviceListPageState extends State<DeviceListPage> {
     return false;
   }
 
-  /// Purpose: Add from template through the current flow.
+  /// Purpose: Open the device template picker with bundled brand icons.
   /// Inputs: None.
   /// Returns: `Future<void>`.
   /// Side effects: Opens or updates routes, dialogs, or other UI flows.
   /// Notes: Internal helper used within this file only.
   Future<void> _addFromTemplate() async {
     final templates = await PresetService.loadTemplates();
+    final brands = await PresetService.loadBrands();
     if (!mounted) return;
     final choice = await showModalBottomSheet<_TemplateChoice>(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => _TemplatePicker(templates: templates),
+      builder: (ctx) => _TemplatePicker(templates: templates, brands: brands),
     );
     if (choice != null && mounted) {
       final cpus = await PresetService.loadCpus();
@@ -608,7 +610,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
                 return _DeviceCard(
                   key: ValueKey(device.id),
                   device: device,
-                  categoryLabel: deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
+                  categoryLabel: deviceCategoryLabel(
+                    AppLocalizations.of(context)!,
+                    device.category,
+                  ),
                   defaultCurrency: _defaultCurrency,
                   onTap: () {},
                   trailing: ReorderableDragStartListener(
@@ -667,7 +672,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (columns == 1) return _buildDismissibleCard(device, l10n, theme);
     return _DeviceCard(
       device: device,
-      categoryLabel: deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
+      categoryLabel: deviceCategoryLabel(
+        AppLocalizations.of(context)!,
+        device.category,
+      ),
       defaultCurrency: _defaultCurrency,
       onTap: () => _viewDevice(device),
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -763,7 +771,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
               key: ValueKey('header_${device.category.name}'),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Text(
-                deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
+                deviceCategoryLabel(
+                  AppLocalizations.of(context)!,
+                  device.category,
+                ),
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
@@ -1063,7 +1074,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
       },
       child: _DeviceCard(
         device: device,
-        categoryLabel: deviceCategoryLabel(AppLocalizations.of(context)!, device.category),
+        categoryLabel: deviceCategoryLabel(
+          AppLocalizations.of(context)!,
+          device.category,
+        ),
         defaultCurrency: _defaultCurrency,
         onTap: () => _viewDevice(device),
       ),
@@ -1150,13 +1164,14 @@ class _TemplateChoice {
 
 class _TemplatePicker extends StatefulWidget {
   final List<DeviceTemplate> templates;
+  final List<BrandEntry> brands;
 
   /// Purpose: Create a template picker instance.
-  /// Inputs: None.
+  /// Inputs: `templates` and the bundled `brands` used for their icons.
   /// Returns: A new `_TemplatePicker` instance.
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: None.
-  const _TemplatePicker({required this.templates});
+  const _TemplatePicker({required this.templates, required this.brands});
 
   /// Purpose: Create the mutable state object for this widget.
   /// Inputs: None.
@@ -1226,7 +1241,7 @@ class _TemplatePickerState extends State<_TemplatePicker> {
     }
   }
 
-  /// Purpose: Build the current widget subtree for the active UI state.
+  /// Purpose: Show searchable templates with complete, theme-aware brand icons.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
   /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
@@ -1271,8 +1286,21 @@ class _TemplatePickerState extends State<_TemplatePicker> {
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final t = items[index];
+                final logo = widget.brands
+                    .where(
+                      (brand) =>
+                          brand.name.toLowerCase() == t.brand?.toLowerCase(),
+                    )
+                    .firstOrNull
+                    ?.logo;
                 return ListTile(
-                  leading: Icon(deviceCategoryIcon(t.category)),
+                  leading: TemplateIcon(
+                    asset: logo,
+                    fallback: deviceCategoryIcon(t.category),
+                    foregroundColor: logo?.endsWith('.svg') == true
+                        ? Theme.of(context).colorScheme.onSurface
+                        : null,
+                  ),
                   title: Text(t.name),
                   subtitle: Text(
                     [t.brand, t.cpu, t.ram].where((s) => s != null).join(' · '),

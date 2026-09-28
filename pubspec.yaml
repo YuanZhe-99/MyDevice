@@ -84,6 +84,7 @@ flutter:
   assets:
     - assets/icon/
     - assets/logos/
+    - assets/service_icons/
     - assets/presets/
 
 msix_config:

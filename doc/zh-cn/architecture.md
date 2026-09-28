@@ -131,3 +131,12 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 - [WebDAV 同步](sync.md) 了解记录如何跨设备合并。
 - [备份与恢复](backup-restore.md) 了解本地备份/恢复和 ZIP/Markdown 导出。
 - [平台说明](platform-notes.md) 了解 Windows/macOS/iOS/Android 特有行为和桌面 API/托盘/启动集成。
+
+## 模板图标
+
+服务模板标志内置于 `assets/service_icons/`，来源版本与署名记录在该目录的 `SOURCES.md`。
+`ServiceAvatar` 在 Material 图标未更改时按稳定的 `templateId` 查找品牌标志，
+已有服务无需迁移即可使用，自定义图标仍优先显示。`TemplateIcon` 使用透明 SVG 或位图，
+通过 `BoxFit.contain` 放入边长为圆直径 64% 的正方形，完整图标（包括四角）均位于圆内。
+未知模板和通用协议保留 Material 图标。设备模板选择器对已有 `brands.json` 资源
+使用同样的完整缩放规则。应用内不发起远程图像请求。

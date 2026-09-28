@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1214** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1220** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1336** declarations — 122 more than
-1214 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1341** declarations — 121 more than
+1220 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus the tail
 section of `device.dart`) have no `/// Purpose:` doc comment in
 source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
@@ -17,7 +17,7 @@ number.
 
 The `/// Purpose:` figure is verified against source with
 `grep -r '/// Purpose:' lib --include=*.dart` (excluding `lib/l10n/`). The declaration totals are
-hand-maintained and were **re-audited for 1.5.6**: every per-file row equals the Declarations
+hand-maintained and were **re-audited in the current workspace**: every per-file row equals the Declarations
 table on its own page (rows and Tier A), and the Area totals and the Tier table below are exact
 sums of the per-file rows. Keep it that way: a change that adds or removes a page's rows updates
 its per-file row and both total tables in the same commit.
@@ -25,8 +25,8 @@ its per-file row and both total tables in the same commit.
 | Tier | Count |
 |---|---|
 | Tier A (full entry) | 720 |
-| Tier B (index row only) | 616 |
-| **Total** | **1336** |
+| Tier B (index row only) | 621 |
+| **Total** | **1341** |
 
 ## Root (`lib/`)
 
@@ -100,7 +100,9 @@ its per-file row and both total tables in the same commit.
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
 | `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 39 | 18 |
-| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 28 | 8 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 27 | 8 |
+| `lib/features/services/widgets/service_avatar.dart` | [features/services/widgets/service_avatar.md](features/services/widgets/service_avatar.md) | 3 | 0 |
+| `lib/features/services/widgets/service_icon.dart` | [features/services/widgets/service_icon.md](features/services/widgets/service_icon.md) | 1 | 0 |
 
 ## features/settings/
 
@@ -114,7 +116,7 @@ its per-file row and both total tables in the same commit.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1214/1336 hand-documented declarations above).
+the 1220/1341 hand-documented declarations above).
 
 ## shared/
 
@@ -140,6 +142,7 @@ the 1214/1336 hand-documented declarations above).
 | `lib/shared/widgets/adaptive_tile_grid.dart` | [shared/widgets/adaptive_tile_grid.md](shared/widgets/adaptive_tile_grid.md) | 3 | 3 |
 | `lib/shared/widgets/map_picker_page.dart` | [shared/widgets/map_picker_page.md](shared/widgets/map_picker_page.md) | 6 | 2 |
 | `lib/shared/widgets/shell_scaffold.dart` | [shared/widgets/shell_scaffold.md](shared/widgets/shell_scaffold.md) | 5 | 2 |
+| `lib/shared/widgets/template_icon.dart` | [shared/widgets/template_icon.md](shared/widgets/template_icon.md) | 2 | 0 |
 
 ## Area totals
 
@@ -150,7 +153,7 @@ the 1214/1336 hand-documented declarations above).
 | `features/datasets/` | 4 | 49 | 30 | 19 |
 | `features/devices/` | 15 | 393 | 222 | 171 |
 | `features/network/` | 5 | 75 | 41 | 34 |
-| `features/services/` | 14 | 524 | 228 | 296 |
+| `features/services/` | 16 | 527 | 228 | 299 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 20 | 225 | 159 | 66 |
-| **Total** | **68** | **1336** | **720** | **616** |
+| `shared/` | 21 | 227 | 159 | 68 |
+| **Total** | **71** | **1341** | **720** | **621** |

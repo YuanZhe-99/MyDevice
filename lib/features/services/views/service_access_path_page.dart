@@ -14,6 +14,7 @@ import '../services/service_analysis.dart';
 import '../services/service_labels.dart';
 import '../services/service_storage.dart';
 import '../services/service_template_service.dart';
+import '../widgets/service_avatar.dart';
 import 'service_edit_page.dart';
 import 'service_endpoint_dialog.dart';
 import 'service_route_edit_page.dart';
@@ -1408,7 +1409,7 @@ class _ServiceTile extends StatelessWidget {
     this.onClear,
   });
 
-  /// Purpose: Render the tile.
+  /// Purpose: Render the selected service tile with its brand-aware avatar.
   /// Inputs: `context`.
   /// Returns: The widget tree.
   /// Side effects: None.
@@ -1429,13 +1430,9 @@ class _ServiceTile extends StatelessWidget {
             ),
           ),
           child: ListTile(
-            leading: CircleAvatar(
-              child: Icon(
-                chosen == null
-                    ? Icons.add_circle_outline
-                    : iconForServiceIcon(chosen.icon),
-              ),
-            ),
+            leading: chosen == null
+                ? const CircleAvatar(child: Icon(Icons.add_circle_outline))
+                : ServiceAvatar.fromService(chosen),
             title: Text(
               chosen?.name ?? placeholder,
               maxLines: 1,
@@ -1713,8 +1710,7 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
     return text.contains(query);
   }
 
-  /// Purpose: Render the sheet: title, search field, suggested services,
-  /// then every other service grouped by device.
+  /// Purpose: Render the service picker with brand-aware rows grouped by device.
   /// Inputs: `context`.
   /// Returns: The widget tree.
   /// Side effects: None.
@@ -1812,14 +1808,14 @@ class _ServicePickerSheetState extends State<_ServicePickerSheet> {
     ),
   );
 
-  /// Purpose: Build one service row.
+  /// Purpose: Build one service-picker row with its brand-aware avatar.
   /// Inputs: `context`, `service`.
   /// Returns: `Widget`.
   /// Side effects: None.
   /// Notes: Keyed `access-pick-<service id>`; tapping pops the service.
   Widget _tile(BuildContext context, ServiceNode service) => ListTile(
     key: ValueKey('access-pick-${service.id}'),
-    leading: CircleAvatar(child: Icon(iconForServiceIcon(service.icon))),
+    leading: ServiceAvatar.fromService(service),
     title: Text(service.name),
     subtitle: Text(
       [

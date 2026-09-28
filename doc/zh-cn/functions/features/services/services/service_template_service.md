@@ -11,7 +11,7 @@
 | [`loadTemplates`](#loadtemplates) | 静态方法（`ServiceTemplateService`） | A | 返回完整内置模板目录。 |
 | [`_template`](#_template) | 静态方法（私有，`ServiceTemplateService`） | A | 从紧凑 id/名/图标/kind/端口速记构建 `ServiceTemplate`。 |
 
-行数（4）不匹配 `grep -c 'Purpose:' service_template_service.dart`（3）：[`toService`](#servicetemplate-toservice) 源码完全无 `/// Purpose:` 文档注释（直接读文件确认——其声明上方无任何注释），而其他三个声明各带一个。
+源码中的四个已记录声明现在均有对应的 `/// Purpose:` 注释。
 
 ## 文档
 
@@ -33,19 +33,18 @@
     runtime: ServiceRuntime.compose,
     endpoints: [
       ServiceEndpoint(label: 'Web UI', protocol: ServiceProtocol.http, ...),
-      ServiceEndpoint(label: 'HTTPS', protocol: ServiceProtocol.https, ...),
     ],
     tags: const ['media', 'video'],
     featured: true,
     dockerCompose: '''services:\n  jellyfin:\n    image: jellyfin/jellyfin\n...''',
   ),
   ```
-  （三个目录条目之一——Jellyfin、Caddy、Cloudflare Tunnel (Docker)——对需要多端点或 Compose 示例的模板直接调用此构造函数构建；每个其他目录条目改经 [`_template`](#_template) 速记）
-- **备注：** 此构造函数在 `endpoints`/`tags` 为逐条目构建非空列表字面量时不可 `const` 调用（Dart 这里仍允许 `const` 集合字面量，因为每个参数本身是编译期常量），因此约 90 个目录条目每个都是字面量，非运行时构建。
+  （需要专用端点列表或 Compose 示例的目录项直接调用此构造函数；其余单端点条目使用 [`_template`](#_template) 速记）
+- **备注：** 目录条目在库加载时作为静态字面量初始化。
 
 ### `ServiceNode toService(String deviceId)` <a id="servicetemplate-toservice"></a>
 - **种类：** `ServiceTemplate` 的方法。
-- **来源：** `lib/features/services/services/service_template_service.dart`（第 31 行）。
+- **来源：** `lib/features/services/services/service_template_service.dart`（第 36 行）。
 - **用途：** 把此模板转换为附加到给定设备的新鲜 `ServiceNode`，把每个端点复制进新 `ServiceEndpoint`（带自己新鲜自动生成 `id`，因为 `ServiceEndpoint` 构造函数在未传时铸造一个——见 [`service.md`](../models/service.md#serviceendpoint-new)）。
 - **输入：** `deviceId` — 结果服务所属的设备。
 - **返回：** `templateId` 设为模板 `id` 的新 `ServiceNode`。
@@ -56,7 +55,7 @@
 
 ### `static List<ServiceTemplate> loadTemplates()` <a id="loadtemplates"></a>
 - **种类：** `ServiceTemplateService` 的静态方法。
-- **来源：** `lib/features/services/services/service_template_service.dart`（第 65 行）。
+- **来源：** `lib/features/services/services/service_template_service.dart`（第 70 行）。
 - **用途：** 返回完整内置模板目录。
 - **输入：** 无。
 - **返回：** `List<ServiceTemplate>` — 静态 `_templates` 列表（截至本文件约 90 条目），不过滤不排序。
@@ -72,14 +71,14 @@
   （来自 `service_edit_page.dart` 的 `_filteredTemplates`，它按 kind 和搜索查询过滤、然后置顶排序 featured；同文件 `_templateName` 也用其把存储 `templateId` 解析回显示名）
 - **备注：** 调用方每次调用得到*相同*列表实例（无副本）——本代码库无任何东西修改它，但技术上调用方可，因为 `_templates` 是 `List<ServiceTemplate>`，非不可修改视图。
 
-### `static ServiceTemplate _template(String id, String name, String icon, ServiceKind kind, int? port, {bool featured = false})` <a id="_template"></a>
+### `static ServiceTemplate _template(String id, String name, String icon, ServiceKind kind, int? port, {bool featured = false, ServiceProtocol protocol = ServiceProtocol.http, ServiceTransport transport = ServiceTransport.tcp, ServiceRuntime? runtime = ServiceRuntime.compose, int? portEnd, String? path})` <a id="_template"></a>
 - **种类：** `ServiceTemplateService` 的私有静态方法。
-- **来源：** `lib/features/services/services/service_template_service.dart`（第 439 行）。
-- **用途：** 从紧凑速记——id、显示名、图标、`ServiceKind` 和单个默认端口——构建 `ServiceTemplate`，用于只需要一个端点且无 Compose 示例的绝大多数目录条目。
-- **输入：** `id`、`name`、`icon`、`kind`、`port`（可空——`null` 意为"无默认端点"，如无固定监听端口的 Cloudflare Tunnel/Tailscale）；可选 `featured`。
-- **返回：** 带 `runtime: ServiceRuntime.compose`、`tags: [kind.name]` 和（`port` 非 null 时）单个默认端点的新 `ServiceTemplate`。
+- **来源：** `lib/features/services/services/service_template_service.dart`（第 560 行）。
+- **用途：** 从 id、显示名、图标、`ServiceKind` 和单个默认端口的紧凑速记构建 `ServiceTemplate`，并允许为非 HTTP 与主机管理服务明确指定协议、传输和 runtime。
+- **输入：** `id`、`name`、`icon`、`kind`、`port`（可空——`null` 意为"无默认端点"，如无固定监听端口的 Cloudflare Tunnel/Tailscale）；可选 `featured`、`protocol`、`transport`、`runtime`、`portEnd`、`path`（默认 HTTP/TCP/Compose；`runtime: null` 表示不预设部署方式）。
+- **返回：** 带 `tags: [kind.name]` 且（`port` 非 null 时）带一个端点的新 `ServiceTemplate`。端口 443 会把默认 HTTP 协议升级为 HTTPS；显式协议设置保持原值。
 - **副作用：** 无。
-- **算法：** 1. `port` 为 `null` 时 `endpoints` 为 `[]`。2. 否则构建 `'Default'` 标签、`port == 443` 时 `https` 否则 `http` 的 `protocol`、`transport: tcp`、`scope: lan`、`isPrimary: true` 的一个 `ServiceEndpoint`。3. `dockerCompose` 总是 `_emptyCompose`（`const null`），因此速记模板从不带示例 Compose 文件——只有经完整 [`ServiceTemplate`](#servicetemplate-new) 构造函数直接构建的模板（Jellyfin、Caddy、Cloudflare Tunnel (Docker)）带。
+- **算法：** 1. `port` 为 `null` 时 `endpoints` 为 `[]`。2. 否则构建一个标签为 `'Default'` 的 `ServiceEndpoint`，使用指定的传输和协议；若端口为 443 且协议仍是默认 HTTP，则改为 HTTPS；并设 `scope: lan`、`isPrimary: true`。3. `dockerCompose` 总是 `_emptyCompose`（`null`）；需要多个端点或 Compose 示例的条目直接调用构造函数。
 - **用法：**
   ```dart
   _template('gitea', 'Gitea', 'source', ServiceKind.git, 3000, featured: true),
@@ -87,4 +86,25 @@
   _template('tailscale', 'Tailscale', 'vpn_lock', ServiceKind.network, null),
   ```
   （同文件 `_templates` 列表字面量大多数条目）
-- **备注：** `port == 443 ? https : http` 推断是唯一猜测而非显式陈述协议的地方——经完整构造函数构建的每个多端点模板改直接陈述每个端点 `protocol`。
+- **备注：** 受影响的目录项会显式给出协议、传输和 runtime；默认值适用于常见的 HTTP/TCP Compose 部署。
+
+## 目录审计说明
+
+目录项将端点协议与传输分开。非 HTTP 默认值标明数据库 TCP、SSH/VNC、RDP TCP/UDP、VPN UDP、SMB TCP，以及 NFS TCP/UDP。显示名为 Sunshine 的主机模板保留历史 `moonlight` ID，使已有记录仍可识别。AdGuard Home 记录初始设置 3000/TCP、Web 界面 80/TCP 和 DNS 53/TCP+UDP。OpenCode 使用文档中的 `serve` 默认端口 4096；FRP 使用 TCP 7000；Portainer 的 9443 端点使用 HTTPS。Jellyfin 移除可选的 HTTPS 端口 8920，因为 Compose 示例未启用它。平台相关的 SSH/RDP/VNC、NanoKVM USB Gateway 和 SteamCMD 不预设 runtime；LuCI 标记为路由器应用。SteamCMD 没有统一的游戏服务器端口。Vaultwarden Admin 使用同一 Web 端点的 `/admin` 路径。Cloudflare Compose 只通过 `TUNNEL_TOKEN` 注入令牌。
+
+### 核验资料
+
+- [Sunshine Docker 端口映射](https://docs.lizardbyte.dev/projects/sunshine/latest/md_DOCKER__README.html)
+- [AdGuard Home 端口与 Docker 设置](https://adguard-dns.io/kb/adguard-home/docker/)
+- [Jellyfin 网络配置](https://jellyfin.org/docs/general/networking/)
+- [Microsoft RDP 端口](https://learn.microsoft.com/en-us/troubleshoot/windows-server/remote/ports-used-by-rds)
+- [Portainer HTTPS 端口 9443](https://docs.portainer.io/faqs/troubleshooting/access-and-authentication/client-sent-an-http-request-to-an-https-server)
+- [OpenCode 服务端口](https://opencode.ai/docs/server/)
+- [FRP 默认服务端口](https://github.com/fatedier/frp/blob/dev/conf/frps_full_example.toml)
+- [WireGuard Docker 端口映射](https://docs.linuxserver.io/images/docker-wireguard/)
+- [PostgreSQL 协议与端口](https://www.postgresql.org/docs/current/protocol.html)
+- [SMB TCP 445](https://learn.microsoft.com/en-us/troubleshoot/windows-server/networking/direct-hosting-of-smb-over-tcpip)
+- [Linux NFS 服务端监听端口](https://docs.kernel.org/5.16/admin-guide/nfs/nfsd-admin-interfaces.html)
+- [Valheim 专用服务器端口](https://valheim.com/support/a-guide-to-dedicated-servers/)
+- [Factorio 多人游戏传输协议](https://wiki.factorio.com/Multiplayer)
+- [Cloudflare Tunnel 环境变量令牌](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/configure-tunnels/run-parameters/)

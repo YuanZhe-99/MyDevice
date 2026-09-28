@@ -95,3 +95,14 @@ static Future<List<ChipSearchResult>> searchCpu(...) async {
 
 - [设备](devices.md) 了解 `CpuInfo`/`GpuInfo`/设备字段如何从搜索结果或预设填充。
 - [数据格式](../data-formats.md) 了解精确 `CpuInfo`/`GpuInfo` 形态。
+
+模板选择器图标使用内置 `brands.json` 目录，按品牌名称进行不区分大小写的精确匹配，
+包括已有的路由器和 VPS 提供商标志。`TemplateIcon` 将完整透明 SVG 放在边长为头像直径
+64% 的正方形内，圆形边界不会裁剪图标。单色品牌标志跟随主题前景色；CloudCone 保留原生透明 PNG 的颜色；没有资源的品牌
+保留类别图标。此选择器显示不修改设备的用户自选表情或图像。
+
+设备模板审计覆盖全部 154 项，检查枚举与字段有效性、名称、日期和预设引用。
+没有匹配详细预设的 CPU/GPU 名称仍是可用名称，不是无效外键。Samsung S26 和 Fold8
+模板日期使用开售日期，而非发布会日期：
+[S26：2026-03-11](https://news.samsung.com/global/samsung-galaxy-s26-series-and-galaxy-buds4-series-now-available-worldwide)
+及 [Fold8：2026-08-07](https://news.samsung.com/global/samsung-officially-launches-galaxy-z-fold8-ultra-fold8-flip8-watch-ultra2-and-watch9)。

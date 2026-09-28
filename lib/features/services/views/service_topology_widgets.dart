@@ -9,6 +9,9 @@ import '../models/service.dart';
 import '../services/service_analysis.dart';
 import '../services/service_labels.dart';
 import '../services/service_topology_layout.dart';
+import '../widgets/service_icon.dart';
+
+export '../widgets/service_icon.dart';
 
 /// Opacity of a node card a selection leaves out: low enough that the lit
 /// route reads at a glance, high enough that the rest stays legible and
@@ -673,58 +676,6 @@ Color _roleBorder(ColorScheme cs, ServiceTopologyNodeRole role) {
     ServiceTopologyNodeRole.domain => cs.primary,
   };
 }
-
-/// Purpose: Map a stored service icon name to its Material icon.
-/// Inputs: `icon` — the `ServiceNode.icon` or template icon name.
-/// Returns: `IconData` — `Icons.dns` for an unknown or missing name.
-/// Side effects: None.
-/// Notes: Shared by the service list, the service editor and its template
-/// picker, the guided access-path page and the topology.
-IconData iconForServiceIcon(String? icon) => switch (icon) {
-  'code' => Icons.code,
-  'terminal' => Icons.terminal,
-  'sports_esports' => Icons.sports_esports,
-  'edit_document' => Icons.edit_document,
-  'source' => Icons.source,
-  'folder' => Icons.folder,
-  'keyboard_alt' => Icons.keyboard_alt,
-  'cloud' => Icons.cloud,
-  'password' => Icons.password,
-  'smart_toy' => Icons.smart_toy,
-  'theaters' => Icons.theaters,
-  'article' => Icons.article,
-  'hub' => Icons.hub,
-  'download' => Icons.download,
-  'router' => Icons.router,
-  'shield' => Icons.shield,
-  'alt_route' => Icons.alt_route,
-  'swap_horiz' => Icons.swap_horiz,
-  'cloud_sync' => Icons.cloud_sync,
-  'deployed_code' => Icons.inventory_2,
-  'home' => Icons.home,
-  'photo_library' => Icons.photo_library,
-  'movie' => Icons.movie,
-  'sync' => Icons.sync,
-  'inventory_2' => Icons.inventory_2,
-  'database' => Icons.storage,
-  'monitoring' => Icons.analytics,
-  'monitor_heart' => Icons.monitor_heart,
-  'memory' => Icons.memory,
-  'science' => Icons.science,
-  'desktop_windows' => Icons.desktop_windows,
-  'vpn_lock' => Icons.vpn_lock,
-  'folder_shared' => Icons.folder_shared,
-  'music_note' => Icons.music_note,
-  'search' => Icons.search,
-  'menu_book' => Icons.menu_book,
-  'payments' => Icons.payments,
-  'sticky_note_2' => Icons.sticky_note_2,
-  'precision_manufacturing' => Icons.precision_manufacturing,
-  'rss_feed' => Icons.rss_feed,
-  'fact_check' => Icons.fact_check,
-  'view_kanban' => Icons.view_kanban,
-  _ => Icons.dns,
-};
 
 /// Purpose: Return a service's icon.
 /// Inputs: `service`.

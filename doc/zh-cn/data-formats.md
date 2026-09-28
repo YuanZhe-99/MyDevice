@@ -137,9 +137,20 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 `DeviceTemplate` 两者都会保留：`cpu` 存放型号字符串，而使用对象形态时 `cpuDetail` 存放完整的 `CpuInfo`。
 `toDevice()` 的优先顺序是：先 `cpuDetail`，再 `cpuPresets` 中的精确匹配，最后才是裸型号字符串。
 
+可选的 `image` 指向该设备本身的内置缩略图：
+
+```json
+{ "name": "iPhone 15 Pro", "category": "phone", "brand": "Apple", "model": "iPhone 15 Pro",
+  "image": "assets/device_images/iphone-15-pro-vector.png" }
+```
+
+缩略图是 256 px 见方、背景透明的 PNG，每个可见像素（alpha > 8）都位于内切圆内，因为每个头像都按该圆裁剪。
+缩略图在显示时与设备匹配，绝不存储在设备上（见
+[在线搜索与预设](features/online-search-and-presets.md#device-thumbnails)）。
+
 **新增设备：** 追加条目，运行 `dart run tool/sort_templates.dart` 恢复排序，再运行
 `dart run tool/validate_json.dart`。校验器会检查必填字段、类型、类别枚举、重名以及排序顺序——未排序或格式错误
-的文件会在这里失败，而不是到应用里才出问题。
+的文件会在这里失败，而不是到应用里才出问题。对于 `image`，它还会检查路径、透明四角以及圆内规则。
 
 ## UTC `modifiedAt`
 

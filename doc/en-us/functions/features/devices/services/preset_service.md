@@ -17,6 +17,10 @@ for the bundled-preset concept overview this page verifies against source.
 | [`loadGpus`](#loadgpus) | static method | A | Load and cache the bundled GPU preset list. |
 | [`loadBrands`](#loadbrands) | static method | A | Load and cache the bundled brand list. |
 | [`loadTemplates`](#loadtemplates) | static method | A | Load and cache the bundled device template list. |
+| `cachedTemplates` | static getter | B | Return the template list if already loaded, else null, so widgets can match synchronously. |
+| [`findTemplateImage`](#findtemplateimage) | static method | A | Load the templates and return the thumbnail a device identity matches. |
+| [`matchTemplateImage`](#matchtemplateimage) | static method | A | Match a device identity to a template thumbnail by normalized equality. |
+| `_identityKey` | private static method | B | Lowercase and strip non-alphanumerics to form a comparison key. |
 | [`BrandEntry`](#brandentry-new) | constructor | A | Create a `BrandEntry` instance. |
 | [`BrandEntry.fromJson`](#brandentry-fromjson) | factory constructor | A | Parse a `BrandEntry` from JSON. |
 | [`DeviceTemplate`](#devicetemplate-new) | constructor | A | Create a `DeviceTemplate` instance. |
@@ -25,11 +29,8 @@ for the bundled-preset concept overview this page verifies against source.
 | [`DeviceTemplate.fromJson`](#devicetemplate-fromjson) | factory constructor | A | Parse a `DeviceTemplate` from JSON. |
 | [`DeviceTemplate.toDevice`](#todevice) | method (`DeviceTemplate`) | A | Convert this template into a new `Device`, optionally filling full CPU/GPU detail from presets. |
 
-Row count (12) does not match `grep -c 'Purpose:' preset_service.dart` (11): `DeviceTemplate.fromJson`
-(line 156) has no `/// Purpose:` doc-comment block at all — it is a plain one-line `factory`
-declaration with no preceding doc comment — while every other declaration in the file has one. It
-is still indexed here per the tiering rule that every declaration appears in the table regardless
-of whether it carries the auto-generated comment.
+Row count (16) matches `grep -c 'Purpose:' preset_service.dart` (16) exactly. `DeviceTemplate.fromJson`
+previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started parsing `image`.
 
 ## Documentation
 
@@ -107,9 +108,39 @@ of whether it carries the auto-generated comment.
   shape versus the other three `loadXxx` methods — a plain array instead of `{"templates": [...]}`
   — this is a real, source-confirmed asymmetry, not an inconsistency to "fix" in documentation.
 
+### `static Future<String?> findTemplateImage({String? brand, String? model, String? name})` <a id="findtemplateimage"></a>
+- **Kind:** static method of `PresetService`.
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 101).
+- **Purpose:** Return the bundled thumbnail of the template a device matches.
+- **Inputs:** The device's `brand`, `model` and `name`.
+- **Returns:** The template's `image` asset path, or null.
+- **Side effects:** Loads and caches the template catalog on first use (via
+  [`loadTemplates`](#loadtemplates)).
+- **Algorithm:** `loadTemplates()` then [`matchTemplateImage`](#matchtemplateimage).
+- **Usage:** `DeviceAvatar` calls it while the catalog is not yet cached; once it is,
+  the avatar calls `matchTemplateImage(cachedTemplates!, …)` synchronously.
+- **Notes:** Display-only. The path is never written into the device, so `devices.json`, sync
+  and backup are unchanged, and devices added before thumbnails existed pick one up too.
+
+### `static String? matchTemplateImage(List<DeviceTemplate> templates, {String? brand, String? model, String? name})` <a id="matchtemplateimage"></a>
+- **Kind:** static method of `PresetService`.
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 120).
+- **Purpose:** Match a device identity to a template thumbnail.
+- **Inputs:** `templates`; the device's `brand`, `model`, `name`.
+- **Returns:** The first matching template's `image`, or null.
+- **Side effects:** None.
+- **Algorithm:** Only templates with an `image` take part. Keys are lowercased with every
+  non-alphanumeric removed (`_identityKey`), then compared for **equality**, in this order:
+  1. device brand+model = template brand+model (only when the device has a model);
+  2. device name = template name;
+  3. device brand+model = template name.
+- **Usage:** `PresetService.matchTemplateImage(templates, brand: 'Apple', model: 'iPhone 15 Pro')`.
+- **Notes:** Equality, not containment, so `iPhone 15` never claims the `iPhone 15 Pro` photo and a
+  bare `iPhone` matches nothing. `iPad Pro 13" (M4)` and `ipad pro 13 m4` compare equal.
+
 ### `const BrandEntry({required this.name, this.logo})` <a id="brandentry-new"></a>
 - **Kind:** constructor of `BrandEntry`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 96).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 171).
 - **Purpose:** Hold one bundled brand's display name and optional logo asset reference.
 - **Inputs:** `name` (required); optional `logo`.
 - **Returns:** A new `BrandEntry` instance.
@@ -120,7 +151,7 @@ of whether it carries the auto-generated comment.
 
 ### `factory BrandEntry.fromJson(Map<String, dynamic> json)` <a id="brandentry-fromjson"></a>
 - **Kind:** factory constructor of `BrandEntry`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 103).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 178).
 - **Purpose:** Parse one brand entry from the decoded `brands.json` array.
 - **Inputs:** `json`.
 - **Returns:** A new `BrandEntry` with `name` required and `logo` optional.
@@ -134,9 +165,10 @@ of whether it carries the auto-generated comment.
 
 ### `const DeviceTemplate({required this.name, required this.category, ...})` <a id="devicetemplate-new"></a>
 - **Kind:** constructor of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 128).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 217).
 - **Purpose:** Hold one bundled full-device template's fields (name, category, brand/model,
-  cpu/gpu model strings, ram, storage list, screen, battery, OS, release date).
+  cpu/gpu model strings, ram, storage list, screen, battery, OS, release date, and the optional
+  `image` thumbnail asset).
 - **Inputs:** `name`, `category` required; all other fields optional, `storage` defaults to `[]`.
 - **Returns:** A new `DeviceTemplate` instance.
 - **Side effects:** None.
@@ -148,7 +180,7 @@ of whether it carries the auto-generated comment.
 
 ### `static String? DeviceTemplate._asString(dynamic value)` <a id="_asstring"></a>
 - **Kind:** private static method of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 150).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 244).
 - **Purpose:** Normalize a template's `cpu`/`gpu` JSON field, which may be stored either as a plain
   string or as an object with a `model` key, into a plain string.
 - **Inputs:** `value` — the raw decoded JSON value for `cpu` or `gpu`.
@@ -165,23 +197,23 @@ of whether it carries the auto-generated comment.
 
 ### `factory DeviceTemplate.fromJson(Map<String, dynamic> json)` <a id="devicetemplate-fromjson"></a>
 - **Kind:** factory constructor of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 156).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 270).
 - **Purpose:** Parse one device template from the decoded `device_templates.json` array.
 - **Inputs:** `json`.
 - **Returns:** A new `DeviceTemplate`; `storage` defaults to `[]` if absent; `releaseDate` is parsed
   via `DateTime.parse` only when present.
 - **Side effects:** None.
 - **Algorithm:** Direct field extraction; `category` via `DeviceCategory.fromJson`; `cpu`/`gpu` via
-  [`_asString`](#_asstring); `storage` mapped through `StorageInfo.fromJson` when present.
+  [`_asString`](#_asstring); `storage` mapped through `StorageInfo.fromJson` when present; the
+  optional `image` string copied as is.
 - **Usage:** Called by [`loadTemplates`](#loadtemplates) for each element of the top-level JSON
   array.
-- **Notes:** This declaration has no `/// Purpose:` doc comment in source (see the row-count note
-  above the Declarations table) — its behavior here was confirmed by reading the implementation
-  directly, not by paraphrasing a doc comment.
+- **Notes:** `image` is not checked here; `tool/validate_json.dart` enforces its location and
+  pixel rules.
 
 ### `static CpuInfo? DeviceTemplate._asCpuInfo(dynamic value)` <a id="_ascpuinfo"></a>
 - **Kind:** private static method of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 165).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 260).
 - **Purpose:** Keep the detail an object-form `cpu` carries beyond its model name.
 - **Inputs:** `value` — the raw `cpu` JSON value.
 - **Returns:** A `CpuInfo` when the template authored an object, otherwise null.
@@ -194,7 +226,7 @@ of whether it carries the auto-generated comment.
 
 ### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets, int storageIndex = 0})` <a id="todevice"></a>
 - **Kind:** method of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 187).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 310).
 - **Purpose:** Convert this template into a new `Device`, pre-filling all template fields and
   optionally upgrading the plain `cpu`/`gpu` model-name strings to full `CpuInfo`/`GpuInfo` detail
   by matching them against loaded presets.
@@ -230,8 +262,9 @@ of whether it carries the auto-generated comment.
   as `Intel Xeon` and `Ampere Altra` that are deliberately absent from `cpus.json`, so the preset
   lookup could never have recovered them.
 
-Template-picker icons use the bundled `brands.json` catalogue (case-insensitive exact brand
-matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
+Template-picker icons prefer the template's own `image` thumbnail, shown full-size because it is
+already circle-safe. Without one they use the bundled `brands.json` catalogue (case-insensitive
+exact brand matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
 transparent SVG in a square 64% of the avatar diameter; no part is cropped by the circle.
 Monochrome brand marks follow the theme foreground colour; CloudCone retains its original transparent PNG colours. Brands without an asset retain their
 category icon. This picker decoration does not modify the device's user-selected emoji or image.

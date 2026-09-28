@@ -198,3 +198,10 @@ in a square 64% of the circle diameter. The full mark, including its corners, fi
 circle. Unknown templates and generic protocols retain Material icons. Device template pickers
 use the same containment with the existing `brands.json` assets. No remote image requests run
 inside the app.
+
+Device thumbnails are bundled in `assets/device_images/` (sources and licenses in its
+`SOURCES.md`). Those PNGs are fitted inside the circle when they are made
+(`tool/prepare_device_image.dart`) and are checked by `tool/validate_json.dart`, so they render at
+the full diameter. `DeviceAvatar` shows the thumbnail of a matching template when a device has
+no emoji or photo of its own. The match is computed at display time and is never stored, so
+existing devices benefit without migration and no data format changes.

@@ -1,6 +1,7 @@
 [
   {
     "name": "AirPods Max (USB-C)",
+    "image": "assets/device_images/apple-airpods-max-1.png",
     "category": "headphone",
     "brand": "Apple",
     "model": "AirPods Max (USB-C)",
@@ -410,6 +411,7 @@
   },
   {
     "name": "Google Pixel 10",
+    "image": "assets/device_images/pixel-10-front-obsidian.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 10",
@@ -428,6 +430,7 @@
   },
   {
     "name": "Google Pixel 10 Pro",
+    "image": "assets/device_images/pixel-10-pro-front-obsidian.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 10 Pro",
@@ -447,6 +450,7 @@
   },
   {
     "name": "Google Pixel 10 Pro Fold",
+    "image": "assets/device_images/pixel-10-pro-fold-front-moonstone.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 10 Pro Fold",
@@ -466,6 +470,7 @@
   },
   {
     "name": "Google Pixel 10 Pro XL",
+    "image": "assets/device_images/pixel-10-pro-xl-front-obsidian.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 10 Pro XL",
@@ -486,6 +491,7 @@
   },
   {
     "name": "Google Pixel 8",
+    "image": "assets/device_images/google-pixel-8-illustration.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 8",
@@ -504,6 +510,7 @@
   },
   {
     "name": "Google Pixel 8 Pro",
+    "image": "assets/device_images/google-pixel-8-pro-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 8 Pro",
@@ -524,6 +531,7 @@
   },
   {
     "name": "Google Pixel 8a",
+    "image": "assets/device_images/google-pixel-8a-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 8a",
@@ -542,6 +550,7 @@
   },
   {
     "name": "Google Pixel 9",
+    "image": "assets/device_images/google-pixel-9-obsidian-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 9",
@@ -560,6 +569,7 @@
   },
   {
     "name": "Google Pixel 9 Pro",
+    "image": "assets/device_images/google-pixel-9-pro-hazel-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 9 Pro",
@@ -580,6 +590,7 @@
   },
   {
     "name": "Google Pixel 9 Pro XL",
+    "image": "assets/device_images/google-pixel-9-pro-xl-obsidian-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 9 Pro XL",
@@ -657,6 +668,7 @@
   },
   {
     "name": "iMac 24\" (M4)",
+    "image": "assets/device_images/m1-imac-vector.png",
     "category": "desktop",
     "brand": "Apple",
     "model": "iMac 24-inch (M4)",
@@ -741,6 +753,7 @@
   },
   {
     "name": "Intel NUC 8 (NUC8i5BEH)",
+    "image": "assets/device_images/intel-nuc8.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC8i5BEH",
@@ -754,6 +767,7 @@
   },
   {
     "name": "Intel NUC 8 (NUC8i7BEH)",
+    "image": "assets/device_images/intel-nuc8.png",
     "category": "desktop",
     "brand": "Intel",
     "model": "NUC8i7BEH",
@@ -767,6 +781,7 @@
   },
   {
     "name": "iPad Air 11\" (M3)",
+    "image": "assets/device_images/ipad-air-m3.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad Air 11-inch (M3)",
@@ -787,6 +802,7 @@
   },
   {
     "name": "iPad Air 13\" (M3)",
+    "image": "assets/device_images/ipad-air-m3.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad Air 13-inch (M3)",
@@ -807,6 +823,7 @@
   },
   {
     "name": "iPad mini (A17 Pro)",
+    "image": "assets/device_images/ipad-mini-a17-pro-frontside.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad mini (7th generation)",
@@ -866,6 +883,7 @@
   },
   {
     "name": "iPhone 12",
+    "image": "assets/device_images/iphone-12-blue.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 12",
@@ -885,6 +903,7 @@
   },
   {
     "name": "iPhone 12 mini",
+    "image": "assets/device_images/iphone-12-mini-blue.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 12 mini",
@@ -904,6 +923,7 @@
   },
   {
     "name": "iPhone 12 Pro",
+    "image": "assets/device_images/iphone-12-pro-gold.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 12 Pro",
@@ -942,6 +962,7 @@
   },
   {
     "name": "iPhone 13",
+    "image": "assets/device_images/iphone-13-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 13",
@@ -961,6 +982,7 @@
   },
   {
     "name": "iPhone 13 mini",
+    "image": "assets/device_images/iphone-13-mini-gr-n-freigestellt.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 13 mini",
@@ -980,6 +1002,7 @@
   },
   {
     "name": "iPhone 13 Pro",
+    "image": "assets/device_images/iphone-13-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 13 Pro",
@@ -1000,6 +1023,7 @@
   },
   {
     "name": "iPhone 13 Pro Max",
+    "image": "assets/device_images/iphone-13-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 13 Pro Max",
@@ -1020,6 +1044,7 @@
   },
   {
     "name": "iPhone 14",
+    "image": "assets/device_images/iphone-14-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14",
@@ -1039,6 +1064,7 @@
   },
   {
     "name": "iPhone 14 Plus",
+    "image": "assets/device_images/iphone-14-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14 Plus",
@@ -1058,6 +1084,7 @@
   },
   {
     "name": "iPhone 14 Pro",
+    "image": "assets/device_images/iphone-14-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14 Pro",
@@ -1078,6 +1105,7 @@
   },
   {
     "name": "iPhone 14 Pro Max",
+    "image": "assets/device_images/iphone-14-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14 Pro Max",
@@ -1098,6 +1126,7 @@
   },
   {
     "name": "iPhone 15",
+    "image": "assets/device_images/iphone-15-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15",
@@ -1117,6 +1146,7 @@
   },
   {
     "name": "iPhone 15 Plus",
+    "image": "assets/device_images/iphone-15-plus-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15 Plus",
@@ -1136,6 +1166,7 @@
   },
   {
     "name": "iPhone 15 Pro",
+    "image": "assets/device_images/iphone-15-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15 Pro",
@@ -1156,6 +1187,7 @@
   },
   {
     "name": "iPhone 15 Pro Max",
+    "image": "assets/device_images/iphone-15-pro-max-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15 Pro Max",
@@ -1175,6 +1207,7 @@
   },
   {
     "name": "iPhone 16",
+    "image": "assets/device_images/iphone-16-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16",
@@ -1195,6 +1228,7 @@
   },
   {
     "name": "iPhone 16 Plus",
+    "image": "assets/device_images/iphone-16-plus-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16 Plus",
@@ -1215,6 +1249,7 @@
   },
   {
     "name": "iPhone 16 Pro",
+    "image": "assets/device_images/iphone-16-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16 Pro",
@@ -1236,6 +1271,7 @@
   },
   {
     "name": "iPhone 16 Pro Max",
+    "image": "assets/device_images/iphone-16-pro-max-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16 Pro Max",
@@ -1256,6 +1292,7 @@
   },
   {
     "name": "iPhone 16e",
+    "image": "assets/device_images/iphone-16e-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 16e",
@@ -1276,6 +1313,7 @@
   },
   {
     "name": "iPhone 17",
+    "image": "assets/device_images/iphone-17-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17",
@@ -1293,6 +1331,7 @@
   },
   {
     "name": "iPhone 17 Pro",
+    "image": "assets/device_images/iphone-17-pro-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17 Pro",
@@ -1312,6 +1351,7 @@
   },
   {
     "name": "iPhone 17 Pro Max",
+    "image": "assets/device_images/iphone-17-pro-max-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17 Pro Max",
@@ -1332,6 +1372,7 @@
   },
   {
     "name": "iPhone 17e",
+    "image": "assets/device_images/iphone-17e-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17e",
@@ -1349,6 +1390,7 @@
   },
   {
     "name": "iPhone Air",
+    "image": "assets/device_images/iphone-air-vector.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone Air",
@@ -1410,6 +1452,7 @@
   },
   {
     "name": "Mac Mini (M4 Pro)",
+    "image": "assets/device_images/apple-mac-mini-m4.png",
     "category": "desktop",
     "brand": "Apple",
     "model": "Mac Mini (M4 Pro)",
@@ -1426,6 +1469,7 @@
   },
   {
     "name": "Mac Studio (M4 Ultra)",
+    "image": "assets/device_images/mac-studio-2022-front.png",
     "category": "desktop",
     "brand": "Apple",
     "model": "Mac Studio (M4 Ultra)",
@@ -1442,6 +1486,7 @@
   },
   {
     "name": "MacBook Air 13\" (M4)",
+    "image": "assets/device_images/macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 13-inch (M4)",
@@ -1462,6 +1507,7 @@
   },
   {
     "name": "MacBook Air 13\" (M5)",
+    "image": "assets/device_images/macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 13-inch (M5)",
@@ -1479,6 +1525,7 @@
   },
   {
     "name": "MacBook Air 15\" (M4)",
+    "image": "assets/device_images/macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 15-inch (M4)",
@@ -1499,6 +1546,7 @@
   },
   {
     "name": "MacBook Air 15\" (M5)",
+    "image": "assets/device_images/macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 15-inch (M5)",
@@ -1654,6 +1702,7 @@
   },
   {
     "name": "Nintendo Switch (OLED Model)",
+    "image": "assets/device_images/nintendo-switch-oled.png",
     "category": "gameConsole",
     "brand": "Nintendo",
     "model": "Switch (OLED Model)",
@@ -1670,6 +1719,7 @@
   },
   {
     "name": "Nintendo Switch 2",
+    "image": "assets/device_images/nintendo-switch-2-console-in-handheld-mode.png",
     "category": "gameConsole",
     "brand": "Nintendo",
     "model": "Switch 2",
@@ -1778,6 +1828,7 @@
   },
   {
     "name": "PlayStation 5",
+    "image": "assets/device_images/black-and-white-playstation-5-base-edition-with-controller.png",
     "category": "gameConsole",
     "brand": "Sony",
     "model": "PlayStation 5",
@@ -1804,6 +1855,7 @@
   },
   {
     "name": "Raspberry Pi 5",
+    "image": "assets/device_images/23551-raspberry-pi-5-8g.png",
     "category": "devBoard",
     "brand": "Raspberry Pi",
     "model": "Pi 5",
@@ -1867,6 +1919,7 @@
   },
   {
     "name": "Samsung Galaxy A55",
+    "image": "assets/device_images/galaxy-a55.png",
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy A55",
@@ -1885,6 +1938,7 @@
   },
   {
     "name": "Samsung Galaxy Buds 2",
+    "image": "assets/device_images/samsung-galaxy-buds2-docked.png",
     "category": "headphone",
     "brand": "Samsung",
     "model": "Galaxy Buds2",
@@ -1913,6 +1967,7 @@
   },
   {
     "name": "Samsung Galaxy Buds FE",
+    "image": "assets/device_images/samsung-buds-fe.png",
     "category": "headphone",
     "brand": "Samsung",
     "model": "Galaxy Buds FE",
@@ -2224,6 +2279,7 @@
   },
   {
     "name": "Samsung Galaxy Z Fold7",
+    "image": "assets/device_images/samsung-galaxy-fold7-main-screen-cropped.png",
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy Z Fold7",
@@ -2286,6 +2342,7 @@
   },
   {
     "name": "Sony Xperia 1 VI",
+    "image": "assets/device_images/xperia1vi-01.png",
     "category": "phone",
     "brand": "Sony",
     "model": "Xperia 1 VI",
@@ -2304,6 +2361,7 @@
   },
   {
     "name": "Steam Deck OLED",
+    "image": "assets/device_images/steam-deck-front.png",
     "category": "gameConsole",
     "brand": "Valve",
     "model": "Steam Deck OLED",
@@ -2376,6 +2434,7 @@
   },
   {
     "name": "Xbox Series S",
+    "image": "assets/device_images/xbox-series-s-with-controller-transparent-background.png",
     "category": "gameConsole",
     "brand": "Microsoft",
     "model": "Xbox Series S",
@@ -2389,6 +2448,7 @@
   },
   {
     "name": "Xbox Series X",
+    "image": "assets/device_images/xbox-series-x-2-transparent-background.png",
     "category": "gameConsole",
     "brand": "Microsoft",
     "model": "Xbox Series X",

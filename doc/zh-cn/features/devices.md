@@ -60,6 +60,7 @@ double _logTransform(double value) {
 
 - `emoji` 已设时在 `primaryContainer` 色圆上居中。
 - 否则 `imagePath` 已设时 `ImageService.resolve()` 加载文件，渲染为 `ClipOval` + `BoxFit.cover`，在 `surfaceContainerHighest` 背景上中心裁剪，带微妙 `outlineVariant` 边框——这让透明 PNG 在圆形框内可见。
+- 否则，若设备的品牌+型号（或名称）等于某个带 `image` 的内置模板，则显示该透明缩略图（`PresetService.matchTemplateImage`；规范化后精确匹配，因此 `iPhone 15` 绝不会取用 `iPhone 15 Pro` 的照片）。这只用于显示：不向设备写入任何内容，因此已有设备也能获得缩略图，旧版本则仍显示图标。
 - 任何缺失/失败图像（含 `Image.file` 的 `errorBuilder`）回退一致轮廓类别图标（来自 `device_category_icon.dart` 的 `deviceCategoryIcon(category)`）。
 
 ## 相关

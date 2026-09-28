@@ -12,6 +12,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:image/image.dart' as img;
+
+import 'device_image_check.dart';
+
 /// Device categories accepted by `DeviceCategory.fromJson`.
 ///
 /// Kept in step with `lib/features/devices/models/device.dart` by the
@@ -188,6 +192,9 @@ void _validateTemplates() {
         _fail(path, where, '"releaseDate" must be an ISO-8601 date string');
       }
     }
+
+    final image = entry['image'];
+    if (image != null) _validateDeviceImage(path, where, image);
   }
 
   final seen = <String>{};
@@ -210,6 +217,36 @@ void _validateTemplates() {
   }
 
   stdout.writeln('$path: ${json.length} entries');
+}
+
+/// Purpose: Validate one template's `image` thumbnail.
+/// Inputs: `path` of the template file, `where` (template name), and the raw
+/// `image` value.
+/// Returns: None.
+/// Side effects: Reads and decodes the PNG; may record errors.
+/// Notes: Enforces the bundled-asset location and the pixel rules in
+/// `checkDeviceImage`: transparent background and all content inside the
+/// avatar circle. Primarily intended for local validation or one-off tooling.
+void _validateDeviceImage(String path, String where, Object image) {
+  if (image is! String ||
+      !image.startsWith('assets/device_images/') ||
+      !image.endsWith('.png')) {
+    _fail(path, where, '"image" must be an assets/device_images/*.png path');
+    return;
+  }
+  final file = File(image);
+  if (!file.existsSync()) {
+    _fail(path, where, '"image" file $image does not exist');
+    return;
+  }
+  final decoded = img.decodePng(file.readAsBytesSync());
+  if (decoded == null) {
+    _fail(path, where, '"image" $image is not a valid PNG');
+    return;
+  }
+  for (final problem in checkDeviceImage(decoded)) {
+    _fail(path, where, '$image: $problem');
+  }
 }
 
 /// Purpose: Compare two string lists element-wise.

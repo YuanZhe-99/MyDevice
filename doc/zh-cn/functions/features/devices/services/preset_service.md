@@ -11,6 +11,10 @@
 | [`loadGpus`](#loadgpus) | 静态方法 | A | 加载并缓存捆绑 GPU 预设列表。 |
 | [`loadBrands`](#loadbrands) | 静态方法 | A | 加载并缓存捆绑品牌列表。 |
 | [`loadTemplates`](#loadtemplates) | 静态方法 | A | 加载并缓存捆绑设备模板列表。 |
+| `cachedTemplates` | 静态 getter | B | 模板列表已加载时返回它，否则返回 null，使组件可以同步匹配。 |
+| [`findTemplateImage`](#findtemplateimage) | 静态方法 | A | 加载模板并返回设备身份所匹配的缩略图。 |
+| [`matchTemplateImage`](#matchtemplateimage) | 静态方法 | A | 通过规范化相等把设备身份匹配到模板缩略图。 |
+| `_identityKey` | 私有静态方法 | B | 转为小写并去除非字母数字字符，形成比较键。 |
 | [`BrandEntry`](#brandentry-new) | 构造函数 | A | 创建 `BrandEntry` 实例。 |
 | [`BrandEntry.fromJson`](#brandentry-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `BrandEntry`。 |
 | [`DeviceTemplate`](#devicetemplate-new) | 构造函数 | A | 创建 `DeviceTemplate` 实例。 |
@@ -19,7 +23,8 @@
 | [`DeviceTemplate.fromJson`](#devicetemplate-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `DeviceTemplate`。 |
 | [`DeviceTemplate.toDevice`](#todevice) | 方法（`DeviceTemplate`） | A | 把此模板转换为新 `Device`，可选从预设填充完整 CPU/GPU 详情。 |
 
-行数（12）不匹配 `grep -c 'Purpose:' preset_service.dart`（11）：`DeviceTemplate.fromJson`（第 156 行）完全无 `/// Purpose:` 文档注释块——它是无前置文档注释的普通单行 `factory` 声明——而文件每个其他声明都有。它仍按每个声明无论是否带自动生成注释都出现在表格中的分层规则在此索引。
+行数（16）与 `grep -c 'Purpose:' preset_service.dart`（16）精确匹配。`DeviceTemplate.fromJson`
+此前没有 `/// Purpose:` 块；它在 1.5.8 开始解析 `image` 时补上了该块。
 
 ## 文档
 
@@ -79,9 +84,39 @@
   （来自 `device_list_page.dart` 的 `_addFromTemplate()`，填充模板选择器底部面板）
 - **备注：** 与 `loadCpus` 相同进程生命周期缓存行为。注意与其他三个 `loadXxx` 方法不同的 JSON 根形态——普通数组而非 `{"templates": [...]}`——这是真实、源码确认的不对称，非要在文档中"修复"的不一致。
 
+### `static Future<String?> findTemplateImage({String? brand, String? model, String? name})` <a id="findtemplateimage"></a>
+- **种类：** `PresetService` 的静态方法。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 101 行）。
+- **用途：** 返回设备所匹配模板的内置缩略图。
+- **输入：** 设备的 `brand`、`model` 和 `name`。
+- **返回：** 模板的 `image` 资源路径，或 null。
+- **副作用：** 首次使用时加载并缓存模板目录（经
+  [`loadTemplates`](#loadtemplates)）。
+- **算法：** 先 `loadTemplates()`，再 [`matchTemplateImage`](#matchtemplateimage)。
+- **用法：** 目录尚未缓存时由 `DeviceAvatar` 调用；缓存之后，
+  头像同步调用 `matchTemplateImage(cachedTemplates!, …)`。
+- **备注：** 只用于显示。该路径绝不写入设备，因此 `devices.json`、同步和备份都不变，
+  缩略图出现之前添加的设备也能获得缩略图。
+
+### `static String? matchTemplateImage(List<DeviceTemplate> templates, {String? brand, String? model, String? name})` <a id="matchtemplateimage"></a>
+- **种类：** `PresetService` 的静态方法。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 120 行）。
+- **用途：** 把设备身份匹配到模板缩略图。
+- **输入：** `templates`；设备的 `brand`、`model`、`name`。
+- **返回：** 第一个匹配模板的 `image`，或 null。
+- **副作用：** 无。
+- **算法：** 只有带 `image` 的模板参与匹配。键先转为小写并去除所有非字母数字字符（`_identityKey`），
+  再按以下顺序比较是否**相等**：
+  1. 设备品牌+型号 = 模板品牌+型号（仅当设备有型号时）；
+  2. 设备名称 = 模板名称；
+  3. 设备品牌+型号 = 模板名称。
+- **用法：** `PresetService.matchTemplateImage(templates, brand: 'Apple', model: 'iPhone 15 Pro')`。
+- **备注：** 比较的是相等而非包含，因此 `iPhone 15` 绝不会占用 `iPhone 15 Pro` 的照片，
+  单独的 `iPhone` 不匹配任何模板。`iPad Pro 13" (M4)` 与 `ipad pro 13 m4` 比较结果相等。
+
 ### `const BrandEntry({required this.name, this.logo})` <a id="brandentry-new"></a>
 - **种类：** `BrandEntry` 的构造函数。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 96 行）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 171 行）。
 - **用途：** 持有一个捆绑品牌的显示名和可选 logo 资产引用。
 - **输入：** `name`（必填）；可选 `logo`。
 - **返回：** 新 `BrandEntry` 实例。
@@ -92,7 +127,7 @@
 
 ### `factory BrandEntry.fromJson(Map<String, dynamic> json)` <a id="brandentry-fromjson"></a>
 - **种类：** `BrandEntry` 的工厂构造函数。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 103 行）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 178 行）。
 - **用途：** 从解码 `brands.json` 数组解析一个品牌条目。
 - **输入：** `json`。
 - **返回：** `name` 必填、`logo` 可选的新 `BrandEntry`。
@@ -103,8 +138,8 @@
 
 ### `const DeviceTemplate({required this.name, required this.category, ...})` <a id="devicetemplate-new"></a>
 - **种类：** `DeviceTemplate` 的构造函数。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 128 行）。
-- **用途：** 持有一个捆绑完整设备模板的字段（名、类别、品牌/型号、cpu/gpu 型号字符串、ram、存储列表、屏幕、电池、操作系统、发布日期）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 217 行）。
+- **用途：** 持有一个捆绑完整设备模板的字段（名、类别、品牌/型号、cpu/gpu 型号字符串、ram、存储列表、屏幕、电池、操作系统、发布日期，以及可选的 `image` 缩略图资源）。
 - **输入：** `name`、`category` 必填；所有其他字段可选，`storage` 默认 `[]`。
 - **返回：** 新 `DeviceTemplate` 实例。
 - **副作用：** 无。
@@ -114,7 +149,7 @@
 
 ### `static String? DeviceTemplate._asString(dynamic value)` <a id="_asstring"></a>
 - **种类：** `DeviceTemplate` 的私有静态方法。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 150 行）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 244 行）。
 - **用途：** 规范化模板 `cpu`/`gpu` JSON 字段——可能存为普通字符串或带 `model` 键的对象——为普通字符串。
 - **输入：** `value` — `cpu` 或 `gpu` 的原始解码 JSON 值。
 - **返回：** `String?` — 字符串本身、`value` 是映射时 `value['model']`、任何其他形态 `null`。
@@ -125,18 +160,18 @@
 
 ### `factory DeviceTemplate.fromJson(Map<String, dynamic> json)` <a id="devicetemplate-fromjson"></a>
 - **种类：** `DeviceTemplate` 的工厂构造函数。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 156 行）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 270 行）。
 - **用途：** 从解码 `device_templates.json` 数组解析一个设备模板。
 - **输入：** `json`。
 - **返回：** 新 `DeviceTemplate`；`storage` 缺席默认 `[]`；`releaseDate` 只在存在时经 `DateTime.parse` 解析。
 - **副作用：** 无。
-- **算法：** 直接字段提取；`category` 经 `DeviceCategory.fromJson`；`cpu`/`gpu` 经 [`_asString`](#_asstring)；`storage` 存在时经 `StorageInfo.fromJson` 映射。
+- **算法：** 直接字段提取；`category` 经 `DeviceCategory.fromJson`；`cpu`/`gpu` 经 [`_asString`](#_asstring)；`storage` 存在时经 `StorageInfo.fromJson` 映射；可选的 `image` 字符串原样复制。
 - **用法：** 被 [`loadTemplates`](#loadtemplates) 为顶层 JSON 数组每个元素调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释（见声明表上方行数说明）——其行为这里由直接读实现确认，非转述文档注释。
+- **备注：** 这里不检查 `image`；其位置与像素规则由 `tool/validate_json.dart` 强制执行。
 
 ### `static CpuInfo? DeviceTemplate._asCpuInfo(dynamic value)` <a id="_ascpuinfo"></a>
 - **种类：** `DeviceTemplate` 的私有静态方法。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 165 行）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 260 行）。
 - **用途：** 保留对象形态 `cpu` 中型号名以外的详细信息。
 - **输入：** `value` —— 原始的 `cpu` JSON 值。
 - **返回：** 模板写成对象时返回 `CpuInfo`，否则返回 null。
@@ -145,7 +180,7 @@
 
 ### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets, int storageIndex = 0})` <a id="todevice"></a>
 - **种类：** `DeviceTemplate` 的方法。
-- **来源：** `lib/features/devices/services/preset_service.dart`（第 187 行）。
+- **来源：** `lib/features/devices/services/preset_service.dart`（第 310 行）。
 - **用途：** 把此模板转换为新 `Device`，预填所有模板字段并可选对照加载预设匹配把普通 `cpu`/`gpu` 型号名字符串升级为完整 `CpuInfo`/`GpuInfo` 详情。
 - **输入：** 可选 `cpuPresets`/`gpuPresets` —— 典型为 [`loadCpus`](#loadcpus)/[`loadGpus`](#loadgpus) 的列表；以及 `storageIndex`，用于在模板提供的多个容量中作出选择。
 - **返回：** 新 `Device`（经 `Device` 构造函数的新鲜 `id`/`modifiedAt`——见 [`device.md#device-new`](../models/device.md)），携带由 `storageIndex` 指定并被夹取到合法范围内的那一个容量。
@@ -162,7 +197,8 @@
   （来自 `device_list_page.dart` 的 `_addFromTemplate()`，用户从底部面板挑选模板后——若是多容量模板，还要再挑一个容量）
 - **备注：** `storageIndex` 之所以存在，是因为本方法此前硬编码 `storage.first`，导致每个多容量模板都塌缩为其最小容量且无从选择——列出 512 GB 到 4 TB 的 MacBook Pro 模板永远只产出 512 GB。索引采用夹取而非范围校验，因此过时的调用方也不会抛异常。`cpuDetail` 优先于预设查找，是因为 VPS 模板为 `Intel Xeon`、`Ampere Altra` 这类有意不收入 `cpus.json` 的芯片写入了 `architecture` 与核心数，预设查找根本无从找回。
 
-模板选择器图标使用内置 `brands.json` 目录，按品牌名称进行不区分大小写的精确匹配，
+模板选择器图标优先使用模板自带的 `image` 缩略图，并以完整尺寸显示，因为它已经圆内安全。
+没有缩略图时使用内置 `brands.json` 目录，按品牌名称进行不区分大小写的精确匹配，
 包括已有的路由器和 VPS 提供商标志。`TemplateIcon` 将完整透明 SVG 放在边长为头像直径
 64% 的正方形内，圆形边界不会裁剪图标。单色品牌标志跟随主题前景色；CloudCone 保留原生透明 PNG 的颜色；没有资源的品牌
 保留类别图标。此选择器显示不修改设备的用户自选表情或图像。

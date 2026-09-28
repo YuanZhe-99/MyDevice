@@ -88,6 +88,10 @@ device needs an icon:
   `ClipOval` + `BoxFit.cover`, center-cropped over a `surfaceContainerHighest`
   background with a subtle `outlineVariant` border — this keeps transparent PNGs
   visible against the circular frame.
+- Else, if the device's brand+model (or name) equals a bundled template that has an `image`,
+  that transparent thumbnail is shown (`PresetService.matchTemplateImage`; normalized exact match,
+  so `iPhone 15` never takes the `iPhone 15 Pro` photo). This is display-only: nothing is written
+  to the device, so existing devices get thumbnails too and older builds just show the icon.
 - Any missing/failed image (including `Image.file`'s `errorBuilder`) falls back to a
   consistent outline category icon (`deviceCategoryIcon(category)` from
   `device_category_icon.dart`).

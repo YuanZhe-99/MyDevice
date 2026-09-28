@@ -91,6 +91,29 @@ static Future<List<ChipSearchResult>> searchCpu(...) async {
 
 这些**惰性加载并缓存**——每个 `loadXxx()` 只读并解析其资产文件一次，之后调用复用解析结果，因此反复打开设备编辑器不每次重新解析捆绑 JSON。
 
+### 设备缩略图 <a id="device-thumbnails"></a>
+
+模板可以带有 `image`，即 `assets/device_images/` 中该设备的内置照片。
+VPS 模板没有实体设备，保留其提供商标志。
+
+- **制作：** `dart run tool/prepare_device_image.dart <photo> assets/device_images/<slug>.png`。
+  照片本身不透明时，工具从边缘向内泛洪以去除纯色背景（只处理与边框相连的像素，因此设备内部的白色屏幕会保留）。
+  随后裁切到设备本身，缩放进边长为画布 64% 的正方形（0.64·√2 < 1，因此连四角也位于圆内），
+  并居中放到 256 px 的透明画布上。重采样使用预乘 alpha，因此不会残留背景色光晕。
+  工具会校验结果，不合格时以退出码 1 退出。
+- **规则**，由 `tool/validate_json.dart` 和 `test/device_image_test.dart` 通过共享的
+  `tool/device_image_check.dart` 强制执行：正方形、至少 128 px、带 alpha 通道、四角完全透明，
+  且内切圆外没有 alpha > 8 的像素。
+- **许可：** 只使用自由许可的来源（公有领域、CC0、CC BY、CC BY-SA）。每个文件的来源、作者和许可证记录在
+  `assets/device_images/SOURCES.md`。没有合适自由照片的模板不带 `image`，回退到其品牌标志。
+- **显示位置：**
+  - 模板选择器（完整直径，`TemplateIcon(circleSafe: true)`）；
+  - 每个设备自身没有表情或照片、且身份与模板匹配的 `DeviceAvatar`
+    （`PresetService.matchTemplateImage`：规范化后精确匹配品牌+型号，然后是名称，
+    然后是品牌+型号对模板名称）。
+- **不存储：** 匹配只用于显示。不向 `devices.json`、同步或备份写入任何内容，
+  因此 1.5.8 之前添加的设备也能获得缩略图，旧版本仍显示类别图标。
+
 ## 相关
 
 - [设备](devices.md) 了解 `CpuInfo`/`GpuInfo`/设备字段如何从搜索结果或预设填充。

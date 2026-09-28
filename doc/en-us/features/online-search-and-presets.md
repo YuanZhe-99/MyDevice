@@ -116,6 +116,33 @@ These are **lazy-loaded and cached** — each `loadXxx()` only reads and parses 
 file once, then reuses the parsed result on subsequent calls, so opening the device
 editor repeatedly doesn't re-parse the bundled JSON every time.
 
+### Device thumbnails <a id="device-thumbnails"></a>
+
+A template may carry `image`, a bundled photo of the device in `assets/device_images/`.
+VPS templates have no physical device and keep their provider logo.
+
+- **Making one:** `dart run tool/prepare_device_image.dart <photo> assets/device_images/<slug>.png`.
+  If the photo is not already transparent, the tool floods in from the edges to remove a plain
+  background (only pixels connected to the border, so a white screen inside the device
+  survives). It then trims to the device, scales it into a square 64% of the canvas
+  (0.64·√2 < 1, so even its corners are inside the circle), and centres it on a transparent
+  256 px canvas. Resampling uses premultiplied alpha, so no background-coloured halo remains.
+  It verifies the result and exits 1 if the result fails.
+- **Rules**, enforced by `tool/validate_json.dart` and `test/device_image_test.dart` through the
+  shared `tool/device_image_check.dart`: square, at least 128 px, alpha channel, fully
+  transparent corners, and no pixel with alpha > 8 outside the inscribed circle.
+- **Licensing:** only freely licensed sources (public domain, CC0, CC BY, CC BY-SA). Each file's
+  source, author and license is recorded in `assets/device_images/SOURCES.md`. A template with no
+  suitable free photo has no `image` and falls back to its brand logo.
+- **Where it shows:**
+  - the template picker (full diameter, `TemplateIcon(circleSafe: true)`);
+  - every `DeviceAvatar` whose device has no emoji or photo of its own and whose identity matches
+    the template (`PresetService.matchTemplateImage`: normalized exact brand+model, then name,
+    then brand+model against the template name).
+- **Not stored:** matching is display-only. Nothing is written to `devices.json`, sync or
+  backups, so devices added before 1.5.8 get thumbnails too and older builds still show the
+  category icon.
+
 ## Related
 
 - [Devices](devices.md) for how `CpuInfo`/`GpuInfo`/device fields get filled in from

@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1220** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1227** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1341** declarations — 121 more than
-1220 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1347** declarations — 120 more than
+1227 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, plus the tail
 section of `device.dart`) have no `/// Purpose:` doc comment in
 source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
@@ -24,9 +24,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 720 |
-| Tier B (index row only) | 621 |
-| **Total** | **1341** |
+| Tier A (full entry) | 722 |
+| Tier B (index row only) | 625 |
+| **Total** | **1347** |
 
 ## Root (`lib/`)
 
@@ -63,14 +63,14 @@ its per-file row and both total tables in the same commit.
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
 | `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 44 | 26 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
-| `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 12 | 11 |
+| `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 16 | 13 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
 | `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 58 | 14 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 33 | 16 |
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 45 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
-| `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 7 | 0 |
+| `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 9 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
 
 ## features/network/
@@ -116,7 +116,7 @@ its per-file row and both total tables in the same commit.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1220/1341 hand-documented declarations above).
+the 1227/1347 hand-documented declarations above).
 
 ## shared/
 
@@ -151,9 +151,9 @@ the 1220/1341 hand-documented declarations above).
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 23 | 18 | 5 |
 | `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 15 | 393 | 222 | 171 |
+| `features/devices/` | 15 | 399 | 224 | 175 |
 | `features/network/` | 5 | 75 | 41 | 34 |
 | `features/services/` | 16 | 527 | 228 | 299 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 21 | 227 | 159 | 68 |
-| **Total** | **71** | **1341** | **720** | **621** |
+| **Total** | **71** | **1347** | **722** | **625** |

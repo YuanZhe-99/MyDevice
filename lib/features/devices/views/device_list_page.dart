@@ -1241,7 +1241,8 @@ class _TemplatePickerState extends State<_TemplatePicker> {
     }
   }
 
-  /// Purpose: Show searchable templates with complete, theme-aware brand icons.
+  /// Purpose: Show searchable templates with their device thumbnail, else a
+  /// theme-aware brand icon.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
   /// Side effects: Creates UI widgets from the current state. Updates widget state and triggers a rebuild.
@@ -1286,13 +1287,17 @@ class _TemplatePickerState extends State<_TemplatePicker> {
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final t = items[index];
-                final logo = widget.brands
-                    .where(
-                      (brand) =>
-                          brand.name.toLowerCase() == t.brand?.toLowerCase(),
-                    )
-                    .firstOrNull
-                    ?.logo;
+                // The device's own thumbnail wins; otherwise the brand logo.
+                final logo =
+                    t.image ??
+                    widget.brands
+                        .where(
+                          (brand) =>
+                              brand.name.toLowerCase() ==
+                              t.brand?.toLowerCase(),
+                        )
+                        .firstOrNull
+                        ?.logo;
                 return ListTile(
                   leading: TemplateIcon(
                     asset: logo,
@@ -1300,6 +1305,7 @@ class _TemplatePickerState extends State<_TemplatePicker> {
                     foregroundColor: logo?.endsWith('.svg') == true
                         ? Theme.of(context).colorScheme.onSurface
                         : null,
+                    circleSafe: t.image != null,
                   ),
                   title: Text(t.name),
                   subtitle: Text(

@@ -231,10 +231,23 @@ absent from `cpus.json`:
 `CpuInfo` when the object form was used. `toDevice()` prefers `cpuDetail`, then an exact
 match in `cpuPresets`, then the bare model string.
 
+Optional `image` names a bundled thumbnail of the device itself:
+
+```json
+{ "name": "iPhone 15 Pro", "category": "phone", "brand": "Apple", "model": "iPhone 15 Pro",
+  "image": "assets/device_images/iphone-15-pro-vector.png" }
+```
+
+Thumbnails are 256 px square PNGs with a transparent background, and every visible pixel
+(alpha > 8) lies inside the inscribed circle, because each avatar clips to that circle. They are
+matched to devices at display time and never stored on a device (see
+[Online Search and Presets](features/online-search-and-presets.md#device-thumbnails)).
+
 **Adding a device:** append the entry, run `dart run tool/sort_templates.dart` to restore
 the sort order, then `dart run tool/validate_json.dart`. The validator checks required
 fields, types, the category enum, duplicate names and the sort order — an unsorted or
-malformed file fails there rather than in the app.
+malformed file fails there rather than in the app. For `image` it also checks the path,
+the transparent corners and the inside-the-circle rule.
 
 ## UTC `modifiedAt`
 

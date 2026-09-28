@@ -82,6 +82,81 @@ class PresetService {
     _templates = list;
     return list;
   }
+
+  /// Purpose: Expose the template catalog if it has already been loaded.
+  /// Inputs: None.
+  /// Returns: The cached templates, or null before the first [loadTemplates].
+  /// Side effects: None.
+  /// Notes: Lets widgets resolve a thumbnail synchronously on rebuild instead
+  /// of flashing their fallback while a future completes.
+  static List<DeviceTemplate>? get cachedTemplates => _templates;
+
+  /// Purpose: Find the bundled thumbnail of the template a device matches.
+  /// Inputs: The device's `brand`, `model` and `name`.
+  /// Returns: The template's `image` asset path, or null when none matches.
+  /// Side effects: Loads and caches the template catalog on first use.
+  /// Notes: Display-only. The path is never written into the device, so a
+  /// device created before thumbnails existed picks one up too. See
+  /// [matchTemplateImage] for the matching rules.
+  static Future<String?> findTemplateImage({
+    String? brand,
+    String? model,
+    String? name,
+  }) async {
+    final templates = await loadTemplates();
+    return matchTemplateImage(templates, brand: brand, model: model, name: name);
+  }
+
+  /// Purpose: Match a device to a template thumbnail by normalized identity.
+  /// Inputs: `templates` to search; the device's `brand`, `model` and `name`.
+  /// Returns: The first matching template's `image`, or null.
+  /// Side effects: None.
+  /// Notes: Keys are lowercased with every non-alphanumeric removed, then
+  /// compared for equality only, in this order: brand+model against the
+  /// template's brand+model; name against the template's name; brand+model
+  /// against the template's name. Only templates that carry an image take
+  /// part. Equality rather than containment keeps "iPhone 15" from claiming
+  /// an "iPhone 15 Pro" photo.
+  static String? matchTemplateImage(
+    List<DeviceTemplate> templates, {
+    String? brand,
+    String? model,
+    String? name,
+  }) {
+    final withImage = templates.where((t) => t.image != null).toList();
+    if (withImage.isEmpty) return null;
+    final brandModel = _identityKey('${brand ?? ''}${model ?? ''}');
+    final nameKey = _identityKey(name ?? '');
+    final hasModel = _identityKey(model ?? '').isNotEmpty;
+
+    if (hasModel) {
+      for (final t in withImage) {
+        if (_identityKey('${t.brand ?? ''}${t.model ?? ''}') == brandModel) {
+          return t.image;
+        }
+      }
+    }
+    if (nameKey.isNotEmpty) {
+      for (final t in withImage) {
+        if (_identityKey(t.name) == nameKey) return t.image;
+      }
+    }
+    if (hasModel) {
+      for (final t in withImage) {
+        if (_identityKey(t.name) == brandModel) return t.image;
+      }
+    }
+    return null;
+  }
+
+  /// Purpose: Reduce a device identity string to its comparison key.
+  /// Inputs: `value`.
+  /// Returns: `value` lowercased with every non-alphanumeric removed.
+  /// Side effects: None.
+  /// Notes: Makes `iPad Pro 13" (M4)` equal `ipad pro 13 m4`. Internal helper
+  /// used within this file only.
+  static String _identityKey(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 }
 
 class BrandEntry {
@@ -128,6 +203,12 @@ class DeviceTemplate {
   final String? os;
   final DateTime? releaseDate;
 
+  /// Bundled thumbnail of the device itself (`assets/device_images/*.png`):
+  /// transparent background, all content inside the avatar circle. Null when
+  /// no freely licensed photo exists; the UI then falls back to the brand
+  /// logo or category icon.
+  final String? image;
+
   /// Purpose: Create a device template instance.
   /// Inputs: `storage`.
   /// Returns: A new `DeviceTemplate` instance.
@@ -149,6 +230,7 @@ class DeviceTemplate {
     this.battery,
     this.os,
     this.releaseDate,
+    this.image,
   });
 
   /// Purpose: Provide the internal as string helper for this file.
@@ -180,6 +262,11 @@ class DeviceTemplate {
     return CpuInfo.fromJson(value);
   }
 
+  /// Purpose: Create a template from one `device_templates.json` entry.
+  /// Inputs: `json`.
+  /// Returns: A new `DeviceTemplate`.
+  /// Side effects: None.
+  /// Notes: `cpu`/`gpu` accept the string or object form; `image` is optional.
   factory DeviceTemplate.fromJson(Map<String, dynamic> json) => DeviceTemplate(
     name: json['name'] as String,
     category: DeviceCategory.fromJson(json['category'] as String),
@@ -202,6 +289,7 @@ class DeviceTemplate {
     releaseDate: json['releaseDate'] != null
         ? DateTime.parse(json['releaseDate'] as String)
         : null,
+    image: json['image'] as String?,
   );
 
   /// Purpose: Convert this template into a new `Device`.

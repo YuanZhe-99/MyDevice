@@ -160,6 +160,8 @@ Not copied to the other repos — no other app has these.
 | hand over | 移交 | the guided editor passing a route it cannot represent to the advanced editor |
 | stray config | 游离配置 | a `storage_config.json` an older build left in the custom storage folder; "adopt" it = 收编 |
 | unmoved entry | 未移动条目 | a file a storage-location change left in the old folder |
+| device thumbnail | 设备缩略图 | a template's bundled `image` photo of the device itself, shown in avatars |
+| circle-safe | 圆内安全 | every visible pixel lies inside the avatar's inscribed circle |
 
 ## 6. Review checklist (run before committing a Chinese page)
 

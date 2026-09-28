@@ -11,6 +11,7 @@ import '../../../shared/services/image_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/utils/detail_layout.dart';
 import '../../../shared/widgets/map_picker_page.dart';
+import '../../../shared/widgets/template_icon.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
 import '../services/exchange_rate_service.dart';
@@ -1090,11 +1091,19 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     double avatarSize = 56,
     bool stacked = false,
   }) {
-    final preview = DeviceAvatar(
-      category: _category,
-      emoji: _emoji,
-      imagePath: _imagePath,
-      size: avatarSize,
+    // Rebuilt as the identity fields change so the matching template
+    // thumbnail follows what the user types.
+    final preview = ListenableBuilder(
+      listenable: Listenable.merge([_nameCtrl, _brandCtrl, _modelCtrl]),
+      builder: (context, _) => DeviceAvatar(
+        category: _category,
+        emoji: _emoji,
+        imagePath: _imagePath,
+        brand: _nonEmpty(_brandCtrl.text),
+        model: _nonEmpty(_modelCtrl.text),
+        name: _nonEmpty(_nameCtrl.text),
+        size: avatarSize,
+      ),
     );
     final chips = Wrap(
       spacing: 8,
@@ -1703,17 +1712,16 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                   itemBuilder: (context, index) {
                     final brand = options.elementAt(index);
                     return ListTile(
-                      leading: brand.logo != null
-                          ? SvgPicture.asset(
-                              brand.logo!,
-                              width: 24,
-                              height: 24,
-                              colorFilter: ColorFilter.mode(
-                                Theme.of(context).colorScheme.onSurface,
-                                BlendMode.srcIn,
-                              ),
-                            )
-                          : const Icon(Icons.business, size: 24),
+                      // TemplateIcon handles both SVG and raster logos
+                      // (Cloudcone's is a PNG) and falls back on error.
+                      leading: TemplateIcon(
+                        asset: brand.logo,
+                        fallback: Icons.business,
+                        size: 32,
+                        foregroundColor: brand.logo?.endsWith('.svg') == true
+                            ? Theme.of(context).colorScheme.onSurface
+                            : null,
+                      ),
                       title: Text(brand.name),
                       dense: true,
                       onTap: () => onSelected(brand),

@@ -348,8 +348,9 @@ gating requirements this satisfies (call site 4 of 4).
   Dismissing the dialog cancels the selection rather than silently defaulting to the smallest
   capacity — which is what `toDevice` used to do for every multi-capacity template.
 
-Template-picker icons use the bundled `brands.json` catalogue (case-insensitive exact brand
-matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
+Template-picker icons prefer the template's own `image` thumbnail (`TemplateIcon` with `circleSafe`,
+full diameter, never tinted). Otherwise they use the bundled `brands.json` catalogue
+(case-insensitive exact brand matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
 transparent SVG in a square 64% of the avatar diameter; no part is cropped by the circle.
 Monochrome brand marks follow the theme foreground colour; CloudCone retains its original transparent PNG colours. Brands without an asset retain their
 category icon. This picker decoration does not modify the device's user-selected emoji or image.

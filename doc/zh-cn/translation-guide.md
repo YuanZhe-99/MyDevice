@@ -136,6 +136,8 @@
 | hand over | 移交 | 引导式编辑器把它无法表示的路由交给高级编辑器 |
 | stray config | 游离配置 | 旧构建留在自定义存储文件夹中的 `storage_config.json`；"adopt" 它 = 收编 |
 | unmoved entry | 未移动条目 | 更改存储位置时留在旧文件夹中的文件 |
+| device thumbnail | 设备缩略图 | 模板自带的设备本身照片（`image`），显示在头像中 |
+| circle-safe | 圆内安全 | 所有可见像素都位于头像的内切圆内 |
 
 ## 6. 复核清单（提交中文页前运行）
 

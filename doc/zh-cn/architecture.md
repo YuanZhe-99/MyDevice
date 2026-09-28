@@ -140,3 +140,8 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 通过 `BoxFit.contain` 放入边长为圆直径 64% 的正方形，完整图标（包括四角）均位于圆内。
 未知模板和通用协议保留 Material 图标。设备模板选择器对已有 `brands.json` 资源
 使用同样的完整缩放规则。应用内不发起远程图像请求。
+
+设备缩略图内置于 `assets/device_images/`（来源与许可证记录在该目录的 `SOURCES.md`）。
+这些 PNG 在制作时（`tool/prepare_device_image.dart`）即被放入圆内，并由 `tool/validate_json.dart` 检查，
+因此以完整直径渲染。设备自身没有表情或照片时，`DeviceAvatar` 显示匹配模板的缩略图。
+匹配在显示时计算，绝不存储，因此已有设备无需迁移即可受益，数据格式也没有任何变化。

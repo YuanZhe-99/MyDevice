@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/services/image_service.dart';
 import '../models/device.dart';
+import '../services/preset_service.dart';
 import 'device_category_icon.dart';
 
 class DeviceAvatar extends StatelessWidget {
@@ -12,16 +13,27 @@ class DeviceAvatar extends StatelessWidget {
   final String? imagePath;
   final double size;
 
+  /// Identity used to look up a matching template thumbnail when the device
+  /// has neither an emoji nor its own photo.
+  final String? brand;
+  final String? model;
+  final String? name;
+
   /// Purpose: Create a device avatar instance.
-  /// Inputs: `size`.
+  /// Inputs: `category`, optional `emoji` / `imagePath`, the device identity
+  /// (`brand`, `model`, `name`) for the template thumbnail, and `size`.
   /// Returns: A new `DeviceAvatar` instance.
   /// Side effects: None.
-  /// Notes: None.
+  /// Notes: Priority is emoji, then the user's photo, then the matching
+  /// template thumbnail, then the category icon.
   const DeviceAvatar({
     super.key,
     required this.category,
     this.emoji,
     this.imagePath,
+    this.brand,
+    this.model,
+    this.name,
     this.size = 40,
   });
 
@@ -29,12 +41,15 @@ class DeviceAvatar extends StatelessWidget {
   /// Inputs: `device`.
   /// Returns: A new `DeviceAvatar.fromDevice` instance.
   /// Side effects: None.
-  /// Notes: None.
+  /// Notes: Passes the identity fields so existing devices match templates.
   factory DeviceAvatar.fromDevice(Device device, {double size = 40}) {
     return DeviceAvatar(
       category: device.category,
       emoji: device.emoji,
       imagePath: device.imagePath,
+      brand: device.brand,
+      model: device.model,
+      name: device.name,
       size: size,
     );
   }
@@ -82,12 +97,72 @@ class DeviceAvatar extends StatelessWidget {
               ),
             );
           }
-          return _fallbackIcon(context);
+          return _templateOrFallback(context);
         },
       );
     }
 
-    return _fallbackIcon(context);
+    return _templateOrFallback(context);
+  }
+
+  /// Purpose: Show the matching template thumbnail, or the category icon.
+  /// Inputs: `context`.
+  /// Returns: `Widget`.
+  /// Side effects: May load the template catalog once.
+  /// Notes: Resolves synchronously once the catalog is cached, so rebuilds do
+  /// not flash the fallback. Internal helper used within this file only.
+  Widget _templateOrFallback(BuildContext context) {
+    if (brand == null && model == null && name == null) {
+      return _fallbackIcon(context);
+    }
+    final cached = PresetService.cachedTemplates;
+    if (cached != null) {
+      final asset = PresetService.matchTemplateImage(
+        cached,
+        brand: brand,
+        model: model,
+        name: name,
+      );
+      return asset == null
+          ? _fallbackIcon(context)
+          : _templateImage(context, asset);
+    }
+    return FutureBuilder<String?>(
+      future: PresetService.findTemplateImage(
+        brand: brand,
+        model: model,
+        name: name,
+      ),
+      builder: (context, snap) {
+        final asset = snap.data;
+        return asset == null
+            ? _fallbackIcon(context)
+            : _templateImage(context, asset);
+      },
+    );
+  }
+
+  /// Purpose: Render a bundled template thumbnail in the avatar circle.
+  /// Inputs: `context`, `asset`.
+  /// Returns: `Widget`.
+  /// Side effects: Loads the bundled image.
+  /// Notes: Thumbnails are transparent and already keep their content inside
+  /// the circle, so the image fills the frame without cropping anything.
+  /// Internal helper used within this file only.
+  Widget _templateImage(BuildContext context, String asset) {
+    final cs = Theme.of(context).colorScheme;
+    return _AvatarFrame(
+      size: size,
+      backgroundColor: cs.surfaceContainerHighest,
+      borderColor: cs.outlineVariant.withAlpha(140),
+      child: Image.asset(
+        asset,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        errorBuilder: (_, _, _) => _fallbackIconContent(context),
+      ),
+    );
   }
 
   /// Purpose: Provide the internal fallback icon helper for this file.

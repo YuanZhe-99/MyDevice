@@ -41,11 +41,11 @@
 | `_showEmojiPicker` | 方法（`_DeviceEditPageState`） | B | 以 `emojiGridColumns(表单宽度)` 列显示 `_commonEmojis` 底部面板网格；点击一个设 `_emoji` 并清除 `_imagePath`。CPU / GPU 预设面板以 `sheetInitialSize(窗口高度, preferred: 0.6)` 打开。 |
 | [`_pickImage`](#_pickimage) | 方法（`_DeviceEditPageState`） | A | 让用户挑照片并采用为设备图标，清除任何 emoji。 |
 | `_removeIcon` | 方法（`_DeviceEditPageState`） | B | 清除 `_emoji` 和 `_imagePath` 两者。 |
-| `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览加图像挑/emoji 挑/移除操作；`avatarSize`（56，或双栏左窗格中的 `editAvatarSize`）与 `stacked`（chip 居中放在预览之下而非旁边）。 |
+| `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览（随名称/品牌/型号变化重建，因此匹配的模板缩略图会实时出现）加图像挑/emoji 挑/移除操作；`avatarSize`（56，或双栏左窗格中的 `editAvatarSize`）与 `stacked`（chip 居中放在预览之下而非旁边）。 |
 | `_buildNameField` | 方法（组件辅助） | B | 带校验的名称 `TextFormField`，单列与双栏左窗格共享。 |
 | `_buildCategoryField` | 方法（组件辅助） | B | 类别 `DropdownButtonFormField`，同样共享。 |
 | `_buildFormBody` | 方法（组件辅助） | B | 在同一个 `Form` 内选择布局：`_buildFields` 的单列 `ListView`，或——`useDetailTwoPane` 通过时——一个 `Row`：`detailLeftPaneWidth` 宽的左窗格（`editAvatarSize` 尺寸的堆叠图标区、名称、类别；钉住窗格高度的 `SingleChildScrollView` 作软键盘兜底）加右侧其余字段的 `ListView`。 |
-| `_buildFields` | 方法（组件辅助） | B | 按原顺序的完整字段列表；`twoPane` 时省略左窗格自己渲染的名称、类别与图标区。 |
+| `_buildFields` | 方法（组件辅助） | B | 按原顺序的完整字段列表；`twoPane` 时省略左窗格自己渲染的名称、类别与图标区。品牌自动补全选项通过 `TemplateIcon` 显示每个品牌的标志，因此 SVG 与位图（CloudCone PNG）标志都能渲染，损坏的资源回退到 `Icons.business`。 |
 | `_currencyItems` | 方法（组件辅助） | B | 从 `supportedCurrencies` 构建货币下拉项，加未列出时的 `current`。 |
 | `_buildMoneyFields` | 方法（组件辅助） | B | 渲染金额+货币行，非默认货币时加自动汇率复选框和手动汇率字段。 |
 | `_addRecurringCost` | 方法（`_DeviceEditPageState`） | B | 追加新空白 `_RecurringCostDraft`（默认种类 `other`，货币 = `_defaultCurrency`）。 |

@@ -44,6 +44,9 @@ class DeviceFinanceOverviewPage extends StatefulWidget {
 class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
   _FinanceRange _range = _FinanceRange.year;
 
+  /// The last computed trend, reused while range, day and device list match.
+  _TrendCache? _trendCache;
+
   /// Purpose: Build the current widget subtree for the active UI state.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
@@ -313,10 +316,29 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
   /// Notes: Internal helper used within this file only.
   Widget _buildTrendCard(AppLocalizations l10n, ThemeData theme) {
     final today = _dateOnly(DateTime.now());
-    final historyStart = _historyStart(today);
-    final futureEnd = today.add(_historyDuration(today, historyStart));
-    final scale = _TrendScale.fromRange(historyStart, today, futureEnd);
-    final trendData = _buildTrendData(scale, today);
+    var cache = _trendCache;
+    if (cache == null ||
+        cache.range != _range ||
+        cache.today != today ||
+        !identical(cache.devices, widget.devices)) {
+      final historyStart = _historyStart(today);
+      final futureEnd = DateTime(
+        today.year,
+        today.month,
+        today.day + _historyDays(today, historyStart),
+      );
+      final scale = _TrendScale.fromRange(historyStart, today, futureEnd);
+      cache = _TrendCache(
+        range: _range,
+        today: today,
+        devices: widget.devices,
+        scale: scale,
+        data: _buildTrendData(scale, today),
+      );
+      _trendCache = cache;
+    }
+    final scale = cache.scale;
+    final trendData = cache.data;
     final hasData =
         trendData.historySpots.any((spot) => spot.y != 0) ||
         trendData.futureSpots.any((spot) => spot.y != 0);
@@ -736,14 +758,15 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     };
   }
 
-  /// Purpose: Provide the internal history duration helper for this file.
+  /// Purpose: Count how many calendar days the future projection spans.
   /// Inputs: `today`, `historyStart`.
-  /// Returns: `Duration`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
-  Duration _historyDuration(DateTime today, DateTime historyStart) {
-    final days = today.difference(historyStart).inDays.abs();
-    return Duration(days: math.max(days, 30));
+  /// Returns: `int` - the history length in calendar days, at least 30.
+  /// Side effects: None.
+  /// Notes: Internal helper. Counts calendar days, not 24-hour blocks, so a
+  /// daylight-saving change inside the range cannot shift the count; the
+  /// caller adds it with `DateTime(y, m, d + n)`.
+  int _historyDays(DateTime today, DateTime historyStart) {
+    return math.max(calendarDaysBetween(historyStart, today).abs(), 30);
   }
 
   /// Purpose: Provide the internal earliest purchase date helper for this file.
@@ -794,7 +817,7 @@ class _DeviceFinanceOverviewPageState extends State<DeviceFinanceOverviewPage> {
     }
     if (serviceEnd.isBefore(purchaseDate)) return null;
 
-    final days = math.max(1, serviceEnd.difference(purchaseDate).inDays + 1);
+    final days = math.max(1, calendarDaysBetween(purchaseDate, serviceEnd) + 1);
     final purchase = device.purchasePrice?.convertedAmount ?? 0;
     final recurring = device.recurringCosts.fold(
       0.0,
@@ -943,28 +966,7 @@ class _TrendScale {
     DateTime today,
     DateTime futureEnd,
   ) {
-    final totalDays = math.max(1, futureEnd.difference(historyStart).inDays);
-    final step = totalDays <= 240
-        ? const Duration(days: 1)
-        : totalDays <= 1800
-        ? const Duration(days: 7)
-        : const Duration(days: 30);
-    final dates = <DateTime>[];
-    for (
-      var date = historyStart;
-      !date.isAfter(futureEnd);
-      date = date.add(step)
-    ) {
-      dates.add(date);
-    }
-    dates.add(today);
-    dates.add(futureEnd);
-    dates.sort();
-
-    final deduped = <DateTime>[];
-    for (final date in dates) {
-      if (deduped.isEmpty || deduped.last != date) deduped.add(date);
-    }
+    final deduped = trendScaleDates(historyStart, today, futureEnd);
 
     final interval = (deduped.length / 6).ceil();
     return _TrendScale(
@@ -1051,5 +1053,81 @@ class _AssetBucket {
     required this.amount,
     required this.count,
     required this.color,
+  });
+}
+
+/// Purpose: Count the calendar days from [from] to [to].
+/// Inputs: `from`, `to` - dates whose time of day is ignored.
+/// Returns: `int` - positive when [to] is later; DST-proof.
+/// Side effects: None.
+/// Notes: Both dates are re-based to UTC midnight first, so a 23- or 25-hour
+/// local day still counts as exactly one day (`Duration.inDays` on local
+/// times would floor it to zero or overcount).
+@visibleForTesting
+int calendarDaysBetween(DateTime from, DateTime to) => DateTime.utc(
+  to.year,
+  to.month,
+  to.day,
+).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+
+/// Purpose: Produce the x-axis dates of the finance trend chart.
+/// Inputs: `historyStart`, `today`, `futureEnd` - date-only local dates.
+/// Returns: `List<DateTime>` - sorted, de-duplicated; always includes
+/// [today] and [futureEnd].
+/// Side effects: None.
+/// Notes: Steps by calendar days (`DateTime(y, m, d + n)`) with 1, 7 or 30
+/// days depending on the range length, so every point is local midnight even
+/// across daylight-saving changes (adding `Duration(days: n)` drifted to
+/// 23:00 / 01:00 after a DST switch and produced duplicate-looking points).
+@visibleForTesting
+List<DateTime> trendScaleDates(
+  DateTime historyStart,
+  DateTime today,
+  DateTime futureEnd,
+) {
+  final totalDays = math.max(1, calendarDaysBetween(historyStart, futureEnd));
+  final stepDays = totalDays <= 240
+      ? 1
+      : totalDays <= 1800
+      ? 7
+      : 30;
+  final dates = <DateTime>[];
+  for (
+    var date = historyStart;
+    !date.isAfter(futureEnd);
+    date = DateTime(date.year, date.month, date.day + stepDays)
+  ) {
+    dates.add(date);
+  }
+  dates.add(today);
+  dates.add(futureEnd);
+  dates.sort();
+
+  final deduped = <DateTime>[];
+  for (final date in dates) {
+    if (deduped.isEmpty || deduped.last != date) deduped.add(date);
+  }
+  return deduped;
+}
+
+/// A computed finance trend together with the inputs it was computed for.
+class _TrendCache {
+  final _FinanceRange range;
+  final DateTime today;
+  final List<Device> devices;
+  final _TrendScale scale;
+  final _TrendData data;
+
+  /// Purpose: Bundle a trend result with its cache key.
+  /// Inputs: `range`, `today`, `devices`, `scale`, `data`.
+  /// Returns: A new `_TrendCache`.
+  /// Side effects: None.
+  /// Notes: Internal to this file.
+  const _TrendCache({
+    required this.range,
+    required this.today,
+    required this.devices,
+    required this.scale,
+    required this.data,
   });
 }

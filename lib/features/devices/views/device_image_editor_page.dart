@@ -47,7 +47,7 @@ class DeviceImageEditorResult {
 /// "Use original" (true when adding a newly picked photo).
 /// Returns: The result, or null when cancelled or when the file cannot be
 /// decoded and `allowOriginal` is false.
-/// Side effects: Decodes the file; pushes a full-screen route; may show a
+/// Side effects: Reads and decodes the file once; pushes a full-screen route; may show a
 /// snack bar.
 /// Notes: A file the decoders refuse is returned as "keep original" when
 /// that is allowed, so a format the editor cannot read never blocks adding
@@ -58,7 +58,16 @@ Future<DeviceImageEditorResult?> showDeviceImageEditor(
   bool allowOriginal = false,
   DeviceImageProcessor processor = processDeviceImageInIsolate,
 }) async {
-  final request = await ImageService.loadEditableImage(file);
+  // Read the file once: the bytes feed both the decoder and the crop view.
+  Uint8List? bytes;
+  try {
+    bytes = await file.readAsBytes();
+  } catch (_) {
+    bytes = null;
+  }
+  final request = bytes == null
+      ? null
+      : await ImageService.decodeEditableImage(bytes);
   if (!context.mounted) return null;
   if (request == null) {
     final l10n = AppLocalizations.of(context)!;
@@ -67,14 +76,13 @@ Future<DeviceImageEditorResult?> showDeviceImageEditor(
     )?.showSnackBar(SnackBar(content: Text(l10n.imageEditorDecodeFailed)));
     return allowOriginal ? const DeviceImageEditorResult(null) : null;
   }
-  final bytes = await file.readAsBytes();
   if (!context.mounted) return null;
   return Navigator.of(context, rootNavigator: true).push(
     MaterialPageRoute(
       fullscreenDialog: true,
       builder: (_) => DeviceImageEditorPage(
         source: request,
-        displayBytes: bytes,
+        displayBytes: bytes!, // non-null: `request` came from these bytes
         allowOriginal: allowOriginal,
         processor: processor,
       ),
@@ -381,6 +389,14 @@ class DeviceImageEditorPageState extends State<DeviceImageEditorPage> {
                     height: side,
                     child: Image.memory(
                       widget.displayBytes,
+                      // The source was decoded at <= 1024 px, so decoding the
+                      // display copy any larger only wastes memory.
+                      cacheWidth: widget.source.width >= widget.source.height
+                          ? 1024
+                          : null,
+                      cacheHeight: widget.source.width < widget.source.height
+                          ? 1024
+                          : null,
                       fit: BoxFit.contain,
                       gaplessPlayback: true,
                       errorBuilder: (_, _, _) => const SizedBox.shrink(),

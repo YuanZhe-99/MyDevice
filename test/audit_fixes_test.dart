@@ -18,40 +18,62 @@ void main() {
   const t1 = '2026-06-02T00:00:00.000Z';
   const t2 = '2026-06-03T00:00:00.000Z';
 
-  test('identical concurrent edits merge without a conflict', () {
-    final base = jsonEncode({
-      'devices': [deviceJson('d1', 'Old', t0), deviceJson('d2', 'B', t0)],
-    });
-    // d1 received the exact same edit on both devices; d2 changed only
-    // locally so the files differ overall.
-    final local = jsonEncode({
-      'devices': [deviceJson('d1', 'New', t1), deviceJson('d2', 'B local', t1)],
-    });
-    final remote = jsonEncode({
-      'devices': [deviceJson('d1', 'New', t1), deviceJson('d2', 'B', t0)],
-    });
+  // Concurrent edits of the same record: identical content merges silently,
+  // differing content is a true conflict. d2 changes only locally so the
+  // identical-edit case still has files that differ overall.
+  final concurrentEdits =
+      <
+        ({
+          String name,
+          String local,
+          String remote,
+          bool conflict,
+          Map<String, String>? merged,
+        })
+      >[
+        (
+          name: 'identical concurrent edits merge without a conflict',
+          local: 'New',
+          remote: 'New',
+          conflict: false,
+          merged: {'d1': 'New', 'd2': 'B local'},
+        ),
+        (
+          name: 'differing concurrent edits still raise a conflict',
+          local: 'Local',
+          remote: 'Remote',
+          conflict: true,
+          merged: null,
+        ),
+      ];
+  for (final c in concurrentEdits) {
+    test(c.name, () {
+      final base = jsonEncode({
+        'devices': [deviceJson('d1', 'Old', t0), deviceJson('d2', 'B', t0)],
+      });
+      final local = jsonEncode({
+        'devices': [
+          deviceJson('d1', c.local, t1),
+          deviceJson('d2', 'B local', t1),
+        ],
+      });
+      final remote = jsonEncode({
+        'devices': [
+          deviceJson('d1', c.remote, c.conflict ? t2 : t1),
+          deviceJson('d2', 'B', t0),
+        ],
+      });
 
-    final result = mergeDeviceData(local, remote, base);
-    expect(result.hasConflicts, isFalse);
-    final names = {for (final d in result.merged) d.id: d.name};
-    expect(names['d1'], 'New');
-    expect(names['d2'], 'B local');
-  });
-
-  test('differing concurrent edits still raise a conflict', () {
-    final base = jsonEncode({
-      'devices': [deviceJson('d1', 'Old', t0)],
+      final result = mergeDeviceData(local, remote, base);
+      expect(result.hasConflicts, c.conflict);
+      if (c.conflict) {
+        expect(result.conflicts.map((x) => x.id), contains('d1'));
+      } else {
+        final names = {for (final d in result.merged) d.id: d.name};
+        expect(names, c.merged);
+      }
     });
-    final local = jsonEncode({
-      'devices': [deviceJson('d1', 'Local', t1)],
-    });
-    final remote = jsonEncode({
-      'devices': [deviceJson('d1', 'Remote', t2)],
-    });
-
-    final result = mergeDeviceData(local, remote, base);
-    expect(result.conflicts, hasLength(1));
-  });
+  }
 
   test('new record timestamps default to UTC for cross-timezone LWW', () {
     expect(

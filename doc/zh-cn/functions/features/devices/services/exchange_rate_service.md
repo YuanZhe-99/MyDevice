@@ -17,6 +17,10 @@
 | [`getAutoUpdateEnabled`](#getautoupdateenabled) | 静态方法 | A | 读取每日自动汇率刷新是否启用。 |
 | [`setAutoUpdateEnabled`](#setautoupdateenabled) | 静态方法 | A | 持久化每日自动汇率刷新是否启用。 |
 | [`refreshIfNeeded`](#refreshifneeded) | 静态方法 | A | 自动更新开启且汇率过期时从网络刷新。 |
+| [`resetCache`](#resetcache) | 静态方法 | A | 忘记缓存的汇率、进行中的抓取和失败退避。 |
+| [`_fetchAutomatically`](#_fetchautomatically) | 静态方法（私有） | A | 为自动路径抓取，遵守 10 分钟失败退避。 |
+| [`_fetchShared`](#_fetchshared) | 静态方法（私有） | A | 运行或加入某基准货币唯一的抓取并保存。 |
+| [`_MemoEntry`](#_memoentry) | 构造函数（私有类） | A | 把解析后的汇率与读取时的文件修改时间配对。 |
 | [`_getFile`](#_getfile) | 静态方法（私有） | A | 解析当前应用目录内 `exchange_rates.json` 文件。 |
 | [`load`](#load) | 静态方法 | A | 加载基础货币的缓存汇率，或内置回退汇率。 |
 | [`save`](#save) | 静态方法 | A | 把汇率数据持久化到 `exchange_rates.json`。 |
@@ -28,9 +32,43 @@
 | [`_shouldFetchToday`](#_shouldfetchtoday) | 静态方法（私有） | A | 返回缓存汇率是否过期（上次在不同日历日获取）。 |
 | [`_fallbackRatesFor`](#_fallbackratesfor) | 静态方法（私有） | A | 为任意基础货币派生硬编码回退汇率。 |
 
-行数（21）与 `grep -c 'Purpose:' exchange_rate_service.dart`（21）精确匹配。
+行数（25）与 `grep -c 'Purpose:' exchange_rate_service.dart`（25）精确匹配。
+
+自 1.6.2 起（请求经济性，无线格式或文件格式变更）：`load` 按（路径，基准）记忆解析后的文件，并用文件修改时间重新验证；同一基准的并发抓取共用一个请求（`_inFlight`）；*自动*抓取失败后 10 分钟内不再发起自动请求（`_failedAt`），使断网只花一次请求而非每次换算一次；显式刷新（`fetchAndSaveLatest`、设置页按钮）忽略并清除该退避；`save` 原子写入。`rateUpdatedAt` / `lastFetchedAt` 仍为本地时间值（有意不变）。`test/exchange_rate_cache_test.dart` 用 `MockClient` 统计请求数。
 
 ## 文档
+
+### `static void resetCache()` <a id="resetcache"></a>
+- **种类：** 静态方法。**起始版本：** 1.6.2。
+- **用途：** 忘记缓存的汇率、进行中的抓取和失败退避。
+- **输入：** 无。**返回：** 无。
+- **副作用：** 清空三个内存映射；不触碰文件。
+- **用法：** 测试，以及在带外替换了汇率文件的调用方。
+- **备注：** 无。
+
+### `static Future<DeviceExchangeRateData?> _fetchAutomatically(String base)` <a id="_fetchautomatically"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 为自动路径（`convert`、`refreshIfNeeded`）抓取并保存。
+- **输入：** `base`。**返回：** 新数据；失败或退避期间为 null。
+- **副作用：** 同 `fetchAndSaveLatest`。
+- **用法：** `_rateToDefault`、`refreshIfNeeded`。
+- **备注：** 失败后 10 分钟内不发起自动请求。
+
+### `static Future<DeviceExchangeRateData?> _fetchShared(String base, {required bool respectBackoff})` <a id="_fetchshared"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 运行或加入 `base` 唯一的抓取并保存。
+- **输入：** `base`、`respectBackoff`。**返回：** 已保存的数据或 null。
+- **副作用：** 网络请求、原子文件写入、更新退避时钟。
+- **算法：** 键为 `path|base`；有进行中的抓取则返回它；退避期间跳过（仅自动调用方）；否则 `fetchLatest`，然后记录失败时间或 `save`。
+- **用法：** `fetchAndSaveLatest`（不退避）和 `_fetchAutomatically`。
+- **备注：** 按存储路径设键，因此被替换的存储文件夹不会共享状态。
+
+### `const _MemoEntry(DateTime stamp, DeviceExchangeRateData data)` <a id="_memoentry"></a>
+- **种类：** 私有类 `_MemoEntry` 的构造函数。**起始版本：** 1.6.2。
+- **用途：** 把解析后的汇率与读取时的文件修改时间配对。
+- **输入：** `stamp`、`data`。**返回：** 新的 `_MemoEntry`。**副作用：** 无。
+- **用法：** `load` 和 `save` 填充 `_memo`。
+- **备注：** 文件变化时正是修改时间使记忆失效。
 
 ### `const ExchangeRateException(this.message)` <a id="exchangerateexception-new"></a>
 - **种类：** `ExchangeRateException` 的构造函数（实现 `Exception`）。
@@ -192,7 +230,7 @@
 - **用途：** 把汇率数据持久化到 `exchange_rates.json`。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `exchange_rates.json`（美化打印、非原子）。
+- **副作用：** 原子地替换 `exchange_rates.json`（美化打印、临时文件加重命名）并刷新记忆。
 - **算法：** JSON 编码 `data.toJson()`、写它。
 - **用法：** 被 [`fetchAndSaveLatest`](#fetchandsavelatest) 调用。
 - **备注：** 无。

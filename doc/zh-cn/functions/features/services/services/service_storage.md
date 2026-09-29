@@ -7,6 +7,9 @@
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
 | [`_getFile`](#_getfile) | 静态方法（私有） | A | 解析当前应用目录内 `service_data.json` 文件。 |
+| [`_serialised`](#serialised) | 静态方法（私有） | A | 在 `service_data.json` 更早的写入之后运行读-改-写（按路径的写队列）。 |
+| [`_write`](#write) | 静态方法（私有） | A | 原子地写 `service_data.json` 并通知自动同步（不入队的原语）。 |
+| [`_withoutHops`](#withouthops) | 静态方法（私有） | A | 丢弃谓词匹配的跳，未匹配时返回同一路由实例。 |
 | [`load`](#load) | 静态方法 | A | 加载持久化 `ServiceData`（服务 + 路由）。 |
 | [`save`](#save) | 静态方法 | A | 持久化 `ServiceData` 并通知自动同步服务。 |
 | [`addOrUpdateService`](#addorupdateservice) | 静态方法 | A | 按 id 插入或替换服务。 |
@@ -15,7 +18,9 @@
 | [`deleteRoute`](#deleteroute) | 静态方法 | A | 按 id 删除路由。 |
 | [`removeDeviceReferences`](#removedevicereferences) | 静态方法 | A | 移除对已删除或退役设备的每个服务/路由引用。 |
 
-行数（8）与 `grep -c 'Purpose:' service_storage.dart`（8）精确匹配。
+行数（11）与 `grep -c 'Purpose:' service_storage.dart`（11）精确匹配。
+
+自 1.6.2 起每次写入都是**原子且串行的**：`save` 和每个读-改-写变更方法都在按文件路径的写队列（`DeviceStorage.serializeWrite`，每个路径一个 `AtomicWriteQueue`）中运行，重新读取文件，并以私有的 `_write` 结束，后者经临时文件加重命名替换文件（`DeviceStorage.atomicWrite`）——因此两个重叠的编辑不会丢失彼此的更改，崩溃也不会留下被截断的文件。已在队列中运行的代码必须调用 `_write`，绝不能调用公开的 `save`，否则会等待自己而死锁。容器的每次重建还会带过文件的未知顶层字段（`extraJson`），使旧版本不会丢弃新版本的数据。
 
 ## 文档
 
@@ -29,6 +34,33 @@
 - **算法：** `File('${(await DeviceStorage.getAppDir()).path}/$dataFileName')`，`dataFileName` 是 [`data_modules.dart`](../../../app/data_modules.md#constants) 中 `serviceDataFileName`（`'service_data.json'`）的别名。
 - **用法：** 只被 [`load`](#load) 和 [`save`](#save) 内部调用；不暴露到此类外。
 - **备注：** 与 `DeviceStorage` 自己的等价（`_getFile`，也逐文件私有）不同，本文件无单独"默认目录"变体——它总是对照 `DeviceStorage.getAppDir()` 当前报告的任何东西解析。
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="serialised"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 在 `service_data.json` 之前所有写入完成后运行 `operation`。
+- **输入：** `operation`。**返回：** `Future<void>`。
+- **副作用：** 解析文件路径，然后追加到该路径的写队列。
+- **算法：** `DeviceStorage.serializeWrite(file.path, operation)`。
+- **用法：** `save` 和本类的每个变更方法。
+- **备注：** 队列按文件路径而非全局设键，因此互不相干的文件从不互相等待，遗留在写入中途的队列也不会卡住另一个存储文件夹。
+
+### `static Future<void> _write(ServiceData data)` <a id="write"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 原子地写 `service_data.json` 并通知自动同步。
+- **输入：** `data`。**返回：** `Future<void>`。
+- **副作用：** 临时文件加重命名写入；`AutoSyncService.instance.notifySaved()`。
+- **算法：** 用两空格缩进美化打印 `data.toJson()`，经 `DeviceStorage.atomicWrite` 写入，然后通知。
+- **用法：** 本类的入队操作，以及经队列的 `save`。
+- **备注：** 绝不要从这里或它调用的东西入队；见上面的死锁规则。
+
+### `static ServiceRoute _withoutHops(ServiceRoute route, bool Function(ServiceRouteHop hop) drop)` <a id="withouthops"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 返回去掉 `drop` 所匹配跳的 `route`。
+- **输入：** `route`、`drop`。**返回：** 无跳匹配时返回**同一实例**，否则返回 `copyWith(hops: kept)` 副本。
+- **副作用：** 无。
+- **算法：** 过滤跳；把保留数量与原数量比较。
+- **用法：** `deleteService` 和 `removeDeviceReferences`。
+- **备注：** `copyWith` 会 bump `modifiedAt`；1.6.2 之前每条路由都被复制，因此删除一个服务或设备会让每条路由看起来都变了，并可能引发虚假的同步冲突。现在只复制真正失去跳的路由。
 
 ### `static Future<ServiceData> load()` <a id="load"></a>
 - **种类：** 静态方法。
@@ -53,8 +85,8 @@
 - **用途：** 把完整服务清单（服务和路由一起）持久化到 `service_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data` — 要写的完整 `ServiceData`；此类每个修改器都用新重建 `ServiceData` 调用它，绝不用部分更新。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `service_data.json`（美化打印、非原子直接写）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
-- **算法：** 用两空格缩进 JSON 编码 `data.toJson()`、写它、然后通知自动同步。
+- **副作用：** 原子地替换 `service_data.json`（美化打印、临时文件加重命名、排在更早的写入之后）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
+- **算法：** 入队 `_write`：用两空格缩进 JSON 编码 `data.toJson()`、原子写入、然后通知自动同步。
 - **用法：** 被本文件每个其他修改方法（[`addOrUpdateService`](#addorupdateservice)、[`deleteService`](#deleteservice)、[`addOrUpdateRoute`](#addorupdateroute)、[`deleteRoute`](#deleteroute)、[`removeDeviceReferences`](#removedevicereferences)）调用；不从此类外直接调用。
 - **备注：** 因为这里每个方法总是先加载完整列表并用重建 `ServiceData` 调用 `save`，两个并发修改（如来自两个 isolate）可竞争并互相破坏——匹配 [`DeviceStorage.writeConfig`](../../devices/services/device_storage.md#writeconfig) 注明的相同读-改-写注意，但本应用存储层只从单线程 UI/本地 API 路径驱动。
 
@@ -64,7 +96,7 @@
 - **用途：** 插入新服务或按 `id` 替换既有服务。
 - **输入：** `service`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `service_data.json`；路由原样带过。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `service_data.json`；路由原样带过。
 - **算法：** 1. 加载当前 `ServiceData`。2. 复制服务列表；找相同 `id` 的既有服务索引。3. 找到替换否则追加。4. 保存带更新服务列表、路由/`extraJson` 不动的 新 `ServiceData`。
 - **用法：**
   ```dart
@@ -79,7 +111,7 @@
 - **用途：** 按 id 删除服务并剥离任何引用它的路由跳，使已删除服务不能作为跳 `serviceId` 悬空。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `service_data.json`。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `service_data.json`。
 - **算法：** 1. 加载当前 `ServiceData`。2. 把服务从服务列表过滤。3. 对每条路由丢弃任何 `serviceId == id` 的跳（经 `route.copyWith(hops: ...)`）——路由本身即使跳列表被清空也保留；只移除引用已删除服务的跳。4. 保存更新服务和路由。
 - **用法：**
   ```dart
@@ -94,7 +126,7 @@
 - **用途：** 插入新路由或按 `id` 替换既有路由。
 - **输入：** `route`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `service_data.json`；服务原样带过。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `service_data.json`；服务原样带过。
 - **算法：** 与 [`addOrUpdateService`](#addorupdateservice) 相同插入-或-按-`id`-替换形态，应用于路由列表。
 - **用法：**
   ```dart
@@ -109,7 +141,7 @@
 - **用途：** 按 id 删除路由。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `service_data.json`。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `service_data.json`。
 - **算法：** 把路由从加载路由列表过滤，然后服务不变地保存。
 - **用法：**
   ```dart
@@ -124,7 +156,7 @@
 - **用途：** 移除对已删除或离开服务（退役/出售）设备的每个服务和路由引用——[`DeviceStorage`](../../devices/services/device_storage.md) 跨模块级联删除规则的服务层半边。
 - **输入：** `deviceId`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `service_data.json`，但**只**在实际有变化时（见算法步骤 4）。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `service_data.json`，但**只**在实际有变化时（见算法步骤 4）。
 - **算法：** 1. 加载当前 `ServiceData`。2. 计算 `removedServiceIds` — 每个 `deviceId == deviceId` 服务的 id。3. 构建丢弃那些服务的新服务列表，和新路由列表——丢弃任何 `sourceServiceId` 在 `removedServiceIds` 中的路由，然后（对剩余路由）过滤掉任何 `deviceId == deviceId` 或其 `serviceId` 在 `removedServiceIds` 中的跳。4. 只在服务列表长度变化、路由列表长度变化、或任何幸存路由跳数缩水（对照相同 `id` 原始路由比较每个新路由跳数检查）时调用 `save`——否则这是无写入的空操作。
 - **用法：**
   ```dart

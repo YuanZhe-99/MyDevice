@@ -9,6 +9,16 @@ import '../models/dataset.dart';
 class DataSetStorage {
   static const _dataFileName = dataSetDataFileName;
 
+  /// Purpose: Serialise [operation] behind earlier writes of `datasets.json`.
+  /// Inputs: `operation`.
+  /// Returns: `Future<void>`.
+  /// Side effects: See `DeviceStorage.serializeWrite`.
+  /// Notes: Internal helper used within this file only.
+  static Future<void> _serialised(Future<void> Function() operation) async {
+    final file = await _getFile();
+    return DeviceStorage.serializeWrite(file.path, operation);
+  }
+
   /// Purpose: Provide the internal get file helper for this file.
   /// Inputs: None.
   /// Returns: `Future<File>`.
@@ -36,21 +46,30 @@ class DataSetStorage {
   /// Purpose: Save the relevant data to the relevant storage or service layer.
   /// Inputs: `data`.
   /// Returns: `Future<void>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  static Future<void> save(DataSetData data) async {
+  /// Side effects: Atomically replaces `datasets.json` (queued behind earlier
+  /// writes) and notifies auto-sync.
+  /// Notes: Public entry point; enqueues [_write]. Code already running inside
+  /// the write queue must call [_write], never this method (deadlock).
+  static Future<void> save(DataSetData data) => _serialised(() => _write(data));
+
+  /// Purpose: Write `datasets.json` atomically and notify auto-sync.
+  /// Inputs: `data`.
+  /// Returns: `Future<void>`.
+  /// Side effects: tmp-file + rename write; calls `AutoSyncService.notifySaved`.
+  /// Notes: Internal helper; the unqueued primitive used from inside [_serialised].
+  static Future<void> _write(DataSetData data) async {
     final file = await _getFile();
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
-    await file.writeAsString(jsonStr);
+    await DeviceStorage.atomicWrite(file, jsonStr);
     AutoSyncService.instance.notifySaved();
   }
 
   /// Purpose: Add or update through the current flow.
   /// Inputs: `dataset`.
   /// Returns: `Future<void>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
-  static Future<void> addOrUpdate(DataSet dataset) async {
+  /// Side effects: Queued read-modify-write of `datasets.json`.
+  /// Notes: Keeps unknown top-level fields (`extraJson`).
+  static Future<void> addOrUpdate(DataSet dataset) => _serialised(() async {
     final data = await load();
     final list = List<DataSet>.of(data.datasets);
     final idx = list.indexWhere((d) => d.id == dataset.id);
@@ -59,19 +78,19 @@ class DataSetStorage {
     } else {
       list.add(dataset);
     }
-    await save(DataSetData(datasets: list, extraJson: data.extraJson));
-  }
+    await _write(DataSetData(datasets: list, extraJson: data.extraJson));
+  });
 
   /// Purpose: Delete the relevant data from the relevant storage or state.
   /// Inputs: `id`.
   /// Returns: `Future<void>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  static Future<void> delete(String id) async {
+  /// Side effects: Queued read-modify-write of `datasets.json`.
+  /// Notes: Keeps unknown top-level fields (`extraJson`).
+  static Future<void> delete(String id) => _serialised(() async {
     final data = await load();
     final list = data.datasets.where((d) => d.id != id).toList();
-    await save(DataSetData(datasets: list, extraJson: data.extraJson));
-  }
+    await _write(DataSetData(datasets: list, extraJson: data.extraJson));
+  });
 
   /// Purpose: Re-map dataset storage links after a device's storage slots changed.
   /// Inputs: `deviceId`, `oldSlotCount` slots before the edit, `indexMap`
@@ -97,45 +116,47 @@ class DataSetStorage {
     }
     if (identity) return;
 
-    final data = await load();
-    var changed = false;
-    final updated = <DataSet>[];
-    for (final ds in data.datasets) {
-      var dsChanged = false;
-      final links = <DataSetStorageLink>[];
-      for (final link in ds.storageLinks) {
-        if (link.deviceId != deviceId) {
-          links.add(link);
-          continue;
+    await _serialised(() async {
+      final data = await load();
+      var changed = false;
+      final updated = <DataSet>[];
+      for (final ds in data.datasets) {
+        var dsChanged = false;
+        final links = <DataSetStorageLink>[];
+        for (final link in ds.storageLinks) {
+          if (link.deviceId != deviceId) {
+            links.add(link);
+            continue;
+          }
+          final newIndices = <int>[];
+          for (final idx in link.storageIndices) {
+            final mapped = indexMap[idx];
+            if (mapped != null) newIndices.add(mapped);
+          }
+          if (newIndices.length != link.storageIndices.length ||
+              !_sameIndices(newIndices, link.storageIndices)) {
+            dsChanged = true;
+          }
+          if (newIndices.isNotEmpty) {
+            links.add(
+              DataSetStorageLink(
+                deviceId: link.deviceId,
+                storageIndices: newIndices,
+                extraJson: link.extraJson,
+              ),
+            );
+          }
         }
-        final newIndices = <int>[];
-        for (final idx in link.storageIndices) {
-          final mapped = indexMap[idx];
-          if (mapped != null) newIndices.add(mapped);
-        }
-        if (newIndices.length != link.storageIndices.length ||
-            !_sameIndices(newIndices, link.storageIndices)) {
-          dsChanged = true;
-        }
-        if (newIndices.isNotEmpty) {
-          links.add(
-            DataSetStorageLink(
-              deviceId: link.deviceId,
-              storageIndices: newIndices,
-              extraJson: link.extraJson,
-            ),
-          );
+        if (dsChanged) {
+          changed = true;
+          updated.add(ds.copyWith(storageLinks: links));
+        } else {
+          updated.add(ds);
         }
       }
-      if (dsChanged) {
-        changed = true;
-        updated.add(ds.copyWith(storageLinks: links));
-      } else {
-        updated.add(ds);
-      }
-    }
-    if (!changed) return;
-    await save(DataSetData(datasets: updated, extraJson: data.extraJson));
+      if (!changed) return;
+      await _write(DataSetData(datasets: updated, extraJson: data.extraJson));
+    });
   }
 
   /// Purpose: Compare two storage index lists element-wise.

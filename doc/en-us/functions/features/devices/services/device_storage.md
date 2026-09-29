@@ -25,6 +25,11 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | `_configFileName` | static const (private) | B | `'storage_config.json'`, the local preferences file name. |
 | `_customPath` | static field (private) | B | Cached custom storage path; `null` means the default directory. |
 | `_configLoaded` | static field (private) | B | Whether `_loadCustomPath` already ran in this process. |
+| `_queues` | static field (private) | B | One `AtomicWriteQueue` per data-file path, created on first use. |
+| [`serializeWrite`](#serializewrite) | static method | A | Run a read-modify-write after every earlier write to the same file path (shared by the four data storages). |
+| [`atomicWrite`](#atomicwrite) | static method | A | Replace a file atomically, retrying brief lock races (shared by every storage). |
+| [`_serialised`](#_serialised) | static method (private) | A | Serialise an operation behind earlier writes of `device_data.json`. |
+| [`_write`](#_write) | static method (private) | A | Write `device_data.json` atomically and notify auto-sync (the unqueued primitive). |
 | [`_getDefaultAppDir`](#_getdefaultappdir) | static method (private) | A | Resolve (and create) the default `~/Documents/MyDevice` directory. |
 | [`_getConfigFile`](#_getconfigfile) | static method (private) | A | Resolve the `storage_config.json` file, always in the default directory. |
 | [`_loadCustomPath`](#_loadcustompath) | static method (private) | A | Load the custom storage path from config, once per process. |
@@ -70,7 +75,9 @@ serializes, and [Devices](../../../../features/devices.md) for the cascade-delet
 | [`StoragePathResult`](#storagepathresult-new) | constructor | A | Create a result; `saved` defaults to true, `unmoved` to empty. |
 | [`complete`](#complete) | getter (`StoragePathResult`) | A | Whether the change fully succeeded: saved and nothing left behind. |
 
-Row count (49) is ten more than `grep -c '/// Purpose:' device_storage.dart` (39). Each of the 37
+Row count (54) is eleven more than `grep -c '/// Purpose:' device_storage.dart` (43). (1.6.2 added
+`_queues`, `serializeWrite`, `atomicWrite`, `_serialised` and `_write`; only `_queues` has no
+`Purpose:` block.) Each of the 37
 static methods, including each of the eight list-column accessors and the four on-device AI
 accessors (v1.6.0), has its own row and its own
 `Purpose:` block, and so do the `StoragePathResult` constructor and its `complete` getter. The ten
@@ -78,9 +85,55 @@ extra rows are the `DeviceStorage` class itself, the private static consts `_dat
 `_configFileName`, the private static fields `_customPath`, `_configLoaded` and
 `_strayCheckedFor`, the `StoragePathResult` class, and its fields `saved`, `unmoved` and `from`,
 which carry an ordinary `///` description or none and are listed because every declaration
-appears in the table. Tier A: 27 rows.
+appears in the table. Tier A: 31 rows.
+
+Since 1.6.2 all four data files and `storage_config.json` are written **atomically** (temporary
+file plus rename, `atomicWrite` → `atomicWriteString` from `myapps_data`) and the four data
+storages **serialise** their read-modify-write operations per file path (`serializeWrite`), so
+concurrent `addOrUpdate` calls no longer lose each other's edits and a crash cannot leave a
+truncated file. The default directory is deliberately not cached: tests (and platforms) swap the
+path provider.
 
 ## Documentation
+
+### `static Future<void> serializeWrite(String path, Future<void> Function() operation)` <a id="serializewrite"></a>
+- **Kind:** static method. **Since:** 1.6.2.
+- **Purpose:** Run `operation` after every earlier write to `path` has finished.
+- **Inputs:** `path` — the data file the operation reads and rewrites; `operation`.
+- **Returns:** `Future<void>` with the operation's own outcome.
+- **Side effects:** Appends to the `AtomicWriteQueue` of that path (created on first use, kept in `_queues`).
+- **Algorithm:** `(_queues[path] ??= AtomicWriteQueue()).enqueue(operation)`.
+- **Usage:** `_serialised` in this class and in `NetworkStorage`, `DataSetStorage`, `ServiceStorage`.
+- **Notes:** Queues are keyed by path, not global, so unrelated files never wait for each other and
+  a queue left mid-write cannot stall another storage folder. Code already inside an operation must
+  call its private `_write`, never the public `save`, or it would wait for itself (deadlock).
+
+### `static Future<void> atomicWrite(File file, String content)` <a id="atomicwrite"></a>
+- **Kind:** static method. **Since:** 1.6.2.
+- **Purpose:** Atomically replace `file` with `content`, retrying brief lock races.
+- **Inputs:** `file`, `content`. **Returns:** `Future<void>`; throws the last `FileSystemException`.
+- **Side effects:** Temporary file plus rename via `atomicWriteString` (`myapps_data`).
+- **Algorithm:** Up to five attempts; after a failed one wait 25 ms × attempt number.
+- **Usage:** Every storage's write, the config write, and the exchange-rate file.
+- **Notes:** On Windows the rename over the target fails with "access denied" while another reader
+  (or a virus scanner) has the target open, so a single attempt would turn a harmless race into a
+  user-visible error.
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="_serialised"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Run `operation` behind earlier writes of `device_data.json`.
+- **Inputs:** `operation`. **Returns:** `Future<void>`.
+- **Side effects:** Resolves the data file, then queues via `serializeWrite`.
+- **Usage:** `save`, `addOrUpdate`, `deleteDevice`.
+- **Notes:** None.
+
+### `static Future<void> _write(DeviceData data)` <a id="_write"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Write `device_data.json` atomically and notify auto-sync.
+- **Inputs:** `data`. **Returns:** `Future<void>`.
+- **Side effects:** `atomicWrite` of the pretty-printed JSON; `AutoSyncService.instance.notifySaved()`.
+- **Usage:** The queued operations of this class.
+- **Notes:** The unqueued primitive: never call `save` from anywhere that already runs inside the queue.
 
 ### `static Future<Directory> _getDefaultAppDir()` <a id="_getdefaultappdir"></a>
 - **Kind:** private static method.
@@ -93,7 +146,8 @@ appears in the table. Tier A: 27 rows.
   absent.
 - **Usage:** Called by [`getAppDir`](#getappdir) whenever no custom path is configured.
 - **Notes:** This is the directory used before the user ever changes the storage location in
-  Settings.
+  Settings. The platform path is resolved on every call and deliberately never cached, so a
+  swapped path provider (tests) is honoured.
 
 ### `static Future<File> _getConfigFile()` <a id="_getconfigfile"></a>
 - **Kind:** private static method.
@@ -181,8 +235,9 @@ appears in the table. Tier A: 27 rows.
   moves the old folder's contents into the new one through `migrateStorageContents` from
   `myapps_data` (`packages/myapps_data/lib/src/storage/storage_migration.dart`).
 - **Algorithm:** 1. `_adoptStrayConfig()`, so a stray copy in the current custom folder is merged
-  before that folder is emptied. 2. Capture the current directory as `oldDir`. 3. Set
-  `_customPath = newPath` and persist it into `storage_config.json` via
+  before that folder is emptied. 2. Capture the current directory as `oldDir`. 3. Persist `newPath` **first**, then set `_customPath = newPath` (if the new folder cannot be
+  created, both the path and the persisted config are rolled back and `saved: false` is returned;
+  1.6.2), via
   [`_readConfigFromDefault`](#_readconfigfromdefault) /
   [`_writeConfigToDefault`](#_writeconfigtodefault), removing the key when `newPath` is null or
   empty. 4. Resolve `newDir` via `getAppDir()`, which creates it; if its path equals `oldDir`'s,
@@ -279,13 +334,14 @@ appears in the table. Tier A: 27 rows.
 - **Purpose:** Write `storage_config.json` to the default directory.
 - **Inputs:** `config`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `storage_config.json` (pretty-printed, non-atomic direct write).
-- **Algorithm:** `JsonEncoder.withIndent('  ')` then `writeAsString`.
+- **Side effects:** Atomically replaces `storage_config.json` (pretty-printed, tmp file + rename).
+- **Algorithm:** `JsonEncoder.withIndent('  ')` then [`atomicWrite`](#atomicwrite).
 - **Usage:** Called by [`setStoragePath`](#setstoragepath), [`_adoptStrayConfig`](#_adoptstrayconfig)
   and [`writeConfig`](#writeconfig).
-- **Notes:** Not atomic (no temp-file-then-rename), unlike the sync-critical writes in
-  `WebDAVService` (`../../../../shared/services/webdav_service.md`) — this is a small local
-  settings file, not one of the four synced data files.
+- **Notes:** Atomic since 1.6.2 (temporary file then rename, like the sync-critical writes in
+  `WebDAVService`), so a crash cannot leave a half-written file that would reset `storagePath` and
+  the preferences. Read-modify-write races between two preference writers are still possible (a
+  config write queue is a known, unscheduled item).
 
 ### `static Future<File> _getFile(String name)` <a id="_getfile"></a>
 - **Kind:** private static method.
@@ -326,10 +382,12 @@ appears in the table. Tier A: 27 rows.
   service that local data changed.
 - **Inputs:** `data`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `device_data.json` (pretty-printed, non-atomic); calls
+- **Side effects:** Atomically replaces `device_data.json` (pretty-printed, tmp file + rename,
+  queued behind earlier writes); calls
   `AutoSyncService.instance.notifySaved()` (see
   [`../../../../shared/services/auto_sync_service.md`](../../../shared/services/auto_sync_service.md)).
-- **Algorithm:** JSON-encode `data.toJson()`, write it, then notify auto-sync.
+- **Algorithm:** Enqueue [`_write`](#_write) (JSON-encode `data.toJson()`, atomic write, then notify
+  auto-sync) on the per-path write queue.
 - **Usage:**
   ```dart
   await DeviceStorage.save(DeviceData(devices: _devices));
@@ -346,7 +404,7 @@ appears in the table. Tier A: 27 rows.
   cross-module references if the device is no longer in service.
 - **Inputs:** `device`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `device_data.json` via [`save`](#save); may call
+- **Side effects:** Queued read-modify-write of `device_data.json` through [`_write`](#_write); may call
   [`_removeDeviceReferences`](#_removedevicereferences).
 - **Algorithm:** 1. Load the current list. 2. Find the index of an existing device with the same
   `id`; replace it if found, else append. 3. Save. 4. If `!device.isInService` (retired or sold —
@@ -387,7 +445,8 @@ appears in the table. Tier A: 27 rows.
   outright deleting it.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
-- **Side effects:** May rewrite `network_data.json` (via `NetworkStorage.save`) and/or
+- **Side effects:** May rewrite `network_data.json` (via `NetworkStorage.save`, keeping its
+  `extraJson`) and/or
   `dataset_data.json` (via `DataSetStorage.save`); always calls
   `ServiceStorage.removeDeviceReferences(id)`.
 - **Algorithm:** 1. Load network data; filter out any assignment whose `deviceId == id`; save only
@@ -437,7 +496,7 @@ appears in the table. Tier A: 27 rows.
 - **Inputs:** `config` — typically read via [`readConfig`](#readconfig), mutated, then passed back.
 - **Returns:** `Future<void>`.
 - **Side effects:** May adopt a stray config first ([`_adoptStrayConfig`](#_adoptstrayconfig));
-  rewrites `storage_config.json` in the default folder (pretty-printed, non-atomic).
+  atomically rewrites `storage_config.json` in the default folder (pretty-printed, tmp file + rename).
 - **Algorithm:** `await _adoptStrayConfig()`; copy `config`, remove `storagePath`, put back the
   current `_customPath` under `storagePath` when it is set and non-empty, then
   [`_writeConfigToDefault`](#_writeconfigtodefault).

@@ -11,56 +11,49 @@ import 'package:my_device/shared/utils/adaptive_layout.dart';
 /// these run without a widget tree.
 void main() {
   group('split decision', () {
-    test('a Z Fold 8 answers differently in each orientation', () {
-      // 4:3 landscape inner panel: 2448 x 1848 px.
-      expect(canSplitLayout(933, 704), isTrue); // unfolded, landscape
-      expect(canSplitLayout(704, 933), isFalse); // unfolded, portrait
-    });
-
-    test('near-square foldables split both ways', () {
-      expect(canSplitLayout(750, 832), isTrue); // Z Fold 7 portrait
-      expect(canSplitLayout(832, 750), isTrue); // Z Fold 7 landscape
-      expect(canSplitLayout(859, 954), isTrue); // Z Fold 8 Ultra portrait
-      expect(canSplitLayout(954, 859), isTrue); // Z Fold 8 Ultra landscape
-      expect(canSplitLayout(791, 820), isTrue); // Pixel 10 Pro Fold portrait
-      expect(canSplitLayout(820, 791), isTrue); // Pixel 10 Pro Fold landscape
-    });
-
-    test('older folds still split', () {
-      expect(canSplitLayout(659, 791), isTrue); // Z Fold 5
-      expect(canSplitLayout(675, 786), isTrue); // Z Fold 6
-    });
-
-    test('folded cover screens never split', () {
-      expect(canSplitLayout(360, 840), isFalse); // Z Fold 7 / 8 Ultra cover
-      expect(canSplitLayout(416, 657), isFalse); // Z Fold 8 cover
-      expect(canSplitLayout(411, 923), isFalse); // Pixel 10 Pro Fold cover
-    });
-
-    test('short landscape is rejected on height, not width', () {
-      expect(canSplitLayout(657, 416), isFalse); // Z Fold 8 cover, landscape
-      expect(canSplitLayout(915, 412), isFalse); // ordinary phone, landscape
-    });
-
-    test('tablets follow the same rule as the Fold 8', () {
-      expect(canSplitLayout(768, 1024), isFalse); // 4:3 tablet portrait
-      expect(canSplitLayout(1024, 768), isTrue); // 4:3 tablet landscape
-      expect(canSplitLayout(800, 1280), isFalse); // 16:10 tablet portrait
-      expect(canSplitLayout(1280, 800), isTrue); // 16:10 tablet landscape
-    });
-
-    test('each threshold is exclusive at its boundary', () {
-      expect(canSplitLayout(599, 700), isFalse);
-      expect(canSplitLayout(600, 700), isTrue);
-      expect(canSplitLayout(700, 479), isFalse);
-      expect(canSplitLayout(700, 480), isTrue);
-      expect(canSplitLayout(810, 1000), isFalse); // aspect 0.81
-      expect(canSplitLayout(830, 1000), isTrue); // aspect 0.83
-    });
-
-    test('zero or negative height never splits', () {
-      expect(canSplitLayout(1200, 0), isFalse);
-      expect(canSplitLayout(1200, -100), isFalse);
+    // (width, height, splits?, why) - every real device/orientation and both
+    // sides of each threshold from the individual cases this table replaced.
+    const cases = <(double, double, bool, String)>[
+      // Z Fold 8 answers differently in each orientation (4:3 inner panel).
+      (933, 704, true, 'Z Fold 8 unfolded, landscape'),
+      (704, 933, false, 'Z Fold 8 unfolded, portrait'),
+      // Near-square foldables split both ways.
+      (750, 832, true, 'Z Fold 7 portrait'),
+      (832, 750, true, 'Z Fold 7 landscape'),
+      (859, 954, true, 'Z Fold 8 Ultra portrait'),
+      (954, 859, true, 'Z Fold 8 Ultra landscape'),
+      (791, 820, true, 'Pixel 10 Pro Fold portrait'),
+      (820, 791, true, 'Pixel 10 Pro Fold landscape'),
+      // Older folds still split.
+      (659, 791, true, 'Z Fold 5'),
+      (675, 786, true, 'Z Fold 6'),
+      // Folded cover screens never split.
+      (360, 840, false, 'Z Fold 7 / 8 Ultra cover'),
+      (416, 657, false, 'Z Fold 8 cover'),
+      (411, 923, false, 'Pixel 10 Pro Fold cover'),
+      // Short landscape is rejected on height, not width.
+      (657, 416, false, 'Z Fold 8 cover, landscape'),
+      (915, 412, false, 'ordinary phone, landscape'),
+      // Tablets follow the same rule as the Fold 8.
+      (768, 1024, false, '4:3 tablet portrait'),
+      (1024, 768, true, '4:3 tablet landscape'),
+      (800, 1280, false, '16:10 tablet portrait'),
+      (1280, 800, true, '16:10 tablet landscape'),
+      // Each threshold is exclusive at its boundary.
+      (599, 700, false, 'width just under 600'),
+      (600, 700, true, 'width exactly 600'),
+      (700, 479, false, 'height just under 480'),
+      (700, 480, true, 'height exactly 480'),
+      (810, 1000, false, 'aspect 0.81'),
+      (830, 1000, true, 'aspect 0.83'),
+      // Zero or negative height never splits.
+      (1200, 0, false, 'zero height'),
+      (1200, -100, false, 'negative height'),
+    ];
+    test('every named viewport and boundary', () {
+      for (final (w, h, expected, why) in cases) {
+        expect(canSplitLayout(w, h), expected, reason: '$why ($w x $h)');
+      }
     });
   });
 

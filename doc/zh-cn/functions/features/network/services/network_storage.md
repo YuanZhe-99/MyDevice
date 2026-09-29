@@ -7,6 +7,8 @@
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
 | [`_getFile`](#getfile) | 静态方法（私有） | A | 解析应用目录内 `network_data.json` 文件。 |
+| [`_serialised`](#serialised) | 静态方法（私有） | A | 在 `network_data.json` 更早的写入之后运行读-改-写（按路径的写队列）。 |
+| [`_write`](#write) | 静态方法（私有） | A | 原子地写 `network_data.json` 并通知自动同步（不入队的原语）。 |
 | [`load`](#load) | 静态方法 | A | 加载持久化 `NetworkData`（网络 + 赋值）。 |
 | [`save`](#save) | 静态方法 | A | 持久化 `NetworkData` 并通知自动同步服务。 |
 | [`addOrUpdateNetwork`](#addorupdatenetwork) | 静态方法 | A | 按 id 插入或替换网络。 |
@@ -14,7 +16,9 @@
 | [`setAssignment`](#setassignment) | 静态方法 | A | 插入或替换设备对网络的赋值。 |
 | [`removeAssignment`](#removeassignment) | 静态方法 | A | 从网络移除一个设备的赋值。 |
 
-行数（7）与 `grep -c 'Purpose:' network_storage.dart`（7）精确匹配。
+行数（9）与 `grep -c 'Purpose:' network_storage.dart`（9）精确匹配。
+
+自 1.6.2 起每次写入都是**原子且串行的**：`save` 和每个读-改-写变更方法都在按文件路径的写队列（`DeviceStorage.serializeWrite`，每个路径一个 `AtomicWriteQueue`）中运行，重新读取文件，并以私有的 `_write` 结束，后者经临时文件加重命名替换文件（`DeviceStorage.atomicWrite`）——因此两个重叠的编辑不会丢失彼此的更改，崩溃也不会留下被截断的文件。已在队列中运行的代码必须调用 `_write`，绝不能调用公开的 `save`，否则会等待自己而死锁。容器的每次重建还会带过文件的未知顶层字段（`extraJson`），使旧版本不会丢弃新版本的数据。
 
 ## 文档
 
@@ -28,6 +32,24 @@
 - **算法：** 在 `DeviceStorage.getAppDir()` 上 `File('${appDir.path}/$_dataFileName')`，`_dataFileName` 是 [`data_modules.dart`](../../../app/data_modules.md#constants) 中 `networkDataFileName`（`'network_data.json'`）的别名。
 - **用法：** 被 [`load`](#load) 和 [`save`](#save) 调用。
 - **备注：** 委托 `DeviceStorage.getAppDir()`（而非解析自己的目录）正是让 `network_data.json` 即使用户在设置更改存储位置后也住在 `device_data.json` 旁的东西。
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="serialised"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 在 `network_data.json` 之前所有写入完成后运行 `operation`。
+- **输入：** `operation`。**返回：** `Future<void>`。
+- **副作用：** 解析文件路径，然后追加到该路径的写队列。
+- **算法：** `DeviceStorage.serializeWrite(file.path, operation)`。
+- **用法：** `save` 和本类的每个变更方法。
+- **备注：** 队列按文件路径而非全局设键，因此互不相干的文件从不互相等待，遗留在写入中途的队列也不会卡住另一个存储文件夹。
+
+### `static Future<void> _write(NetworkData data)` <a id="write"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 原子地写 `network_data.json` 并通知自动同步。
+- **输入：** `data`。**返回：** `Future<void>`。
+- **副作用：** 临时文件加重命名写入；`AutoSyncService.instance.notifySaved()`。
+- **算法：** 用两空格缩进美化打印 `data.toJson()`，经 `DeviceStorage.atomicWrite` 写入，然后通知。
+- **用法：** 本类的入队操作，以及经队列的 `save`。
+- **备注：** 绝不要从这里或它调用的东西入队；见上面的死锁规则。
 
 ### `static Future<NetworkData> load()` <a id="load"></a>
 - **种类：** 静态方法。
@@ -50,8 +72,8 @@
 - **用途：** 把完整网络数据集持久化到 `network_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `network_data.json`（美化打印、非原子）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
-- **算法：** JSON 编码 `data.toJson()`、写它、然后通知自动同步。
+- **副作用：** 原子地替换 `network_data.json`（美化打印、临时文件加重命名、排在更早的写入之后）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
+- **算法：** 把 [`_write`](#write)（JSON 编码 `data.toJson()`、原子写入、然后通知自动同步）入队到按路径的写队列。
 - **用法：**
   ```dart
   await NetworkStorage.save(
@@ -67,7 +89,7 @@
 - **用途：** 插入新网络或按 `id` 替换既有网络。
 - **输入：** `network`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `network_data.json`；赋值原样带过。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `network_data.json`；赋值原样带过。
 - **算法：** 加载当前列表；找相同 `id` 的既有网络索引，找到替换否则追加；带（可能未变）`assignments` 列表保存。
 - **用法：**
   ```dart
@@ -82,7 +104,7 @@
 - **用途：** 按 id 删除网络并移除每个引用它的赋值。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `network_data.json`。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `network_data.json`。
 - **算法：** 把网络从加载列表过滤；过滤掉每个 `networkId == id` 的赋值；一次写入一起保存两个列表。
 - **用法：**
   ```dart
@@ -97,7 +119,7 @@
 - **用途：** 插入新设备赋值或按 `(networkId, deviceId)` 复合键替换既有赋值。
 - **输入：** `assignment`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `network_data.json`；`networks` 不变。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `network_data.json`；`networks` 不变。
 - **算法：** 加载当前列表；找相同 `networkId` *和* `deviceId` 的既有赋值索引，找到替换否则追加；保存。
 - **用法：**
   ```dart
@@ -112,7 +134,7 @@
 - **用途：** 从网络移除单个设备的赋值。
 - **输入：** `networkId`、`deviceId`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `network_data.json`；`networks` 不变。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `network_data.json`；`networks` 不变。
 - **算法：** 过滤掉同时匹配 `networkId` 和 `deviceId` 的赋值；保存。
 - **用法：**
   ```dart

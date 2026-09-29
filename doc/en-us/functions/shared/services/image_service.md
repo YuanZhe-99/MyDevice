@@ -10,6 +10,7 @@ a `DeviceImageEditRequest` from [device_image_processing.md](../utils/device_ima
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| [`cachedResolve`](#cachedresolve) | static method | A | Return the file for a relative image path without awaiting (best-effort `initialData`). |
 | [`_getImageDir`](#getimagedir) | static method | A | Resolve (and create if missing) the app's `images/` directory. |
 | [`pickAndSaveImage`](#pickandsaveimage) | static method | A | Let the user pick an image file and copy it into app storage unchanged. |
 | [`pickImageFile`](#pickimagefile) | static method | A | Let the user pick an image file without copying it. |
@@ -21,9 +22,24 @@ a `DeviceImageEditRequest` from [device_image_processing.md](../utils/device_ima
 | [`delete`](#delete) | static method | A | Delete a previously saved image by relative path. |
 | [`saveImageFromUrl`](#saveimagefromurl) | static method | A | Download an image from a URL into app storage. |
 
-Row-count note: `grep -c 'Purpose:'` on this file returns 10, matching the 10 rows above exactly.
+Row-count note: `grep -c 'Purpose:'` on this file returns 11, matching the 11 rows above exactly.
 
 ## Documentation
+
+### `static File? cachedResolve(String relativePath)` <a id="cachedresolve"></a>
+- **Kind:** static method. **Since:** 1.6.2.
+- **Purpose:** Return the file for `relativePath` without awaiting, from the storage folder the last `resolve` saw.
+- **Inputs:** `relativePath`. **Returns:** the `File`, or null before any `resolve` has run.
+- **Side effects:** None.
+- **Usage:** `DeviceAvatar` passes it as `FutureBuilder.initialData`, so a known image shows on the first frame.
+- **Notes:** Can be stale right after a storage-path change (or in tests); the awaited `resolve` result replaces it.
+
+### 1.6.2 other changes
+
+`decodeEditableImage` now releases the `ImmutableBuffer`, `ImageDescriptor`, `Codec` and `Image` in a
+`finally`, so a decode that throws no longer leaks the native handles; the image editor reads the
+picked file once (the bytes feed both the decoder and the crop view) and decodes the crop view at
+≤ 1024 px (`cacheWidth` / `cacheHeight`).
 
 ### `static Future<Directory> _getImageDir()` <a id="getimagedir"></a>
 - **Kind:** static method of `ImageService`.

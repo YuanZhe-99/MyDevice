@@ -64,6 +64,7 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     final asc = config['netDetailSortAscending'] as bool? ?? false;
     final group = config['netDetailGroupByCategory'] as bool? ?? false;
     final exitFirst = config['netDetailExitFirst'] as bool? ?? false;
+    if (!mounted) return;
     setState(() {
       _sortMode =
           NetworkDeviceSortMode.values

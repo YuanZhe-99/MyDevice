@@ -16,6 +16,9 @@ locally in `_averageDailyCostAt`/`_totalDailyCostAt`). See
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| [`calendarDaysBetween`](#calendardaysbetween) | top-level function | A | Count calendar days from one date to another, DST-proof. |
+| [`trendScaleDates`](#trendscaledates) | top-level function | A | Produce the trend chart's x-axis dates by calendar-day stepping. |
+| [`_TrendCache`](#_trendcache) | constructor (private class) | A | Bundle a computed trend with the inputs it was computed for. |
 | `DeviceFinanceOverviewPage` (constructor) | constructor | B | Store the device list and default currency for the page widget. |
 | `createState` | method (`DeviceFinanceOverviewPage`) | B | Create the page's mutable state object. |
 | `build` | method (widget) | B | Build the scaffold; under the double gate (`canSplitLayout` on the screen, `useFinanceSideBySide` on the body width less 32, and a non-empty distribution) the summary card sits in a `financeSummaryPaneWidth` pane beside the distribution card, otherwise the three cards stack; the trend card is always full width below, followed by the on-device AI [`AiInsightCard`](../../ai/widgets/ai_insight_card.md) (v1.6.0: module `deviceFinance`, `compact: !sideBySide`, a `top: 12` margin, sections `aiFinanceCosts` and `aiFinanceRecurring`, facts from [`buildDeviceFinanceInsightFacts`](../services/finance_insight_facts.md) with a names-free `fallbackFacts`), which renders nothing unless on-device AI is on. |
@@ -29,7 +32,7 @@ locally in `_averageDailyCostAt`/`_totalDailyCostAt`). See
 | [`_buildTrendData`](#_buildtrenddata) | method (`_DeviceFinanceOverviewPageState`) | A | Sample the daily-cost function across the trend scale into history/future point lists. |
 | [`_assetBuckets`](#_assetbuckets) | method (`_DeviceFinanceOverviewPageState`) | A | Aggregate each device's total cost into per-category buckets, sorted descending. |
 | [`_historyStart`](#_historystart) | method (`_DeviceFinanceOverviewPageState`) | A | Compute the trend chart's history start date for the selected range. |
-| [`_historyDuration`](#_historyduration) | method (`_DeviceFinanceOverviewPageState`) | A | Compute the forward projection window's length from the history window's length. |
+| [`_historyDays`](#_historyduration) | method (`_DeviceFinanceOverviewPageState`) | A | Compute the forward projection window's length from the history window's length. |
 | [`_earliestPurchaseDate`](#_earliestpurchasedate) | method (`_DeviceFinanceOverviewPageState`) | A | Find the earliest `purchaseDate` across all devices. |
 | [`_totalDailyCostAt`](#_totaldailycostat) | method (`_DeviceFinanceOverviewPageState`) | A | Sum every device's average daily cost as of a given date. |
 | [`_averageDailyCostAt`](#_averagedailycostat) | method (`_DeviceFinanceOverviewPageState`) | A | Compute one device's average daily cost as of an arbitrary date (past or future). |
@@ -50,7 +53,7 @@ locally in `_averageDailyCostAt`/`_totalDailyCostAt`). See
 | `_ChartSeries` (constructor) | constructor | B | Store one chart series' label, color, spots, and dashed flag. |
 | `_AssetBucket` (constructor) | constructor | B | Store one category's label, amount, count, and chart color. |
 
-Row count note: `grep -c 'Purpose:'` on this file returns 32; the table above has 33 real
+Row count note: `grep -c 'Purpose:'` on this file returns 35; the table above has 36 real
 declaration rows (the stray `_chartColors` line is a table formatting artifact, not a separate
 row — see below). The one undocumented declaration is `_chartBounds`
 (`lib/features/devices/views/device_finance_overview_page.dart`, line 831): it has no `///` doc
@@ -62,6 +65,19 @@ method/constructor, and — consistent with how other private enums and constant
 batch's files are handled — is not counted as its own declaration row.
 
 ## Documentation
+
+### 1.6.2 changes
+
+- **Calendar-day arithmetic (DST).** `Duration(days: n)` is `n × 24 h`, so on a local time it drifts
+  to 23:00 / 01:00 across a daylight-saving change. `_historyDuration` became `_historyDays` (an
+  `int`, added with `DateTime(y, m, d + n)`); `_averageDailyCostAt` counts service days with
+  `calendarDaysBetween`; and the chart's dates come from `trendScaleDates`, which steps 1 / 7 / 30
+  calendar days. `calendarDaysBetween(from, to)` re-bases both dates to UTC midnight before
+  `difference(...).inDays`. `test/finance_trend_scale_test.dart` is a real DST check only when run in
+  a DST zone (CI with `TZ=America/New_York`).
+- **`_TrendCache`.** `_buildTrendCard` keeps the last computed scale and series and reuses them
+  while the range, today's date and the device list (by identity) are unchanged, instead of
+  recomputing on every build.
 
 ### `Widget _buildLineChartPanel({required BuildContext context, required AppLocalizations l10n, required _TrendScale scale, required List<_ChartSeries> series, required double minY, required double maxY})` <a id="_buildlinechartpanel"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
@@ -187,7 +203,7 @@ batch's files are handled — is not counted as its own declaration row.
   (`lib/features/devices/views/device_finance_overview_page.dart`, line 316).
 - **Notes:** None.
 
-### `Duration _historyDuration(DateTime today, DateTime historyStart)` <a id="_historyduration"></a>
+### `Duration _historyDays(DateTime today, DateTime historyStart)` <a id="_historyduration"></a>
 - **Kind:** method of `_DeviceFinanceOverviewPageState`
 - **Source:** `lib/features/devices/views/device_finance_overview_page.dart` (line 744)
 - **Purpose:** Derive the forward "future projection" window's length from the historical
@@ -201,7 +217,7 @@ batch's files are handled — is not counted as its own declaration row.
   the history window itself is very short.
 - **Usage:**
   ```dart
-  final futureEnd = today.add(_historyDuration(today, historyStart));
+  final futureEnd = today.add(_historyDays(today, historyStart));
   ```
   (from `_buildTrendCard`, `lib/features/devices/views/device_finance_overview_page.dart`, line
   317)

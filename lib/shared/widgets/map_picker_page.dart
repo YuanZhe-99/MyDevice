@@ -79,6 +79,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
         if (results.isNotEmpty) {
           final lat = double.parse(results[0]['lat'] as String);
           final lon = double.parse(results[0]['lon'] as String);
+          if (!mounted) return;
           setState(() => _selected = LatLng(lat, lon));
         }
       }

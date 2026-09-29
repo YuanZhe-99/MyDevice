@@ -111,7 +111,7 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
   Future<void> _saveConfig() async {
     final config = _currentConfig;
     await WebDAVService.saveConfig(config);
-    setState(() => _isConfigured = config.isConfigured);
+    if (mounted) setState(() => _isConfigured = config.isConfigured);
     if (config.isConfigured && config.autoSync) {
       AutoSyncService.instance.requestSyncNow();
     }
@@ -449,10 +449,12 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
     _userController.clear();
     _passController.clear();
     _pathController.text = '/MyDevice';
-    setState(() {
-      _isConfigured = false;
-      _autoSync = false;
-    });
+    if (mounted) {
+      setState(() {
+        _isConfigured = false;
+        _autoSync = false;
+      });
+    }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

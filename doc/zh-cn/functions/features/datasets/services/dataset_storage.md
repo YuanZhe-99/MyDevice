@@ -7,6 +7,8 @@
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
 | [`_getFile`](#getfile) | 静态方法（私有） | A | 解析应用目录内 `dataset_data.json` 文件。 |
+| [`_serialised`](#serialised) | 静态方法（私有） | A | 在 `dataset_data.json` 更早的写入之后运行读-改-写（按路径的写队列）。 |
+| [`_write`](#write) | 静态方法（私有） | A | 原子地写 `dataset_data.json` 并通知自动同步（不入队的原语）。 |
 | [`load`](#load) | 静态方法 | A | 加载持久化 `DataSetData`（数据集列表）。 |
 | [`save`](#save) | 静态方法 | A | 持久化 `DataSetData` 并通知自动同步服务。 |
 | [`addOrUpdate`](#addorupdate) | 静态方法 | A | 按 id 插入或替换数据集。 |
@@ -14,7 +16,9 @@
 | [`remapDeviceStorageLinks`](#remapdevicestoragelinks) | 静态方法 | A | 设备存储列表变化后重映射（或丢弃）数据集存储槽索引。 |
 | [`_sameIndices`](#sameindices) | 静态方法（私有） | A | 逐元素比较两个存储索引列表是否相等。 |
 
-行数（7）与 `grep -c 'Purpose:' dataset_storage.dart`（7）精确匹配。
+行数（9）与 `grep -c 'Purpose:' dataset_storage.dart`（9）精确匹配。
+
+自 1.6.2 起每次写入都是**原子且串行的**：`save` 和每个读-改-写变更方法都在按文件路径的写队列（`DeviceStorage.serializeWrite`，每个路径一个 `AtomicWriteQueue`）中运行，重新读取文件，并以私有的 `_write` 结束，后者经临时文件加重命名替换文件（`DeviceStorage.atomicWrite`）——因此两个重叠的编辑不会丢失彼此的更改，崩溃也不会留下被截断的文件。已在队列中运行的代码必须调用 `_write`，绝不能调用公开的 `save`，否则会等待自己而死锁。容器的每次重建还会带过文件的未知顶层字段（`extraJson`），使旧版本不会丢弃新版本的数据。
 
 ## 文档
 
@@ -28,6 +32,24 @@
 - **算法：** 在 `DeviceStorage.getAppDir()` 上 `File('${appDir.path}/$_dataFileName')`，`_dataFileName` 是 [`data_modules.dart`](../../../app/data_modules.md#constants) 中 `dataSetDataFileName`（`'dataset_data.json'`）的别名。
 - **用法：** 被 [`load`](#load) 和 [`save`](#save) 调用。
 - **备注：** 与 `NetworkStorage._getFile`（`../../network/services/network_storage.md`）相同模式——委托 `DeviceStorage.getAppDir()` 使 `dataset_data.json` 即使设置自定义存储路径后也与应用其他数据文件同处。
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="serialised"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 在 `dataset_data.json` 之前所有写入完成后运行 `operation`。
+- **输入：** `operation`。**返回：** `Future<void>`。
+- **副作用：** 解析文件路径，然后追加到该路径的写队列。
+- **算法：** `DeviceStorage.serializeWrite(file.path, operation)`。
+- **用法：** `save` 和本类的每个变更方法。
+- **备注：** 队列按文件路径而非全局设键，因此互不相干的文件从不互相等待，遗留在写入中途的队列也不会卡住另一个存储文件夹。
+
+### `static Future<void> _write(DataSetData data)` <a id="write"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 原子地写 `dataset_data.json` 并通知自动同步。
+- **输入：** `data`。**返回：** `Future<void>`。
+- **副作用：** 临时文件加重命名写入；`AutoSyncService.instance.notifySaved()`。
+- **算法：** 用两空格缩进美化打印 `data.toJson()`，经 `DeviceStorage.atomicWrite` 写入，然后通知。
+- **用法：** 本类的入队操作，以及经队列的 `save`。
+- **备注：** 绝不要从这里或它调用的东西入队；见上面的死锁规则。
 
 ### `static Future<DataSetData> load()` <a id="load"></a>
 - **种类：** 静态方法。
@@ -50,8 +72,8 @@
 - **用途：** 把完整数据集列表持久化到 `dataset_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `dataset_data.json`（美化打印、非原子）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
-- **算法：** JSON 编码 `data.toJson()`、写它、然后通知自动同步。
+- **副作用：** 原子地替换 `dataset_data.json`（美化打印、临时文件加重命名、排在更早的写入之后）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
+- **算法：** 把 [`_write`](#write)（JSON 编码 `data.toJson()`、原子写入、然后通知自动同步）入队到按路径的写队列。
 - **用法：**
   ```dart
   await save(DataSetData(datasets: updated, extraJson: data.extraJson));
@@ -65,7 +87,7 @@
 - **用途：** 插入新数据集或按 `id` 替换既有数据集。
 - **输入：** `dataset`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `dataset_data.json`。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `dataset_data.json`。
 - **算法：** 加载当前列表；找相同 `id` 的既有数据集索引，找到则替换否则追加；保存。
 - **用法：**
   ```dart
@@ -80,7 +102,7 @@
 - **用途：** 按 id 删除数据集。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `dataset_data.json`。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `dataset_data.json`。
 - **算法：** 把数据集从加载列表过滤；保存。
 - **用法：**
   ```dart
@@ -95,7 +117,7 @@
 - **用途：** 设备存储列表被重排或移除条目后，为一台设备重映射每个数据集的 `storageIndices`，使链接继续指向正确物理槽而非静默漂移。
 - **输入：** `deviceId` — 哪台设备存储变了；`oldSlotCount` — 编辑前有多少槽；`indexMap` — 把每个**旧**槽索引（`0..oldSlotCount-1`）映射到其**新**索引；映射缺席的旧索引意为该槽被移除无替代。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `dataset_data.json`——但只在至少一个数据集实际变化时；给触碰的每个数据集 bump `modifiedAt`（经 [`copyWith`](../models/dataset.md#copywith)）。
+- **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `dataset_data.json`——但只在至少一个数据集实际变化时；给触碰的每个数据集 bump `modifiedAt`（经 [`copyWith`](../models/dataset.md#copywith)）。
 - **算法：** 1. 检查 `indexMap` 对每个索引 `0..oldSlotCount-1` 是否恒等映射；是则不做任何加载或保存地立即返回（空操作快速路径）。2. 否则加载所有数据集。3. 对每个数据集、每个 `DataSetStorageLink`：其 `deviceId` 不匹配则保持不变。否则在 `indexMap` 查找链接每个 `storageIndices` 构建 `newIndices`——有映射的索引保留在新位置；无映射的索引（`indexMap[idx] == null`）完全丢弃。4. `newIndices` 与原始 `storageIndices` 不同（按长度或按内容，经 [`_sameIndices`](#sameindices)）时标记此数据集已变。5. `newIndices` 最终为空的链接被完全从数据集 `storageLinks` 丢弃（而非带空列表保留）。6. 至少一个链接变化的任何数据集经 `copyWith(storageLinks: links)` 替换（这也 bump `modifiedAt`）；未受影响数据集原样通过。7. 无数据集变化时保存前返回；否则保存更新数据集列表。
 - **用法：** 设备编辑器保存处理器每次保存时调用，带用户在编辑/重排/移除存储行时跟踪的旧→新槽索引映射——此函数调用方必须维持的调用点契约见 [数据集 — 设备编辑器集成](../../../../features/datasets.md#device-editor-integration)。
 - **备注：** 这是 `AGENTS.md` 点名的"重排/移除设备存储槽必须保持数据集链接同步"规则的唯一实现（见 [数据集 — 存储槽索引链接](../../../../features/datasets.md#storage-slot-index-linking)）——任何让用户重排或移除存储槽的*新*代码路径也必须带结果索引映射调用此函数，否则数据集链接会静默指向错误（或不复存在）槽。步骤 1 的恒等映射快速路径意味着每次设备保存无条件调用在存储实际未被重排/移除时便宜。

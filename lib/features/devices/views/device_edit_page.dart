@@ -118,6 +118,29 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   // Keys to force Autocomplete rebuild when presets are applied
   int _cpuAutoKey = 0;
   int _gpuAutoKey = 0;
+  int _brandAutoKey = 0;
+
+  /// True while [_save] is running; blocks a second tap creating a duplicate.
+  bool _saving = false;
+
+  /// Autocomplete field controllers that already mirror into a form controller.
+  final Expando<bool> _mirrored = Expando<bool>('mirrored');
+
+  /// Purpose: Mirror an Autocomplete's internal controller into [to], once.
+  /// Inputs: `from` - the controller the Autocomplete owns; `to` - the form
+  /// controller that holds the value read at save time.
+  /// Returns: None.
+  /// Side effects: Adds a listener to `from` the first time it is seen.
+  /// Notes: `fieldViewBuilder` runs on every rebuild; adding a listener there
+  /// each time leaked one listener per rebuild, and copying `from` into `to`
+  /// there overwrote values set programmatically (search results).
+  void _mirrorController(TextEditingController from, TextEditingController to) {
+    if (_mirrored[from] == true) return;
+    _mirrored[from] = true;
+    from.addListener(() {
+      if (to.text != from.text) to.text = from.text;
+    });
+  }
 
   /// Purpose: Provide the internal is editing helper for this file.
   /// Inputs: None.
@@ -458,9 +481,26 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   /// Purpose: Save the relevant data to the relevant storage or service layer.
   /// Inputs: None.
   /// Returns: `Future<void>`.
-  /// Side effects: May update UI state or trigger user-facing flows.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: Sets `_saving` for the duration and runs [_saveImpl].
+  /// Notes: Re-entrancy guard: while a save is in flight (rate conversion and
+  /// storage writes are async) further taps are ignored, so one device is
+  /// never added twice.
   Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _saveImpl();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  /// Purpose: Validate the form and persist the device.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: May show a snackbar, writes device storage, pops the page.
+  /// Notes: Internal helper; call only through [_save].
+  Future<void> _saveImpl() async {
     if (!_formKey.currentState!.validate()) return;
     final l10n = AppLocalizations.of(context)!;
 
@@ -831,7 +871,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   /// Notes: Internal helper used within this file only.
   void _applySearchResult(Map<String, dynamic> result) {
     setState(() {
-      if (result['brand'] is String) _brandCtrl.text = result['brand'];
+      if (result['brand'] is String) {
+        _brandCtrl.text = result['brand'];
+        _brandAutoKey++;
+      }
       if (result['model'] is String) _modelCtrl.text = result['model'];
 
       // CPU: try matching against presets
@@ -1658,7 +1701,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               tooltip: l10n.fetchFromInternet,
               onPressed: _showSearchDialog,
             ),
-          TextButton(onPressed: _save, child: Text(l10n.save)),
+          TextButton(onPressed: _saving ? null : _save, child: Text(l10n.save)),
         ],
       ),
       body: Form(key: _formKey, child: _buildFormBody(context, l10n, theme)),
@@ -1766,6 +1809,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         const SizedBox(height: 12),
       ],
       Autocomplete<BrandEntry>(
+        key: ValueKey('brand_auto_$_brandAutoKey'),
         initialValue: _brandCtrl.value,
         optionsBuilder: (textEditingValue) {
           if (textEditingValue.text.isEmpty) return _brandPresets;
@@ -1776,8 +1820,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         },
         displayStringForOption: (b) => b.name,
         fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-          _brandCtrl.text = ctrl.text;
-          ctrl.addListener(() => _brandCtrl.text = ctrl.text);
+          _mirrorController(ctrl, _brandCtrl);
           return TextFormField(
             controller: ctrl,
             focusNode: focusNode,
@@ -1928,7 +1971,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         },
         displayStringForOption: (c) => c.model ?? '',
         fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-          ctrl.addListener(() => _cpuModelCtrl.text = ctrl.text);
+          _mirrorController(ctrl, _cpuModelCtrl);
           return TextFormField(
             controller: ctrl,
             focusNode: focusNode,
@@ -2030,7 +2073,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         },
         displayStringForOption: (g) => g.model ?? '',
         fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-          ctrl.addListener(() => _gpuModelCtrl.text = ctrl.text);
+          _mirrorController(ctrl, _gpuModelCtrl);
           return TextFormField(
             controller: ctrl,
             focusNode: focusNode,

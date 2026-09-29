@@ -2,15 +2,15 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **1467**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1589** 个声明——比 1467 多 122——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **1493**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1616** 个声明——比 1467 多 122——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
 
 `/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart`（排除 `lib/l10n/`）对源码核验。声明总数是手工维护的，并已**按当前工作区重新核对**：每个文件行都与其自身页面的声明表一致（行数和 Tier A），「区域总计」表和下方的 Tier 表都是各文件行的精确合计。请保持如此：增删某页面行的改动，须在同一提交中更新其文件行和两张总计表。
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 853 |
-| Tier B（仅索引行） | 736 |
-| **总计** | **1589** |
+| Tier A（完整条目） | 877 |
+| Tier B（仅索引行） | 739 |
+| **总计** | **1616** |
 
 ## 根（`lib/`）
 
@@ -47,7 +47,7 @@
 | 源文件 | 页面 | 声明 | Tier A |
 |---|---|---|---|
 | `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 12 | 12 |
-| `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 7 | 7 |
+| `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 9 | 9 |
 | `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 12 | 3 |
 | `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 18 | 8 |
 
@@ -59,18 +59,18 @@
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 40 | 37 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 39 | 27 |
-| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 49 | 27 |
-| `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
+| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 54 | 31 |
+| `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 25 | 24 |
 | `lib/features/devices/services/finance_insight_facts.dart` | [features/devices/services/finance_insight_facts.md](features/devices/services/finance_insight_facts.md) | 5 | 1 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 19 | 15 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
-| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 61 | 17 |
-| `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 33 | 16 |
+| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 63 | 19 |
+| `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 36 | 19 |
 | `lib/features/devices/views/device_image_editor_page.dart` | [features/devices/views/device_image_editor_page.md](features/devices/views/device_image_editor_page.md) | 22 | 6 |
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 45 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
-| `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 10 | 0 |
+| `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 12 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
 | `lib/features/devices/widgets/template_image_picker.dart` | [features/devices/widgets/template_image_picker.md](features/devices/widgets/template_image_picker.md) | 9 | 4 |
 
@@ -79,7 +79,7 @@
 | 源文件 | 页面 | 声明 | Tier A |
 |---|---|---|---|
 | `lib/features/network/models/network.dart` | [features/network/models/network.md](features/network/models/network.md) | 17 | 16 |
-| `lib/features/network/services/network_storage.dart` | [features/network/services/network_storage.md](features/network/services/network_storage.md) | 7 | 7 |
+| `lib/features/network/services/network_storage.dart` | [features/network/services/network_storage.md](features/network/services/network_storage.md) | 9 | 9 |
 | `lib/features/network/views/network_detail_page.dart` | [features/network/views/network_detail_page.md](features/network/views/network_detail_page.md) | 26 | 11 |
 | `lib/features/network/views/network_edit_page.dart` | [features/network/views/network_edit_page.md](features/network/views/network_edit_page.md) | 9 | 1 |
 | `lib/features/network/views/network_list_page.dart` | [features/network/views/network_list_page.md](features/network/views/network_list_page.md) | 16 | 6 |
@@ -93,7 +93,7 @@
 | `lib/features/services/services/service_analysis.dart` | [features/services/services/service_analysis.md](features/services/services/service_analysis.md) | 76 | 44 |
 | `lib/features/services/services/service_insight_facts.dart` | [features/services/services/service_insight_facts.md](features/services/services/service_insight_facts.md) | 6 | 2 |
 | `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 11 | 5 |
-| `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 8 | 8 |
+| `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 11 | 11 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
 | `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 115 | 45 |
 | `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 54 | 13 |
@@ -117,7 +117,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1467/1589 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1493/1616 手写声明）。
 
 ## shared/
 
@@ -126,10 +126,10 @@
 | `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 9 | 9 |
 | `lib/shared/services/auto_sync_service.dart` | [shared/services/auto_sync_service.md](shared/services/auto_sync_service.md) | 20 | 5 |
 | `lib/shared/services/backup_service.dart` | [shared/services/backup_service.md](shared/services/backup_service.md) | 12 | 12 |
-| `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 10 | 10 |
+| `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 11 | 11 |
 | `lib/shared/services/image_share_service.dart` | [shared/services/image_share_service.md](shared/services/image_share_service.md) | 3 | 3 |
 | `lib/shared/services/import_export_service.dart` | [shared/services/import_export_service.md](shared/services/import_export_service.md) | 5 | 4 |
-| `lib/shared/services/local_api_server.dart` | [shared/services/local_api_server.md](shared/services/local_api_server.md) | 58 | 49 |
+| `lib/shared/services/local_api_server.dart` | [shared/services/local_api_server.md](shared/services/local_api_server.md) | 61 | 52 |
 | `lib/shared/services/sync_merge.dart` | [shared/services/sync_merge.md](shared/services/sync_merge.md) | 25 | 9 |
 | `lib/shared/services/sync_progress.dart` | [shared/services/sync_progress.md](shared/services/sync_progress.md) | 0 | 0 |
 | `lib/shared/services/sync_wake_lock.dart` | [shared/services/sync_wake_lock.md](shared/services/sync_wake_lock.md) | 0 | 0 |
@@ -155,10 +155,10 @@
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 24 | 18 | 6 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
-| `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 18 | 477 | 265 | 212 |
-| `features/network/` | 5 | 75 | 41 | 34 |
-| `features/services/` | 17 | 533 | 230 | 303 |
+| `features/datasets/` | 4 | 51 | 32 | 19 |
+| `features/devices/` | 18 | 493 | 278 | 215 |
+| `features/network/` | 5 | 77 | 43 | 34 |
+| `features/services/` | 17 | 536 | 233 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 24 | 255 | 181 | 74 |
-| **总计** | **87** | **1589** | **853** | **736** |
+| `shared/` | 24 | 259 | 185 | 74 |
+| **总计** | **87** | **1616** | **877** | **739** |

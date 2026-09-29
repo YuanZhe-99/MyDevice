@@ -326,7 +326,7 @@ class DeviceSearchService {
   /// Notes: Returns an empty response in store builds. Enabled sources
   /// that apply to the query are queried concurrently over one shared
   /// client; one failing source never prevents another from returning
-  /// results. Fallback sources (Wikipedia) run afterwards, only when the
+  /// results (an unexpected throw is caught per source). Fallback sources (Wikipedia) run afterwards, only when the
   /// others found nothing.
   static Future<DeviceSearchResponse> search(String query) async {
     if (AppFlavor.isStore) {
@@ -346,7 +346,14 @@ class DeviceSearchService {
             .where((s) => s.enabled && s.appliesTo(trimmed))
             .toList();
         final responses = await Future.wait([
-          for (final s in active) s.search(client, trimmed),
+          // A source that throws is reported as failed instead of failing
+          // the whole Future.wait and discarding the other sources.
+          for (final s in active)
+            s
+                .search(client, trimmed)
+                .catchError(
+                  (Object e) => _SourceResponse.failed(_classifyError(e)),
+                ),
         ]);
         for (var i = 0; i < responses.length; i++) {
           results.addAll(responses[i].results);

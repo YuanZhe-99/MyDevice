@@ -18,6 +18,8 @@ widget-composition helpers are indexed as Tier B regardless of how much branchin
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| `createState` | method (`DeviceAvatar`) | B | Create the state that caches the image lookup. |
+| `_resolveFile` | method (`_DeviceAvatarState`, private) | B | Return the cached future resolving the image path to a file. |
 | `DeviceAvatar` | constructor | B | Create an avatar for explicit category/emoji/image/templateImage/identity/size fields. |
 | `DeviceAvatar.fromDevice` | factory constructor | B | Create an avatar for a given `Device`, passing its `templateImage` and brand/model/name for template matching. |
 | `build` | method (`DeviceAvatar`) | B | Render emoji, else resolved image, else template thumbnail, else category icon. |
@@ -29,7 +31,13 @@ widget-composition helpers are indexed as Tier B regardless of how much branchin
 | `_AvatarFrame` | constructor (private class) | B | Create the shared circular background/border frame. |
 | `build` | method (`_AvatarFrame`) | B | Compose the sized, bordered, clipped circle around `child`. |
 
-Row count (10) matches `grep -c 'Purpose:' device_avatar.dart` (10) exactly.
+Row count (12) matches `grep -c 'Purpose:' device_avatar.dart` (12) exactly.
+
+Since 1.6.2 `DeviceAvatar` is a `StatefulWidget` (the `build` and helper rows above now live on
+`_DeviceAvatarState`): the `ImageService.resolve` future is created once per image path instead of
+in every `build`, `ImageService.cachedResolve` supplies `initialData`, and `Image.file` decodes at
+avatar size (`cacheWidth`), so scrolling lists neither flash the fallback icon nor decode
+full-resolution photos.
 
 ## Documentation
 

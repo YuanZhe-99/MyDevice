@@ -19,6 +19,9 @@ for the exact `ServiceData` JSON shape this file reads/writes.
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | [`_getFile`](#_getfile) | static method (private) | A | Resolve the `service_data.json` file inside the current app directory. |
+| [`_serialised`](#serialised) | static method (private) | A | Run a read-modify-write behind earlier writes of `service_data.json` (per-path write queue). |
+| [`_write`](#write) | static method (private) | A | Write `service_data.json` atomically and notify auto-sync (the unqueued primitive). |
+| [`_withoutHops`](#withouthops) | static method (private) | A | Drop the hops matched by a predicate, returning the same route instance when none matched. |
 | [`load`](#load) | static method | A | Load the persisted `ServiceData` (services + routes). |
 | [`save`](#save) | static method | A | Persist `ServiceData` and notify the auto-sync service. |
 | [`addOrUpdateService`](#addorupdateservice) | static method | A | Insert or replace a service by id. |
@@ -27,7 +30,16 @@ for the exact `ServiceData` JSON shape this file reads/writes.
 | [`deleteRoute`](#deleteroute) | static method | A | Delete a route by id. |
 | [`removeDeviceReferences`](#removedevicereferences) | static method | A | Remove every service/route reference to a deleted or retired device. |
 
-Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
+Row count (11) matches `grep -c 'Purpose:' service_storage.dart` (11) exactly.
+
+Since 1.6.2 every write is **atomic and serialised**: `save` and every read-modify-write mutator
+run inside a per-file-path write queue (`DeviceStorage.serializeWrite`, one `AtomicWriteQueue` per
+path), read the file fresh, and end in the private `_write`, which replaces the file through a
+temporary file plus rename (`DeviceStorage.atomicWrite`) — so two overlapping edits cannot lose
+each other's changes and a crash cannot leave a truncated file. Code that already runs inside the
+queue must call `_write`, never the public `save`, which would wait for itself and deadlock.
+Every rebuild of the container also carries the file's unknown top-level fields (`extraJson`)
+through, so a newer build's data is not dropped by an older one.
 
 ## Documentation
 
@@ -48,6 +60,37 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 - **Notes:** Unlike `DeviceStorage`'s own equivalent (`_getFile`, which is also
   private-per-file), this file has no separate "default directory" variant — it always
   resolves against whatever `DeviceStorage.getAppDir()` currently reports.
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="serialised"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Run `operation` after every earlier write of `service_data.json` has finished.
+- **Inputs:** `operation`. **Returns:** `Future<void>`.
+- **Side effects:** Resolves the file path, then appends to that path's write queue.
+- **Algorithm:** `DeviceStorage.serializeWrite(file.path, operation)`.
+- **Usage:** `save` and every mutator of this class.
+- **Notes:** The queue is keyed by file path, not global, so unrelated files never wait for each
+  other and a queue left mid-write cannot stall a different storage folder.
+
+### `static Future<void> _write(ServiceData data)` <a id="write"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Write `service_data.json` atomically and notify auto-sync.
+- **Inputs:** `data`. **Returns:** `Future<void>`.
+- **Side effects:** Temporary file plus rename write; `AutoSyncService.instance.notifySaved()`.
+- **Algorithm:** Pretty-print `data.toJson()` with a two-space indent, `DeviceStorage.atomicWrite`
+  it, then notify.
+- **Usage:** The queued operations of this class, and `save` through the queue.
+- **Notes:** Never enqueue from here or from anything it calls; see the deadlock rule above.
+
+### `static ServiceRoute _withoutHops(ServiceRoute route, bool Function(ServiceRouteHop hop) drop)` <a id="withouthops"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Return `route` without the hops matched by `drop`.
+- **Inputs:** `route`, `drop`. **Returns:** the **same instance** when no hop matched, otherwise a `copyWith(hops: kept)` copy.
+- **Side effects:** None.
+- **Algorithm:** Filter the hops; compare the kept count with the original.
+- **Usage:** `deleteService` and `removeDeviceReferences`.
+- **Notes:** `copyWith` bumps `modifiedAt`; before 1.6.2 every route was copied, so deleting one service
+  or device made every route look changed and could raise false sync conflicts. Only routes that really
+  lose a hop are copied now.
 
 ### `static Future<ServiceData> load()` <a id="load"></a>
 - **Kind:** static method.
@@ -81,10 +124,10 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 - **Inputs:** `data` — the complete `ServiceData` to write; every mutator in this class
   calls this with a freshly reconstructed `ServiceData`, never a partial update.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `service_data.json` (pretty-printed, non-atomic direct write);
+- **Side effects:** Atomically replaces `service_data.json` (pretty-printed, tmp file + rename, queued behind earlier writes);
   calls `AutoSyncService.instance.notifySaved()` (see
   [`../../../shared/services/auto_sync_service.md`](../../../shared/services/auto_sync_service.md)).
-- **Algorithm:** JSON-encode `data.toJson()` with a two-space indent, write it, then
+- **Algorithm:** Enqueue `_write`: JSON-encode `data.toJson()` with a two-space indent, write it atomically, then
   notify auto-sync.
 - **Usage:** Called by every other mutating method in this file
   ([`addOrUpdateService`](#addorupdateservice), [`deleteService`](#deleteservice),
@@ -103,7 +146,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 - **Purpose:** Insert a new service or replace an existing one, matched by `id`.
 - **Inputs:** `service`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `service_data.json` via [`save`](#save); routes are carried
+- **Side effects:** Rewrites `service_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)); routes are carried
   through unchanged.
 - **Algorithm:** 1. Load the current `ServiceData`. 2. Copy the services list; find the
   index of an existing service with the same `id`. 3. Replace it if found, else append.
@@ -127,7 +170,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
   deleted service can't dangle as a hop's `serviceId`.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `service_data.json` via [`save`](#save).
+- **Side effects:** Rewrites `service_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)).
 - **Algorithm:** 1. Load the current `ServiceData`. 2. Filter the service out of the
   services list. 3. For every route, drop any hop whose `serviceId == id` (via
   `route.copyWith(hops: ...)`) — routes themselves are kept even if this empties their
@@ -150,7 +193,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 - **Purpose:** Insert a new route or replace an existing one, matched by `id`.
 - **Inputs:** `route`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `service_data.json` via [`save`](#save); services are
+- **Side effects:** Rewrites `service_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)); services are
   carried through unchanged.
 - **Algorithm:** Same insert-or-replace-by-`id` shape as
   [`addOrUpdateService`](#addorupdateservice), applied to the routes list instead.
@@ -170,7 +213,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
 - **Purpose:** Delete a route by id.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `service_data.json` via [`save`](#save).
+- **Side effects:** Rewrites `service_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)).
 - **Algorithm:** Filter the route out of the loaded routes list, then save with services
   unchanged.
 - **Usage:**
@@ -190,7 +233,7 @@ Row count (8) matches `grep -c 'Purpose:' service_storage.dart` (8) exactly.
   rule.
 - **Inputs:** `deviceId`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `service_data.json` via [`save`](#save), but **only** if
+- **Side effects:** Rewrites `service_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)), but **only** if
   something actually changed (see Algorithm step 4).
 - **Algorithm:** 1. Load the current `ServiceData`. 2. Compute `removedServiceIds` — the
   ids of every service whose `deviceId == deviceId`. 3. Build the new services list by

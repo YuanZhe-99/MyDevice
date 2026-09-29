@@ -67,7 +67,7 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
   - `GET /service/stats`
 - 设备 API JSON 含当前生命周期、位置、图像、屏幕分辨率、购买/出售价格、循环成本和计算财务摘要字段。`POST /device/add` 在最小 name/category 流程之上接受这些可选字段。
 - 网络、数据集和服务端点**只读**——它们暴露手动保存清单数据（富化链接设备/网络名），且必须不执行发现、扫描或操作，与 [服务](features/services-topology.md) 模块仅手动清单设计一致。
-- **CORS 宽松**（`Access-Control-Allow-Origin: *`，源码确认）。配置凭据时，**每个请求都要求 Basic Auth，含回环**——否则宽松 CORS 会让任何本地网页经浏览器代理读取 API。未配置凭据时允许回环请求，服务器拒绝不安全绑定到非 localhost 地址地启动。
+- **浏览器来源仅限本地页面**（自 1.6.2 起）。最外层中间件（`_originMiddleware`）对 `Origin` 头不是 `localhost` 或回环 IP 上的 `http`/`https` 的任何请求返回 `403 {"error":"origin not allowed"}`——对所有方法（含 `OPTIONS` 预检）生效，且先于认证（`isAllowedOrigin` 拒绝 `null`、`file:`、浏览器扩展来源、局域网 IP 以及 `localhost.evil.com` 之类的相似主机名）。允许的来源会连同 `Vary: Origin` 原样回显在 `Access-Control-Allow-Origin` 中，通配符 `*` 已移除。**没有** `Origin` 头的请求（curl、脚本、AstrBot 等机器人）不受影响。这堵住了任意网页可发起“简单”跨源 `POST /device/add` 的漏洞；Host 头 / DNS 重绑定检查有意不在本次变更范围内。配置凭据时，**每个请求都要求 Basic Auth，含回环**。未配置凭据时允许回环请求，服务器拒绝不安全绑定到非 localhost 地址地启动。意外的处理器错误返回固定正文 `{"error":"internal error"}`，异常仅写入日志。
 
 ## `tray_service.dart`
 

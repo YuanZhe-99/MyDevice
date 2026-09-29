@@ -24,6 +24,10 @@ conversions this file produces.
 | [`getAutoUpdateEnabled`](#getautoupdateenabled) | static method | A | Read whether daily automatic rate refresh is enabled. |
 | [`setAutoUpdateEnabled`](#setautoupdateenabled) | static method | A | Persist whether daily automatic rate refresh is enabled. |
 | [`refreshIfNeeded`](#refreshifneeded) | static method | A | Refresh rates from the network if auto-update is on and they're stale. |
+| [`resetCache`](#resetcache) | static method | A | Forget cached rates, running fetches and failure backoff. |
+| [`_fetchAutomatically`](#_fetchautomatically) | static method (private) | A | Fetch for the automatic paths, honouring the 10-minute failure backoff. |
+| [`_fetchShared`](#_fetchshared) | static method (private) | A | Run or join the single fetch-and-save for a base currency. |
+| [`_MemoEntry`](#_memoentry) | constructor (private class) | A | Pair parsed rates with the file mtime they were read at. |
 | [`_getFile`](#_getfile) | static method (private) | A | Resolve the `exchange_rates.json` file in the current app directory. |
 | [`load`](#load) | static method | A | Load cached rates for a base currency, or built-in fallback rates. |
 | [`save`](#save) | static method | A | Persist rate data to `exchange_rates.json`. |
@@ -35,9 +39,50 @@ conversions this file produces.
 | [`_shouldFetchToday`](#_shouldfetchtoday) | static method (private) | A | Return whether cached rates are stale (last fetched on a different calendar day). |
 | [`_fallbackRatesFor`](#_fallbackratesfor) | static method (private) | A | Derive hardcoded fallback rates for an arbitrary base currency. |
 
-Row count (21) matches `grep -c 'Purpose:' exchange_rate_service.dart` (21) exactly.
+Row count (25) matches `grep -c 'Purpose:' exchange_rate_service.dart` (25) exactly.
+
+Since 1.6.2 (request economy, no wire or file-format change): `load` memoises the parsed file per
+(path, base), revalidated by the file's modification time; concurrent fetches for one base share a
+single request (`_inFlight`); after a failed *automatic* fetch no further automatic request is made
+for 10 minutes (`_failedAt`), so a dead network costs one request instead of one per conversion; an
+explicit refresh (`fetchAndSaveLatest`, the Settings button) ignores and clears that backoff; and
+`save` writes atomically. `rateUpdatedAt` / `lastFetchedAt` stay local-time values (unchanged on
+purpose). `test/exchange_rate_cache_test.dart` counts requests with a `MockClient`.
 
 ## Documentation
+
+### `static void resetCache()` <a id="resetcache"></a>
+- **Kind:** static method. **Since:** 1.6.2.
+- **Purpose:** Forget cached rates, running fetches and failure backoff.
+- **Inputs:** None. **Returns:** None.
+- **Side effects:** Clears three in-memory maps; no file is touched.
+- **Usage:** Tests, and callers that replaced the rates file out of band.
+- **Notes:** None.
+
+### `static Future<DeviceExchangeRateData?> _fetchAutomatically(String base)` <a id="_fetchautomatically"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Fetch and save for the automatic paths (`convert`, `refreshIfNeeded`).
+- **Inputs:** `base`. **Returns:** fresh data, or null on failure or while backing off.
+- **Side effects:** As `fetchAndSaveLatest`.
+- **Usage:** `_rateToDefault`, `refreshIfNeeded`.
+- **Notes:** After a failure no automatic request is made for 10 minutes.
+
+### `static Future<DeviceExchangeRateData?> _fetchShared(String base, {required bool respectBackoff})` <a id="_fetchshared"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Run, or join, the single fetch-and-save for `base`.
+- **Inputs:** `base`, `respectBackoff`. **Returns:** the saved data, or null.
+- **Side effects:** Network request, atomic file write, updates the backoff clock.
+- **Algorithm:** Key = `path|base`; return a running fetch if any; skip while backing off (automatic
+  callers only); otherwise `fetchLatest`, then record the failure time or `save`.
+- **Usage:** `fetchAndSaveLatest` (no backoff) and `_fetchAutomatically`.
+- **Notes:** Keyed by storage path, so swapped storage folders never share state.
+
+### `const _MemoEntry(DateTime stamp, DeviceExchangeRateData data)` <a id="_memoentry"></a>
+- **Kind:** constructor of the private `_MemoEntry` class. **Since:** 1.6.2.
+- **Purpose:** Pair parsed rates with the file mtime they were read at.
+- **Inputs:** `stamp`, `data`. **Returns:** a new `_MemoEntry`. **Side effects:** None.
+- **Usage:** `load` and `save` fill `_memo`.
+- **Notes:** The mtime is what invalidates the memo when the file changes.
 
 ### `const ExchangeRateException(this.message)` <a id="exchangerateexception-new"></a>
 - **Kind:** constructor of `ExchangeRateException` (implements `Exception`).
@@ -243,7 +288,7 @@ Row count (21) matches `grep -c 'Purpose:' exchange_rate_service.dart` (21) exac
 - **Purpose:** Persist rate data to `exchange_rates.json`.
 - **Inputs:** `data`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `exchange_rates.json` (pretty-printed, non-atomic).
+- **Side effects:** Atomically replaces `exchange_rates.json` (pretty-printed, tmp file + rename) and refreshes the memo.
 - **Algorithm:** JSON-encode `data.toJson()`, write it.
 - **Usage:** Called by [`fetchAndSaveLatest`](#fetchandsavelatest).
 - **Notes:** None.

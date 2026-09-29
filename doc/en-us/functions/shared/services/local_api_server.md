@@ -20,6 +20,7 @@ connect to servers, or inspect Docker.
 | [`start`](#start) | static method | A | Bind and serve the API server per current config. |
 | [`stop`](#stop) | static method | A | Force-close the running server, if any. |
 | [`restart`](#restart) | static method | A | Reload config and restart the server. |
+| [`buildHandler`](#buildhandler) | static method | A | Build the complete request handler (routes plus middleware) without binding a socket. |
 | `_handlePing` | static method (route handler) | B | `GET /ping` liveness check. |
 | [`_handleList`](#handlelist) | static method (route handler) | A | `GET /device/list`: devices, optionally filtered by category. |
 | [`_handleSearch`](#handlesearch) | static method (route handler) | A | `GET /device/search`: devices matching a text query. |
@@ -65,12 +66,16 @@ connect to servers, or inspect Docker.
 | `_json` | static method | B | Wrap a value as a `200 application/json` `Response`. |
 | `_error` | static method | B | Build a JSON error `Response` for a given status. |
 | [`_parseBody`](#parsebody) | static method | A | Parse the request body as JSON, tolerating malformed input. |
-| [`_corsMiddleware`](#corsmiddleware) | static method | A | Permissive CORS middleware for every response. |
+| [`isAllowedOrigin`](#isallowedorigin) | static method | A | Decide whether a browser `Origin` header may talk to the API. |
+| [`_originMiddleware`](#originmiddleware) | static method | A | Reject requests that carry a non-local browser Origin with `403`. |
+| [`_corsMiddleware`](#corsmiddleware) | static method | A | Echo an allowed local Origin in the CORS headers and answer preflights. |
 | [`_authMiddleware`](#authmiddleware) | static method | A | Enforce Basic Auth / loopback-only access rules. |
 | [`_validateBasicAuth`](#validatebasicauth) | static method | A | Validate an `Authorization: Basic` header against configured credentials. |
 | [`_errorMiddleware`](#errormiddleware) | static method | A | Catch unhandled handler exceptions as a `500` JSON error. |
 
-Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 rows above exactly.
+Row-count note: `grep -c 'Purpose:'` on this file returns 61, matching the 61 rows above exactly
+(1.6.2 added `buildHandler`, `isAllowedOrigin` and `_originMiddleware`; the `_corsHeaders`
+constant is gone).
 
 ## Documentation
 
@@ -86,6 +91,18 @@ Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 ro
 - **Usage:** Called by `start()`/`restart()` and by the settings UI.
 - **Notes:** Credentials are read as plaintext, per this app's documented security posture.
 
+### `static Handler buildHandler()` <a id="buildhandler"></a>
+- **Kind:** static method of `LocalApiServer`.
+- **Purpose:** Build the complete request handler — the 13-route `Router` wrapped in the
+  middleware pipeline — without binding a socket.
+- **Inputs:** None. **Returns:** `Handler`.
+- **Side effects:** None.
+- **Algorithm:** Register the 13 routes, then wrap the router in `_originMiddleware` (outermost) →
+  `_corsMiddleware` → `_authMiddleware` → `_errorMiddleware` (innermost).
+- **Usage:** `start()` serves it; `test/local_api_origin_test.dart` drives it in-process.
+- **Notes:** The origin check is outermost so a foreign Origin gets `403` before authentication
+  runs and before any route handler (such as `POST /device/add`) can write anything.
+
 ### `static Future<void> start()` <a id="start"></a>
 - **Kind:** static method of `LocalApiServer`.
 - **Source:** line 80.
@@ -95,11 +112,11 @@ Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 ro
 - **Algorithm:** `loadConfig()`, `stop()` any prior instance, clear `_lastError`; return early if
   disabled. Compute `isNonLoopback` (address is `0.0.0.0` or neither `localhost` nor
   `127.0.0.1`) and `hasCredentials`; refuse to start with `_lastError = 'credentials_required'`
-  if non-loopback without credentials. Build a `Router` with 13 routes (`/ping`, `/device/list`,
-  `/device/search`, `/device/add`, `/device/stats`, `/network/list`, `/network/search`,
-  `/dataset/list`, `/dataset/search`, `/service/list`, `/service/search`, `/service/routes`,
-  `/service/stats`); wrap it in `_corsMiddleware` → `_authMiddleware` → `_errorMiddleware`;
-  resolve the bind address and `shelf_io.serve`; capture bind failures into `_lastError`.
+  if non-loopback without credentials. Take the handler from [`buildHandler`](#buildhandler) (13 routes:
+  `/ping`, `/device/list`, `/device/search`, `/device/add`, `/device/stats`, `/network/list`,
+  `/network/search`, `/dataset/list`, `/dataset/search`, `/service/list`, `/service/search`,
+  `/service/routes`, `/service/stats`, behind `_originMiddleware` → `_corsMiddleware` →
+  `_authMiddleware` → `_errorMiddleware`); resolve the bind address and `shelf_io.serve`; capture bind failures into `_lastError`.
 - **Usage:** Called from `main()` on desktop platforms.
 - **Notes:** Identical unsafe-non-localhost-without-credentials refusal as MyAnime's
   `LocalApiServer.start`, but with MyDevice's own default port `7789` (vs. MyAnime's `7788`) and
@@ -570,16 +587,47 @@ Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 ro
 - **Usage:** Called by `_handleAdd`.
 - **Notes:** This is why malformed JSON produces a clean `400` rather than a generic `500`.
 
-### `static Middleware _corsMiddleware()` <a id="corsmiddleware"></a>
-- **Kind:** static method. **Source:** line 1331.
-- **Purpose:** Attach permissive CORS headers to every response.
+### `static bool isAllowedOrigin(String? origin)` <a id="isallowedorigin"></a>
+- **Kind:** static method (public so tests can call it).
+- **Purpose:** Decide whether a browser `Origin` header may talk to the API.
+- **Inputs:** `origin` — the raw header value, or null. **Returns:** `bool`.
+- **Side effects:** None.
+- **Algorithm:** `null` (no header — a non-browser client) is allowed. Otherwise parse it as a URI
+  and allow only scheme `http`/`https` whose host is `localhost` or a loopback IP address
+  (`InternetAddress.isLoopback`, so `127.x.x.x` and `[::1]`).
+- **Usage:** `_originMiddleware`; `test/local_api_origin_test.dart` (table of allowed / rejected
+  origins).
+- **Notes:** Rejects the literal `null` origin (sandboxed pages, `file:`), browser-extension
+  schemes, LAN IPs, `0.0.0.0`, and look-alikes such as `localhost.evil.com` or
+  `evil.com/localhost`.
+
+### `static Middleware _originMiddleware()` <a id="originmiddleware"></a>
+- **Kind:** static method. **Since:** 1.6.2.
+- **Purpose:** Reject requests that carry a non-local browser Origin.
 - **Inputs:** None. **Returns:** `Middleware`.
 - **Side effects:** None beyond wrapping the handler.
-- **Algorithm:** Adds permissive allow-origin/allow-headers response headers around every
-  response the inner handler produces.
-- **Usage:** First middleware in `start()`'s `Pipeline`.
-- **Notes:** Explicit documented tradeoff — this is why `_authMiddleware`'s loopback+credentials
-  rule exists at all.
+- **Algorithm:** If `isAllowedOrigin(request.headers['origin'])` is false, answer
+  `403 {"error":"origin not allowed"}` with no CORS header, for every method including
+  `OPTIONS`; otherwise call the inner handler.
+- **Usage:** Outermost middleware of [`buildHandler`](#buildhandler).
+- **Notes:** This is the fix for the "any web page can POST to `/device/add`" hole: the browser
+  attaches `Origin` to cross-origin requests, including "simple" ones that need no preflight, so
+  the server can refuse them before they reach a handler. DNS rebinding (a hostile page reaching
+  the API under a name that resolves to loopback) is not covered; a `Host` check is a separate,
+  deliberately unscheduled change.
+
+### `static Middleware _corsMiddleware()` <a id="corsmiddleware"></a>
+- **Kind:** static method.
+- **Purpose:** Add CORS headers for an allowed local Origin and answer preflight requests.
+- **Inputs:** None. **Returns:** `Middleware`.
+- **Side effects:** None beyond wrapping the handler.
+- **Algorithm:** With no `Origin` header, add nothing. With one (already vetted by
+  `_originMiddleware`), echo it in `Access-Control-Allow-Origin` and add `Vary: Origin`,
+  `Access-Control-Allow-Methods: GET, POST, OPTIONS` and
+  `Access-Control-Allow-Headers: Content-Type, Authorization`. `OPTIONS` is answered `200` here.
+- **Usage:** Second middleware of [`buildHandler`](#buildhandler).
+- **Notes:** Replaces the former wildcard `Access-Control-Allow-Origin: *` (and the
+  `_corsHeaders` constant).
 
 ### `static Middleware _authMiddleware()` <a id="authmiddleware"></a>
 - **Kind:** static method. **Source:** line 1357.
@@ -591,7 +639,7 @@ Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 ro
   outright when no credentials are configured (`403`); when credentials are configured, require a
   valid `Authorization: Basic` header via `_validateBasicAuth` regardless of loopback status
   (`401` + `WWW-Authenticate` on failure); otherwise pass through.
-- **Usage:** Second middleware in `start()`'s `Pipeline`.
+- **Usage:** Third middleware of [`buildHandler`](#buildhandler).
 - **Notes:** Identical security rule and rationale to MyAnime's `LocalApiServer._authMiddleware`
   — see that page's Notes for the full quoted reasoning.
 
@@ -613,6 +661,8 @@ Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 ro
 - **Side effects:** None beyond wrapping the handler.
 - **Algorithm:** try/catch around the inner handler call; build a JSON error response via `_error`
   on any exception.
-- **Usage:** Innermost middleware in `start()`'s `Pipeline`.
-- **Notes:** Last line of defense; routes are expected to return their own `400`/`401`/`403` for
+- **Usage:** Innermost middleware of [`buildHandler`](#buildhandler).
+- **Notes:** Since 1.6.2 the response body is the fixed `{"error":"internal error"}` and the
+  exception is only printed to the log, so no exception text leaks to the caller.
+  Last line of defense; routes are expected to return their own `400`/`401`/`403` for
   expected failure modes.

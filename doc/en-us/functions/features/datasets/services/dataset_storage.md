@@ -15,6 +15,8 @@ for the persisted JSON shape. Like `NetworkStorage`, it resolves its file locati
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | [`_getFile`](#getfile) | static method (private) | A | Resolve the `dataset_data.json` file inside the app directory. |
+| [`_serialised`](#serialised) | static method (private) | A | Run a read-modify-write behind earlier writes of `dataset_data.json` (per-path write queue). |
+| [`_write`](#write) | static method (private) | A | Write `dataset_data.json` atomically and notify auto-sync (the unqueued primitive). |
 | [`load`](#load) | static method | A | Load the persisted `DataSetData` (dataset list). |
 | [`save`](#save) | static method | A | Persist `DataSetData` and notify the auto-sync service. |
 | [`addOrUpdate`](#addorupdate) | static method | A | Insert or replace a dataset by id. |
@@ -22,7 +24,16 @@ for the persisted JSON shape. Like `NetworkStorage`, it resolves its file locati
 | [`remapDeviceStorageLinks`](#remapdevicestoragelinks) | static method | A | Re-map (or drop) dataset storage-slot indices after a device's storage list changed. |
 | [`_sameIndices`](#sameindices) | static method (private) | A | Compare two storage-index lists element-wise for equality. |
 
-Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
+Row count (9) matches `grep -c 'Purpose:' dataset_storage.dart` (9) exactly.
+
+Since 1.6.2 every write is **atomic and serialised**: `save` and every read-modify-write mutator
+run inside a per-file-path write queue (`DeviceStorage.serializeWrite`, one `AtomicWriteQueue` per
+path), read the file fresh, and end in the private `_write`, which replaces the file through a
+temporary file plus rename (`DeviceStorage.atomicWrite`) — so two overlapping edits cannot lose
+each other's changes and a crash cannot leave a truncated file. Code that already runs inside the
+queue must call `_write`, never the public `save`, which would wait for itself and deadlock.
+Every rebuild of the container also carries the file's unknown top-level fields (`extraJson`)
+through, so a newer build's data is not dropped by an older one.
 
 ## Documentation
 
@@ -41,6 +52,26 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
   (`../../network/services/network_storage.md`) — delegating to `DeviceStorage.getAppDir()` keeps
   `dataset_data.json` co-located with the app's other data files even after a custom storage path
   is set.
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="serialised"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Run `operation` after every earlier write of `dataset_data.json` has finished.
+- **Inputs:** `operation`. **Returns:** `Future<void>`.
+- **Side effects:** Resolves the file path, then appends to that path's write queue.
+- **Algorithm:** `DeviceStorage.serializeWrite(file.path, operation)`.
+- **Usage:** `save` and every mutator of this class.
+- **Notes:** The queue is keyed by file path, not global, so unrelated files never wait for each
+  other and a queue left mid-write cannot stall a different storage folder.
+
+### `static Future<void> _write(DataSetData data)` <a id="write"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Write `dataset_data.json` atomically and notify auto-sync.
+- **Inputs:** `data`. **Returns:** `Future<void>`.
+- **Side effects:** Temporary file plus rename write; `AutoSyncService.instance.notifySaved()`.
+- **Algorithm:** Pretty-print `data.toJson()` with a two-space indent, `DeviceStorage.atomicWrite`
+  it, then notify.
+- **Usage:** The queued operations of this class, and `save` through the queue.
+- **Notes:** Never enqueue from here or from anything it calls; see the deadlock rule above.
 
 ### `static Future<DataSetData> load()` <a id="load"></a>
 - **Kind:** static method.
@@ -65,10 +96,10 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
   service that local data changed.
 - **Inputs:** `data`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `dataset_data.json` (pretty-printed, non-atomic); calls
+- **Side effects:** Atomically replaces `dataset_data.json` (pretty-printed, tmp file + rename, queued behind earlier writes); calls
   `AutoSyncService.instance.notifySaved()` (see
   [`../../../shared/services/auto_sync_service.md`](../../../shared/services/auto_sync_service.md)).
-- **Algorithm:** JSON-encode `data.toJson()`, write it, then notify auto-sync.
+- **Algorithm:** Enqueue [`_write`](#write) (JSON-encode `data.toJson()`, atomic write, then notify auto-sync) on the per-path write queue.
 - **Usage:**
   ```dart
   await save(DataSetData(datasets: updated, extraJson: data.extraJson));
@@ -84,7 +115,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 - **Purpose:** Insert a new dataset or replace an existing one, matched by `id`.
 - **Inputs:** `dataset`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `dataset_data.json` via [`save`](#save).
+- **Side effects:** Rewrites `dataset_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)).
 - **Algorithm:** Load the current list; find the index of an existing dataset with the same `id`,
   replacing it if found, else append; save.
 - **Usage:**
@@ -100,7 +131,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
 - **Purpose:** Delete a dataset by id.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `dataset_data.json` via [`save`](#save).
+- **Side effects:** Rewrites `dataset_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)).
 - **Algorithm:** Filter the dataset out of the loaded list; save.
 - **Usage:**
   ```dart
@@ -122,7 +153,7 @@ Row count (7) matches `grep -c 'Purpose:' dataset_storage.dart` (7) exactly.
   before the edit; `indexMap` — maps each **old** slot index (`0..oldSlotCount-1`) to its **new**
   index; an old index absent from the map means that slot was removed with no replacement.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `dataset_data.json` via [`save`](#save) — but only if at least one
+- **Side effects:** Rewrites `dataset_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)) — but only if at least one
   dataset actually changed; bumps `modifiedAt` (via [`copyWith`](../models/dataset.md#copywith)) on
   every dataset it touches.
 - **Algorithm:** 1. Check whether `indexMap` is the identity mapping for every index

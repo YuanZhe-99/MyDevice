@@ -6,6 +6,7 @@
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| [`cachedResolve`](#cachedresolve) | 静态方法 | A | 不等待地返回相对图片路径对应的文件（尽力而为的 `initialData`）。 |
 | [`_getImageDir`](#getimagedir) | 静态方法 | A | 解析（缺失时创建）应用 `images/` 目录。 |
 | [`pickAndSaveImage`](#pickandsaveimage) | 静态方法 | A | 让用户挑选图像文件并原样复制进应用存储。 |
 | [`pickImageFile`](#pickimagefile) | 静态方法 | A | 让用户挑选图像文件而不复制。 |
@@ -17,9 +18,21 @@
 | [`delete`](#delete) | 静态方法 | A | 按相对路径删除先前保存的图像。 |
 | [`saveImageFromUrl`](#saveimagefromurl) | 静态方法 | A | 从 URL 下载图像进应用存储。 |
 
-行数说明：对此文件 `grep -c 'Purpose:'` 返回 10，与上面 10 行精确匹配。
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 11，与上面 11 行精确匹配。
 
 ## 文档
+
+### `static File? cachedResolve(String relativePath)` <a id="cachedresolve"></a>
+- **种类：** 静态方法。**起始版本：** 1.6.2。
+- **用途：** 不等待地返回 `relativePath` 对应的文件，使用上次 `resolve` 看到的存储文件夹。
+- **输入：** `relativePath`。**返回：** `File`；尚未运行过任何 `resolve` 时为 null。
+- **副作用：** 无。
+- **用法：** `DeviceAvatar` 把它作为 `FutureBuilder.initialData`，使已知图片在第一帧就显示。
+- **备注：** 刚更改存储路径后（或在测试中）可能过时；等待的 `resolve` 结果会取代它。
+
+### 1.6.2 其他变更
+
+`decodeEditableImage` 现在在 `finally` 中释放 `ImmutableBuffer`、`ImageDescriptor`、`Codec` 和 `Image`，解码抛出异常时不再泄漏原生句柄；图片编辑器只读取所选文件一次（字节同时供解码器和裁剪视图使用），并以 ≤ 1024 px 解码裁剪视图（`cacheWidth` / `cacheHeight`）。
 
 ### `static Future<Directory> _getImageDir()` <a id="getimagedir"></a>
 - **种类：** `ImageService` 的静态方法。

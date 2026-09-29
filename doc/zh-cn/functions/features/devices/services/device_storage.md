@@ -11,6 +11,11 @@
 | `_configFileName` | 静态常量（私有） | B | `'storage_config.json'`，本地偏好文件名。 |
 | `_customPath` | 静态字段（私有） | B | 缓存的自定义存储路径；`null` 表示默认目录。 |
 | `_configLoaded` | 静态字段（私有） | B | 本进程中 `_loadCustomPath` 是否已运行。 |
+| `_queues` | 静态字段（私有） | B | 每个数据文件路径一个 `AtomicWriteQueue`，首次使用时创建。 |
+| [`serializeWrite`](#serializewrite) | 静态方法 | A | 在同一文件路径更早的所有写入之后运行读-改-写（四个数据存储共用）。 |
+| [`atomicWrite`](#atomicwrite) | 静态方法 | A | 原子地替换文件，并重试短暂的锁竞争（所有存储共用）。 |
+| [`_serialised`](#_serialised) | 静态方法（私有） | A | 让操作排在 `device_data.json` 更早的写入之后。 |
+| [`_write`](#_write) | 静态方法（私有） | A | 原子地写 `device_data.json` 并通知自动同步（不入队的原语）。 |
 | [`_getDefaultAppDir`](#_getdefaultappdir) | 静态方法（私有） | A | 解析（并创建）默认 `~/Documents/MyDevice` 目录。 |
 | [`_getConfigFile`](#_getconfigfile) | 静态方法（私有） | A | 解析 `storage_config.json` 文件，总是在默认目录。 |
 | [`_loadCustomPath`](#_loadcustompath) | 静态方法（私有） | A | 从配置加载自定义存储路径，每进程一次。 |
@@ -56,9 +61,46 @@
 | [`StoragePathResult`](#storagepathresult-new) | 构造函数 | A | 创建结果；`saved` 默认为 true，`unmoved` 默认为空。 |
 | [`complete`](#complete) | getter（`StoragePathResult`） | A | 变更是否完全成功：已保存且未留下任何东西。 |
 
-行数（49）比 `grep -c '/// Purpose:' device_storage.dart`（39）多十。37 个静态方法（包括八个列表列数访问器和四个端侧 AI 访问器（v1.6.0）中的每一个）各有自己的行和自己的 `Purpose:` 块，`StoragePathResult` 构造函数及其 `complete` getter 也是。多出的十行是 `DeviceStorage` 类本身、私有静态常量 `_dataFileName` 和 `_configFileName`、私有静态字段 `_customPath`、`_configLoaded` 和 `_strayCheckedFor`、`StoragePathResult` 类，以及其字段 `saved`、`unmoved` 和 `from`，它们带普通 `///` 描述或没有注释，因每个声明都出现在表中而列出。Tier A：27 行。
+行数（54）比 `grep -c '/// Purpose:' device_storage.dart`（43）多十一。（1.6.2 新增 `_queues`、`serializeWrite`、`atomicWrite`、`_serialised` 和 `_write`；只有 `_queues` 没有 `Purpose:` 块。）37 个静态方法（包括八个列表列数访问器和四个端侧 AI 访问器（v1.6.0）中的每一个）各有自己的行和自己的 `Purpose:` 块，`StoragePathResult` 构造函数及其 `complete` getter 也是。多出的十行是 `DeviceStorage` 类本身、私有静态常量 `_dataFileName` 和 `_configFileName`、私有静态字段 `_customPath`、`_configLoaded` 和 `_strayCheckedFor`、`StoragePathResult` 类，以及其字段 `saved`、`unmoved` 和 `from`，它们带普通 `///` 描述或没有注释，因每个声明都出现在表中而列出。Tier A：31 行。
+
+自 1.6.2 起，四个数据文件和 `storage_config.json` 都**原子地**写入（临时文件加重命名，`atomicWrite` → `myapps_data` 的 `atomicWriteString`），四个数据存储还按文件路径**串行化**其读-改-写操作（`serializeWrite`），因此并发的 `addOrUpdate` 不再丢失彼此的编辑，崩溃也不会留下被截断的文件。默认目录有意不做缓存：测试（以及某些平台）会替换路径提供者。
 
 ## 文档
+
+### `static Future<void> serializeWrite(String path, Future<void> Function() operation)` <a id="serializewrite"></a>
+- **种类：** 静态方法。**起始版本：** 1.6.2。
+- **用途：** 在 `path` 更早的所有写入完成后运行 `operation`。
+- **输入：** `path`——操作读取并重写的数据文件；`operation`。
+- **返回：** 带该操作自身结果的 `Future<void>`。
+- **副作用：** 追加到该路径的 `AtomicWriteQueue`（首次使用时创建，保存在 `_queues`）。
+- **算法：** `(_queues[path] ??= AtomicWriteQueue()).enqueue(operation)`。
+- **用法：** 本类以及 `NetworkStorage`、`DataSetStorage`、`ServiceStorage` 中的 `_serialised`。
+- **备注：** 队列按路径而非全局设键，互不相干的文件从不互相等待，遗留在写入中途的队列也不会卡住另一个存储文件夹。已在操作中的代码必须调用其私有 `_write`，绝不能调用公开的 `save`，否则会等待自己（死锁）。
+
+### `static Future<void> atomicWrite(File file, String content)` <a id="atomicwrite"></a>
+- **种类：** 静态方法。**起始版本：** 1.6.2。
+- **用途：** 用 `content` 原子地替换 `file`，并重试短暂的锁竞争。
+- **输入：** `file`、`content`。**返回：** `Future<void>`；抛出最后一次的 `FileSystemException`。
+- **副作用：** 经 `atomicWriteString`（`myapps_data`）的临时文件加重命名。
+- **算法：** 最多五次尝试；失败后等待 25 ms × 尝试序号。
+- **用法：** 每个存储的写入、配置写入和汇率文件。
+- **备注：** 在 Windows 上，当另一个读取者（或杀毒软件）正打开目标文件时，覆盖目标的重命名会以“拒绝访问”失败，单次尝试会把无害的竞争变成用户可见的错误。
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="_serialised"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 让 `operation` 排在 `device_data.json` 更早的写入之后运行。
+- **输入：** `operation`。**返回：** `Future<void>`。
+- **副作用：** 解析数据文件，然后经 `serializeWrite` 入队。
+- **用法：** `save`、`addOrUpdate`、`deleteDevice`。
+- **备注：** 无。
+
+### `static Future<void> _write(DeviceData data)` <a id="_write"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.6.2。
+- **用途：** 原子地写 `device_data.json` 并通知自动同步。
+- **输入：** `data`。**返回：** `Future<void>`。
+- **副作用：** 美化打印 JSON 的 `atomicWrite`；`AutoSyncService.instance.notifySaved()`。
+- **用法：** 本类的入队操作。
+- **备注：** 不入队的原语：在已运行于队列内的任何地方都绝不要调用 `save`。
 
 ### `static Future<Directory> _getDefaultAppDir()` <a id="_getdefaultappdir"></a>
 - **种类：** 私有静态方法。
@@ -130,7 +172,7 @@
 - **输入：** `newPath` — 新自定义路径，或 `null`/空回退默认目录。
 - **返回：** `Future<StoragePathResult>`（见 [`StoragePathResult`](#storagepathresult-new)）— 只有异常逸出时（例如读写 `storage_config.json` 时）为 `saved: false`，此时什么都没变；否则为 `saved: true`，`unmoved` 列出仍在旧文件夹中的相对路径，`from` 给出该文件夹（路径未变时分别为空和 null）。
 - **副作用：** 可能先收编游离配置（[`_adoptStrayConfig`](#_adoptstrayconfig)）；设置 `_customPath`；把 `storagePath` 持久化到默认目录的 `storage_config.json`；经 `myapps_data` 的 `migrateStorageContents`（`packages/myapps_data/lib/src/storage/storage_migration.dart`）把旧文件夹内容移入新文件夹。
-- **算法：** 1. `_adoptStrayConfig()`，使当前自定义文件夹中的游离副本在该文件夹被清空前合并。2. 把当前目录捕获为 `oldDir`。3. 设 `_customPath = newPath`，并经 [`_readConfigFromDefault`](#_readconfigfromdefault) / [`_writeConfigToDefault`](#_writeconfigtodefault) 持久化进 `storage_config.json`，`newPath` 为 null 或空时移除该键。4. 经 `getAppDir()`（会创建目录）解析 `newDir`；其路径等于 `oldDir` 时返回 `const StoragePathResult()`（无需移动）。5. `await migrateStorageContents(from: oldDir, to: newDir)`：除 `storage_config.json` 外的每个顶层文件和目录逐文件复制进 `newDir`，每个原件在复制后删除；源目录只在变空后才移除。它返回未能移动的路径。6. 把这些路径与 [`_leftoverEntries(oldDir)`](#_leftoverentries) 求并集——后者也捕获因目标已有同名文件而被跳过的文件——排序，并返回 `StoragePathResult(unmoved: ..., from: oldDir.path)`。整个方法体位于返回 `StoragePathResult(saved: false)` 的 `try`/`catch` 中。
+- **算法：** 1. `_adoptStrayConfig()`，使当前自定义文件夹中的游离副本在该文件夹被清空前合并。2. 把当前目录捕获为 `oldDir`。3. **先**持久化 `newPath` 再设 `_customPath = newPath`（若新文件夹无法创建，路径和已持久化的配置都会回滚并返回 `saved: false`；1.6.2），经 [`_readConfigFromDefault`](#_readconfigfromdefault) / [`_writeConfigToDefault`](#_writeconfigtodefault) 持久化进 `storage_config.json`，`newPath` 为 null 或空时移除该键。4. 经 `getAppDir()`（会创建目录）解析 `newDir`；其路径等于 `oldDir` 时返回 `const StoragePathResult()`（无需移动）。5. `await migrateStorageContents(from: oldDir, to: newDir)`：除 `storage_config.json` 外的每个顶层文件和目录逐文件复制进 `newDir`，每个原件在复制后删除；源目录只在变空后才移除。它返回未能移动的路径。6. 把这些路径与 [`_leftoverEntries(oldDir)`](#_leftoverentries) 求并集——后者也捕获因目标已有同名文件而被跳过的文件——排序，并返回 `StoragePathResult(unmoved: ..., from: oldDir.path)`。整个方法体位于返回 `StoragePathResult(saved: false)` 的 `try`/`catch` 中。
 - **用法：**
   ```dart
   final result = await DeviceStorage.setStoragePath(pathToSet);
@@ -177,10 +219,10 @@
 - **用途：** 向默认目录写 `storage_config.json`。
 - **输入：** `config`。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `storage_config.json`（美化打印、非原子直接写）。
-- **算法：** `JsonEncoder.withIndent('  ')` 然后 `writeAsString`。
+- **副作用：** 原子地替换 `storage_config.json`（美化打印、临时文件加重命名）。
+- **算法：** `JsonEncoder.withIndent('  ')` 然后 [`atomicWrite`](#atomicwrite)。
 - **用法：** 被 [`setStoragePath`](#setstoragepath)、[`_adoptStrayConfig`](#_adoptstrayconfig) 和 [`writeConfig`](#writeconfig) 调用。
-- **备注：** 非原子（无临时文件然后重命名），不同于 `WebDAVService`（`../../../../shared/services/webdav_service.md`）中同步关键的写——这是小本地设置文件，非四个同步数据文件之一。
+- **备注：** 自 1.6.2 起为原子写（临时文件然后重命名，如同 `WebDAVService` 中同步关键的写），因此崩溃不会留下会重置 `storagePath` 和偏好的半写文件。两个偏好写入者之间的读-改-写竞争仍可能发生（配置写队列是已知的、未排期事项）。
 
 ### `static Future<File> _getFile(String name)` <a id="_getfile"></a>
 - **种类：** 私有静态方法。
@@ -214,8 +256,8 @@
 - **用途：** 把完整设备列表持久化到 `device_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
-- **副作用：** 写 `device_data.json`（美化打印、非原子）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
-- **算法：** JSON 编码 `data.toJson()`、写它、然后通知自动同步。
+- **副作用：** 原子地替换 `device_data.json`（美化打印、临时文件加重命名、排在更早的写入之后）；调用 `AutoSyncService.instance.notifySaved()`（见 [`auto_sync_service.md`](../../../shared/services/auto_sync_service.md)）。
+- **算法：** 把 [`_write`](#_write)（JSON 编码 `data.toJson()`、原子写入、然后通知自动同步）入队到按路径的写队列。
 - **用法：**
   ```dart
   await DeviceStorage.save(DeviceData(devices: _devices));
@@ -229,7 +271,7 @@
 - **用途：** 插入新设备或替换既有设备（按 `id` 匹配），然后设备不再在用时清理跨模块引用。
 - **输入：** `device`。
 - **返回：** `Future<void>`。
-- **副作用：** 经 [`save`](#save) 重写 `device_data.json`；可能调用 [`_removeDeviceReferences`](#_removedevicereferences)。
+- **副作用：** 经 [`_write`](#_write) 对 `device_data.json` 做入队的读-改-写；可能调用 [`_removeDeviceReferences`](#_removedevicereferences)。
 - **算法：** 1. 加载当前列表。2. 找相同 `id` 的既有设备索引；找到替换否则追加。3. 保存。4. `!device.isInService`（退役或出售——见 [`device.md`](../models/device.md#lifecyclestatus)）时从网络分配、数据集存储链接和服务记录移除此设备引用。
 - **用法：**
   ```dart
@@ -286,7 +328,7 @@
 - **用途：** 把应用本地偏好写回默认文件夹的 `storage_config.json`。
 - **输入：** `config` — 典型经 [`readConfig`](#readconfig) 读取、修改、然后传回。
 - **返回：** `Future<void>`。
-- **副作用：** 可能先收编游离配置（[`_adoptStrayConfig`](#_adoptstrayconfig)）；重写默认文件夹中的 `storage_config.json`（美化打印、非原子）。
+- **副作用：** 可能先收编游离配置（[`_adoptStrayConfig`](#_adoptstrayconfig)）；原子地重写默认文件夹中的 `storage_config.json`（美化打印、临时文件加重命名）。
 - **算法：** `await _adoptStrayConfig()`；复制 `config`，移除 `storagePath`，当前 `_customPath` 已设且非空时把它放回 `storagePath`，然后 [`_writeConfigToDefault`](#_writeconfigtodefault)。
 - **用法：**
   ```dart

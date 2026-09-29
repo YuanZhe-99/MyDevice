@@ -381,3 +381,7 @@ generated insights* in Settings deletes it.
 - Deleting a dataset deletes its contained storage links.
 - **Known limitation:** sync merge does not currently run full cross-reference
   validation after merging (see [WebDAV Sync](sync.md#known-limitation)).
+
+## Write safety (since 1.6.2)
+
+The four data files (`device_data.json`, `network_data.json`, `dataset_data.json`, `service_data.json`), `storage_config.json` and `exchange_rates.json` are replaced atomically: the new content goes to a same-folder `<name>.tmp-<microseconds>` file that is renamed over the target (retried briefly if Windows reports the target as locked). The data storages additionally serialise their read-modify-write operations per file path. The on-disk JSON shape and the sync/backup formats are unchanged; a stray `*.tmp-*` file can only remain after a crash and is safe to delete.

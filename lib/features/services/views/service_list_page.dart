@@ -50,6 +50,11 @@ class _ServiceListPageState extends State<ServiceListPage> {
   List<ServiceRoute> _routes = [];
   List<Device> _devices = [];
   List<Network> _networks = [];
+
+  /// Derived from the four lists above once per [_load], not on every build.
+  List<ServiceWarning> _warnings = const [];
+  List<ServicePortConflict> _conflicts = const [];
+  ServiceTopologyGraph? _graph;
   _ServiceView _view = _ServiceView.overview;
   bool _loading = true;
   int _columnsPref = listColumnsAuto;
@@ -90,7 +95,9 @@ class _ServiceListPageState extends State<ServiceListPage> {
   /// Inputs: None.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. Also computes the
+  /// reference warnings, port conflicts and topology graph once here, so
+  /// `build` reuses them instead of recomputing on every frame.
   Future<void> _load() async {
     final serviceData = await ServiceStorage.load();
     final deviceData = await DeviceStorage.load();
@@ -102,6 +109,18 @@ class _ServiceListPageState extends State<ServiceListPage> {
       _routes = serviceData.routes;
       _devices = deviceData.devices;
       _networks = networkData.networks;
+      _warnings = findServiceReferenceWarnings(
+        services: _services,
+        routes: _routes,
+        devices: _devices,
+        networks: _networks,
+      );
+      _conflicts = findServicePortConflicts(_services);
+      _graph = buildServiceTopology(
+        services: _services,
+        routes: _routes,
+        devices: _devices,
+      );
       _columnsPref = columns;
       _loading = false;
     });
@@ -339,13 +358,8 @@ class _ServiceListPageState extends State<ServiceListPage> {
   Widget _buildOverview(AppLocalizations l10n) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
 
-    final warnings = findServiceReferenceWarnings(
-      services: _services,
-      routes: _routes,
-      devices: _devices,
-      networks: _networks,
-    );
-    final conflicts = findServicePortConflicts(_services);
+    final warnings = _warnings;
+    final conflicts = _conflicts;
     final activeCount = _services
         .where((service) => service.state == ServiceState.active)
         .length;
@@ -555,7 +569,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
   /// Notes: Internal helper used within this file only.
   Widget _buildPorts(AppLocalizations l10n, int columns) {
     if (_services.isEmpty) return _emptyState(l10n.noServices);
-    final conflicts = findServicePortConflicts(_services);
+    final conflicts = _conflicts;
     final portUses = listServicePortUses(_services);
     final servicesByDevice = <String, List<ServiceNode>>{};
     for (final service in _services) {
@@ -649,11 +663,13 @@ class _ServiceListPageState extends State<ServiceListPage> {
   /// Side effects: May update UI state or trigger user-facing flows.
   /// Notes: Internal helper used within this file only.
   Widget _topologyCard(AppLocalizations l10n) {
-    final graph = buildServiceTopology(
-      services: _services,
-      routes: _routes,
-      devices: _devices,
-    );
+    final graph =
+        _graph ??
+        buildServiceTopology(
+          services: _services,
+          routes: _routes,
+          devices: _devices,
+        );
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Padding(

@@ -236,7 +236,11 @@ class _DataSetListPageState extends State<DataSetListPage> {
     final item = _datasets.removeAt(oldIndex);
     _datasets.insert(newIndex, item);
     setState(() {});
-    await DataSetStorage.save(DataSetData(datasets: _datasets));
+    // Load the container first so unknown top-level fields survive the save.
+    final data = await DataSetStorage.load();
+    await DataSetStorage.save(
+      DataSetData(datasets: _datasets, extraJson: data.extraJson),
+    );
     AutoSyncService.instance.notifySaved();
   }
 

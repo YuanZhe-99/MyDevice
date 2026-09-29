@@ -614,12 +614,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     config['apiUsername'] = newUser.isEmpty ? null : newUser;
     config['apiPassword'] = newPass.isEmpty ? null : newPass;
     await DeviceStorage.writeConfig(config);
-    setState(() {
-      _apiPort = newPort;
-      _apiListenAddress = newAddr;
-      _apiUsername = newUser;
-      _apiPassword = newPass;
-    });
+    if (mounted) {
+      setState(() {
+        _apiPort = newPort;
+        _apiListenAddress = newAddr;
+        _apiUsername = newUser;
+        _apiPassword = newPass;
+      });
+    }
     await LocalApiServer.restart();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -911,6 +913,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 } else {
                   await launchAtStartup.disable();
                 }
+                if (!mounted) return;
                 setState(() => _autoStart = v);
               },
             ),
@@ -937,7 +940,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 final config = await DeviceStorage.readConfig();
                 config['apiEnabled'] = v;
                 await DeviceStorage.writeConfig(config);
-                setState(() => _apiEnabled = v);
+                if (mounted) setState(() => _apiEnabled = v);
                 if (v) {
                   await LocalApiServer.start();
                 } else {

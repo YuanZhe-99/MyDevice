@@ -125,11 +125,20 @@ server on desktop platforms only (Windows/macOS/Linux, started from `main()` —
   saved inventory data (enriched with linked device/network names) and must not
   perform discovery, scanning, or operations, in keeping with the
   [Services](features/services-topology.md) module's manual-inventory-only design.
-- **CORS is permissive** (`Access-Control-Allow-Origin: *`, confirmed in source). When
-  credentials are configured, **Basic Auth is required for every request, including
-  loopback** — permissive CORS would otherwise let any local web page read the API by
-  proxying through the browser. Without credentials configured, loopback requests are
-  allowed and the server refuses to start unsafely bound to a non-localhost address.
+- **Browser origins are restricted to local pages** (since 1.6.2). The outermost
+  middleware (`_originMiddleware`) answers `403 {"error":"origin not allowed"}` — for every
+  method, including `OPTIONS` preflights, and before authentication — to any request whose
+  `Origin` header is not `http`/`https` on `localhost` or a loopback IP (`isAllowedOrigin`
+  rejects `null`, `file:`, browser-extension origins, LAN IPs and look-alikes such as
+  `localhost.evil.com`). An allowed origin is echoed back in `Access-Control-Allow-Origin`
+  with `Vary: Origin`; the wildcard `*` is gone. Requests **without** an `Origin` header
+  (curl, scripts, bots such as AstrBot) are unchanged. This closes the hole where any web page
+  could send a "simple" cross-origin `POST /device/add`. Host-header / DNS-rebinding
+  checks are deliberately not part of this change. When credentials are configured,
+  **Basic Auth is required for every request, including loopback**. Without credentials
+  configured, loopback requests are allowed and the server refuses to start unsafely bound to
+  a non-localhost address. Unexpected handler errors return the fixed body
+  `{"error":"internal error"}`; the exception is only logged.
 
 ## `tray_service.dart`
 

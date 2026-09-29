@@ -160,7 +160,11 @@ class _NetworkListPageState extends State<NetworkListPage> {
     setState(() {});
     final data = await NetworkStorage.load();
     await NetworkStorage.save(
-      NetworkData(networks: _networks, assignments: data.assignments),
+      NetworkData(
+        networks: _networks,
+        assignments: data.assignments,
+        extraJson: data.extraJson,
+      ),
     );
   }
 

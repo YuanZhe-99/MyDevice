@@ -6,6 +6,8 @@
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| [`_mirrorController`](#_mirrorcontroller) | 方法（`_DeviceEditPageState`） | A | 把 Autocomplete 内部控制器镜像到表单控制器，每个控制器只做一次。 |
+| [`_saveImpl`](#_saveimpl) | 方法（`_DeviceEditPageState`） | A | 校验表单并持久化设备（只经 `_save` 调用）。 |
 | `DeviceEditPage`（构造函数） | 构造函数 | B | 为组件存储可选 `device`（编辑目标）和 `searchResult`（预填映射）。 |
 | `createState` | 方法（`DeviceEditPage`） | B | 创建 `_DeviceEditPageState`。 |
 | `_isEditing` | getter（`_DeviceEditPageState`） | B | 编辑既有设备（`widget.device != null`）而非添加新的时为 true。 |
@@ -68,11 +70,16 @@
 | [`_filtered`](#_filtered-gpu)（GPU） | getter（`_GpuPresetPickerState`） | A | 过滤 `widget.presets` 到 model/architecture 含当前搜索查询的条目。 |
 | `build` | 方法（组件，`_GpuPresetPickerState`） | B | 渲染可拖拽面板：搜索字段加 `_filtered` 预设列表。 |
 
-行数说明：对此文件 `grep -c 'Purpose:'` 返回 61，与上面 61 行精确匹配——本文件每个声明（含每个字段映射标签辅助）都带仓库标准 `/// Purpose:` 文档注释块。
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 63，与上面 63 行精确匹配——本文件每个声明（含每个字段映射标签辅助）都带仓库标准 `/// Purpose:` 文档注释块。
 
 锚点碰撞说明：`_filtered` 声明两次（`_CpuPresetPickerState` 一次、`_GpuPresetPickerState` 一次，都 Tier A）。按裸名锚点规则这些会碰撞，因此本页用 `_filtered-cpu` / `_filtered-gpu` 消歧而非通常裸名锚点——用上面表格的链接，别凭名猜锚点。
 
 ## 文档
+
+### 1.6.2 变更
+
+- **`_save` 重入保护。** `_save` 设置 `_saving`，第一次运行期间忽略第二次点击（汇率换算和存储写入是异步的，双击过去会把设备添加两次），期间禁用应用栏保存按钮，并把原函数体作为 `_saveImpl` 运行。
+- **`_mirrorController(from, to)`**（以 `Expando` 防重，Tier A）：品牌 / CPU / GPU 的 `Autocomplete` 字段构建器过去每次重建都调用 `ctrl.addListener(...)`（每次重建泄漏一个监听器），品牌构建器还在每次构建时把 `ctrl.text` 复制进 `_brandCtrl`，覆盖“获取设备信息”以编程方式设置的值。现在监听器每个控制器只添加一次，品牌 `Autocomplete` 有 `_brandAutoKey`，在搜索结果设置品牌时递增（同 `_cpuAutoKey` / `_gpuAutoKey`），使其重新从 `_brandCtrl` 取值。`test/device_edit_save_test.dart` 覆盖键入的品牌和双击。
 
 ### `void initState()` <a id="initstate"></a>
 - **种类：** `_DeviceEditPageState` 的方法（组件生命周期）

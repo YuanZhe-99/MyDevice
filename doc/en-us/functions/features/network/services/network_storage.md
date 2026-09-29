@@ -15,6 +15,8 @@ for the exact persisted JSON shape.
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | [`_getFile`](#getfile) | static method (private) | A | Resolve the `network_data.json` file inside the app directory. |
+| [`_serialised`](#serialised) | static method (private) | A | Run a read-modify-write behind earlier writes of `network_data.json` (per-path write queue). |
+| [`_write`](#write) | static method (private) | A | Write `network_data.json` atomically and notify auto-sync (the unqueued primitive). |
 | [`load`](#load) | static method | A | Load the persisted `NetworkData` (networks + assignments). |
 | [`save`](#save) | static method | A | Persist `NetworkData` and notify the auto-sync service. |
 | [`addOrUpdateNetwork`](#addorupdatenetwork) | static method | A | Insert or replace a network by id. |
@@ -22,7 +24,16 @@ for the exact persisted JSON shape.
 | [`setAssignment`](#setassignment) | static method | A | Insert or replace a device's assignment to a network. |
 | [`removeAssignment`](#removeassignment) | static method | A | Remove one device's assignment from a network. |
 
-Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
+Row count (9) matches `grep -c 'Purpose:' network_storage.dart` (9) exactly.
+
+Since 1.6.2 every write is **atomic and serialised**: `save` and every read-modify-write mutator
+run inside a per-file-path write queue (`DeviceStorage.serializeWrite`, one `AtomicWriteQueue` per
+path), read the file fresh, and end in the private `_write`, which replaces the file through a
+temporary file plus rename (`DeviceStorage.atomicWrite`) — so two overlapping edits cannot lose
+each other's changes and a crash cannot leave a truncated file. Code that already runs inside the
+queue must call `_write`, never the public `save`, which would wait for itself and deadlock.
+Every rebuild of the container also carries the file's unknown top-level fields (`extraJson`)
+through, so a newer build's data is not dropped by an older one.
 
 ## Documentation
 
@@ -40,6 +51,26 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 - **Notes:** Delegating to `DeviceStorage.getAppDir()` (rather than resolving its own directory)
   is what keeps `network_data.json` living alongside `device_data.json` even after the user changes
   the storage location in Settings.
+
+### `static Future<void> _serialised(Future<void> Function() operation)` <a id="serialised"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Run `operation` after every earlier write of `network_data.json` has finished.
+- **Inputs:** `operation`. **Returns:** `Future<void>`.
+- **Side effects:** Resolves the file path, then appends to that path's write queue.
+- **Algorithm:** `DeviceStorage.serializeWrite(file.path, operation)`.
+- **Usage:** `save` and every mutator of this class.
+- **Notes:** The queue is keyed by file path, not global, so unrelated files never wait for each
+  other and a queue left mid-write cannot stall a different storage folder.
+
+### `static Future<void> _write(NetworkData data)` <a id="write"></a>
+- **Kind:** private static method. **Since:** 1.6.2.
+- **Purpose:** Write `network_data.json` atomically and notify auto-sync.
+- **Inputs:** `data`. **Returns:** `Future<void>`.
+- **Side effects:** Temporary file plus rename write; `AutoSyncService.instance.notifySaved()`.
+- **Algorithm:** Pretty-print `data.toJson()` with a two-space indent, `DeviceStorage.atomicWrite`
+  it, then notify.
+- **Usage:** The queued operations of this class, and `save` through the queue.
+- **Notes:** Never enqueue from here or from anything it calls; see the deadlock rule above.
 
 ### `static Future<NetworkData> load()` <a id="load"></a>
 - **Kind:** static method.
@@ -65,10 +96,10 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
   service that local data changed.
 - **Inputs:** `data`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Writes `network_data.json` (pretty-printed, non-atomic); calls
+- **Side effects:** Atomically replaces `network_data.json` (pretty-printed, tmp file + rename, queued behind earlier writes); calls
   `AutoSyncService.instance.notifySaved()` (see
   [`../../../shared/services/auto_sync_service.md`](../../../shared/services/auto_sync_service.md)).
-- **Algorithm:** JSON-encode `data.toJson()`, write it, then notify auto-sync.
+- **Algorithm:** Enqueue [`_write`](#write) (JSON-encode `data.toJson()`, atomic write, then notify auto-sync) on the per-path write queue.
 - **Usage:**
   ```dart
   await NetworkStorage.save(
@@ -90,7 +121,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 - **Purpose:** Insert a new network or replace an existing one, matched by `id`.
 - **Inputs:** `network`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `network_data.json` via [`save`](#save); assignments are carried over
+- **Side effects:** Rewrites `network_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)); assignments are carried over
   unchanged.
 - **Algorithm:** Load the current list; find the index of an existing network with the same `id`,
   replacing it if found, else append; save with the (possibly unchanged) `assignments` list.
@@ -107,7 +138,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 - **Purpose:** Delete a network by id and remove every assignment that referenced it.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `network_data.json` via [`save`](#save).
+- **Side effects:** Rewrites `network_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)).
 - **Algorithm:** Filter the network out of the loaded list; filter out every assignment whose
   `networkId == id`; save both lists together in one write.
 - **Usage:**
@@ -126,7 +157,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
   `(networkId, deviceId)` composite key.
 - **Inputs:** `assignment`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `network_data.json` via [`save`](#save); `networks` unchanged.
+- **Side effects:** Rewrites `network_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)); `networks` unchanged.
 - **Algorithm:** Load the current list; find the index of an existing assignment with the same
   `networkId` *and* `deviceId`, replacing it if found, else append; save.
 - **Usage:**
@@ -147,7 +178,7 @@ Row count (7) matches `grep -c 'Purpose:' network_storage.dart` (7) exactly.
 - **Purpose:** Remove a single device's assignment from a network.
 - **Inputs:** `networkId`, `deviceId`.
 - **Returns:** `Future<void>`.
-- **Side effects:** Rewrites `network_data.json` via [`save`](#save); `networks` unchanged.
+- **Side effects:** Rewrites `network_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)); `networks` unchanged.
 - **Algorithm:** Filter out the assignment matching both `networkId` and `deviceId`; save.
 - **Usage:**
   ```dart

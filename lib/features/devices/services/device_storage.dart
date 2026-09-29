@@ -23,11 +23,63 @@ class DeviceStorage {
   static String? _customPath;
   static bool _configLoaded = false;
 
+  /// One write queue per data file path (see [serializeWrite]).
+  static final Map<String, AtomicWriteQueue> _queues =
+      <String, AtomicWriteQueue>{};
+
+  /// Purpose: Run [operation] after every earlier write to [path] finished.
+  /// Inputs: `path` - the data file the operation reads and rewrites;
+  /// `operation` - the read-modify-write to run.
+  /// Returns: `Future<void>` with the operation's own outcome.
+  /// Side effects: Appends to the queue of that path.
+  /// Notes: Shared by the four data storages. Queues are keyed by file path,
+  /// not global, so unrelated files never wait for each other and a queue
+  /// left mid-write (e.g. by a torn-down test) cannot stall another folder.
+  /// Code already inside an operation must call its private `_write`, never
+  /// the public `save`, which would enqueue behind itself and deadlock.
+  static Future<void> serializeWrite(
+    String path,
+    Future<void> Function() operation,
+  ) => (_queues[path] ??= AtomicWriteQueue()).enqueue(operation);
+
+  /// Purpose: Atomically replace [file] with [content], retrying brief lock races.
+  /// Inputs: `file`, `content`.
+  /// Returns: `Future<void>`; throws the last `FileSystemException` when every
+  /// attempt failed.
+  /// Side effects: tmp-file + rename write via `atomicWriteString`.
+  /// Notes: Shared by every storage. On Windows the rename over the target
+  /// fails with "access denied" while another reader (or a virus scanner) has
+  /// the target open for a moment, so a failed attempt is retried up to five
+  /// times with a short growing delay before the error is surfaced.
+  static Future<void> atomicWrite(File file, String content) async {
+    for (var attempt = 1; ; attempt++) {
+      try {
+        await atomicWriteString(file, content);
+        return;
+      } on FileSystemException {
+        if (attempt >= 5) rethrow;
+        await Future<void>.delayed(Duration(milliseconds: 25 * attempt));
+      }
+    }
+  }
+
+  /// Purpose: Serialise [operation] behind earlier writes of `devices.json`.
+  /// Inputs: `operation`.
+  /// Returns: `Future<void>`.
+  /// Side effects: See [serializeWrite].
+  /// Notes: Internal helper used within this file only.
+  static Future<void> _serialised(Future<void> Function() operation) async {
+    final file = await _getFile(_dataFileName);
+    return serializeWrite(file.path, operation);
+  }
+
   /// Purpose: Provide the internal get default app dir helper for this file.
   /// Inputs: None.
   /// Returns: `Future<Directory>`.
   /// Side effects: Performs local file-system I/O.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. The platform path is
+  /// resolved on every call and deliberately never cached, so a swapped path
+  /// provider (tests) is honoured.
   /// Default app directory (~/Documents/MyDevice).
   static Future<Directory> _getDefaultAppDir() async {
     final dir = await getApplicationDocumentsDirectory();
@@ -129,17 +181,31 @@ class DeviceStorage {
       await _adoptStrayConfig();
       final oldDir = await getAppDir();
 
-      _customPath = newPath;
-      // Persist to config (always in default dir)
+      // Persist to config first (always in default dir) and only then switch
+      // the in-memory path, so a failed write leaves both untouched.
       final config = await _readConfigFromDefault();
+      final previousConfig = {...config};
+      final previousPath = _customPath;
       if (newPath != null && newPath.isNotEmpty) {
         config['storagePath'] = newPath;
       } else {
         config.remove('storagePath');
       }
       await _writeConfigToDefault(config);
+      _customPath = newPath;
 
-      final newDir = await getAppDir();
+      final Directory newDir;
+      try {
+        newDir = await getAppDir();
+      } catch (_) {
+        // The new folder cannot be created: roll the path and the persisted
+        // config back so the app keeps using the old location.
+        _customPath = previousPath;
+        try {
+          await _writeConfigToDefault(previousConfig);
+        } catch (_) {}
+        return const StoragePathResult(saved: false);
+      }
       if (oldDir.path == newDir.path) return const StoragePathResult();
 
       // Per-entry failures are reported rather than thrown; the path change
@@ -241,7 +307,8 @@ class DeviceStorage {
   /// Write config to the default location.
   static Future<void> _writeConfigToDefault(Map<String, dynamic> config) async {
     final file = await _getConfigFile();
-    await file.writeAsString(
+    await atomicWrite(
+      file,
       const JsonEncoder.withIndent('  ').convert(config),
     );
   }
@@ -275,31 +342,48 @@ class DeviceStorage {
   /// Purpose: Save the relevant data to the relevant storage or service layer.
   /// Inputs: `data`.
   /// Returns: `Future<void>`.
-  /// Side effects: Performs local file-system I/O.
-  /// Notes: None.
-  static Future<void> save(DeviceData data) async {
+  /// Side effects: Atomically replaces `devices.json` (queued behind earlier
+  /// writes) and notifies auto-sync.
+  /// Notes: Public entry point; enqueues [_write]. Code that already runs
+  /// inside the write queue must call [_write] directly, never this method,
+  /// or it would wait on itself and deadlock.
+  static Future<void> save(DeviceData data) => _serialised(() => _write(data));
+
+  /// Purpose: Write `devices.json` atomically and notify auto-sync.
+  /// Inputs: `data`.
+  /// Returns: `Future<void>`.
+  /// Side effects: tmp-file + rename write of the data file; calls
+  /// `AutoSyncService.notifySaved`.
+  /// Notes: Internal helper; the unqueued primitive that queued operations
+  /// call from inside [_serialised]. Never enqueue from here.
+  static Future<void> _write(DeviceData data) async {
     final file = await _getFile(_dataFileName);
     final jsonStr = const JsonEncoder.withIndent('  ').convert(data.toJson());
-    await file.writeAsString(jsonStr);
+    await atomicWrite(file, jsonStr);
     AutoSyncService.instance.notifySaved();
   }
 
   /// Purpose: Add or update through the current flow.
   /// Inputs: `device`.
   /// Returns: `Future<void>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Side effects: Queued read-modify-write of `devices.json`; may rewrite
+  /// the network, dataset and service files when the device leaves service.
+  /// Notes: The load-modify-write runs inside the write queue so concurrent
+  /// calls cannot lose each other's device; unknown top-level fields
+  /// (`extraJson`) are carried over.
   /// Add a new device or update an existing one (matched by id).
   static Future<void> addOrUpdate(Device device) async {
-    final data = await load();
-    final devices = List<Device>.of(data.devices);
-    final idx = devices.indexWhere((d) => d.id == device.id);
-    if (idx >= 0) {
-      devices[idx] = device;
-    } else {
-      devices.add(device);
-    }
-    await save(DeviceData(devices: devices));
+    await _serialised(() async {
+      final data = await load();
+      final devices = List<Device>.of(data.devices);
+      final idx = devices.indexWhere((d) => d.id == device.id);
+      if (idx >= 0) {
+        devices[idx] = device;
+      } else {
+        devices.add(device);
+      }
+      await _write(DeviceData(devices: devices, extraJson: data.extraJson));
+    });
     if (!device.isInService) {
       await _removeDeviceReferences(device.id);
     }
@@ -308,13 +392,16 @@ class DeviceStorage {
   /// Purpose: Delete device from the relevant storage or state.
   /// Inputs: `id`.
   /// Returns: `Future<void>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Side effects: Queued read-modify-write of `devices.json`, then rewrites
+  /// the network, dataset and service files that referenced the device.
+  /// Notes: Unknown top-level fields (`extraJson`) are carried over.
   /// Delete a device by id and clean up references in other modules.
   static Future<void> deleteDevice(String id) async {
-    final data = await load();
-    final devices = data.devices.where((d) => d.id != id).toList();
-    await save(DeviceData(devices: devices));
+    await _serialised(() async {
+      final data = await load();
+      final devices = data.devices.where((d) => d.id != id).toList();
+      await _write(DeviceData(devices: devices, extraJson: data.extraJson));
+    });
     await _removeDeviceReferences(id);
   }
 
@@ -334,6 +421,7 @@ class DeviceStorage {
         NetworkData(
           networks: netData.networks,
           assignments: cleanedAssignments,
+          extraJson: netData.extraJson,
         ),
       );
     }
@@ -352,7 +440,9 @@ class DeviceStorage {
       return ds;
     }).toList();
     if (dsChanged) {
-      await DataSetStorage.save(DataSetData(datasets: cleanedDatasets));
+      await DataSetStorage.save(
+        DataSetData(datasets: cleanedDatasets, extraJson: dsData.extraJson),
+      );
     }
 
     await ServiceStorage.removeDeviceReferences(id);

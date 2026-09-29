@@ -6,6 +6,9 @@
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| [`calendarDaysBetween`](#calendardaysbetween) | 顶层函数 | A | 计算两个日期间的日历天数，不受夏令时影响。 |
+| [`trendScaleDates`](#trendscaledates) | 顶层函数 | A | 按日历日步进生成趋势图的 x 轴日期。 |
+| [`_TrendCache`](#_trendcache) | 构造函数（私有类） | A | 把计算出的趋势与其计算所用输入打包。 |
 | `DeviceFinanceOverviewPage`（构造函数） | 构造函数 | B | 为页面组件存储设备列表和默认货币。 |
 | `createState` | 方法（`DeviceFinanceOverviewPage`） | B | 创建页面可变状态对象。 |
 | `build` | 方法（组件） | B | 构建脚手架；在双重门控下（屏幕上的 `canSplitLayout`、body 宽度减 32 上的 `useFinanceSideBySide`、以及非空的分布）摘要卡放在 `financeSummaryPaneWidth` 宽的窗格里与分布卡并排，否则三张卡堆叠；趋势卡始终全宽在下，其后是端侧 AI [`AiInsightCard`](../../ai/widgets/ai_insight_card.md)（v1.6.0：模块 `deviceFinance`、`compact: !sideBySide`、`top: 12` 外边距、`aiFinanceCosts` 与 `aiFinanceRecurring` 两个小节，事实来自 [`buildDeviceFinanceInsightFacts`](../services/finance_insight_facts.md)，并带不含设备名称的 `fallbackFacts`），除非端侧 AI 已打开，否则它什么都不渲染。 |
@@ -19,7 +22,7 @@
 | [`_buildTrendData`](#_buildtrenddata) | 方法（`_DeviceFinanceOverviewPageState`） | A | 把每日成本函数跨趋势刻度采样进历史/未来点列表。 |
 | [`_assetBuckets`](#_assetbuckets) | 方法（`_DeviceFinanceOverviewPageState`） | A | 把每个设备总成本聚合进逐类别桶，降序排序。 |
 | [`_historyStart`](#_historystart) | 方法（`_DeviceFinanceOverviewPageState`） | A | 计算所选范围趋势图历史开始日期。 |
-| [`_historyDuration`](#_historyduration) | 方法（`_DeviceFinanceOverviewPageState`） | A | 从历史窗口长度计算前向投影窗口长度。 |
+| [`_historyDays`](#_historyduration) | 方法（`_DeviceFinanceOverviewPageState`） | A | 从历史窗口长度计算前向投影窗口长度。 |
 | [`_earliestPurchaseDate`](#_earliestpurchasedate) | 方法（`_DeviceFinanceOverviewPageState`） | A | 跨所有设备找最早 `purchaseDate`。 |
 | [`_totalDailyCostAt`](#_totaldailycostat) | 方法（`_DeviceFinanceOverviewPageState`） | A | 截至给定日期求和每个设备的平均每日成本。 |
 | [`_averageDailyCostAt`](#_averagedailycostat) | 方法（`_DeviceFinanceOverviewPageState`） | A | 计算一个设备截至任意日期（过去或未来）的平均每日成本。 |
@@ -40,9 +43,14 @@
 | `_ChartSeries`（构造函数） | 构造函数 | B | 存储一个图表系列的标签、颜色、点和虚线标志。 |
 | `_AssetBucket`（构造函数） | 构造函数 | B | 存储一个类别的标签、金额、计数和图表颜色。 |
 
-行数说明：对此文件 `grep -c 'Purpose:'` 返回 32；上面表格有 33 个真实声明行（游离 `_chartColors` 行是表格格式伪影，非单独行——见下面）。唯一未文档化声明是 `_chartBounds`（`lib/features/devices/views/device_finance_overview_page.dart`，第 831 行）：它完全无 `///` 文档注释（连普通都没有），不像文件每个其他方法，因此不匹配 `Purpose:` grep。它仍是真实、承载负载声明（见下面 [`_chartBounds`](#_chartbounds)）并按"每个声明得一行"规则包含于此。`_chartColors`（`static const List<Color>`，第 901 行）是数据常量，非函数/方法/构造函数，且——与本批文件其他私有枚举和常量映射处理方式一致——不计数为自己的声明行。
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 35；上面表格有 36 个真实声明行（游离 `_chartColors` 行是表格格式伪影，非单独行——见下面）。唯一未文档化声明是 `_chartBounds`（`lib/features/devices/views/device_finance_overview_page.dart`，第 831 行）：它完全无 `///` 文档注释（连普通都没有），不像文件每个其他方法，因此不匹配 `Purpose:` grep。它仍是真实、承载负载声明（见下面 [`_chartBounds`](#_chartbounds)）并按"每个声明得一行"规则包含于此。`_chartColors`（`static const List<Color>`，第 901 行）是数据常量，非函数/方法/构造函数，且——与本批文件其他私有枚举和常量映射处理方式一致——不计数为自己的声明行。
 
 ## 文档
+
+### 1.6.2 变更
+
+- **日历日算术（夏令时）。** `Duration(days: n)` 是 `n × 24 h`，因此在本地时间上跨夏令时切换会漂移到 23:00 / 01:00。`_historyDuration` 变为 `_historyDays`（`int`，用 `DateTime(y, m, d + n)` 相加）；`_averageDailyCostAt` 用 `calendarDaysBetween` 统计服务天数；图表日期来自 `trendScaleDates`，按 1 / 7 / 30 个日历日步进。`calendarDaysBetween(from, to)` 在 `difference(...).inDays` 之前把两个日期都重置到 UTC 零点。`test/finance_trend_scale_test.dart` 只有在夏令时时区运行（CI 用 `TZ=America/New_York`）才是真正的夏令时检查。
+- **`_TrendCache`。** `_buildTrendCard` 保留上次计算的刻度和序列，并在范围、今日日期和设备列表（按同一性）不变时复用，而不是每次构建都重算。
 
 ### `Widget _buildLineChartPanel({required BuildContext context, required AppLocalizations l10n, required _TrendScale scale, required List<_ChartSeries> series, required double minY, required double maxY})` <a id="_buildlinechartpanel"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
@@ -116,7 +124,7 @@
 - **用法：** `_buildTrendCard` 中的 `final historyStart = _historyStart(today);`（`lib/features/devices/views/device_finance_overview_page.dart`，第 316 行）。
 - **备注：** 无。
 
-### `Duration _historyDuration(DateTime today, DateTime historyStart)` <a id="_historyduration"></a>
+### `Duration _historyDays(DateTime today, DateTime historyStart)` <a id="_historyduration"></a>
 - **种类：** `_DeviceFinanceOverviewPageState` 的方法
 - **来源：** `lib/features/devices/views/device_finance_overview_page.dart`（第 744 行）
 - **用途：** 从历史窗口长度派生前向"未来投影"窗口长度，使投影段镜像图表已回看的距离。
@@ -126,7 +134,7 @@
 - **算法：** `days = |today.difference(historyStart).inDays|`；返回 `Duration(days: math.max(days, 30))`——即使历史窗口本身很短也保证至少 30 天投影窗口。
 - **用法：**
   ```dart
-  final futureEnd = today.add(_historyDuration(today, historyStart));
+  final futureEnd = today.add(_historyDays(today, historyStart));
   ```
   （来自 `_buildTrendCard`，`lib/features/devices/views/device_finance_overview_page.dart`，第 317 行）
 - **备注：** 无。

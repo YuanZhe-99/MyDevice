@@ -83,27 +83,34 @@ void main() {
     expect(await DeviceStorage.getStoragePath(), custom);
   });
 
-  test('a config an older build left in the custom folder is adopted', () async {
-    await DeviceStorage.setThemeMode('dark');
-    final custom = p.join(tempDir.path, 'custom-older');
-    await DeviceStorage.setStoragePath(custom);
-    // What a pre-1.5.7 build wrote after the move: the preferences changed
-    // since, in the custom folder.
-    final stray = File(p.join(custom, 'storage_config.json'))
-      ..writeAsStringSync(
-        jsonEncode({'themeMode': 'system', 'locale': 'ja', 'storagePath': 'x'}),
-      );
-    // Moving on to another folder checks the current one first.
-    final next = p.join(tempDir.path, 'custom-next');
-    await DeviceStorage.setStoragePath(next);
+  test(
+    'a config an older build left in the custom folder is adopted',
+    () async {
+      await DeviceStorage.setThemeMode('dark');
+      final custom = p.join(tempDir.path, 'custom-older');
+      await DeviceStorage.setStoragePath(custom);
+      // What a pre-1.5.7 build wrote after the move: the preferences changed
+      // since, in the custom folder.
+      final stray = File(p.join(custom, 'storage_config.json'))
+        ..writeAsStringSync(
+          jsonEncode({
+            'themeMode': 'system',
+            'locale': 'ja',
+            'storagePath': 'x',
+          }),
+        );
+      // Moving on to another folder checks the current one first.
+      final next = p.join(tempDir.path, 'custom-next');
+      await DeviceStorage.setStoragePath(next);
 
-    final config = await DeviceStorage.readConfig();
-    expect(config['themeMode'], 'system');
-    expect(config['locale'], 'ja');
-    expect(config['storagePath'], next);
-    expect(stray.existsSync(), isFalse);
-    expect(File(p.join(next, 'storage_config.json')).existsSync(), isFalse);
-  });
+      final config = await DeviceStorage.readConfig();
+      expect(config['themeMode'], 'system');
+      expect(config['locale'], 'ja');
+      expect(config['storagePath'], next);
+      expect(stray.existsSync(), isFalse);
+      expect(File(p.join(next, 'storage_config.json')).existsSync(), isFalse);
+    },
+  );
 
   test('files the move could not place are reported', () async {
     final custom = p.join(tempDir.path, 'occupied');
@@ -124,4 +131,24 @@ void main() {
     expect(result.from, defaultDir);
     expect(File(p.join(custom, 'images', 'a.png')).existsSync(), isTrue);
   });
+
+  test(
+    'a folder that cannot be created leaves path and config untouched',
+    () async {
+      final blocker = File(p.join(tempDir.path, 'blocker'))
+        ..writeAsStringSync('a file, not a folder');
+      final impossible = p.join(blocker.path, 'sub');
+      final before = await DeviceStorage.getStoragePath();
+
+      final result = await DeviceStorage.setStoragePath(impossible);
+
+      expect(result.saved, isFalse);
+      expect(await DeviceStorage.getStoragePath(), before);
+      final configFile = File(p.join(defaultDir, 'storage_config.json'));
+      final config = configFile.existsSync() ? readJson(configFile.path) : {};
+      expect(config.containsKey('storagePath'), isFalse);
+      // The data is still readable from the old place.
+      expect((await DeviceStorage.load()).devices.single.id, 'd1');
+    },
+  );
 }

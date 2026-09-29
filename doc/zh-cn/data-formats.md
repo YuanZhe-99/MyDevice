@@ -225,3 +225,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 - 删除网络在 `NetworkStorage.deleteNetwork()` 中过滤赋值。
 - 删除数据集删除其包含的存储链接。
 - **已知限制：** 同步合并当前在合并后不运行完整交叉引用验证（见 [WebDAV 同步 — 已知限制](sync.md#known-limitation)）。
+
+## 写入安全（自 1.6.2 起）
+
+四个数据文件（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`）、`storage_config.json` 和 `exchange_rates.json` 都是原子替换的：新内容先写入同文件夹的 `<name>.tmp-<微秒>` 文件，再重命名覆盖目标（若 Windows 报告目标被锁定则短暂重试）。数据存储还按文件路径串行化其读-改-写操作。磁盘上的 JSON 形态以及同步/备份格式不变；游离的 `*.tmp-*` 文件只可能在崩溃后残留，可安全删除。

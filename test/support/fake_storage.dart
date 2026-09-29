@@ -91,6 +91,9 @@ Map<String, dynamic> readSeededConfig(Directory tempDir) {
     return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
   } on FormatException {
     return {};
+  } on FileSystemException {
+    // The atomic write's rename can briefly lock the file on Windows.
+    return {};
   }
 }
 

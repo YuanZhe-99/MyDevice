@@ -6,6 +6,8 @@
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| `createState` | 方法（`DeviceAvatar`） | B | 创建缓存图片查找的状态。 |
+| `_resolveFile` | 方法（`_DeviceAvatarState`，私有） | B | 返回把图片路径解析为文件的已缓存 future。 |
 | `DeviceAvatar` | 构造函数 | B | 为显式类别/emoji/图像/templateImage/身份/尺寸字段创建头像。 |
 | `DeviceAvatar.fromDevice` | 工厂构造函数 | B | 为给定 `Device` 创建头像，并传入其 `templateImage` 和品牌/型号/名称用于模板匹配。 |
 | `build` | 方法（`DeviceAvatar`） | B | 渲染 emoji，否则解析图像，否则模板缩略图，否则类别图标。 |
@@ -17,7 +19,9 @@
 | `_AvatarFrame` | 构造函数（私有类） | B | 创建共享圆形背景/边框框。 |
 | `build` | 方法（`_AvatarFrame`） | B | 围绕 `child` 组合尺寸化、带边框、裁剪圆。 |
 
-行数（10）与 `grep -c 'Purpose:' device_avatar.dart`（10）精确匹配。
+行数（12）与 `grep -c 'Purpose:' device_avatar.dart`（12）精确匹配。
+
+自 1.6.2 起 `DeviceAvatar` 是 `StatefulWidget`（上面的 `build` 和辅助行现在位于 `_DeviceAvatarState`）：`ImageService.resolve` 的 future 每个图片路径只创建一次，而非在每次 `build` 中创建，`ImageService.cachedResolve` 提供 `initialData`，`Image.file` 按头像尺寸解码（`cacheWidth`），因此滚动列表既不闪现回退图标，也不解码全分辨率照片。
 
 ## 文档
 

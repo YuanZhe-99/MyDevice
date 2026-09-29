@@ -108,6 +108,11 @@ class _SearchDialogState extends State<_SearchDialog> {
   bool _searching = false;
   String? _error;
 
+  /// Bumped for every search / detail request; a response whose generation is
+  /// no longer current (superseded or dialog moved on) is dropped.
+  int _searchGen = 0;
+  int _detailGen = 0;
+
   // Preview phase
   DeviceSearchResult? _selected;
   bool _fetchingDetail = false;
@@ -142,11 +147,13 @@ class _SearchDialogState extends State<_SearchDialog> {
   /// Inputs: None.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. A generation counter
+  /// makes a slower, superseded response harmless.
   Future<void> _search() async {
     final query = _queryController.text.trim();
     if (query.isEmpty) return;
 
+    final gen = ++_searchGen;
     setState(() {
       _searching = true;
       _error = null;
@@ -156,7 +163,7 @@ class _SearchDialogState extends State<_SearchDialog> {
 
     try {
       final response = await DeviceSearchService.search(query);
-      if (!mounted) return;
+      if (!mounted || gen != _searchGen) return;
       setState(() {
         _results = response.results;
         _outcomes = response.outcomes;
@@ -171,7 +178,7 @@ class _SearchDialogState extends State<_SearchDialog> {
         }
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _searchGen) return;
       setState(() {
         _searching = false;
         _error = e.toString();
@@ -217,8 +224,11 @@ class _SearchDialogState extends State<_SearchDialog> {
   /// Inputs: `result`.
   /// Returns: `Future<void>`.
   /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. A generation counter
+  /// drops the detail response when another result was chosen or the user
+  /// went back to the search phase meanwhile.
   Future<void> _selectResult(DeviceSearchResult result) async {
+    final gen = ++_detailGen;
     setState(() {
       _selected = result;
       _phase = _Phase.preview;
@@ -230,14 +240,14 @@ class _SearchDialogState extends State<_SearchDialog> {
 
     try {
       final detail = await DeviceSearchService.fetchDetail(result);
-      if (!mounted) return;
+      if (!mounted || gen != _detailGen) return;
       setState(() {
         _selected = detail;
         _fetchingDetail = false;
         _initToggles(detail);
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _detailGen) return;
       setState(() {
         _fetchingDetail = false;
         _initToggles(result);
@@ -819,7 +829,10 @@ class _SearchDialogState extends State<_SearchDialog> {
           if (showBack)
             IconButton(
               icon: const Icon(Icons.arrow_back, size: 20),
-              onPressed: () => setState(() => _phase = _Phase.search),
+              onPressed: () => setState(() {
+                _detailGen++; // drop a detail fetch still in flight
+                _phase = _Phase.search;
+              }),
               visualDensity: VisualDensity.compact,
             ),
           Icon(

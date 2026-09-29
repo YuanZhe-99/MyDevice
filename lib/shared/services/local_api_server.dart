@@ -72,6 +72,37 @@ class LocalApiServer {
     _password = config['apiPassword'] as String?;
   }
 
+  /// Purpose: Build the complete request handler (routes plus middleware).
+  /// Inputs: None.
+  /// Returns: `Handler` with origin check, CORS, auth and error middleware applied.
+  /// Side effects: None.
+  /// Notes: Extracted from `start()` so tests can drive the pipeline without
+  /// binding a socket. The origin middleware is outermost so a disallowed
+  /// browser origin is rejected with 403 before authentication runs.
+  static Handler buildHandler() {
+    final router = Router();
+    router.get('/ping', _handlePing);
+    router.get('/device/list', _handleList);
+    router.get('/device/search', _handleSearch);
+    router.post('/device/add', _handleAdd);
+    router.get('/device/stats', _handleStats);
+    router.get('/network/list', _handleNetworkList);
+    router.get('/network/search', _handleNetworkSearch);
+    router.get('/dataset/list', _handleDatasetList);
+    router.get('/dataset/search', _handleDatasetSearch);
+    router.get('/service/list', _handleServiceList);
+    router.get('/service/search', _handleServiceSearch);
+    router.get('/service/routes', _handleServiceRoutes);
+    router.get('/service/stats', _handleServiceStats);
+
+    return const Pipeline()
+        .addMiddleware(_originMiddleware())
+        .addMiddleware(_corsMiddleware())
+        .addMiddleware(_authMiddleware())
+        .addMiddleware(_errorMiddleware())
+        .addHandler(router.call);
+  }
+
   /// Purpose: Start the current workflow for the current workflow.
   /// Inputs: None.
   /// Returns: `Future<void>`.
@@ -96,26 +127,7 @@ class LocalApiServer {
       return;
     }
 
-    final router = Router();
-    router.get('/ping', _handlePing);
-    router.get('/device/list', _handleList);
-    router.get('/device/search', _handleSearch);
-    router.post('/device/add', _handleAdd);
-    router.get('/device/stats', _handleStats);
-    router.get('/network/list', _handleNetworkList);
-    router.get('/network/search', _handleNetworkSearch);
-    router.get('/dataset/list', _handleDatasetList);
-    router.get('/dataset/search', _handleDatasetSearch);
-    router.get('/service/list', _handleServiceList);
-    router.get('/service/search', _handleServiceSearch);
-    router.get('/service/routes', _handleServiceRoutes);
-    router.get('/service/stats', _handleServiceStats);
-
-    final handler = const Pipeline()
-        .addMiddleware(_corsMiddleware())
-        .addMiddleware(_authMiddleware())
-        .addMiddleware(_errorMiddleware())
-        .addHandler(router.call);
+    final handler = buildHandler();
 
     try {
       final InternetAddress bindAddress;
@@ -1323,37 +1335,80 @@ class LocalApiServer {
 
   // ── Middleware ──
 
-  /// Purpose: Provide the internal cors middleware helper for this file.
+  /// Purpose: Decide whether a browser `Origin` header may talk to the API.
+  /// Inputs: `origin` (raw header value, may be null).
+  /// Returns: true when there is no Origin (non-browser client) or it is an
+  /// http/https origin whose host is `localhost` or a loopback IP.
+  /// Side effects: None.
+  /// Notes: Rejects `null`, `file:`, browser-extension schemes, LAN IPs and
+  /// look-alike hosts such as `localhost.evil.com`. Exposed for tests.
+  static bool isAllowedOrigin(String? origin) {
+    if (origin == null) return true;
+    final uri = Uri.tryParse(origin);
+    if (uri == null) return false;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+    final host = uri.host.toLowerCase();
+    if (host.isEmpty) return false;
+    if (host == 'localhost') return true;
+    final addr = InternetAddress.tryParse(host);
+    return addr != null && addr.isLoopback;
+  }
+
+  /// Purpose: Reject requests that carry a non-local browser Origin.
   /// Inputs: None.
-  /// Returns: `Middleware`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
-  static Middleware _corsMiddleware() {
+  /// Returns: `Middleware` (outermost in the pipeline).
+  /// Side effects: None.
+  /// Notes: A bad Origin gets 403 without any CORS header, for every method
+  /// including OPTIONS, so a foreign web page can neither read nor trigger
+  /// (simple cross-origin POST) local API calls. Requests without Origin pass.
+  /// DNS-rebinding / Host checks are intentionally out of scope.
+  static Middleware _originMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {
-        if (request.method == 'OPTIONS') {
-          return Response.ok('', headers: _corsHeaders);
+        if (!isAllowedOrigin(request.headers['origin'])) {
+          return _error(403, 'origin not allowed');
         }
-        final response = await innerHandler(request);
-        return response.change(headers: _corsHeaders);
+        return innerHandler(request);
       };
     };
   }
 
-  static const _corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
+  /// Purpose: Add CORS headers for allowed local origins and answer preflights.
+  /// Inputs: None.
+  /// Returns: `Middleware`.
+  /// Side effects: None.
+  /// Notes: Runs after `_originMiddleware`, so any Origin seen here is already
+  /// allowed. The origin is echoed (never `*`) with `Vary: Origin`; requests
+  /// without Origin get no CORS headers.
+  static Middleware _corsMiddleware() {
+    return (Handler innerHandler) {
+      return (Request request) async {
+        final origin = request.headers['origin'];
+        final cors = origin == null
+            ? const <String, String>{}
+            : <String, String>{
+                'Access-Control-Allow-Origin': origin,
+                'Vary': 'Origin',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+              };
+        if (request.method == 'OPTIONS') {
+          return Response.ok('', headers: cors);
+        }
+        final response = await innerHandler(request);
+        return cors.isEmpty ? response : response.change(headers: cors);
+      };
+    };
+  }
 
   /// Purpose: Provide the internal auth middleware helper for this file.
   /// Inputs: None.
   /// Returns: `Middleware`.
   /// Side effects: May read or mutate application state, storage, or service resources.
   /// Notes: Internal helper used within this file only. When credentials are
-  /// configured, Basic Auth is required for every request including loopback,
-  /// because permissive CORS would otherwise let any local web page read the
-  /// API. Without credentials only loopback requests are allowed.
+  /// configured, Basic Auth is required for every request including loopback.
+  /// Without credentials only loopback requests are allowed. Browser origins
+  /// are restricted to local pages by `_originMiddleware`.
   static Middleware _authMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {
@@ -1412,14 +1467,17 @@ class LocalApiServer {
   /// Inputs: None.
   /// Returns: `Middleware`.
   /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Notes: Internal helper used within this file only. The response body is
+  /// a fixed `internal error`; the exception is only logged, never leaked.
   static Middleware _errorMiddleware() {
     return (Handler innerHandler) {
       return (Request request) async {
         try {
           return await innerHandler(request);
         } catch (e) {
-          return _error(500, 'internal error: $e');
+          // ignore: avoid_print
+          print('[LocalApiServer] request failed: $e');
+          return _error(500, 'internal error');
         }
       };
     };

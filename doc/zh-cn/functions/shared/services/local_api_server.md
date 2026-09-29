@@ -15,6 +15,7 @@
 | [`start`](#start) | 静态方法 | A | 按当前配置绑定并服务 API 服务器。 |
 | [`stop`](#stop) | 静态方法 | A | 强制关闭运行中服务器（如有）。 |
 | [`restart`](#restart) | 静态方法 | A | 重新加载配置并重启服务器。 |
+| [`buildHandler`](#buildhandler) | 静态方法 | A | 构建完整请求处理器（路由加中间件），不绑定套接字。 |
 | `_handlePing` | 静态方法（路由处理器） | B | `GET /ping` 存活检查。 |
 | [`_handleList`](#handlelist) | 静态方法（路由处理器） | A | `GET /device/list`：设备，可选按类别过滤。 |
 | [`_handleSearch`](#handlesearch) | 静态方法（路由处理器） | A | `GET /device/search`：匹配文本查询的设备。 |
@@ -60,12 +61,14 @@
 | `_json` | 静态方法 | B | 把值包装为 `200 application/json` `Response`。 |
 | `_error` | 静态方法 | B | 为给定状态构建 JSON 错误 `Response`。 |
 | [`_parseBody`](#parsebody) | 静态方法 | A | 把请求体解析为 JSON，容忍格式错误输入。 |
-| [`_corsMiddleware`](#corsmiddleware) | 静态方法 | A | 每个响应的宽松 CORS 中间件。 |
+| [`isAllowedOrigin`](#isallowedorigin) | 静态方法 | A | 判断浏览器 `Origin` 头是否可访问该 API。 |
+| [`_originMiddleware`](#originmiddleware) | 静态方法 | A | 以 `403` 拒绝携带非本地浏览器 Origin 的请求。 |
+| [`_corsMiddleware`](#corsmiddleware) | 静态方法 | A | 在 CORS 头中回显被允许的本地 Origin 并应答预检。 |
 | [`_authMiddleware`](#authmiddleware) | 静态方法 | A | 执行 Basic Auth / 仅回环访问规则。 |
 | [`_validateBasicAuth`](#validatebasicauth) | 静态方法 | A | 对照配置凭据验证 `Authorization: Basic` 页头。 |
 | [`_errorMiddleware`](#errormiddleware) | 静态方法 | A | 把未处理处理器异常捕获为 `500` JSON 错误。 |
 
-行数说明：对此文件 `grep -c 'Purpose:'` 返回 58，与上面 58 行精确匹配。
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 61，与上面 61 行精确匹配（1.6.2 新增 `buildHandler`、`isAllowedOrigin` 和 `_originMiddleware`；`_corsHeaders` 常量已删除）。
 
 ## 文档
 
@@ -79,13 +82,22 @@
 - **用法：** 被 `start()`/`restart()` 和设置 UI 调用。
 - **备注：** 凭据按明文读取，按本应用文档化安全姿态。
 
+### `static Handler buildHandler()` <a id="buildhandler"></a>
+- **种类：** `LocalApiServer` 的静态方法。
+- **用途：** 构建完整请求处理器——包在中间件管线里的 13 路由 `Router`——而不绑定套接字。
+- **输入：** 无。**返回：** `Handler`。
+- **副作用：** 无。
+- **算法：** 注册 13 条路由，然后把路由器包进 `_originMiddleware`（最外）→ `_corsMiddleware` → `_authMiddleware` → `_errorMiddleware`（最内）。
+- **用法：** `start()` 用它提供服务；`test/local_api_origin_test.dart` 在进程内驱动它。
+- **备注：** 来源检查放在最外层，使外来 Origin 在认证之前、在任何路由处理器（如 `POST /device/add`）能写入任何内容之前就得到 `403`。
+
 ### `static Future<void> start()` <a id="start"></a>
 - **种类：** `LocalApiServer` 的静态方法。
 - **来源：** 第 80 行。
 - **用途：** 按当前设置绑定并启动 API 服务器，禁用时不做事。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 绑定监听套接字；设置 `_server`/`_lastError`；记录到 stdout。
-- **算法：** `loadConfig()`、`stop()` 任何先前实例、清除 `_lastError`；禁用提前返回。计算 `isNonLoopback`（地址是 `0.0.0.0` 或既非 `localhost` 也非 `127.0.0.1`）和 `hasCredentials`；非回环无凭据时以 `_lastError = 'credentials_required'` 拒绝启动。构建带 13 条路由（`/ping`、`/device/list`、`/device/search`、`/device/add`、`/device/stats`、`/network/list`、`/network/search`、`/dataset/list`、`/dataset/search`、`/service/list`、`/service/search`、`/service/routes`、`/service/stats`）的 `Router`；把它包进 `_corsMiddleware` → `_authMiddleware` → `_errorMiddleware`；解析绑定地址并 `shelf_io.serve`；把绑定失败捕获进 `_lastError`。
+- **算法：** `loadConfig()`、`stop()` 任何先前实例、清除 `_lastError`；禁用提前返回。计算 `isNonLoopback`（地址是 `0.0.0.0` 或既非 `localhost` 也非 `127.0.0.1`）和 `hasCredentials`；非回环无凭据时以 `_lastError = 'credentials_required'` 拒绝启动。从 [`buildHandler`](#buildhandler) 取得处理器（13 条路由：`/ping`、`/device/list`、`/device/search`、`/device/add`、`/device/stats`、`/network/list`、`/network/search`、`/dataset/list`、`/dataset/search`、`/service/list`、`/service/search`、`/service/routes`、`/service/stats`，其外依次为 `_originMiddleware` → `_corsMiddleware` → `_authMiddleware` → `_errorMiddleware`）；解析绑定地址并 `shelf_io.serve`；把绑定失败捕获进 `_lastError`。
 - **用法：** 桌面平台从 `main()` 调用。
 - **备注：** 与 MyAnime 的 `LocalApiServer.start` 相同的无凭据不安全非本地主机拒绝，但带 MyDevice 自己默认端口 `7789`（对比 MyAnime `7788`）和路由表。
 
@@ -490,14 +502,32 @@
 - **用法：** 被 `_handleAdd` 调用。
 - **备注：** 这正是格式错误 JSON 产生干净 `400` 而非泛型 `500` 的原因。
 
-### `static Middleware _corsMiddleware()` <a id="corsmiddleware"></a>
-- **种类：** 静态方法。**来源：** 第 1331 行。
-- **用途：** 给每个响应附加宽松 CORS 页头。
+### `static bool isAllowedOrigin(String? origin)` <a id="isallowedorigin"></a>
+- **种类：** 静态方法（公开，便于测试调用）。
+- **用途：** 判断浏览器 `Origin` 头是否可访问该 API。
+- **输入：** `origin`——原始头值，或 null。**返回：** `bool`。
+- **副作用：** 无。
+- **算法：** `null`（无该头——非浏览器客户端）允许。否则解析为 URI，仅允许 scheme 为 `http`/`https` 且主机为 `localhost` 或回环 IP 地址（`InternetAddress.isLoopback`，即 `127.x.x.x` 和 `[::1]`）。
+- **用法：** `_originMiddleware`；`test/local_api_origin_test.dart`（允许/拒绝来源表）。
+- **备注：** 拒绝字面 `null` 来源（沙箱页面、`file:`）、浏览器扩展 scheme、局域网 IP、`0.0.0.0`，以及 `localhost.evil.com`、`evil.com/localhost` 之类的相似主机名。
+
+### `static Middleware _originMiddleware()` <a id="originmiddleware"></a>
+- **种类：** 静态方法。**起始版本：** 1.6.2。
+- **用途：** 拒绝携带非本地浏览器 Origin 的请求。
 - **输入：** 无。**返回：** `Middleware`。
-- **副作用：** 除包裹处理器外无。
-- **算法：** 在内层处理器产生每个响应周围添加宽松 allow-origin/allow-headers 响应页头。
-- **用法：** `start()` 的 `Pipeline` 中第一中间件。
-- **备注：** 显式文档化权衡——这正是 `_authMiddleware` 的回环+凭据规则存在的全部原因。
+- **副作用：** 除包装处理器外无。
+- **算法：** 若 `isAllowedOrigin(request.headers['origin'])` 为 false，则对所有方法（含 `OPTIONS`）应答不带任何 CORS 头的 `403 {"error":"origin not allowed"}`；否则调用内层处理器。
+- **用法：** [`buildHandler`](#buildhandler) 的最外层中间件。
+- **备注：** 这是对“任意网页可向 `/device/add` 发 POST”漏洞的修复：浏览器会给跨源请求（包括无需预检的“简单”请求）附带 `Origin`，因此服务器能在请求到达处理器前拒绝。DNS 重绑定（恶意页面通过解析到回环的域名访问 API）不在覆盖范围；`Host` 检查是单独的、有意未排期的变更。
+
+### `static Middleware _corsMiddleware()` <a id="corsmiddleware"></a>
+- **种类：** 静态方法。
+- **用途：** 为被允许的本地 Origin 添加 CORS 头并应答预检请求。
+- **输入：** 无。**返回：** `Middleware`。
+- **副作用：** 除包装处理器外无。
+- **算法：** 没有 `Origin` 头时不添加任何内容。有（已由 `_originMiddleware` 审核）时，把它回显到 `Access-Control-Allow-Origin` 并添加 `Vary: Origin`、`Access-Control-Allow-Methods: GET, POST, OPTIONS` 和 `Access-Control-Allow-Headers: Content-Type, Authorization`。`OPTIONS` 在此以 `200` 应答。
+- **用法：** [`buildHandler`](#buildhandler) 的第二个中间件。
+- **备注：** 取代此前的通配符 `Access-Control-Allow-Origin: *`（以及 `_corsHeaders` 常量）。
 
 ### `static Middleware _authMiddleware()` <a id="authmiddleware"></a>
 - **种类：** 静态方法。**来源：** 第 1357 行。
@@ -505,7 +535,7 @@
 - **输入：** 无。**返回：** `Middleware`。
 - **副作用：** 从 `request.context` 读取连接远程地址。
 - **算法：** 从连接信息确定回环状态；未配置凭据时直接拒绝非回环请求（`403`）；配置凭据时经 `_validateBasicAuth` 要求有效 `Authorization: Basic` 页头，无论回环状态（失败 `401` + `WWW-Authenticate`）；否则放行。
-- **用法：** `start()` 的 `Pipeline` 中第二中间件。
+- **用法：** [`buildHandler`](#buildhandler) 的第三个中间件。
 - **备注：** 与 MyAnime 的 `LocalApiServer._authMiddleware` 相同安全规则和理由——完整引用推理见那个页面备注。
 
 ### `static bool _validateBasicAuth(String header)` <a id="validatebasicauth"></a>
@@ -523,5 +553,5 @@
 - **输入：** 无。**返回：** `Middleware`。
 - **副作用：** 除包裹处理器外无。
 - **算法：** 内层处理器调用周围 try/catch；任何异常经 `_error` 构建 JSON 错误响应。
-- **用法：** `start()` 的 `Pipeline` 中最内中间件。
+- **用法：** [`buildHandler`](#buildhandler) 的最内层中间件。自 1.6.2 起响应正文为固定的 `{"error":"internal error"}`，异常只写入日志，不再泄露给调用方。
 - **备注：** 最后防线；预期失败模式预期路由返回自己 `400`/`401`/`403`。

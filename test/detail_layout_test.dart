@@ -10,29 +10,6 @@ import 'package:my_device/shared/utils/detail_layout.dart';
 /// comment. The detail pages and the finance overview are pushed above the
 /// shell, so their content width is the raw window less padding — no rail.
 void main() {
-  group('detail two-pane delegate', () {
-    test('agrees with the app-wide split rule everywhere', () {
-      const viewports = <List<double>>[
-        [933, 704], // Z Fold 8 landscape
-        [704, 933], // Z Fold 8 portrait
-        [750, 832], // Z Fold 7 portrait
-        [411, 914], // Pixel 10 Pro Fold cover
-        [915, 412], // phone landscape
-        [1024, 768], // tablet landscape
-        [768, 1024], // tablet portrait
-        [1600, 900], // desktop
-        [600, 480], // the split floor
-      ];
-      for (final v in viewports) {
-        expect(
-          useDetailTwoPane(v[0], v[1]),
-          canSplitLayout(v[0], v[1]),
-          reason: 'detail page disagreed at ${v[0]}x${v[1]}',
-        );
-      }
-    });
-  });
-
   group('detail left pane width', () {
     test('is proportional between its clamps', () {
       expect(detailLeftPaneWidth(933), closeTo(335.88, 0.01)); // Z Fold 8

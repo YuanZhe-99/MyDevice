@@ -187,11 +187,16 @@ class _DeviceListPageState extends State<DeviceListPage> {
     if (_sortMode == SortMode.custom) {
       // Custom order = storage order; grouping still applies
       if (_groupByCategory) {
+        // id -> storage position, so the comparator is O(1) instead of two
+        // O(n) indexOf scans per comparison.
+        final position = <String, int>{
+          for (var i = 0; i < _devices.length; i++) _devices[i].id: i,
+        };
         list.sort((a, b) {
           final cmp = a.category.index.compareTo(b.category.index);
           if (cmp != 0) return cmp;
           // Preserve relative order within category
-          return _devices.indexOf(a).compareTo(_devices.indexOf(b));
+          return (position[a.id] ?? 0).compareTo(position[b.id] ?? 0);
         });
       }
       return list;
@@ -240,6 +245,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
   /// Notes: Internal helper used within this file only.
   Future<void> _loadDevices() async {
     final data = await DeviceStorage.load();
+    if (!mounted) return;
     setState(() {
       _devices = data.devices;
       _loading = false;
@@ -480,7 +486,11 @@ class _DeviceListPageState extends State<DeviceListPage> {
     final item = _devices.removeAt(oldIndex);
     _devices.insert(newIndex, item);
     setState(() {});
-    await DeviceStorage.save(DeviceData(devices: _devices));
+    // Load the container first so unknown top-level fields survive the save.
+    final data = await DeviceStorage.load();
+    await DeviceStorage.save(
+      DeviceData(devices: _devices, extraJson: data.extraJson),
+    );
   }
 
   bool _reordering = false;

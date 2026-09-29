@@ -817,9 +817,7 @@ List<ServiceWarning> findServiceReferenceWarnings({
 
     for (final hop in route.hops) {
       if (hop.serviceId != null) {
-        final hopService = services
-            .where((s) => s.id == hop.serviceId)
-            .firstOrNull;
+        final hopService = serviceMap[hop.serviceId];
         if (hopService == null) {
           warnings.add(
             ServiceWarning(ServiceWarningKind.missingHopService, route.name),

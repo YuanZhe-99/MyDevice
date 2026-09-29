@@ -7,7 +7,7 @@ import '../models/device.dart';
 import '../services/preset_service.dart';
 import 'device_category_icon.dart';
 
-class DeviceAvatar extends StatelessWidget {
+class DeviceAvatar extends StatefulWidget {
   final DeviceCategory category;
   final String? emoji;
   final String? imagePath;
@@ -61,6 +61,43 @@ class DeviceAvatar extends StatelessWidget {
     );
   }
 
+  /// Purpose: Create the mutable state that caches the image lookup.
+  /// Inputs: None.
+  /// Returns: A new `_DeviceAvatarState`.
+  /// Side effects: None.
+  /// Notes: The state exists only so the resolved-file future is created once
+  /// per image path instead of on every rebuild.
+  @override
+  State<DeviceAvatar> createState() => _DeviceAvatarState();
+}
+
+class _DeviceAvatarState extends State<DeviceAvatar> {
+  Future<File>? _fileFuture;
+  String? _fileFuturePath;
+
+  DeviceCategory get category => widget.category;
+  String? get emoji => widget.emoji;
+  String? get imagePath => widget.imagePath;
+  String? get templateImage => widget.templateImage;
+  double get size => widget.size;
+  String? get brand => widget.brand;
+  String? get model => widget.model;
+  String? get name => widget.name;
+
+  /// Purpose: Return the (cached) future resolving [path] to a file.
+  /// Inputs: `path` - the device's relative image path.
+  /// Returns: `Future<File>`, the same instance until [path] changes.
+  /// Side effects: Starts a storage-path lookup the first time a path is seen.
+  /// Notes: Creating the future inside `build` restarted the lookup on every
+  /// rebuild, so scrolling lists flashed the fallback icon.
+  Future<File> _resolveFile(String path) {
+    if (_fileFuturePath != path) {
+      _fileFuturePath = path;
+      _fileFuture = ImageService.resolve(path);
+    }
+    return _fileFuture!;
+  }
+
   /// Purpose: Build the current widget subtree for the active UI state.
   /// Inputs: `context`.
   /// Returns: The widget tree for the current state.
@@ -83,8 +120,10 @@ class DeviceAvatar extends StatelessWidget {
     }
 
     if (imagePath != null) {
+      final decodeSize = (size * MediaQuery.devicePixelRatioOf(context)).ceil();
       return FutureBuilder<File>(
-        future: ImageService.resolve(imagePath!),
+        future: _resolveFile(imagePath!),
+        initialData: ImageService.cachedResolve(imagePath!),
         builder: (context, snap) {
           final file = snap.data;
           if (file != null && file.existsSync()) {
@@ -97,6 +136,8 @@ class DeviceAvatar extends StatelessWidget {
                   file,
                   width: size,
                   height: size,
+                  // Decode at avatar size, not at the photo's full resolution.
+                  cacheWidth: decodeSize,
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                   errorBuilder: (_, _, _) => _fallbackIconContent(context),

@@ -114,17 +114,21 @@ class ImageService {
     Uint8List bytes, {
     int maxSide = 1024,
   }) async {
+    ui.ImmutableBuffer? buffer;
+    ui.ImageDescriptor? descriptor;
+    ui.Codec? codec;
+    ui.Image? image;
     try {
-      final buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
-      final descriptor = await ui.ImageDescriptor.encoded(buffer);
+      buffer = await ui.ImmutableBuffer.fromUint8List(bytes);
+      descriptor = await ui.ImageDescriptor.encoded(buffer);
       final wide = descriptor.width >= descriptor.height;
       final tooBig = math.max(descriptor.width, descriptor.height) > maxSide;
-      final codec = await descriptor.instantiateCodec(
+      codec = await descriptor.instantiateCodec(
         targetWidth: tooBig && wide ? maxSide : null,
         targetHeight: tooBig && !wide ? maxSide : null,
       );
       final frame = await codec.getNextFrame();
-      final image = frame.image;
+      image = frame.image;
       final data = await image.toByteData(
         format: ui.ImageByteFormat.rawStraightRgba,
       );
@@ -138,13 +142,15 @@ class ImageService {
               width: image.width,
               height: image.height,
             );
-      image.dispose();
-      codec.dispose();
-      descriptor.dispose();
-      buffer.dispose();
       if (request != null) return request;
     } catch (_) {
       // Fall through to the pure-Dart decoder.
+    } finally {
+      // Always release the native handles, also when decoding threw.
+      image?.dispose();
+      codec?.dispose();
+      descriptor?.dispose();
+      buffer?.dispose();
     }
     try {
       var decoded = img.decodeImage(bytes);
@@ -179,7 +185,25 @@ class ImageService {
   /// Resolve a relative imagePath to an absolute File.
   static Future<File> resolve(String relativePath) async {
     final appDir = await DeviceStorage.getAppDir();
+    _lastAppDirPath = appDir.path;
     return File(p.join(appDir.path, relativePath));
+  }
+
+  /// The storage folder the last [resolve] call saw; lets widgets show an
+  /// already-known image on their first frame. Updated on every resolve.
+  static String? _lastAppDirPath;
+
+  /// Purpose: Return the file for [relativePath] without awaiting.
+  /// Inputs: `relativePath`.
+  /// Returns: The `File`, or null before any [resolve] has run.
+  /// Side effects: None.
+  /// Notes: Best-effort `initialData` for `FutureBuilder`s: it uses the folder
+  /// seen by the last [resolve], which can be stale right after a storage
+  /// path change or in tests; callers must still await [resolve] for the
+  /// authoritative answer, which replaces this value when it completes.
+  static File? cachedResolve(String relativePath) {
+    final dir = _lastAppDirPath;
+    return dir == null ? null : File(p.join(dir, relativePath));
   }
 
   /// Purpose: Delete the relevant data from the relevant storage or state.

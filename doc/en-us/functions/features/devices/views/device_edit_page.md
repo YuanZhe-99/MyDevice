@@ -26,6 +26,8 @@ choosing one clears the other two.
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| [`_mirrorController`](#_mirrorcontroller) | method (`_DeviceEditPageState`) | A | Mirror an Autocomplete's internal controller into a form controller, once per controller. |
+| [`_saveImpl`](#_saveimpl) | method (`_DeviceEditPageState`) | A | Validate the form and persist the device (called only through `_save`). |
 | `DeviceEditPage` (constructor) | constructor | B | Store the optional `device` (edit target) and `searchResult` (prefill map) for the widget. |
 | `createState` | method (`DeviceEditPage`) | B | Create `_DeviceEditPageState`. |
 | `_isEditing` | getter (`_DeviceEditPageState`) | B | True when editing an existing device (`widget.device != null`) rather than adding a new one. |
@@ -88,7 +90,7 @@ choosing one clears the other two.
 | [`_filtered`](#_filtered-gpu) (GPU) | getter (`_GpuPresetPickerState`) | A | Filter `widget.presets` to entries whose model/architecture contains the current search query. |
 | `build` | method (widget, `_GpuPresetPickerState`) | B | Render the draggable sheet: a search field plus a list of `_filtered` presets. |
 
-Row-count note: `grep -c 'Purpose:'` on this file returns 61, matching the 61 rows above exactly —
+Row-count note: `grep -c 'Purpose:'` on this file returns 63, matching the 63 rows above exactly —
 every declaration in this file (including every field-mapping label helper) carries the repo's
 standard `/// Purpose:` doc-comment block.
 
@@ -98,6 +100,19 @@ page disambiguates with `_filtered-cpu` / `_filtered-gpu` instead of the usual b
 use the links in the table above rather than guessing the anchor from the name alone.
 
 ## Documentation
+
+### 1.6.2 changes
+
+- **`_save` re-entrancy guard.** `_save` sets `_saving`, ignores a second tap while the first is
+  running (rate conversion and storage writes are async, so a double tap used to add the device
+  twice), disables the app-bar Save button meanwhile, and runs the old body as `_saveImpl`.
+- **`_mirrorController(from, to)`** (`Expando`-guarded, Tier A): the brand / CPU / GPU
+  `Autocomplete` field builders used to call `ctrl.addListener(...)` on every rebuild (leaking one
+  listener per rebuild), and the brand builder also copied `ctrl.text` into `_brandCtrl` on every
+  build, overwriting a value set programmatically by "Fetch device info". Listeners are now added
+  once per controller, and the brand `Autocomplete` has a `_brandAutoKey` that is bumped when a
+  search result sets the brand (like `_cpuAutoKey` / `_gpuAutoKey`), so it re-seeds from
+  `_brandCtrl`. `test/device_edit_save_test.dart` covers the typed brand and the double tap.
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_DeviceEditPageState` (widget lifecycle)

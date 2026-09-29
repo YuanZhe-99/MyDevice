@@ -104,7 +104,8 @@ phases and file names only; the WebDAV page maps phases to localized text and re
 Images sync **additively and referenced-only**: the sync engine computes the union of
 `imagePath` basenames referenced by local and remote `Device` records and only
 transfers those files. Orphan images (no longer referenced by any device) are not
-repeatedly uploaded or downloaded. Remote image directory listings return `null` on any
+repeatedly uploaded or downloaded — this includes the original of a photo edited in the image
+editor (1.6.1), which is saved as a new file rather than overwritten. Remote image directory listings return `null` on any
 PROPFIND failure; `_syncImages` then skips the image phase with a visible warning
 instead of treating the unknown remote state as empty — this previously caused every
 referenced image to be re-uploaded after a transient PROPFIND failure. Downloaded images

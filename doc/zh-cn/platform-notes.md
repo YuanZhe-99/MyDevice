@@ -42,6 +42,10 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - 本地经 `key.properties` 签名可选；CI 用 GitHub Secrets。
 - 拓扑 PNG 导出 iOS 用 `share_plus`、Android 用 `com.yuanzhe.my_device/share` 方法通道加 `FileProvider`、桌面用带复制/保存操作的预览（见 [服务与拓扑](features/services-topology.md)）。
 
+## 图片编辑器解码（所有平台） <a id="image-editor-decoding-all-platforms"></a>
+
+设备图片编辑器（1.6.1）用平台编解码器（`ui.ImageDescriptor`）解码所选照片，并在解码时即缩小到 1024 px，因此它能读取 Flutter 在该平台上可显示的任何格式，并以应用显示照片时相同的方式应用 EXIF 方向。因此 HEIC 等格式是否受支持取决于平台。平台编解码器拒绝某文件时改试 `package:image`（JPEG、PNG、WebP、GIF、BMP、TIFF）；两者都拒绝时，新选的照片原样存储（与“使用原图”相同）。处理在 `Isolate.run` 中运行，因此在每个平台上 UI 都保持响应。
+
 ## 桌面本地 API 服务器 <a id="desktop-local-api-server"></a>
 
 `lib/shared/services/local_api_server.dart`（`LocalApiServer`）只在桌面平台（Windows/macOS/Linux，从 `main()` 启动——见 [架构 — 入口点](architecture.md#entry-point-libmaindart)）运行基于 Shelf 的 HTTP 服务器。

@@ -21,6 +21,12 @@ square canvases. Memos is stored losslessly as PNG after editing its upstream We
 near-transparent background alpha (1-2/255) is normalized to zero. CloudCone and the Factorio
 wordmark retain their original transparency. The shared renderer adds circular-safe spacing.
 
+**Trademarks and licensing.** Every icon here is the mark of the service or product it names,
+a trademark of its owner, used only to identify that service; its use implies no affiliation with
+or endorsement by the owner, and an icon will be removed if its owner asks. A copyright license
+(Apache-2.0, MIT and so on, listed per file) is separate from trademark rights. These files are not
+part of MyDevice's GPL-3.0 source.
+
 ## SVG files and direct source URLs
 
 | File | Fixed source URL |

@@ -59,9 +59,9 @@ String decodeEntities(String input) {
 /// Notes: Tags become a space rather than nothing so `<b>A</b><i>B</i>` reads
 /// as `A B` instead of `AB`.
 String stripHtml(String html) {
-  return decodeEntities(html.replaceAll(RegExp(r'<[^>]*>'), ' '))
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
+  return decodeEntities(
+    html.replaceAll(RegExp(r'<[^>]*>'), ' '),
+  ).replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
 /// Purpose: Detect a bot-wall or interstitial served in place of real content.
@@ -128,10 +128,7 @@ String cleanDeviceName(String raw) {
   var name = stripHtml(raw);
   // Notebookcheck / phonedb page-title boilerplate.
   name = name.replaceAll(
-    RegExp(
-      r'\s*[-–]\s*Reviews?\s*(and|&)\s*Specs\s*$',
-      caseSensitive: false,
-    ),
+    RegExp(r'\s*[-–]\s*Reviews?\s*(and|&)\s*Specs\s*$', caseSensitive: false),
     '',
   );
   name = name.replaceAll(RegExp(r'\s+specs\s*$', caseSensitive: false), '');
@@ -141,7 +138,10 @@ String cleanDeviceName(String raw) {
     '',
   );
   // phonedb OEM part number, e.g. "SM-F9660 " or "SM-E566B/DS ".
-  name = name.replaceAll(RegExp(r'\b(?:SM|SC|GM)-[A-Z0-9]+(?:/[A-Z]+)?\s+'), '');
+  name = name.replaceAll(
+    RegExp(r'\b(?:SM|SC|GM)-[A-Z0-9]+(?:/[A-Z]+)?\s+'),
+    '',
+  );
   // phonedb region / SIM / network / capacity qualifiers.
   name = name.replaceAll(
     RegExp(
@@ -150,7 +150,10 @@ String cleanDeviceName(String raw) {
     ),
     '',
   );
-  name = name.replaceAll(RegExp(r'\s+\d+(?:GB|TB)\b', caseSensitive: false), '');
+  name = name.replaceAll(
+    RegExp(r'\s+\d+(?:GB|TB)\b', caseSensitive: false),
+    '',
+  );
   return name.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
@@ -516,4 +519,460 @@ Map<String, String> parsePhonedbSpecs(String html) {
     out.putIfAbsent(label, () => value);
   }
   return out;
+}
+
+// ──── Apple Support ────
+
+/// One product link on an Apple Support documentation index page.
+typedef AppleDocsEntry = ({String name, String url, String? thumbnailUrl});
+
+/// Purpose: Read the product links off an Apple Support docs index page.
+/// Inputs: `html` — a page such as `support.apple.com/en-us/docs/iphone`;
+/// `family` — the path segment after `docs/` (`iphone`, `mac`, ...).
+/// Returns: One entry per product, in page order, without duplicates.
+/// Side effects: None.
+/// Notes: Each product is an anchor to `docs/FAMILY/ID` (the ID is numeric
+/// or, for older products, alphanumeric such as `pl293`) with class
+/// `product`, its name in `<div class="product-name">` and a 120 px
+/// thumbnail; the thumbnail URL is widened to 240 px.
+List<AppleDocsEntry> parseAppleDocsIndex(String html, String family) {
+  // Attributes are matched inside each tag, so their order does not matter.
+  final anchor = RegExp(r'<a\b([^>]*)>(.*?)</a>', dotAll: true);
+  final hrefPattern = RegExp(
+    'href="(https://support\\.apple\\.com/[a-z-]+/docs/'
+    '${RegExp.escape(family)}/[A-Za-z0-9]+)"',
+  );
+  final classPattern = RegExp(r'class="product\b');
+  final seen = <String>{};
+  final entries = <AppleDocsEntry>[];
+  for (final m in anchor.allMatches(html)) {
+    final attributes = m.group(1)!;
+    if (!classPattern.hasMatch(attributes)) continue;
+    final url = hrefPattern.firstMatch(attributes)?.group(1);
+    if (url == null || !seen.add(url)) continue;
+    final body = m.group(2)!;
+    final name = RegExp(
+      r'<div class="product-name">(.*?)</div>',
+      dotAll: true,
+    ).firstMatch(body)?.group(1);
+    if (name == null) continue;
+    final thumb = RegExp(r'<img[^>]*src="([^"]+)"').firstMatch(body)?.group(1);
+    entries.add((
+      name: stripHtml(name),
+      url: url,
+      thumbnailUrl: thumb == null
+          ? null
+          : decodeEntities(thumb).replaceFirst('size=120x120', 'size=240x240'),
+    ));
+  }
+  return entries;
+}
+
+/// Purpose: Recognise an Apple Support docs index page.
+/// Inputs: `html`.
+/// Returns: `true` when the page carries the product grid.
+/// Side effects: None.
+/// Notes: Separates "no matching product" from a changed layout.
+bool isAppleDocsIndexPage(String html) => html.contains('class="product-name"');
+
+/// Purpose: Find the "Tech Specs" link on an Apple product docs page.
+/// Inputs: `html` — a page such as `support.apple.com/en-us/docs/iphone/301045`.
+/// Returns: The absolute tech-specs URL, or null.
+/// Side effects: None.
+/// Notes: The link is marked `data-ss-analytics-link-text="tech specs"`.
+String? findAppleTechSpecsLink(String html) {
+  for (final m in RegExp(r'<a\b[^>]*>', dotAll: true).allMatches(html)) {
+    final tag = m.group(0)!;
+    if (!tag.toLowerCase().contains('link-text="tech specs"')) continue;
+    final href = RegExp(r'href="([^"]+)"').firstMatch(tag)?.group(1);
+    if (href == null) continue;
+    return href.startsWith('/') ? 'https://support.apple.com$href' : href;
+  }
+  return null;
+}
+
+/// The parts of an Apple tech-specs page the app reads.
+typedef AppleTechSpecs = ({
+  String? title,
+  String? imageUrl,
+  int? yearIntroduced,
+  Map<String, List<String>> sections,
+});
+
+/// Purpose: Split an Apple tech-specs page into titled sections.
+/// Inputs: `html` — a page such as `support.apple.com/en-us/121029`.
+/// Returns: The page title (without " - Tech Specs"), the product render,
+/// the introduction year, and each `<h3>` heading mapped to the text of its
+/// list items and paragraphs, in order.
+/// Side effects: None.
+/// Notes: Headings drop footnote markers (`Capacity<sup>1</sup>` becomes
+/// `Capacity`). The render is the first `cdsassets.apple.com` image, which
+/// Apple ships on a transparent or white background.
+AppleTechSpecs parseAppleTechSpecs(String html) {
+  final title = RegExp(
+    r'<h1[^>]*>(.*?)</h1>',
+    dotAll: true,
+  ).firstMatch(html)?.group(1);
+  final image = RegExp(
+    r'<img[^>]*src="(https://cdsassets\.apple\.com/[^"]+\.(?:png|jpg|jpeg))"',
+    caseSensitive: false,
+  ).firstMatch(html)?.group(1);
+  final year = RegExp(
+    r'Year introduced:\s*(\d{4})',
+  ).firstMatch(stripHtml(html))?.group(1);
+
+  final sections = <String, List<String>>{};
+  final parts = html.split(RegExp(r'<h3\b'));
+  for (final part in parts.skip(1)) {
+    final end = part.indexOf('</h3>');
+    if (end < 0) continue;
+    final heading = stripHtml(
+      part
+          .substring(part.indexOf('>') + 1, end)
+          .replaceAll(RegExp(r'<sup>.*?</sup>', dotAll: true), ''),
+    );
+    if (heading.isEmpty) continue;
+    var body = part.substring(end + 5);
+    final stop = body.indexOf('<div class="gb-group');
+    if (stop >= 0) body = body.substring(0, stop);
+    final lines = [
+      for (final m in RegExp(
+        r'<(li|p)\b[^>]*>(.*?)</\1>',
+        dotAll: true,
+      ).allMatches(body))
+        stripHtml(
+          m.group(2)!.replaceAll(RegExp(r'<sup>.*?</sup>', dotAll: true), ''),
+        ),
+    ].where((l) => l.isNotEmpty).toList();
+    sections.putIfAbsent(heading, () => lines);
+  }
+  return (
+    title: title == null
+        ? null
+        : stripHtml(title).replaceFirst(RegExp(r'\s*-\s*Tech Specs$'), ''),
+    imageUrl: image,
+    yearIntroduced: year == null ? null : int.parse(year),
+    sections: sections,
+  );
+}
+
+/// Purpose: Pick the lines of the first section whose heading starts with
+/// one of the given names.
+/// Inputs: `specs`; `names` in priority order, compared case-insensitively.
+/// Returns: The section's lines, or an empty list.
+/// Side effects: None.
+/// Notes: Apple words headings slightly differently across product lines
+/// ("Battery and Power" on a Mac, "Power and Battery" on an iPhone).
+List<String> appleSection(AppleTechSpecs specs, List<String> names) {
+  for (final name in names) {
+    final lower = name.toLowerCase();
+    for (final entry in specs.sections.entries) {
+      if (entry.key.toLowerCase().startsWith(lower)) return entry.value;
+    }
+  }
+  return const [];
+}
+
+// ──── Wikipedia ────
+
+/// Purpose: Pull the parameters of a page's first infobox out of wikitext.
+/// Inputs: `wikitext` — the lead section of an article.
+/// Returns: Lowercased parameter names mapped to their raw values, or null
+/// when the page has no infobox.
+/// Side effects: None.
+/// Notes: Parameters are split on `|` at nesting depth zero, counting both
+/// `{{ }}` templates and `[[ ]]` links, so a piped link or a list template
+/// inside a value does not end it early.
+Map<String, String>? extractWikiInfobox(String wikitext) {
+  final start = wikitext.toLowerCase().indexOf('{{infobox');
+  if (start < 0) return null;
+  var depth = 0;
+  var end = -1;
+  for (var i = start; i < wikitext.length - 1; i++) {
+    final two = wikitext.substring(i, i + 2);
+    if (two == '{{') {
+      depth++;
+      i++;
+    } else if (two == '}}') {
+      depth--;
+      i++;
+      if (depth == 0) {
+        end = i - 1;
+        break;
+      }
+    }
+  }
+  if (end < 0) return null;
+  final body = wikitext.substring(start + 2, end);
+
+  final parts = <String>[];
+  var braces = 0, brackets = 0, from = 0;
+  for (var i = 0; i < body.length; i++) {
+    final c = body[i];
+    final next = i + 1 < body.length ? body[i + 1] : '';
+    if (c == '{' && next == '{') {
+      braces++;
+      i++;
+    } else if (c == '}' && next == '}') {
+      braces--;
+      i++;
+    } else if (c == '[' && next == '[') {
+      brackets++;
+      i++;
+    } else if (c == ']' && next == ']') {
+      brackets--;
+      i++;
+    } else if (c == '|' && braces == 0 && brackets == 0) {
+      parts.add(body.substring(from, i));
+      from = i + 1;
+    }
+  }
+  parts.add(body.substring(from));
+
+  final params = <String, String>{};
+  for (final part in parts.skip(1)) {
+    final eq = part.indexOf('=');
+    if (eq <= 0) continue;
+    final key = part.substring(0, eq).trim().toLowerCase();
+    final value = part.substring(eq + 1).trim();
+    if (key.isEmpty || value.isEmpty) continue;
+    params.putIfAbsent(key, () => value);
+  }
+  return params;
+}
+
+/// Purpose: Turn a raw infobox value into its plain-text items.
+/// Inputs: `raw` — wikitext such as `{{ubl|'''LCD:''' 16 GB [[LPDDR5]]|...}}`.
+/// Returns: The visible items in order (one per list entry or line), with
+/// references, comments, markup and variant labels such as `LCD:` removed.
+/// Side effects: None.
+/// Notes: Templates are resolved innermost-first. List templates keep their
+/// items; `convert` keeps its value and unit; date templates become
+/// `YYYY-MM-DD`; `vgrelease` keeps its dates; anything else (prices, icons,
+/// "current version" helpers) is dropped rather than guessed at.
+List<String> wikiValueItems(String raw) {
+  var s = raw
+      .replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '')
+      .replaceAll(RegExp(r'<ref[^>/]*/>', caseSensitive: false), '')
+      .replaceAll(
+        RegExp(r'<ref[^>]*>.*?</ref>', dotAll: true, caseSensitive: false),
+        '',
+      )
+      .replaceAll(RegExp(r'\[\[(?:File|Image):[^\]]*\]\]'), '')
+      // Links first: a piped link inside a template would otherwise be cut
+      // at its pipe when the template's arguments are split.
+      .replaceAllMapped(
+        RegExp(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]'),
+        (m) => m.group(1)!,
+      );
+
+  const lists = {
+    'ubl',
+    'ubli',
+    'unbulleted list',
+    'plainlist',
+    'plain list',
+    'flatlist',
+    'hlist',
+    'bulleted list',
+    'ublist',
+  };
+  const passThrough = {'nowrap', 'nobr', 'small', 'nowrap begin', 'abbr'};
+  final template = RegExp(r'\{\{([^{}]*)\}\}');
+  for (var guard = 0; guard < 30 && s.contains('{{'); guard++) {
+    final next = s.replaceAllMapped(template, (m) {
+      final args = m.group(1)!.split('|');
+      final name = args.first.trim().toLowerCase();
+      final positional = [
+        for (final a in args.skip(1))
+          if (!RegExp(r'^\s*[a-z_ -]+\s*=').hasMatch(a)) a.trim(),
+      ];
+      if (lists.contains(name)) return '\n${positional.join('\n')}\n';
+      if (passThrough.contains(name)) {
+        return positional.isEmpty ? '' : positional.first;
+      }
+      if (name == 'nbsp' || name == '!') return ' ';
+      if (name == 'br' || name == 'break') return '\n';
+      if (name == 'convert' || name == 'cvt') {
+        return positional.length >= 2
+            ? '${positional[0]} ${positional[1]}'
+            : '';
+      }
+      if (name.startsWith('start date') ||
+          name.startsWith('release date') ||
+          name == 'dts') {
+        final nums = positional.map(int.tryParse).whereType<int>().toList();
+        if (nums.isEmpty) return '';
+        final y = nums[0];
+        final mo = nums.length > 1 ? nums[1] : 1;
+        final d = nums.length > 2 ? nums[2] : 1;
+        return '$y-${'$mo'.padLeft(2, '0')}-${'$d'.padLeft(2, '0')}';
+      }
+      if (name == 'vgrelease' || name == 'video game release') {
+        return '\n${[for (var i = 1; i < positional.length; i += 2) positional[i]].join('\n')}\n';
+      }
+      return '';
+    });
+    if (next == s) break;
+    s = next;
+  }
+
+  s = s
+      .replaceAllMapped(
+        RegExp(r'\[https?://\S+\s+([^\]]*)\]'),
+        (m) => m.group(1)!,
+      )
+      .replaceAll(RegExp(r"'{2,}"), '')
+      // Thousands separators, so `4,400 mAh` is not read as `400 mAh`.
+      .replaceAllMapped(RegExp(r'(\d),(\d{3})\b'), (m) => '${m[1]}${m[2]}')
+      .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
+
+  final items = <String>[];
+  for (var line in s.split('\n')) {
+    line = stripHtml(line)
+        .replaceFirst(RegExp(r'^[*#:;\s]+'), '')
+        .replaceFirst(RegExp(r'^[A-Za-z0-9+ ]{1,24}:\s+'), '')
+        .trim();
+    if (line.isNotEmpty) items.add(line);
+  }
+  return items;
+}
+
+/// Purpose: Read the first value of the first present infobox parameter.
+/// Inputs: `infobox`; `keys` in priority order.
+/// Returns: The first plain-text item, or null.
+/// Side effects: None.
+/// Notes: Infoboxes name the same thing differently (`soc`,
+/// `system_on_chip`, `cpu`), so callers pass every spelling they accept.
+String? wikiField(Map<String, String> infobox, List<String> keys) {
+  for (final key in keys) {
+    final raw = infobox[key];
+    if (raw == null) continue;
+    final items = wikiValueItems(raw);
+    if (items.isNotEmpty) return items.first;
+  }
+  return null;
+}
+
+/// Purpose: Read every item of the first present infobox parameter.
+/// Inputs: `infobox`; `keys` in priority order.
+/// Returns: The items joined with `, `, or null.
+/// Side effects: None.
+/// Notes: For values whose useful part is not the first item — a display
+/// listed as panel type, then size, then resolution.
+String? wikiFieldText(Map<String, String> infobox, List<String> keys) {
+  for (final key in keys) {
+    final raw = infobox[key];
+    if (raw == null) continue;
+    final items = wikiValueItems(raw);
+    if (items.isNotEmpty) return items.join(', ');
+  }
+  return null;
+}
+
+/// Purpose: Read a screen diagonal in inches from infobox text.
+/// Inputs: `raw` — text such as `6.1 in`, `7.9-in LCD` or `7", 1280×800`.
+/// Returns: The diagonal formatted as `7.9"`, or null.
+/// Side effects: None.
+/// Notes: Wikipedia abbreviates the unit (`in`), which [parseScreenSize]
+/// does not accept because `in` is an ordinary word on other sources.
+String? parseWikiScreenSize(String? raw) {
+  if (raw == null) return null;
+  final match = RegExp(
+    r'(\d+(?:\.\d+)?)\s*-?\s*(?:inches|inch|in\b|")',
+    caseSensitive: false,
+  ).firstMatch(raw);
+  return match == null ? null : '${match.group(1)}"';
+}
+
+/// Purpose: Reduce an infobox maker field to a brand name.
+/// Inputs: `raw` — text such as `Valve Corporation` or `Samsung Electronics`.
+/// Returns: The first maker with corporate suffixes removed, or null.
+/// Side effects: None.
+/// Notes: None.
+String? wikiBrand(String? raw) {
+  if (raw == null) return null;
+  // Split on "/" and on commas that separate makers, not on the comma
+  // inside "Co., Ltd.".
+  final first = raw
+      .split(RegExp(r'/|,(?!\s*Ltd)', caseSensitive: false))
+      .first
+      .trim();
+  final suffix = RegExp(
+    r'\s+(Corporation|Corp\.?|Inc\.?|Electronics|Co\.?,?\s*Ltd\.?|Co\.?|'
+    r'Ltd\.?|Limited|Company|Computer|Technology|Group|Holdings)$',
+    caseSensitive: false,
+  );
+  // Suffixes stack ("Samsung Electronics Co., Ltd."), so strip repeatedly.
+  var brand = first;
+  for (var previous = ''; previous != brand;) {
+    previous = brand;
+    brand = brand.replaceFirst(suffix, '').trim();
+  }
+  return brand.isEmpty ? null : brand;
+}
+
+/// Purpose: Tell whether an infobox describes a device rather than a
+/// company, person or product line.
+/// Inputs: `infobox`.
+/// Returns: True when it carries at least one hardware parameter.
+/// Side effects: None.
+/// Notes: A redirect such as "Framework Laptop 13" lands on the company
+/// article, whose `Infobox company` must not be read as specs.
+bool isWikiDeviceInfobox(Map<String, String> infobox) => const [
+  'cpu',
+  'soc',
+  'system_on_chip',
+  'processor',
+  'memory',
+  'storage',
+  'display',
+].any(infobox.containsKey);
+
+/// Purpose: Read a release date from infobox text.
+/// Inputs: `raw` — text such as `2024-09-20`, `February 25, 2022` or
+/// `25 February 2022`.
+/// Returns: The first date found, or null.
+/// Side effects: None.
+/// Notes: A bare year is ignored; a year alone is not a release date.
+DateTime? parseWikiDate(String? raw) {
+  if (raw == null) return null;
+  final iso = RegExp(r'(\d{4})-(\d{2})-(\d{2})').firstMatch(raw);
+  if (iso != null) {
+    final month = int.parse(iso.group(2)!);
+    final day = int.parse(iso.group(3)!);
+    // DateTime would roll an impossible date over into the next month.
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return DateTime(int.parse(iso.group(1)!), month, day);
+    }
+    return null;
+  }
+  final mdy = RegExp(r'([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})').firstMatch(raw);
+  if (mdy != null) {
+    final month = parseMonth(mdy.group(1)!);
+    if (month != null) {
+      return DateTime(
+        int.parse(mdy.group(3)!),
+        month,
+        int.parse(mdy.group(2)!),
+      );
+    }
+  }
+  final dmy = RegExp(r'(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})').firstMatch(raw);
+  if (dmy != null) {
+    final month = parseMonth(dmy.group(2)!);
+    if (month != null) {
+      return DateTime(
+        int.parse(dmy.group(3)!),
+        month,
+        int.parse(dmy.group(1)!),
+      );
+    }
+  }
+  final my = RegExp(r'([A-Za-z]+)\s+(\d{4})').firstMatch(raw);
+  if (my != null) {
+    final month = parseMonth(my.group(1)!);
+    if (month != null) return DateTime(int.parse(my.group(2)!), month);
+  }
+  return null;
 }

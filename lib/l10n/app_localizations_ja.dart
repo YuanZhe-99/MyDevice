@@ -712,6 +712,54 @@ class AppLocalizationsJa extends AppLocalizations {
   String get deviceChangeImage => '変更';
 
   @override
+  String get deviceChooseThumbnail => 'サムネイル';
+
+  @override
+  String get deviceThumbnailAutomatic => '自動';
+
+  @override
+  String get deviceThumbnailSearch => 'サムネイルを検索';
+
+  @override
+  String get deviceEditImage => '画像を編集';
+
+  @override
+  String get imageEditorTitle => '画像を編集';
+
+  @override
+  String get imageEditorUse => '使用';
+
+  @override
+  String get imageEditorUseOriginal => '元の画像を使用';
+
+  @override
+  String get imageEditorCropHint => 'ドラッグとズームで残す部分を選択';
+
+  @override
+  String get imageEditorRemoveBackground => '背景を除去';
+
+  @override
+  String get imageEditorRemoveBackgroundDesc => '端につながる単色の背景を消去します';
+
+  @override
+  String get imageEditorTolerance => '許容値';
+
+  @override
+  String get imageEditorRoundedCorners => '角丸';
+
+  @override
+  String get imageEditorRoundedCornersDesc => '雑多な背景の上でぴったり切り抜いたスマホやタブレット向け';
+
+  @override
+  String get imageEditorSizeInCircle => '円内のサイズ';
+
+  @override
+  String get imageEditorReset => 'リセット';
+
+  @override
+  String get imageEditorDecodeFailed => 'この画像は編集できないため、そのまま使用します';
+
+  @override
   String get deviceRemoveIcon => 'アイコンを削除';
 
   @override

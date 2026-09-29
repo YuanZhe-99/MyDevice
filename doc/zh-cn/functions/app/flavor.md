@@ -9,6 +9,9 @@
 | [`AppFlavor._`](#appflavor-new) | 私有构造函数 | A | 阻止实例化；`AppFlavor` 仅静态。 |
 | `isStore` | 静态 const getter | B | 此构建是否以 `--dart-define=FLAVOR=store` 编译。 |
 | `isFull` | 静态 const getter | B | `isStore` 的逻辑否定。 |
+| `deviceSearchExposed` | 静态 const getter | B | 界面中是否提供"获取设备信息"搜索；目前等于 `isFull`。 |
+
+`deviceSearchExposed` 只门控界面入口——编辑器的搜索按钮（`device_edit_page.dart`）和设备列表的搜索快捷方式（`device_list_page.dart`）。服务、解析器、测试夹具和测试在每个构建中都保留，因此把它设为 `false` 就是所有搜索来源都不再响应那一天的开关；`DeviceSearchService` 与 `ChipSearchService` 仍保留各自的 `isStore`/`isFull` 守卫。
 
 ## 文档
 
@@ -20,5 +23,5 @@
 - **返回：** 不适用（构造函数私有且从不调用）。
 - **副作用：** 无。
 - **算法：** 无函数体；其唯一角色是私有，阻止 `AppFlavor()` 在本文件外任何地方编译。
-- **用法：** 从不调用；`AppFlavor.isFull`/`AppFlavor.isStore` 作为静态常量被设备功能（搜索门控）和设置 UI 通篇直接读取。
+- **用法：** 从不调用；`AppFlavor.isFull`/`AppFlavor.isStore`/`AppFlavor.deviceSearchExposed` 作为静态常量被设备功能（搜索门控）和设置 UI 通篇直接读取。
 - **备注：** `_flavor` 从 `String.fromEnvironment('FLAVOR', defaultValue: 'full')` 编译期解析，因此风格选择是 `--dart-define` 构建期常量，非运行时设置。

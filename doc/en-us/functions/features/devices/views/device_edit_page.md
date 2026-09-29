@@ -8,15 +8,19 @@ editable property — including one set of controllers per storage row and per r
 draft — and assemble all of it into a new `Device` on save. It integrates with `PresetService`
 (bundled CPU/GPU/brand presets, browsed via the private `_CpuPresetPicker`/`_GpuPresetPicker`
 bottom sheets), the online search dialogs in `chip_search_dialog.dart`/`device_search_dialog.dart`
-(gated by `AppFlavor.isFull` — see
-[Online Search and Presets](../../../../features/online-search-and-presets.md)), and
+(the device search gated by `AppFlavor.deviceSearchExposed`, the chip search by `AppFlavor.isFull`
+— see [Online Search and Presets](../../../../features/online-search-and-presets.md)), and
 `DeviceExchangeRateService` (currency conversion for purchase/sold price and each recurring cost).
 Saving is also the one place in the app that keeps [DataSet](../../../../features/datasets.md)
 storage links valid: this file tracks each storage row's original slot index across adds/removes
 and passes the resulting old→new map to `DataSetStorage.remapDeviceStorageLinks()` on save — see
 [`_save`](#_save) and [Datasets](../../../../features/datasets.md#remapdevicestoragelinks). See
 also [Devices](../../../../features/devices.md) for the broader feature and lifecycle/finance
-model this form edits.
+model this form edits. The icon section edits three mutually exclusive icon sources — an emoji, a
+stored photo (`_imagePath`, picked and edited through the image editor in
+[device_image_editor_page.md](device_image_editor_page.md)), and a hand-picked bundled thumbnail
+(`_templateImage`, chosen through [template_image_picker.md](../widgets/template_image_picker.md));
+choosing one clears the other two.
 
 ## Declarations
 
@@ -54,10 +58,13 @@ model this form edits.
 | [`_applySearchResult`](#_applysearchresult) | method (`_DeviceEditPageState`) | A | Apply a search-result field map onto the form, fuzzy-matching CPU/GPU text against loaded presets. |
 | [`_detectLogoForModel`](#_detectlogoformodel) | method (`_DeviceEditPageState`) | A | Find an SVG logo path for a live-typed CPU/GPU model string. |
 | `_brandLogoWidget` | method (widget helper) | B | Render a small SVG logo (tinted to `onSurface`), or nothing if `logoPath` is null. |
-| `_showEmojiPicker` | method (`_DeviceEditPageState`) | B | Show a bottom-sheet grid of `_commonEmojis` in `emojiGridColumns(sheet width)` columns; tapping one sets `_emoji` and clears `_imagePath`. The CPU / GPU preset sheets open at `sheetInitialSize(window height, preferred: 0.6)`. |
-| [`_pickImage`](#_pickimage) | method (`_DeviceEditPageState`) | A | Let the user pick a photo and adopt it as the device's icon, clearing any emoji. |
-| `_removeIcon` | method (`_DeviceEditPageState`) | B | Clear both `_emoji` and `_imagePath`. |
-| `_buildIconSection` | method (widget helper) | B | Render the avatar preview (rebuilt as name/brand/model change, so a matching template thumbnail appears live) plus image-pick/emoji-pick/remove actions; `avatarSize` (56, or `editAvatarSize` in the two-pane left pane) and `stacked` (chips centred under the preview rather than beside it). |
+| `_showEmojiPicker` | method (`_DeviceEditPageState`) | B | Show a bottom-sheet grid of `_commonEmojis` in `emojiGridColumns(sheet width)` columns; tapping one sets `_emoji` and clears `_imagePath` and `_templateImage`. The CPU / GPU preset sheets open at `sheetInitialSize(window height, preferred: 0.6)`. |
+| [`_pickImage`](#_pickimage) | method (`_DeviceEditPageState`) | A | Pick a photo, run it through the image editor, and adopt the result (or the original) as the device's icon. |
+| [`_editImage`](#_editimage) | method (`_DeviceEditPageState`) | A | Re-open the current photo in the image editor and adopt the edited PNG as a new file. |
+| [`_useImage`](#_useimage) | method (`_DeviceEditPageState`) | A | Make a stored image the device's icon, clearing the emoji and any hand-picked thumbnail. |
+| [`_chooseThumbnail`](#_choosethumbnail) | method (`_DeviceEditPageState`) | A | Let the user hand-pick a bundled thumbnail ranked against the typed name/brand/model. |
+| `_removeIcon` | method (`_DeviceEditPageState`) | B | Clear `_emoji`, `_imagePath` and `_templateImage`. |
+| `_buildIconSection` | method (widget helper) | B | Render the avatar preview (rebuilt as name/brand/model change, so a matching template thumbnail appears live; passes `_templateImage` so a hand-picked thumbnail wins) plus chips: emoji, pick/change image, edit image (only with a photo), choose thumbnail, and remove (when any of the three icon sources is set); `avatarSize` (56, or `editAvatarSize` in the two-pane left pane) and `stacked` (chips centred under the preview rather than beside it). |
 | `_buildNameField` | method (widget helper) | B | The validated name `TextFormField`, shared by the single column and the two-pane left pane. |
 | `_buildCategoryField` | method (widget helper) | B | The category `DropdownButtonFormField`, shared likewise. |
 | `_buildFormBody` | method (widget helper) | B | Choose the layout inside the one `Form`: the single-column `ListView` of `_buildFields`, or — when `useDetailTwoPane` passes — a `Row` of a `detailLeftPaneWidth`-wide left pane (stacked icon section at `editAvatarSize`, name, category; a `SingleChildScrollView` pinned to the pane height as the soft-keyboard fallback) and a right `ListView` of the remaining fields. |
@@ -67,7 +74,7 @@ model this form edits.
 | `_addRecurringCost` | method (`_DeviceEditPageState`) | B | Append a new blank `_RecurringCostDraft` (default kind `other`, currency = `_defaultCurrency`). |
 | `_buildRecurringCostCard` | method (widget helper) | B | Render one recurring-cost draft's editable card (kind/name/billing cycle/money fields/remove button). |
 | `_buildFinancialSection` | method (widget helper) | B | Render the acquisition/lifecycle/purchase/sold/recurring-costs financial section. |
-| `build` | method (widget) | B | Build the scaffold and app bar (save + online-search actions) around `_buildFormBody`. |
+| `build` | method (widget) | B | Build the scaffold and app bar (save + online-search action, the latter only when `AppFlavor.deviceSearchExposed`) around `_buildFormBody`. |
 | `_RecurringCostDraft` (constructor) | constructor | B | Create a draft with fresh amount/name/rate controllers, defaulting `billingCycle` to monthly and `autoRate` to true. |
 | [`_RecurringCostDraft.fromCost`](#_recurringcostdraft-fromcost) | factory constructor (`_RecurringCostDraft`) | A | Convert a persisted `DeviceRecurringCost` into an editable draft. |
 | `dispose` | method (`_RecurringCostDraft`) | B | Dispose the draft's three controllers. |
@@ -81,7 +88,7 @@ model this form edits.
 | [`_filtered`](#_filtered-gpu) (GPU) | getter (`_GpuPresetPickerState`) | A | Filter `widget.presets` to entries whose model/architecture contains the current search query. |
 | `build` | method (widget, `_GpuPresetPickerState`) | B | Render the draggable sheet: a search field plus a list of `_filtered` presets. |
 
-Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 rows above exactly —
+Row-count note: `grep -c 'Purpose:'` on this file returns 61, matching the 61 rows above exactly —
 every declaration in this file (including every field-mapping label helper) carries the repo's
 standard `/// Purpose:` doc-comment block.
 
@@ -94,7 +101,7 @@ use the links in the table above rather than guessing the anchor from the name a
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_DeviceEditPageState` (widget lifecycle)
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 131)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 135)
 - **Purpose:** Initialize every text controller and editable field from `widget.device` (or
   defaults, for a new device), including reconstructing the per-slot storage editor rows, then
   kick off async preset/financial-settings loading.
@@ -115,7 +122,9 @@ use the links in the table above rather than guessing the anchor from the name a
      leaves it blank) — the same rule [`_parseRate`](#_parserate) enforces again at save time.
   5. CPU/GPU: seeds each controller from `d?.cpu`/`d?.gpu` fields (numeric fields via `.toString()`).
   6. Screen resolution width/height seeded the same way.
-  7. Copies `category` (defaulting to `DeviceCategory.phone`), and the lifecycle/finance fields:
+  7. Copies `emoji`, `imagePath` and `templateImage` (the hand-picked thumbnail) into `_emoji` /
+     `_imagePath` / `_templateImage`; copies `category` (defaulting to `DeviceCategory.phone`), and
+     the lifecycle/finance fields:
      purchase/release/retired dates, acquisition type, retired/sold flags, purchase/sold
      currencies and auto-rate flags.
   8. Converts `d?.recurringCosts` to drafts via
@@ -134,7 +143,7 @@ use the links in the table above rather than guessing the anchor from the name a
 
 ### `Future<void> _loadFinancialSettings()` <a id="_loadfinancialsettings"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 254)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 259)
 - **Purpose:** Load the app-wide default currency and auto-update-rate preference, and adopt the
   new default currency for purchase/sold price fields that hadn't been customized away from the
   old default.
@@ -151,13 +160,13 @@ use the links in the table above rather than guessing the anchor from the name a
      still equals the *old* default, updates `_purchaseCurrency` to the new default (same check
      for `_soldCurrency`/`soldPrice`). An existing device's already-set currency is left untouched
      even if it happens to equal the old default.
-- **Usage:** Called once from `initState` (line 246); not called elsewhere.
+- **Usage:** Called once from `initState` (line 251); not called elsewhere.
 - **Notes:** Runs independently of `_loadPresets()` — both are fire-and-forget from `initState`
   and each checks `mounted` on its own before calling `setState`.
 
 ### `Future<void> _loadPresets()` <a id="_loadpresets"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 278)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 283)
 - **Purpose:** Load the bundled CPU/GPU/brand preset lists, then — for a device created from an
   online search result — apply that result to the form once presets are available.
 - **Inputs:** None.
@@ -171,14 +180,14 @@ use the links in the table above rather than guessing the anchor from the name a
      the device list's search flow, see `device_list_page.dart`), calls
      `_applySearchResult(widget.searchResult!)` so CPU/GPU fuzzy-matching against the now-loaded
      presets can run.
-- **Usage:** Called once from `initState` (line 245).
+- **Usage:** Called once from `initState` (line 250).
 - **Notes:** The search-result application is sequenced *after* the preset `setState` (rather than
   fired independently from `initState`) specifically so CPU/GPU preset matching in
   `_applySearchResult` has data to match against.
 
 ### `static (String, String) _parseValueUnit(String? value)` <a id="_parsevalueunit"></a>
 - **Kind:** static method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 347)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 352)
 - **Purpose:** Parse a free-text capacity/size string like `"16 GB"` or `"512 GB NVMe SSD"` into a
   `(value, unit)` pair for the editor's separate amount+unit fields.
 - **Inputs:** `value` — raw string (e.g. `Device.ram` or a `StorageInfo.capacity`), nullable.
@@ -197,14 +206,14 @@ use the links in the table above rather than guessing the anchor from the name a
   _ramCtrl = TextEditingController(text: ramParsed.$1);
   _ramUnit = ramParsed.$2;
   ```
-  (`initState`, line 140); also used per storage slot in `initState` (line 224) and for the
-  RAM/storage fields inside `_applySearchResult` (lines 869, 876).
-- **Notes:** Only recognizes `MB`/`GB`/`TB` — matches `_memoryUnits` (line 338); callers use
+  (`initState`, line 145); also used per storage slot in `initState` (line 229) and for the
+  RAM/storage fields inside `_applySearchResult` (lines 875, 882).
+- **Notes:** Only recognizes `MB`/`GB`/`TB` — matches `_memoryUnits` (line 343); callers use
   Dart's positional-record `.$1`/`.$2` accessors on the return value.
 
 ### `double? _parseMoney(String value)` <a id="_parsemoney"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 390)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 395)
 - **Purpose:** Parse a user-typed amount field into a `double`, tolerating thousands-separator
   commas.
 - **Inputs:** `value` — raw text from a price/amount `TextEditingController`.
@@ -214,14 +223,14 @@ use the links in the table above rather than guessing the anchor from the name a
   result or `double.tryParse` of the cleaned string otherwise.
 - **Usage:**
   `purchasePrice = await DeviceExchangeRateService.convertOptional(amount:
-  _parseMoney(_purchasePriceCtrl.text), ...)` (`_save`, line 502); also used for the sold price and
-  each recurring cost's amount (line 523).
+  _parseMoney(_purchasePriceCtrl.text), ...)` (`_save`, line 507); also used for the sold price and
+  each recurring cost's amount (line 528).
 - **Notes:** Comma-stripping means `"1,234.56"` parses to `1234.56`; there's no handling for other
   grouping/decimal conventions (e.g. `.` as a thousands separator).
 
 ### `double? _parseRate(TextEditingController controller, String currency)` <a id="_parserate"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 401)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 406)
 - **Purpose:** Resolve the manual exchange-rate override for a currency field, but only when that
   currency actually differs from the device's default currency.
 - **Inputs:** `controller` — the rate `TextEditingController`; `currency` — the currency code the
@@ -232,14 +241,14 @@ use the links in the table above rather than guessing the anchor from the name a
 - **Algorithm:** Returns `null` immediately if `currency == _defaultCurrency`; otherwise delegates
   to [`_parseMoney`](#_parsemoney)`(controller.text)`.
 - **Usage:** `manualRate: _purchaseAutoRate ? null : _parseRate(_purchaseRateCtrl,
-  _purchaseCurrency)` (`_save`, line 508); same pattern for sold price and each recurring cost.
+  _purchaseCurrency)` (`_save`, line 513); same pattern for sold price and each recurring cost.
 - **Notes:** Callers already gate on `autoRate` before calling this (passing `null` directly when
   auto-rate is on), so `_parseRate` only has to handle the "same as default currency" case — the
   two guards are complementary, not redundant.
 
 ### `Future<void> _save()` <a id="_save"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 458)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 463)
 - **Purpose:** Validate the form, assemble a `Device` from all editor state (recomputing storage
   slot indices and converting money fields), persist it, and remap any dataset storage links
   affected by storage-slot changes.
@@ -271,8 +280,9 @@ use the links in the table above rather than guessing the anchor from the name a
      `lifecycleStatus` priority).
   5. Constructs a new `Device(...)`, reusing `widget.device?.id` (editing keeps the same id;
      omitting it when adding lets the constructor generate a fresh UUID), the freshly built
-     `storageList`, and `extraJson` copied from each corresponding original nested object (`cpu`,
-     `gpu`, the device itself) or `{}` for a new device.
+     `storageList`, `emoji`/`imagePath`/`templateImage` from the icon state, and `extraJson` copied
+     from each corresponding original nested object (`cpu`, `gpu`, the device itself) or `{}` for a
+     new device.
   6. Awaits `DeviceStorage.addOrUpdate(device)`.
   7. If editing an existing device (`widget.device != null`), awaits
      `DataSetStorage.remapDeviceStorageLinks(deviceId: ..., oldSlotCount:
@@ -282,14 +292,14 @@ use the links in the table above rather than guessing the anchor from the name a
      short-circuit makes this a no-op whenever no slot actually moved).
   8. Calls `AutoSyncService.instance.notifySaved()` (see [WebDAV Sync](../../../../sync.md)) and,
      if still mounted, pops the page via `Navigator.of(context).pop()`.
-- **Usage:** `TextButton(onPressed: _save, child: Text(l10n.save))` (`build`, line 1563).
+- **Usage:** `TextButton(onPressed: _save, child: Text(l10n.save))` (`build`, line 1661).
 - **Notes:** A brand-new device (`widget.device == null`) never calls `remapDeviceStorageLinks` —
   there is nothing to remap yet. Recurring-cost drafts with an empty/unparseable amount are
   silently dropped rather than saved with a zero amount.
 
 ### `Future<void> _showSearchDialog()` <a id="_showsearchdialog"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 791)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 797)
 - **Purpose:** Open the online device-search dialog, seeded with the form's current field values,
   and apply whatever fields the user chooses to import from the result.
 - **Inputs:** None (reads current controller/state values).
@@ -308,15 +318,16 @@ use the links in the table above rather than guessing the anchor from the name a
      meanwhile.
   4. Otherwise calls `_applySearchResult(result)`.
 - **Usage:** `IconButton(icon: const Icon(Icons.travel_explore), onPressed: _showSearchDialog)`,
-  shown only `if (AppFlavor.isFull)` (`build`, lines 1557–1562; see
-  [Online Search and Presets](../../../../features/online-search-and-presets.md) for the
+  shown only `if (AppFlavor.deviceSearchExposed)` (`build`, lines 1655–1660; that flag equals
+  `AppFlavor.isFull` today and exists so the button can be hidden without removing the service —
+  see [Online Search and Presets](../../../../features/online-search-and-presets.md) for the
   store-build gating).
 - **Notes:** Only the *first* storage slot's capacity is offered as "current" context to the
   search dialog — additional slots aren't represented in the query/current-value payload.
 
 ### `void _applySearchResult(Map<String, dynamic> result)` <a id="_applysearchresult"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 826)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 832)
 - **Purpose:** Apply the field map returned by the online search dialog (or carried in via
   `DeviceEditPage(searchResult: ...)`) onto the edit form, fuzzy-matching CPU/GPU text against the
   loaded presets where possible.
@@ -333,7 +344,7 @@ use the links in the table above rather than guessing the anchor from the name a
      is applied via `_applyCpuPreset`. If no preset matches, the raw chipset string is written
      directly into `_cpuModelCtrl` and `_cpuAutoKey` is bumped (forces the `Autocomplete` widget to
      rebuild, since setting `.text` alone doesn't refresh it — see `build`'s
-     `ValueKey('cpu_auto_$_cpuAutoKey')`, line 1823).
+     `ValueKey('cpu_auto_$_cpuAutoKey')`, line 1920).
   3. `gpuName`: identical mutual-substring matching against `_gpuPresets`, same raw-text fallback.
   4. `ram`: parsed via `_parseValueUnit` into `_ramCtrl`/`_ramUnit`.
   5. `storage`: parsed via `_parseValueUnit` and written into slot **0 only**
@@ -341,11 +352,11 @@ use the links in the table above rather than guessing the anchor from the name a
   6. `screenSize`, `battery`, `os`: copied straight into their controllers.
   7. `screenResolutionW`/`screenResolutionH`: copied (as `int`) via `.toString()`.
   8. `releaseDate`: copied straight into `_releaseDate` if it's a `DateTime`.
-  9. `image`: if present, sets `_imagePath` and clears `_emoji` (an imported photo always wins over
-     any previously chosen emoji).
+  9. `image`: if present, sets `_imagePath` and clears `_emoji` and `_templateImage` (an imported
+     photo always wins over any previously chosen emoji or hand-picked thumbnail).
 - **Usage:** `_applySearchResult(widget.searchResult!)` from `_loadPresets` when the page was
-  opened with a search result (line 289); `_applySearchResult(result)` from `_showSearchDialog`
-  after an in-place dialog search (line 818).
+  opened with a search result (line 294); `_applySearchResult(result)` from `_showSearchDialog`
+  after an in-place dialog search (line 824).
 - **Notes:** CPU/GPU matching is intentionally loose (mutual substring, not exact) so e.g. a
   result's `"Apple A17 Pro"` can match a shorter preset name or vice versa; because it's
   substring-based, ambiguous/short model strings could match the wrong preset — the same tradeoff
@@ -353,7 +364,7 @@ use the links in the table above rather than guessing the anchor from the name a
 
 ### `String? _detectLogoForModel(String model)` <a id="_detectlogoformodel"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 928)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 935)
 - **Purpose:** Find an SVG logo asset path for a CPU/GPU model string as it's typed, using a small
   local brand table plus a Mali-specific ARM mapping.
 - **Inputs:** `model` — the live text of `_cpuModelCtrl`/`_gpuModelCtrl`.
@@ -365,31 +376,94 @@ use the links in the table above rather than guessing the anchor from the name a
   *starts with*; returns `null` if none match.
 - **Usage:** `_brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text))` and
   `_brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text))`, rebuilt live on every `build` call
-  next to the CPU/GPU section headers (lines 1799, 1901).
+  next to the CPU/GPU section headers (lines 1896, 1998).
 - **Notes:** This file's `_brandLogoMap` is a smaller, separate table from
   `device_detail_page.dart`'s `_brandLogoMap`/`_detectModelLogo` (~39 entries, `contains`-based
   there vs `startsWith` here) — the two are not shared and can drift out of sync with each other.
 
 ### `Future<void> _pickImage()` <a id="_pickimage"></a>
 - **Kind:** method of `_DeviceEditPageState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1057)
-- **Purpose:** Let the user pick a photo from the device's gallery/filesystem and adopt it as the
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1068)
+- **Purpose:** Let the user pick a photo, edit it in the image editor, and adopt the result as the
   device's icon.
 - **Inputs:** None.
 - **Returns:** `Future<void>`.
-- **Side effects:** Calls `ImageService.pickAndSaveImage()` (file picker plus copying the chosen
-  image into app storage); on success, `setState`s `_imagePath` and clears `_emoji`.
-- **Algorithm:** Awaits `ImageService.pickAndSaveImage()`; if it returns a non-null local path,
-  `setState`s `_imagePath = path` and `_emoji = null` (an image always replaces any emoji,
-  matching `_applySearchResult`'s `image` handling and the reverse in `_showEmojiPicker`/
-  `_removeIcon`).
-- **Usage:** `IconButton(..., onPressed: _pickImage)` in `_buildIconSection` (line 1114).
-- **Notes:** If the user cancels the picker (`path == null`), nothing changes — no error is
-  surfaced either way.
+- **Side effects:** Shows the platform file picker (`ImageService.pickImageFile`) and the image
+  editor (`showDeviceImageEditor`, see [device_image_editor_page.md](device_image_editor_page.md));
+  writes one new file under `images/`; updates widget state through [`_useImage`](#_useimage).
+- **Algorithm:**
+  1. Awaits `ImageService.pickImageFile()`; returns if cancelled or unmounted.
+  2. Awaits `showDeviceImageEditor(context, file, allowOriginal: true)`; returns if the editor was
+     cancelled (`result == null`).
+  3. If `result.png` is null ("Use original", or a file the editor could not decode), stores the
+     file unchanged with `ImageService.saveImageFile(file)`; otherwise stores the edited PNG with
+     `ImageService.saveImageBytes(png, '.png')`.
+  4. If still mounted, calls `_useImage(path)`.
+- **Usage:** `ActionChip(..., onPressed: _pickImage)` in `_buildIconSection` (line 1201), labelled
+  `deviceChangeImage` when a photo is already set, else `devicePickImage`.
+- **Notes:** Cancelling the picker or the editor adds nothing and surfaces no error. "Use original"
+  keeps the pre-editor behavior of copying the file as-is (see
+  [image_service.md](../../../shared/services/image_service.md#saveimagefile)).
+
+### `Future<void> _editImage()` <a id="_editimage"></a>
+- **Kind:** method of `_DeviceEditPageState`
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1092)
+- **Purpose:** Re-open the device's current photo in the image editor and adopt the edited result.
+- **Inputs:** None (reads `_imagePath`).
+- **Returns:** `Future<void>`.
+- **Side effects:** Shows the image editor; writes the edited PNG as a new file under `images/`;
+  updates widget state through [`_useImage`](#_useimage).
+- **Algorithm:**
+  1. Returns if `_imagePath` is null.
+  2. Resolves it with `ImageService.resolve`; returns if unmounted or the file no longer exists.
+  3. Awaits `showDeviceImageEditor(context, file)` (no "Use original" option); returns unless the
+     result carries a PNG.
+  4. Stores it via `ImageService.saveImageBytes(png, '.png')` and, if mounted, calls
+     `_useImage(path)`.
+- **Usage:** `ActionChip(..., label: Text(l10n.deviceEditImage), onPressed: _editImage)` in
+  `_buildIconSection` (line 1207), shown only while `_imagePath != null`.
+- **Notes:** The edit is never written over the existing file: the previous file stays on disk
+  unreferenced, exactly as when a photo is replaced.
+
+### `void _useImage(String path)` <a id="_useimage"></a>
+- **Kind:** method of `_DeviceEditPageState`
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1111)
+- **Purpose:** Make a stored image the device's icon.
+- **Inputs:** `path` — relative path under the app directory (e.g. `images/<uuid>.png`).
+- **Returns:** None.
+- **Side effects:** One `setState`.
+- **Algorithm:** In `setState`, sets `_imagePath = path` and clears `_emoji` and `_templateImage`.
+- **Usage:** The last step of [`_pickImage`](#_pickimage) (line 1082) and
+  [`_editImage`](#_editimage) (line 1102).
+- **Notes:** The hand-picked thumbnail is cleared because a photo would hide it in the avatar
+  anyway; this keeps the three icon sources mutually exclusive, matching `_showEmojiPicker`,
+  `_removeIcon` and `_applySearchResult`'s `image` handling.
+
+### `Future<void> _chooseThumbnail()` <a id="_choosethumbnail"></a>
+- **Kind:** method of `_DeviceEditPageState`
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 1127)
+- **Purpose:** Let the user choose a bundled device thumbnail by hand, for when automatic template
+  matching misses.
+- **Inputs:** None (reads `_category`, the name/brand/model controllers and `_templateImage`).
+- **Returns:** `Future<void>`.
+- **Side effects:** Shows the thumbnail chooser bottom sheet (`showTemplateImagePicker`, see
+  [template_image_picker.md](../widgets/template_image_picker.md)); one `setState` on a choice.
+- **Algorithm:**
+  1. Awaits `showTemplateImagePicker(context, category: _category, brand:, model:, name:, current:
+     _templateImage)`, passing the trimmed-or-null text currently typed in brand, model and name so
+     candidates are ranked against it.
+  2. Returns if the sheet was dismissed (`choice == null`) or the widget unmounted.
+  3. In `setState`: `_templateImage = choice.asset`, and clears `_emoji` and `_imagePath` so the
+     chosen thumbnail is what the avatar shows.
+- **Usage:** `ActionChip(..., label: Text(l10n.deviceChooseThumbnail), onPressed:
+  _chooseThumbnail)` in `_buildIconSection` (line 1212), always shown.
+- **Notes:** Choosing "Automatic" returns a `TemplateImageChoice` whose `asset` is null, which
+  clears the hand-picked thumbnail (and still clears emoji/photo) so the avatar falls back to
+  automatic matching by identity. The value is saved as `Device.templateImage` by [`_save`](#_save).
 
 ### `factory _RecurringCostDraft.fromCost(DeviceRecurringCost cost)` <a id="_recurringcostdraft-fromcost"></a>
 - **Kind:** factory constructor of `_RecurringCostDraft`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2319)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2416)
 - **Purpose:** Convert a persisted `DeviceRecurringCost` into an editable draft (with its own text
   controllers) for the recurring-costs section.
 - **Inputs:** `cost` — an existing `DeviceRecurringCost` from `widget.device.recurringCosts`.
@@ -402,14 +476,14 @@ use the links in the table above rather than guessing the anchor from the name a
   applies to the purchase/sold rate fields. Keeps a reference to the original `cost` in `existing`
   (used by [`_save`](#_save) to preserve the record's `id` and `extraJson`).
 - **Usage:** `_recurringCostDrafts.addAll(d?.recurringCosts.map(_RecurringCostDraft.fromCost) ??
-  const [])` (`initState`, line 212).
+  const [])` (`initState`, line 217).
 - **Notes:** `existing` is what lets `_save` distinguish an edited pre-existing recurring cost
   (keeps its `id`/`extraJson`) from a brand-new one added via `_addRecurringCost` (`existing ==
   null`, gets a fresh `id`).
 
 ### `List<CpuInfo> get _filtered` (in `_CpuPresetPickerState`) <a id="_filtered-cpu"></a>
 - **Kind:** getter of `_CpuPresetPickerState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2373)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2470)
 - **Purpose:** Filter the bottom sheet's preset list down to entries whose model or architecture
   text contains the current search query.
 - **Inputs:** None (reads `_query`, `widget.presets`).
@@ -418,14 +492,14 @@ use the links in the table above rather than guessing the anchor from the name a
 - **Algorithm:** Returns `widget.presets` unfiltered when `_query` is empty; otherwise lowercases
   the query and keeps only presets whose lowercased `model` or `architecture` contains it (a
   preset with a null `model`/`architecture` is treated as an empty string for the check).
-- **Usage:** `final items = _filtered;` at the top of `build` (line 2403), used both for the item
+- **Usage:** `final items = _filtered;` at the top of `build` (line 2500), used both for the item
   count and as the `ListView.builder`'s items.
 - **Notes:** Matching is substring/case-insensitive only, no fuzzy or multi-token matching — a
   two-word query won't match a model containing both words in a different order.
 
 ### `List<GpuInfo> get _filtered` (in `_GpuPresetPickerState`) <a id="_filtered-gpu"></a>
 - **Kind:** getter of `_GpuPresetPickerState`
-- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2485)
+- **Source:** `lib/features/devices/views/device_edit_page.dart` (line 2582)
 - **Purpose:** Filter the bottom sheet's preset list down to entries whose model or architecture
   text contains the current search query.
 - **Inputs:** None (reads `_query`, `widget.presets`).
@@ -434,5 +508,5 @@ use the links in the table above rather than guessing the anchor from the name a
 - **Algorithm:** Identical to
   [`_CpuPresetPickerState._filtered`](#_filtered-cpu), over `GpuInfo`/`widget.presets` instead of
   `CpuInfo`.
-- **Usage:** `final items = _filtered;` at the top of `build` (line 2502).
+- **Usage:** `final items = _filtered;` at the top of `build` (line 2599).
 - **Notes:** Same substring/case-insensitive-only caveat as the CPU picker's `_filtered`.

@@ -15,7 +15,7 @@ All data you enter in the app — device information, specs, cover images, and s
 MyDevice!!!!! accesses the internet only in the following situations:
 
 - **CPU/GPU chip search** *(full flavor only)*: When you actively search for chip specifications, the app sends requests to TechPowerUp (techpowerup.com), AMD (amd.com), and Intel (intel.com) to retrieve publicly available hardware information such as model names, architectures, core counts, and frequencies. Locating those pages also sends your search term to Startpage (startpage.com), which the app uses purely to resolve a product URL. **This feature is not included in versions distributed through the App Store or Google Play.**
-- **Device spec search** *(full flavor only)*: When you actively search for a device, the app sends the text you typed to Notebookcheck (notebookcheck.net) and PhoneDB (phonedb.net) to retrieve publicly available specifications such as chipset, memory, display, battery, operating system, and release date. If you then choose to download a device image, the app fetches that image from the same site. **This feature is not included in versions distributed through the App Store or Google Play.**
+- **Device spec search** *(full flavor only)*: When you actively search for a device, the app sends the text you typed to Notebookcheck (notebookcheck.net) and PhoneDB (phonedb.net), for Apple products also to Apple Support (support.apple.com), and, only when none of these finds the device, to Wikipedia (en.wikipedia.org), to retrieve publicly available specifications such as chipset, memory, display, battery, operating system, and release date. If you then choose to download a device image, the app fetches that image from the same source (Apple's and Wikimedia's image servers for those two). **This feature is not included in versions distributed through the App Store or Google Play.**
 - **Map tiles**: When you use the map view to set or display device locations, the app loads map tile images from OpenStreetMap (tile.openstreetmap.org).
 - **Exchange rates**: If automatic exchange-rate updates are enabled or you refresh rates manually, the app requests rates from open.er-api.com. Only the base currency code is sent; no device or financial records are transmitted.
 - **WebDAV sync**: If you enable WebDAV cloud sync, the app sends your data to a WebDAV server that you configure yourself. The app does not send data to any other server.
@@ -32,6 +32,8 @@ The full-featured version of the app uses the following third-party data sources
 - Startpage (startpage.com) — used only to locate the chip pages above
 - Notebookcheck (notebookcheck.net)
 - PhoneDB (phonedb.net)
+- Apple Support (support.apple.com, cdsassets.apple.com)
+- Wikipedia (en.wikipedia.org, upload.wikimedia.org)
 
 The app also uses the following service regardless of flavor:
 
@@ -40,7 +42,7 @@ The app also uses the following service regardless of flavor:
 
 These services have their own privacy policies, which we encourage you to review. MyDevice!!!!! only retrieves publicly available hardware information, map tiles, and currency rates, and does not send any of your personal data to these services.
 
-**Note:** Versions distributed through the App Store and Google Play (store flavor) do not include the online chip or device search features, and do not connect to TechPowerUp, AMD, Intel, Startpage, Notebookcheck, or PhoneDB.
+**Note:** Versions distributed through the App Store and Google Play (store flavor) do not include the online chip or device search features, and do not connect to TechPowerUp, AMD, Intel, Startpage, Notebookcheck, PhoneDB, Apple Support, or Wikipedia.
 
 ## On-Device AI (optional, since 1.6.0)
 

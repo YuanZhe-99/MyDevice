@@ -20,6 +20,9 @@ for the bundled-preset concept overview this page verifies against source.
 | `cachedTemplates` | static getter | B | Return the template list if already loaded, else null, so widgets can match synchronously. |
 | [`findTemplateImage`](#findtemplateimage) | static method | A | Load the templates and return the thumbnail a device identity matches. |
 | [`matchTemplateImage`](#matchtemplateimage) | static method | A | Match a device identity to a template thumbnail by normalized equality. |
+| [`isTemplateImage`](#istemplateimage) | static method | A | Tell whether an asset path is still one of the bundled thumbnails. |
+| [`rankTemplateImageCandidates`](#ranktemplateimagecandidates) | static method | A | Order every bundled thumbnail (one per distinct `image`) by how well it fits a device. |
+| `_tokens` | private static method | B | Split an identity string into lowercase letter/digit word tokens. |
 | `_identityKey` | private static method | B | Lowercase and strip non-alphanumerics to form a comparison key. |
 | [`BrandEntry`](#brandentry-new) | constructor | A | Create a `BrandEntry` instance. |
 | [`BrandEntry.fromJson`](#brandentry-fromjson) | factory constructor | A | Parse a `BrandEntry` from JSON. |
@@ -29,7 +32,7 @@ for the bundled-preset concept overview this page verifies against source.
 | [`DeviceTemplate.fromJson`](#devicetemplate-fromjson) | factory constructor | A | Parse a `DeviceTemplate` from JSON. |
 | [`DeviceTemplate.toDevice`](#todevice) | method (`DeviceTemplate`) | A | Convert this template into a new `Device`, optionally filling full CPU/GPU detail from presets. |
 
-Row count (16) matches `grep -c 'Purpose:' preset_service.dart` (16) exactly. `DeviceTemplate.fromJson`
+Row count (19) matches `grep -c 'Purpose:' preset_service.dart` (19) exactly. `DeviceTemplate.fromJson`
 previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started parsing `image`.
 
 ## Documentation
@@ -117,14 +120,17 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 - **Side effects:** Loads and caches the template catalog on first use (via
   [`loadTemplates`](#loadtemplates)).
 - **Algorithm:** `loadTemplates()` then [`matchTemplateImage`](#matchtemplateimage).
-- **Usage:** `DeviceAvatar` calls it while the catalog is not yet cached; once it is,
-  the avatar calls `matchTemplateImage(cachedTemplates!, …)` synchronously.
-- **Notes:** Display-only. The path is never written into the device, so `devices.json`, sync
-  and backup are unchanged, and devices added before thumbnails existed pick one up too.
+- **Usage:** Kept as a convenience entry point; since 1.6.1 no `lib/` caller uses it —
+  `DeviceAvatar` now awaits `loadTemplates()` itself and resolves through its own
+  `_resolveTemplate` (hand-picked thumbnail first, then
+  [`matchTemplateImage`](#matchtemplateimage)).
+- **Notes:** Display-only. The matched path is never written into the device, so devices added
+  before thumbnails existed pick one up too. A thumbnail the user chooses by hand is a different
+  thing: it is stored in the device's `templateImage` field.
 
 ### `static String? matchTemplateImage(List<DeviceTemplate> templates, {String? brand, String? model, String? name})` <a id="matchtemplateimage"></a>
 - **Kind:** static method of `PresetService`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 120).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 125).
 - **Purpose:** Match a device identity to a template thumbnail.
 - **Inputs:** `templates`; the device's `brand`, `model`, `name`.
 - **Returns:** The first matching template's `image`, or null.
@@ -138,9 +144,42 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 - **Notes:** Equality, not containment, so `iPhone 15` never claims the `iPhone 15 Pro` photo and a
   bare `iPhone` matches nothing. `iPad Pro 13" (M4)` and `ipad pro 13 m4` compare equal.
 
+### `static bool isTemplateImage(List<DeviceTemplate> templates, String asset)` <a id="istemplateimage"></a>
+- **Kind:** static method of `PresetService`.
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 164).
+- **Purpose:** Tell whether an asset path is one of the bundled thumbnails.
+- **Inputs:** `templates` — the catalog; `asset` — a stored `templateImage`.
+- **Returns:** True when some template carries exactly that `image`.
+- **Side effects:** None.
+- **Algorithm:** `templates.any((t) => t.image == asset)`.
+- **Usage:** `DeviceAvatar._resolveTemplate` checks a device's hand-picked `templateImage` before
+  showing it.
+- **Notes:** A thumbnail chosen by hand may be renamed or dropped by a later release; the avatar
+  then falls back to automatic matching instead of showing a broken image.
+
+### `static List<DeviceTemplate> rankTemplateImageCandidates(List<DeviceTemplate> templates, {String? brand, String? model, String? name})` <a id="ranktemplateimagecandidates"></a>
+- **Kind:** static method of `PresetService`.
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 179).
+- **Purpose:** Order every bundled thumbnail by how well it fits a device.
+- **Inputs:** `templates` to rank; the device's `brand`, `model` and `name`.
+- **Returns:** One template per distinct `image`, best candidates first.
+- **Side effects:** None.
+- **Algorithm:** 1. Compute the exact hit with [`matchTemplateImage`](#matchtemplateimage). 2. Build
+  the wanted token set from the device's brand, model and name via `_tokens` (lowercase letter/digit
+  runs). 3. Walk the templates in catalog order, skipping those without an `image` and every later
+  template whose `image` was already seen. 4. Score each by the size of the intersection of its own
+  brand/model/name tokens with the wanted set; the exact hit gets `1 << 20`. 5. Sort by score
+  descending, ties by catalog order.
+- **Usage:** The hand-picked thumbnail chooser in
+  [`template_image_picker.dart`](../widgets/template_image_picker.md) ranks the whole catalog for
+  the device being edited, so the closest candidate thumbnails come first.
+- **Notes:** The list is always complete — nothing is filtered out — because the user makes the
+  final choice; unlike automatic matching this is deliberately fuzzy. Several sibling templates
+  often share one file; the first in catalog order stands for it.
+
 ### `const BrandEntry({required this.name, this.logo})` <a id="brandentry-new"></a>
 - **Kind:** constructor of `BrandEntry`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 171).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 248).
 - **Purpose:** Hold one bundled brand's display name and optional logo asset reference.
 - **Inputs:** `name` (required); optional `logo`.
 - **Returns:** A new `BrandEntry` instance.
@@ -151,7 +190,7 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 
 ### `factory BrandEntry.fromJson(Map<String, dynamic> json)` <a id="brandentry-fromjson"></a>
 - **Kind:** factory constructor of `BrandEntry`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 178).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 255).
 - **Purpose:** Parse one brand entry from the decoded `brands.json` array.
 - **Inputs:** `json`.
 - **Returns:** A new `BrandEntry` with `name` required and `logo` optional.
@@ -165,7 +204,7 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 
 ### `const DeviceTemplate({required this.name, required this.category, ...})` <a id="devicetemplate-new"></a>
 - **Kind:** constructor of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 217).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 294).
 - **Purpose:** Hold one bundled full-device template's fields (name, category, brand/model,
   cpu/gpu model strings, ram, storage list, screen, battery, OS, release date, and the optional
   `image` thumbnail asset).
@@ -180,7 +219,7 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 
 ### `static String? DeviceTemplate._asString(dynamic value)` <a id="_asstring"></a>
 - **Kind:** private static method of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 244).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 321).
 - **Purpose:** Normalize a template's `cpu`/`gpu` JSON field, which may be stored either as a plain
   string or as an object with a `model` key, into a plain string.
 - **Inputs:** `value` — the raw decoded JSON value for `cpu` or `gpu`.
@@ -197,7 +236,7 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 
 ### `factory DeviceTemplate.fromJson(Map<String, dynamic> json)` <a id="devicetemplate-fromjson"></a>
 - **Kind:** factory constructor of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 270).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 347).
 - **Purpose:** Parse one device template from the decoded `device_templates.json` array.
 - **Inputs:** `json`.
 - **Returns:** A new `DeviceTemplate`; `storage` defaults to `[]` if absent; `releaseDate` is parsed
@@ -213,7 +252,7 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 
 ### `static CpuInfo? DeviceTemplate._asCpuInfo(dynamic value)` <a id="_ascpuinfo"></a>
 - **Kind:** private static method of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 260).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 337).
 - **Purpose:** Keep the detail an object-form `cpu` carries beyond its model name.
 - **Inputs:** `value` — the raw `cpu` JSON value.
 - **Returns:** A `CpuInfo` when the template authored an object, otherwise null.
@@ -226,7 +265,7 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
 
 ### `Device DeviceTemplate.toDevice({List<CpuInfo>? cpuPresets, List<GpuInfo>? gpuPresets, int storageIndex = 0})` <a id="todevice"></a>
 - **Kind:** method of `DeviceTemplate`.
-- **Source:** `lib/features/devices/services/preset_service.dart` (line 310).
+- **Source:** `lib/features/devices/services/preset_service.dart` (line 390).
 - **Purpose:** Convert this template into a new `Device`, pre-filling all template fields and
   optionally upgrading the plain `cpu`/`gpu` model-name strings to full `CpuInfo`/`GpuInfo` detail
   by matching them against loaded presets.
@@ -243,7 +282,8 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
   GPU, try an exact `model` match first; if none, fall back to a *prefix* match
   (`model!.startsWith(gpu!)`) — this handles GPU presets with a core-count suffix like "(10-core)"
   that wouldn't exact-match the template's bare model string. 4. Construct and return the `Device`
-  with all template fields plus the resolved `cpuInfo`/`gpuInfo`.
+  with all template fields plus the resolved `cpuInfo`/`gpuInfo`, and the template's `image` as
+  the device's `templateImage`.
 - **Usage:**
   ```dart
   final device = choice.template.toDevice(
@@ -260,11 +300,14 @@ previously had no `/// Purpose:` block; it gained one in 1.5.8 when it started p
   rather than range-checked, so an out-of-date caller cannot throw. `cpuDetail` takes priority over
   the preset lookup because the VPS templates author `architecture` and core counts for chips such
   as `Intel Xeon` and `Ampere Altra` that are deliberately absent from `cpus.json`, so the preset
-  lookup could never have recovered them.
+  lookup could never have recovered them. The template's thumbnail is carried as `templateImage`
+  so the device keeps it after the user renames it (automatic matching would lose it).
 
 Template-picker icons prefer the template's own `image` thumbnail, shown full-size because it is
 already circle-safe. Without one they use the bundled `brands.json` catalogue (case-insensitive
 exact brand matching), including the existing router and VPS provider marks. `TemplateIcon` contains the whole
 transparent SVG in a square 64% of the avatar diameter; no part is cropped by the circle.
 Monochrome brand marks follow the theme foreground colour; CloudCone retains its original transparent PNG colours. Brands without an asset retain their
-category icon. This picker decoration does not modify the device's user-selected emoji or image.
+category icon. This picker decoration does not modify the device's user-selected emoji or image;
+the only thumbnail a device created from a template receives is its `templateImage` (see
+[`toDevice`](#todevice)).

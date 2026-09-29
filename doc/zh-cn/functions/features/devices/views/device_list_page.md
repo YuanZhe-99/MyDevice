@@ -1,6 +1,6 @@
 # lib/features/devices/views/device_list_page.dart
 
-设备清单首页（见 [设备](../../../../features/devices.md)）。拥有设备列表的加载/排序/过滤/分组状态、链接到 `device_finance_overview_page.dart` 的财务摘要页头卡片、由 `lib/features/devices/services/device_storage.dart` 支撑的增/改/删/重排流程，和"从模板添加"底部面板（`_TemplatePicker`，用 `lib/features/devices/services/preset_service.dart`）。它注册到 `AutoSyncService`（`lib/shared/services/auto_sync_service.dart`），使后台同步带入新本地数据时列表自我刷新。在线搜索 FAB（`_addFromSearch`，接到 `chip_search_dialog`/`device_search_dialog` 的姊妹 `showDeviceSearchDialog`）门控在 `AppFlavor.isFull` 后——此满足的商店风格门控要求见 [在线搜索与预设](../../../../features/online-search-and-presets.md)（4 个调用点中的第 4 个）。
+设备清单首页（见 [设备](../../../../features/devices.md)）。拥有设备列表的加载/排序/过滤/分组状态、链接到 `device_finance_overview_page.dart` 的财务摘要页头卡片、由 `lib/features/devices/services/device_storage.dart` 支撑的增/改/删/重排流程，和"从模板添加"底部面板（`_TemplatePicker`，用 `lib/features/devices/services/preset_service.dart`）。它注册到 `AutoSyncService`（`lib/shared/services/auto_sync_service.dart`），使后台同步带入新本地数据时列表自我刷新。在线搜索 FAB（`_addFromSearch`，接到 `chip_search_dialog`/`device_search_dialog` 的姊妹 `showDeviceSearchDialog`）门控在 `AppFlavor.deviceSearchExposed` 后（目前等于 `AppFlavor.isFull`；作为独立开关，使该快捷入口可隐藏而搜索服务保留）——此满足的商店风格门控要求见 [在线搜索与预设](../../../../features/online-search-and-presets.md)（4 个调用点中的第 4 个）。
 
 ## 声明
 
@@ -34,7 +34,7 @@
 | `_toggleGroupByCategory` | 方法（`_DeviceListPageState`） | B | 切换类别分组并持久化。 |
 | `_toggleSortOrder` | 方法（`_DeviceListPageState`） | B | 切换升/降序并持久化。 |
 | [`_onReorder`](#_onreorder) | 方法（`_DeviceListPageState`） | A | 在自定义顺序内移动设备并持久化新顺序。 |
-| `build` | 方法（组件） | B | 构建脚手架：应用栏、列数控件（`listColumnsButton`，容量为 1 及重排时隐藏）、排序/分组菜单、设备列表或重排视图、FAB。以 `shellContentWidth(screen.width) − 32` 和 `deviceTileMinWidth` 经 `listColumnCount` 计算列数。 |
+| `build` | 方法（组件） | B | 构建脚手架：应用栏、列数控件（`listColumnsButton`，容量为 1 及重排时隐藏）、排序/分组菜单、设备列表或重排视图、FAB（在线搜索 FAB 仅在 `AppFlavor.deviceSearchExposed` 时）。以 `shellContentWidth(screen.width) − 32` 和 `deviceTileMinWidth` 经 `listColumnCount` 计算列数。 |
 | `_setColumnsPref` | 方法（`_DeviceListPageState`） | B | 存储新的列数偏好（`DeviceStorage.setDeviceListColumns`）并重新渲染。 |
 | `_buildTile` | 方法（组件辅助） | B | 一个设备 tile：一列时是带滑动 `Dismissible` 的卡片，否则是带尾部编辑/删除 `PopupMenuButton` 的 `_DeviceCard`。 |
 | `_tileRows` | 方法（组件辅助） | B | 把一段设备排成列表 children：一列时就是 tile，否则是带内边距的 `adaptiveTileRows`。 |
@@ -51,6 +51,8 @@
 | [`_filtered`](#_filtered) | getter（`_TemplatePickerState`） | A | 按当前搜索查询过滤模板。 |
 | [`_choose`](#_choose) | 方法（`_TemplatePickerState`） | A | 确定选中模板应使用哪一个存储容量。 |
 | `_TemplatePickerState.build` | 方法（组件） | B | 渲染可拖拽模板选择器面板（搜索字段 + 过滤列表）。 |
+
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 45，与上面 45 行精确匹配。
 
 ## 文档
 

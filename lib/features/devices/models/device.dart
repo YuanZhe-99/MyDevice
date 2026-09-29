@@ -43,6 +43,7 @@ const _deviceJsonKeys = {
   'category',
   'emoji',
   'imagePath',
+  'templateImage',
   'brand',
   'model',
   'serialNumber',
@@ -492,6 +493,11 @@ class StorageInfo {
     return parts.join(' ');
   }
 
+  /// Purpose: Serialize this storage entry into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map; unset fields are omitted.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     if (capacity != null) 'capacity': capacity,
@@ -501,6 +507,13 @@ class StorageInfo {
     if (brand != null) 'brand': brand,
   };
 
+  /// Purpose: Create an instance from a JSON value, including the legacy string
+  /// shape.
+  /// Inputs: `json` — a map, or a plain capacity string such as "512 GB".
+  /// Returns: A new `StorageInfo`.
+  /// Side effects: None.
+  /// Notes: A legacy string becomes `StorageInfo(capacity: json)`; unknown map
+  /// keys go to `extraJson`.
   factory StorageInfo.fromJson(dynamic json) {
     if (json is String) {
       // Legacy format: plain string like "512 GB"
@@ -517,6 +530,11 @@ class StorageInfo {
     );
   }
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`; optional `base` for the three-way merge.
+  /// Returns: `StorageInfo`.
+  /// Side effects: None.
+  /// Notes: Known fields always come from `this`; only `extraJson` is merged.
   StorageInfo mergeUnknownFieldsFrom(StorageInfo other, {StorageInfo? base}) {
     return StorageInfo.fromJson({
       ...toJson(),
@@ -540,6 +558,12 @@ class MoneyValue {
   final DateTime? rateUpdatedAt;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a money value instance.
+  /// Inputs: The entered `amount` and `currency`, the app `defaultCurrency`,
+  /// `convertedAmount`, `exchangeRate`, `autoRate`, optional `rateUpdatedAt`.
+  /// Returns: A new `MoneyValue` instance.
+  /// Side effects: None.
+  /// Notes: None.
   const MoneyValue({
     required this.amount,
     required this.currency,
@@ -551,6 +575,11 @@ class MoneyValue {
     this.extraJson = const {},
   });
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'amount': amount,
@@ -563,6 +592,12 @@ class MoneyValue {
       'rateUpdatedAt': rateUpdatedAt!.toIso8601String(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `MoneyValue`.
+  /// Side effects: None.
+  /// Notes: Accepts the legacy `baseCurrency` key; a missing `convertedAmount`
+  /// is derived from `amount * exchangeRate`, and `autoRate` defaults to true.
   factory MoneyValue.fromJson(Map<String, dynamic> json) {
     final amount = (json['amount'] as num).toDouble();
     final currency = json['currency'] as String;
@@ -585,6 +620,11 @@ class MoneyValue {
     );
   }
 
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`; optional `base` for the three-way merge.
+  /// Returns: `MoneyValue`.
+  /// Side effects: None.
+  /// Notes: Known fields always come from `this`; only `extraJson` is merged.
   MoneyValue mergeUnknownFieldsFrom(MoneyValue other, {MoneyValue? base}) {
     return MoneyValue.fromJson({
       ...toJson(),
@@ -606,6 +646,12 @@ class DeviceRecurringCost {
   final BillingCycle billingCycle;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a recurring cost instance.
+  /// Inputs: `kind`, `price` required; optional `id`, `name`, `billingCycle`
+  /// (monthly by default).
+  /// Returns: A new `DeviceRecurringCost` instance.
+  /// Side effects: None.
+  /// Notes: A fresh UUID `id` is generated when none is supplied.
   DeviceRecurringCost({
     String? id,
     required this.kind,
@@ -615,13 +661,28 @@ class DeviceRecurringCost {
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4();
 
+  /// Purpose: Project this cost to a yearly amount in the default currency.
+  /// Inputs: None.
+  /// Returns: The converted price times 12 for monthly, or as is for yearly.
+  /// Side effects: None.
+  /// Notes: None.
   double get annualConvertedAmount => switch (billingCycle) {
     BillingCycle.monthly => price.convertedAmount * 12,
     BillingCycle.yearly => price.convertedAmount,
   };
 
+  /// Purpose: Spread the yearly converted amount over one day.
+  /// Inputs: None.
+  /// Returns: `annualConvertedAmount / 365`.
+  /// Side effects: None.
+  /// Notes: None.
   double get dailyConvertedAmount => annualConvertedAmount / 365;
 
+  /// Purpose: Serialize this value into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -631,6 +692,11 @@ class DeviceRecurringCost {
     'billingCycle': billingCycle.jsonValue,
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `DeviceRecurringCost`.
+  /// Side effects: None.
+  /// Notes: Unknown keys go to `extraJson`.
   factory DeviceRecurringCost.fromJson(Map<String, dynamic> json) =>
       DeviceRecurringCost(
         id: json['id'] as String?,
@@ -641,6 +707,12 @@ class DeviceRecurringCost {
         extraJson: unknownJsonFields(json, _recurringCostJsonKeys),
       );
 
+  /// Purpose: Merge preserved unknown JSON fields, including the nested
+  /// `price`.
+  /// Inputs: `other`; optional `base` for the three-way merge.
+  /// Returns: `DeviceRecurringCost`.
+  /// Side effects: None.
+  /// Notes: Known fields always come from `this`.
   DeviceRecurringCost mergeUnknownFieldsFrom(
     DeviceRecurringCost other, {
     DeviceRecurringCost? base,
@@ -667,6 +739,10 @@ class Device {
   final DeviceCategory category;
   final String? emoji;
   final String? imagePath;
+
+  /// Bundled thumbnail the user chose by hand (an asset path as
+  /// `DeviceTemplate.image` stores it). Wins over automatic matching.
+  final String? templateImage;
   final String? brand;
   final String? model;
   final String? serialNumber;
@@ -696,12 +772,19 @@ class Device {
   final DateTime modifiedAt;
   final Map<String, dynamic> extraJson;
 
+  /// Purpose: Create a device instance.
+  /// Inputs: `name`, `category` required; every other field optional.
+  /// Returns: A new `Device` instance.
+  /// Side effects: None.
+  /// Notes: A fresh UUID `id` and UTC `modifiedAt` are generated when not
+  /// supplied, so every save through this constructor bumps the sync timestamp.
   Device({
     String? id,
     required this.name,
     required this.category,
     this.emoji,
     this.imagePath,
+    this.templateImage,
     this.brand,
     this.model,
     this.serialNumber,
@@ -733,17 +816,40 @@ class Device {
   }) : id = id ?? const Uuid().v4(),
        modifiedAt = modifiedAt ?? DateTime.now().toUtc();
 
+  /// Purpose: Derive the lifecycle bucket from the sold/retired flags.
+  /// Inputs: None.
+  /// Returns: `sold`, `retired` or `inService`.
+  /// Side effects: None.
+  /// Notes: Sold wins when both flags are set; the model does not make them
+  /// exclusive.
   DeviceLifecycleStatus get lifecycleStatus {
     if (isSold) return DeviceLifecycleStatus.sold;
     if (isRetired) return DeviceLifecycleStatus.retired;
     return DeviceLifecycleStatus.inService;
   }
 
+  /// Purpose: Tell whether the device is still in service.
+  /// Inputs: None.
+  /// Returns: True when `lifecycleStatus` is `inService`.
+  /// Side effects: None.
+  /// Notes: None.
   bool get isInService => lifecycleStatus == DeviceLifecycleStatus.inService;
 
+  /// Purpose: Tell whether any financial data is recorded.
+  /// Inputs: None.
+  /// Returns: True when a purchase price, sold price or recurring cost exists.
+  /// Side effects: None.
+  /// Notes: Guards `averageDailyCost` so a device without data reports null,
+  /// not 0.
   bool get hasFinancialData =>
       purchasePrice != null || soldPrice != null || recurringCosts.isNotEmpty;
 
+  /// Purpose: Count the days the device has been, or was, in service.
+  /// Inputs: `asOf` — replaces "now"; defaults to the current time.
+  /// Returns: Days from `purchaseDate` to now or `retiredDate` (at least 1), or
+  /// null without a purchase date.
+  /// Side effects: None.
+  /// Notes: A retired device without a `retiredDate` counts up to now.
   int? serviceDays({DateTime? asOf}) {
     if (purchaseDate == null) return null;
     final now = asOf ?? DateTime.now();
@@ -751,6 +857,12 @@ class Device {
     return max(1, end.difference(purchaseDate!).inDays + 1);
   }
 
+  /// Purpose: Total the recurring costs across the service days.
+  /// Inputs: `asOf`, forwarded to `serviceDays`.
+  /// Returns: The accumulated converted amount, or 0 without a purchase date.
+  /// Side effects: None.
+  /// Notes: Every cost is charged for the whole service span; costs have no
+  /// start date of their own.
   double recurringCostThrough({DateTime? asOf}) {
     final days = serviceDays(asOf: asOf);
     if (days == null) return 0;
@@ -760,18 +872,35 @@ class Device {
     );
   }
 
+  /// Purpose: Compute the total cost of ownership.
+  /// Inputs: `asOf`, forwarded to `recurringCostThrough`.
+  /// Returns: Purchase price plus recurring costs minus sold price.
+  /// Side effects: None.
+  /// Notes: Not clamped; may be negative.
   double totalCost({DateTime? asOf}) {
     return (purchasePrice?.convertedAmount ?? 0) +
         recurringCostThrough(asOf: asOf) -
         (soldPrice?.convertedAmount ?? 0);
   }
 
+  /// Purpose: Compute the average daily cost of ownership.
+  /// Inputs: `asOf`, forwarded to `serviceDays` and `totalCost`.
+  /// Returns: `totalCost / serviceDays`, or null without a purchase date or
+  /// financial data.
+  /// Side effects: None.
+  /// Notes: None.
   double? averageDailyCost({DateTime? asOf}) {
     final days = serviceDays(asOf: asOf);
     if (days == null || !hasFinancialData) return null;
     return totalCost(asOf: asOf) / days;
   }
 
+  /// Purpose: Compute pixels per inch from resolution and screen size.
+  /// Inputs: None.
+  /// Returns: The PPI, or null when resolution or a parseable diagonal is
+  /// missing.
+  /// Side effects: None.
+  /// Notes: None.
   /// Compute PPI from resolution and screen diagonal (inches).
   double? get ppi {
     if (screenResolutionW == null || screenResolutionH == null) return null;
@@ -782,6 +911,12 @@ class Device {
     return sqrt(w * w + h * h) / diagonal;
   }
 
+  /// Purpose: Parse a free-text screen size into inches.
+  /// Inputs: `s`, e.g. `6.7"`, `15.6 inch`, `13寸`.
+  /// Returns: The number of inches, or null when it does not parse.
+  /// Side effects: None.
+  /// Notes: Only a trailing unit suffix is stripped. Internal helper used
+  /// within this file only.
   static double? _parseScreenDiagonal(String? s) {
     if (s == null || s.isEmpty) return null;
     // Remove common suffixes like " or inch / 寸 etc.
@@ -791,11 +926,19 @@ class Device {
     return double.tryParse(cleaned);
   }
 
+  /// Purpose: Create a copy with any subset of fields replaced or cleared.
+  /// Inputs: One optional value per field, plus a `clearXxx` flag per nullable
+  /// field (e.g. `clearImagePath`, `clearTemplateImage`).
+  /// Returns: A new `Device` with the same `id`.
+  /// Side effects: None.
+  /// Notes: `extraJson` is copied unchanged; `modifiedAt` defaults to now in
+  /// UTC.
   Device copyWith({
     String? name,
     DeviceCategory? category,
     String? emoji,
     String? imagePath,
+    String? templateImage,
     String? brand,
     String? model,
     String? serialNumber,
@@ -825,6 +968,7 @@ class Device {
     DateTime? modifiedAt,
     bool clearEmoji = false,
     bool clearImagePath = false,
+    bool clearTemplateImage = false,
     bool clearBrand = false,
     bool clearModel = false,
     bool clearSerialNumber = false,
@@ -852,6 +996,9 @@ class Device {
       category: category ?? this.category,
       emoji: clearEmoji ? null : (emoji ?? this.emoji),
       imagePath: clearImagePath ? null : (imagePath ?? this.imagePath),
+      templateImage: clearTemplateImage
+          ? null
+          : (templateImage ?? this.templateImage),
       brand: clearBrand ? null : (brand ?? this.brand),
       model: clearModel ? null : (model ?? this.model),
       serialNumber: clearSerialNumber
@@ -897,6 +1044,12 @@ class Device {
     );
   }
 
+  /// Purpose: Serialize this device into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map; unset and default-false fields are
+  /// omitted.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -904,6 +1057,7 @@ class Device {
     'category': category.jsonValue,
     if (emoji != null) 'emoji': emoji,
     if (imagePath != null) 'imagePath': imagePath,
+    if (templateImage != null) 'templateImage': templateImage,
     if (brand != null) 'brand': brand,
     if (model != null) 'model': model,
     if (serialNumber != null) 'serialNumber': serialNumber,
@@ -934,12 +1088,19 @@ class Device {
     'modifiedAt': modifiedAt.toIso8601String(),
   };
 
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `Device`.
+  /// Side effects: None.
+  /// Notes: Accepts the legacy single-string `storage` shape; unknown keys go
+  /// to `extraJson`.
   factory Device.fromJson(Map<String, dynamic> json) => Device(
     id: json['id'] as String,
     name: json['name'] as String,
     category: DeviceCategory.fromJson(json['category'] as String),
     emoji: json['emoji'] as String?,
     imagePath: json['imagePath'] as String?,
+    templateImage: json['templateImage'] as String?,
     brand: json['brand'] as String?,
     model: json['model'] as String?,
     serialNumber: json['serialNumber'] as String?,
@@ -998,6 +1159,12 @@ class Device {
     extraJson: unknownJsonFields(json, _deviceJsonKeys),
   );
 
+  /// Purpose: Merge preserved unknown JSON fields, including nested structures.
+  /// Inputs: `other`; optional `base` for the three-way merge.
+  /// Returns: `Device`.
+  /// Side effects: None.
+  /// Notes: Recurses into `cpu`, `gpu`, `storage`, both prices and
+  /// `recurringCosts` so no nested unknown field is lost.
   Device mergeUnknownFieldsFrom(Device other, {Device? base}) {
     final json = toJson();
     json.addAll(

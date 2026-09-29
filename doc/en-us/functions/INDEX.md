@@ -4,17 +4,20 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1358** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1467** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1502** declarations — 144 more than
-1358 — because a number of real declarations across several files (especially the two large
-algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the tail
-section of `device.dart`, and the constants, enums, typedefs and private regular expressions of the
-1.6.0 on-device AI files under `features/ai/` and the two insight fact builders) have no
-`/// Purpose:` doc comment in source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1589** declarations — 122 more than
+1467 — because a number of real declarations across several files (especially the two large
+algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the
+constants, enums, typedefs and private regular expressions of the 1.6.0 on-device AI files under
+`features/ai/` and the two insight fact builders, and the classes, enum, constants and typedefs of
+`device_search_service.dart` and `device_search_parsers.dart`) have no `/// Purpose:` doc comment
+in source at all, or in a couple of cases (`service_analysis.dart`) had a comment misattached to a
 call-site statement rather than a real declaration. Every such case is called out explicitly on
 its file page with a reconciling row-count note; nothing is silently invented to force a round
-number.
+number. The 1.6.1 documentation audit added the missing blocks to the 27 tail declarations of
+`device.dart` and to three constructors in `device_search_service.dart`, so those no longer count
+toward the gap.
 
 The `/// Purpose:` figure is verified against source with
 `grep -r '/// Purpose:' lib --include=*.dart` (excluding `lib/l10n/`). The declaration totals are
@@ -25,9 +28,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 799 |
-| Tier B (index row only) | 703 |
-| **Total** | **1502** |
+| Tier A (full entry) | 853 |
+| Tier B (index row only) | 736 |
+| **Total** | **1589** |
 
 ## Root (`lib/`)
 
@@ -40,7 +43,7 @@ its per-file row and both total tables in the same commit.
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
 | `lib/app/app.dart` | [app/app.md](app/app.md) | 2 | 0 |
-| `lib/app/flavor.dart` | [app/flavor.md](app/flavor.md) | 3 | 1 |
+| `lib/app/flavor.dart` | [app/flavor.md](app/flavor.md) | 4 | 1 |
 | `lib/app/router.dart` | [app/router.md](app/router.md) | 1 | 0 |
 | `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 14 | 14 |
 | `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 3 | 3 |
@@ -74,20 +77,22 @@ its per-file row and both total tables in the same commit.
 |---|---|---|---|
 | `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 58 | 46 |
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
-| `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 25 | 24 |
-| `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 24 | 16 |
+| `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 40 | 37 |
+| `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 39 | 27 |
 | `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 49 | 27 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 21 | 20 |
 | `lib/features/devices/services/finance_insight_facts.dart` | [features/devices/services/finance_insight_facts.md](features/devices/services/finance_insight_facts.md) | 5 | 1 |
-| `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 16 | 13 |
+| `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 19 | 15 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
 | `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
-| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 58 | 14 |
+| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 61 | 17 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 33 | 16 |
+| `lib/features/devices/views/device_image_editor_page.dart` | [features/devices/views/device_image_editor_page.md](features/devices/views/device_image_editor_page.md) | 22 | 6 |
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 45 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
-| `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 9 | 0 |
+| `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 10 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
+| `lib/features/devices/widgets/template_image_picker.dart` | [features/devices/widgets/template_image_picker.md](features/devices/widgets/template_image_picker.md) | 9 | 4 |
 
 ## features/network/
 
@@ -133,7 +138,7 @@ its per-file row and both total tables in the same commit.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1358/1502 hand-documented declarations above).
+the 1467/1589 hand-documented declarations above).
 
 ## shared/
 
@@ -142,7 +147,7 @@ the 1358/1502 hand-documented declarations above).
 | `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 9 | 9 |
 | `lib/shared/services/auto_sync_service.dart` | [shared/services/auto_sync_service.md](shared/services/auto_sync_service.md) | 20 | 5 |
 | `lib/shared/services/backup_service.dart` | [shared/services/backup_service.md](shared/services/backup_service.md) | 12 | 12 |
-| `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 5 | 5 |
+| `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 10 | 10 |
 | `lib/shared/services/image_share_service.dart` | [shared/services/image_share_service.md](shared/services/image_share_service.md) | 3 | 3 |
 | `lib/shared/services/import_export_service.dart` | [shared/services/import_export_service.md](shared/services/import_export_service.md) | 5 | 4 |
 | `lib/shared/services/local_api_server.dart` | [shared/services/local_api_server.md](shared/services/local_api_server.md) | 58 | 49 |
@@ -155,6 +160,7 @@ the 1358/1502 hand-documented declarations above).
 | `lib/shared/utils/chinese_convert.dart` | [shared/utils/chinese_convert.md](shared/utils/chinese_convert.md) | 5 | 4 |
 | `lib/shared/utils/chinese_convert_data.dart` | [shared/utils/chinese_convert_data.md](shared/utils/chinese_convert_data.md) | 2 | 0 |
 | `lib/shared/utils/detail_layout.dart` | [shared/utils/detail_layout.md](shared/utils/detail_layout.md) | 5 | 5 |
+| `lib/shared/utils/device_image_processing.dart` | [shared/utils/device_image_processing.md](shared/utils/device_image_processing.md) | 13 | 10 |
 | `lib/shared/utils/json_preservation.dart` | [shared/utils/json_preservation.md](shared/utils/json_preservation.md) | 0 | 0 |
 | `lib/shared/views/device_map_page.dart` | [shared/views/device_map_page.md](shared/views/device_map_page.md) | 5 | 2 |
 | `lib/shared/views/webdav_config_page.dart` | [shared/views/webdav_config_page.md](shared/views/webdav_config_page.md) | 23 | 12 |
@@ -168,12 +174,12 @@ the 1358/1502 hand-documented declarations above).
 | Area | Files | Declarations | Tier A | Tier B |
 |---|---|---|---|---|
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
-| `app/` | 5 | 23 | 18 | 5 |
+| `app/` | 5 | 24 | 18 | 6 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
 | `features/datasets/` | 4 | 49 | 30 | 19 |
-| `features/devices/` | 16 | 409 | 226 | 183 |
+| `features/devices/` | 18 | 477 | 265 | 212 |
 | `features/network/` | 5 | 75 | 41 | 34 |
 | `features/services/` | 17 | 533 | 230 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 23 | 237 | 166 | 71 |
-| **Total** | **84** | **1502** | **799** | **703** |
+| `shared/` | 24 | 255 | 181 | 74 |
+| **Total** | **87** | **1589** | **853** | **736** |

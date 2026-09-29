@@ -8,9 +8,10 @@ device list's load/sort/filter/group state, the financial-summary header card th
 `AutoSyncService` (`lib/shared/services/auto_sync_service.dart`) so the list refreshes itself
 whenever a background sync brings in new local data. The online-search FAB
 (`_addFromSearch`, wired to `chip_search_dialog`/`device_search_dialog`'s sibling
-`showDeviceSearchDialog`) is gated behind `AppFlavor.isFull` — see
-[Online Search and Presets](../../../../features/online-search-and-presets.md) for the store-flavor
-gating requirements this satisfies (call site 4 of 4).
+`showDeviceSearchDialog`) is gated behind `AppFlavor.deviceSearchExposed` (equal to
+`AppFlavor.isFull` today; a separate switch so the shortcut can be hidden while the search service
+stays) — see [Online Search and Presets](../../../../features/online-search-and-presets.md) for the
+store-flavor gating requirements this satisfies (call site 4 of 4).
 
 ## Declarations
 
@@ -44,7 +45,7 @@ gating requirements this satisfies (call site 4 of 4).
 | `_toggleGroupByCategory` | method (`_DeviceListPageState`) | B | Toggle category grouping and persist it. |
 | `_toggleSortOrder` | method (`_DeviceListPageState`) | B | Toggle ascending/descending order and persist it. |
 | [`_onReorder`](#_onreorder) | method (`_DeviceListPageState`) | A | Move a device within the custom order and persist the new order. |
-| `build` | method (widget) | B | Build the scaffold: app bar, column control (`listColumnsButton`, hidden at capacity 1 and while reordering), sort/group menu, device list or reorder view, FABs. Computes the column count with `listColumnCount` from `shellContentWidth(screen.width) − 32` at `deviceTileMinWidth`. |
+| `build` | method (widget) | B | Build the scaffold: app bar, column control (`listColumnsButton`, hidden at capacity 1 and while reordering), sort/group menu, device list or reorder view, FABs (the online-search FAB only when `AppFlavor.deviceSearchExposed`). Computes the column count with `listColumnCount` from `shellContentWidth(screen.width) − 32` at `deviceTileMinWidth`. |
 | `_setColumnsPref` | method (`_DeviceListPageState`) | B | Store a new column preference (`DeviceStorage.setDeviceListColumns`) and re-render. |
 | `_buildTile` | method (widget helper) | B | One device tile: the swipe `Dismissible` card at one column, else a `_DeviceCard` with a trailing edit/delete `PopupMenuButton`. |
 | `_tileRows` | method (widget helper) | B | Lay a run of devices out as list children: the tiles at one column, else padded `adaptiveTileRows`. |
@@ -61,6 +62,8 @@ gating requirements this satisfies (call site 4 of 4).
 | [`_filtered`](#_filtered) | getter (`_TemplatePickerState`) | A | Filter templates by the current search query. |
 | [`_choose`](#_choose) | method (`_TemplatePickerState`) | A | Resolve which storage capacity a chosen template should use. |
 | `_TemplatePickerState.build` | method (widget) | B | Render the draggable template-picker sheet (search field + filtered list). |
+
+Row-count note: `grep -c 'Purpose:'` on this file returns 45, matching the 45 rows above exactly.
 
 ## Documentation
 

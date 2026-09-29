@@ -62,8 +62,30 @@ double _logTransform(double value) {
 
 - `emoji` 已设时在 `primaryContainer` 色圆上居中。
 - 否则 `imagePath` 已设时 `ImageService.resolve()` 加载文件，渲染为 `ClipOval` + `BoxFit.cover`，在 `surfaceContainerHighest` 背景上中心裁剪，带微妙 `outlineVariant` 边框——这让透明 PNG 在圆形框内可见。
-- 否则，若设备的品牌+型号（或名称）等于某个带 `image` 的内置模板，则显示该透明缩略图（`PresetService.matchTemplateImage`；规范化后精确匹配，因此 `iPhone 15` 绝不会取用 `iPhone 15 Pro` 的照片）。这只用于显示：不向设备写入任何内容，因此已有设备也能获得缩略图，旧版本则仍显示图标。
+- 否则，若 `templateImage`（用户手选的缩略图）指向一个仍然存在的内置缩略图，则显示它（自 1.6.1 起；已被后续版本移除的路径会被忽略）。
+- 否则，若设备的品牌+型号（或名称）等于某个带 `image` 的内置模板，则显示该透明缩略图（`PresetService.matchTemplateImage`；规范化后精确匹配，因此 `iPhone 15` 绝不会取用 `iPhone 15 Pro` 的照片）。这种匹配只用于显示：不向设备写入任何内容，因此已有设备也能获得缩略图，旧版本则仍显示图标。
 - 任何缺失/失败图像（含 `Image.file` 的 `errorBuilder`）回退一致轮廓类别图标（来自 `device_category_icon.dart` 的 `deviceCategoryIcon(category)`）。
+
+## 图标与图片 <a id="icon-and-image"></a>
+
+编辑页的图标区（`device_edit_page.dart` 中的 `_buildIconSection`）显示实时头像和以下选项；每个选择都会清除其他选择，因为同一时间只能显示其中一个：
+
+| 选项 | 作用 | 存储为 |
+|---|---|---|
+| **图标** | 表情选择器 | `emoji` |
+| **选择图片** / **更换** | 文件选择器，然后进入图片编辑器 | `imagePath`（`images/` 下的新文件） |
+| **编辑图片**（已设照片时） | 在图片编辑器中重新打开当前照片 | `imagePath`（新文件） |
+| **缩略图** | 可搜索的内置缩略图网格，最佳候选缩略图排在前面，**自动**排在最前（[详情](online-search-and-presets.md#device-thumbnails)） | `templateImage`；选“自动”时不存储任何内容 |
+| **移除图标** | 清除以上三者 | — |
+
+**图片编辑器（自 1.6.1 起）**——`lib/features/devices/views/device_image_editor_page.dart`，由 `showDeviceImageEditor` 打开。所选照片由平台编解码器解码（因此 Flutter 能显示的格式和 EXIF 方向都与屏幕上的表现一致；`package:image` 为后备），解码时即缩小到 1024 px，并可进行以下编辑：
+
+- **裁切**——在带圆形参考线的方形视图中拖动和捏合/滚轮缩放；可见部分即保留的区域。
+- **去背景**，带**容差**滑块——与缩略图工具相同的边缘泛洪填充，清除与边框相连的纯色背景，同时保留设备内部的白色屏幕或徽标。
+- **圆角**——用圆角矩形遮罩代替去除，适用于紧贴杂乱背景裁切的手机或平板。
+- **圆内占比**（40–100 %）——修剪后的设备占满圆的比例；数值越低，周围留白越多。
+
+每次更改后约 150 ms，会在 isolate 中生成一个小预览（384 px 源图，256 px 输出），并以大尺寸和列表尺寸在头像自身的填充色上同时显示。**使用**会生成最终图像——512 px 透明 PNG——并将其保存为新的 `images/<uuid>.png`。添加照片时，**使用原图**（或两个解码器都无法读取的文件）会像 1.6.1 之前一样原样存储文件；取消则不添加任何内容。被编辑或替换的照片的旧文件一如既往地留在磁盘上且不再被引用。该管线是 `lib/shared/utils/device_image_processing.dart` 中的 `processDeviceImage`，与 `tool/prepare_device_image.dart` 共用。
 
 ## 相关
 

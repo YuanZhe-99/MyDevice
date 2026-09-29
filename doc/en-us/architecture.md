@@ -95,8 +95,8 @@ lib/
       services/device_storage.dart
       services/exchange_rate_service.dart
       services/preset_service.dart
-      views/
-      widgets/device_category_icon.dart
+      views/     (… device_image_editor_page)
+      widgets/   (device_avatar, device_category_icon, template_image_picker)
     network/
       models/network.dart
       services/network_storage.dart
@@ -125,6 +125,7 @@ lib/
       tray_service.dart
       webdav_service.dart
     utils/json_preservation.dart
+    utils/device_image_processing.dart (image editor + thumbnail tooling pipeline)
     views/device_map_page.dart
     views/webdav_config_page.dart
     widgets/
@@ -215,4 +216,9 @@ Device thumbnails are bundled in `assets/device_images/` (sources and licenses i
 (`tool/prepare_device_image.dart`) and are checked by `tool/validate_json.dart`, so they render at
 the full diameter. `DeviceAvatar` shows the thumbnail of a matching template when a device has
 no emoji or photo of its own. The match is computed at display time and is never stored, so
-existing devices benefit without migration and no data format changes.
+existing devices benefit without migration. Only a thumbnail the user picks by hand is stored,
+as the optional `templateImage` device field (1.6.1).
+
+The thumbnail pipeline (`lib/shared/utils/device_image_processing.dart`) is pure Dart on
+`package:image` — a runtime dependency since 1.6.1 — with no Flutter imports, so the same code
+runs in the in-app image editor (inside `Isolate.run`) and in `dart run tool/...`.

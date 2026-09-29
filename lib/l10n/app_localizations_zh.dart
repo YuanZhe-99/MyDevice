@@ -710,6 +710,54 @@ class AppLocalizationsZh extends AppLocalizations {
   String get deviceChangeImage => '更换';
 
   @override
+  String get deviceChooseThumbnail => '缩略图';
+
+  @override
+  String get deviceThumbnailAutomatic => '自动';
+
+  @override
+  String get deviceThumbnailSearch => '搜索缩略图';
+
+  @override
+  String get deviceEditImage => '编辑图片';
+
+  @override
+  String get imageEditorTitle => '编辑图片';
+
+  @override
+  String get imageEditorUse => '使用';
+
+  @override
+  String get imageEditorUseOriginal => '使用原图';
+
+  @override
+  String get imageEditorCropHint => '拖动和缩放以选择要保留的部分';
+
+  @override
+  String get imageEditorRemoveBackground => '去背景';
+
+  @override
+  String get imageEditorRemoveBackgroundDesc => '清除与边缘相连的纯色背景';
+
+  @override
+  String get imageEditorTolerance => '容差';
+
+  @override
+  String get imageEditorRoundedCorners => '圆角';
+
+  @override
+  String get imageEditorRoundedCornersDesc => '适用于在杂乱背景上紧贴裁切的手机或平板';
+
+  @override
+  String get imageEditorSizeInCircle => '圆内占比';
+
+  @override
+  String get imageEditorReset => '重置';
+
+  @override
+  String get imageEditorDecodeFailed => '无法编辑这张图片，将按原样使用';
+
+  @override
   String get deviceRemoveIcon => '移除图标';
 
   @override
@@ -2582,6 +2630,54 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get deviceChangeImage => '更換';
+
+  @override
+  String get deviceChooseThumbnail => '縮圖';
+
+  @override
+  String get deviceThumbnailAutomatic => '自動';
+
+  @override
+  String get deviceThumbnailSearch => '搜尋縮圖';
+
+  @override
+  String get deviceEditImage => '編輯圖片';
+
+  @override
+  String get imageEditorTitle => '編輯圖片';
+
+  @override
+  String get imageEditorUse => '使用';
+
+  @override
+  String get imageEditorUseOriginal => '使用原圖';
+
+  @override
+  String get imageEditorCropHint => '拖曳和縮放以選擇要保留的部分';
+
+  @override
+  String get imageEditorRemoveBackground => '去背景';
+
+  @override
+  String get imageEditorRemoveBackgroundDesc => '清除與邊緣相連的純色背景';
+
+  @override
+  String get imageEditorTolerance => '容差';
+
+  @override
+  String get imageEditorRoundedCorners => '圓角';
+
+  @override
+  String get imageEditorRoundedCornersDesc => '適用於在雜亂背景上緊貼裁切的手機或平板';
+
+  @override
+  String get imageEditorSizeInCircle => '圓內佔比';
+
+  @override
+  String get imageEditorReset => '重設';
+
+  @override
+  String get imageEditorDecodeFailed => '無法編輯這張圖片，將按原樣使用';
 
   @override
   String get deviceRemoveIcon => '移除圖示';

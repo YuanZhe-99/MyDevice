@@ -106,4 +106,4 @@ class RestoreResult {
 
 ## `image_service.dart`
 
-处理文件挑选、URL 下载、`images/` 下 UUID 文件名、相对路径解析和删除——`Device.imagePath` 和同步/备份图像逻辑构建于其上的原语。
+处理文件挑选、URL 下载、`images/` 下 UUID 文件名、相对路径解析和删除——`Device.imagePath` 和同步/备份图像逻辑构建于其上的原语。自 1.6.1 起它还存储图片编辑器的输出（`saveImageBytes`，总是新的 `images/<uuid>.png`），并解码照片以供编辑（`loadEditableImage`）。因此编辑过的照片是一个普通的新图像文件；被它替换的文件不再被引用，备份和导出也就不再携带它。

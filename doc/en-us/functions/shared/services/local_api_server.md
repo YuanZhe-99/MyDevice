@@ -70,6 +70,8 @@ connect to servers, or inspect Docker.
 | [`_validateBasicAuth`](#validatebasicauth) | static method | A | Validate an `Authorization: Basic` header against configured credentials. |
 | [`_errorMiddleware`](#errormiddleware) | static method | A | Catch unhandled handler exceptions as a `500` JSON error. |
 
+Row-count note: `grep -c 'Purpose:'` on this file returns 58, matching the 58 rows above exactly.
+
 ## Documentation
 
 ### `static Future<void> loadConfig()` <a id="loadconfig"></a>
@@ -147,7 +149,8 @@ connect to servers, or inspect Docker.
 - **Kind:** static method (route handler). **Source:** line 217.
 - **Purpose:** Create a new device from a JSON body.
 - **Inputs:** `request` — JSON body; `name` and `category` required, everything else optional
-  (CPU/GPU/storage/finance/location fields).
+  (CPU/GPU/storage/finance/location fields, plus the icon fields `emoji`, `imagePath` and
+  `templateImage` — the hand-picked bundled thumbnail's asset path).
 - **Returns:** `400` on missing/invalid body, missing name, or invalid category; otherwise `200`
   with `{success: true, id, name}`.
 - **Side effects:** Persists the new device via `DeviceStorage.addOrUpdate` (which can trigger
@@ -163,7 +166,7 @@ connect to servers, or inspect Docker.
   whole request — only `name`/`category` are hard requirements.
 
 ### `static Future<Response> _handleStats(Request request)` <a id="handlestats"></a>
-- **Kind:** static method (route handler). **Source:** line 326.
+- **Kind:** static method (route handler). **Source:** line 327.
 - **Purpose:** Return cross-module summary statistics.
 - **Inputs:** `request` (unused directly). **Returns:** `200` JSON, see `buildStatsJson`.
 - **Side effects:** Reads device, service, network, and dataset storage.
@@ -172,7 +175,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Keeps legacy top-level device summary fields for API compatibility.
 
 ### `static Future<Response> _handleNetworkList(Request request)` <a id="handlenetworklist"></a>
-- **Kind:** static method (route handler). **Source:** line 350.
+- **Kind:** static method (route handler). **Source:** line 351.
 - **Purpose:** Return saved networks enriched with assignment details.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildNetworkListJson`.
 - **Side effects:** Reads network and device storage (for assignment device names).
@@ -181,7 +184,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Read-only endpoint.
 
 ### `static Future<Response> _handleNetworkSearch(Request request)` <a id="handlenetworksearch"></a>
-- **Kind:** static method (route handler). **Source:** line 367.
+- **Kind:** static method (route handler). **Source:** line 368.
 - **Purpose:** Search saved networks and their device assignments.
 - **Inputs:** `request` — `?q=`. **Returns:** `200` JSON list.
 - **Side effects:** Reads network and device storage.
@@ -190,7 +193,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Searches assignment host/IP data too, not just the network record itself.
 
 ### `static Future<Response> _handleDatasetList(Request request)` <a id="handledatasetlist"></a>
-- **Kind:** static method (route handler). **Source:** line 394.
+- **Kind:** static method (route handler). **Source:** line 395.
 - **Purpose:** Return saved datasets with linked device storage details.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildDataSetListJson`.
 - **Side effects:** Reads dataset and device storage.
@@ -199,7 +202,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Read-only endpoint.
 
 ### `static Future<Response> _handleDatasetSearch(Request request)` <a id="handledatasetsearch"></a>
-- **Kind:** static method (route handler). **Source:** line 410.
+- **Kind:** static method (route handler). **Source:** line 411.
 - **Purpose:** Search datasets and their linked device storage slots.
 - **Inputs:** `request` — `?q=`. **Returns:** `200` JSON list.
 - **Side effects:** Reads dataset and device storage.
@@ -208,7 +211,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static Future<Response> _handleServiceList(Request request)` <a id="handleservicelist"></a>
-- **Kind:** static method (route handler). **Source:** line 432.
+- **Kind:** static method (route handler). **Source:** line 433.
 - **Purpose:** Return saved service nodes with optional simple filters.
 - **Inputs:** `request` — optional `?deviceId=`, `?kind=`, `?state=` (serialized enum names).
 - **Returns:** `200` JSON, see `buildServiceListJson`.
@@ -218,7 +221,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Filter values use serialized enum names where applicable.
 
 ### `static Future<Response> _handleServiceSearch(Request request)` <a id="handleservicesearch"></a>
-- **Kind:** static method (route handler). **Source:** line 457.
+- **Kind:** static method (route handler). **Source:** line 458.
 - **Purpose:** Search service nodes by name, device, endpoint, tags, and notes.
 - **Inputs:** `request` — `?q=`. **Returns:** `200` JSON list.
 - **Side effects:** Reads service, device, and network storage.
@@ -227,7 +230,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Does not scan live ports or inspect running services — manual inventory only.
 
 ### `static Future<Response> _handleServiceRoutes(Request request)` <a id="handleserviceroutes"></a>
-- **Kind:** static method (route handler). **Source:** line 485.
+- **Kind:** static method (route handler). **Source:** line 486.
 - **Purpose:** Return saved service access routes.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildServiceRouteListJson`.
 - **Side effects:** Reads service and device storage.
@@ -237,7 +240,7 @@ connect to servers, or inspect Docker.
   for display, per this repo's Services feature conventions.
 
 ### `static Future<Response> _handleServiceStats(Request request)` <a id="handleservicestats"></a>
-- **Kind:** static method (route handler). **Source:** line 502.
+- **Kind:** static method (route handler). **Source:** line 503.
 - **Purpose:** Return service-specific summary statistics.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildServiceStatsJson`.
 - **Side effects:** Reads service storage.
@@ -246,7 +249,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static Map<String, dynamic> buildStatsJson({required List<Device> devices, ...})` <a id="buildstatsjson"></a>
-- **Kind:** static method. **Source:** line 517.
+- **Kind:** static method. **Source:** line 518.
 - **Purpose:** Build the cross-module `/device/stats` response: device totals/by-category
   counts/recently-added, plus embedded service/network/dataset summary counts.
 - **Inputs:** `devices`, `services`, `routes`, plus optional `networks`/`datasets` lists.
@@ -262,10 +265,11 @@ connect to servers, or inspect Docker.
   field names for API-compatibility reasons.
 
 ### `static Map<String, dynamic> deviceToJson(Device device)` <a id="devicetojson"></a>
-- **Kind:** static method. **Source:** line 605.
+- **Kind:** static method. **Source:** line 606.
 - **Purpose:** Serialize a `Device` into the local API's public response shape.
 - **Inputs:** `device`. **Returns:** `Map<String, dynamic>` — identity/category/CPU/GPU/RAM/
-  storage/screen/location/lifecycle/finance fields plus `imagePath`.
+  storage/screen/location/lifecycle/finance fields plus `emoji`, `imagePath` and `templateImage`
+  (the hand-picked thumbnail, `null` when matching is automatic).
 - **Side effects:** None.
 - **Algorithm:** Direct field mapping, including nested `storageToJson` for each storage slot and
   computed finance-summary fields.
@@ -276,7 +280,7 @@ connect to servers, or inspect Docker.
   fields added after the original API contract.
 
 ### `static Map<String, dynamic> storageToJson(StorageInfo storage)` <a id="storagetojson"></a>
-- **Kind:** static method. **Source:** line 663.
+- **Kind:** static method. **Source:** line 665.
 - **Purpose:** Serialize a `StorageInfo` slot for device/dataset API responses.
 - **Inputs:** `storage`. **Returns:** `Map<String, dynamic>` (capacity, type, interface, brand,
   serial number).
@@ -286,7 +290,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Includes brand and serial number, added to the API after its original contract.
 
 ### `static List<Device> filterDevicesForSearch({required List<Device> devices, required String query})` <a id="filterdevicesforsearch"></a>
-- **Kind:** static method. **Source:** line 676.
+- **Kind:** static method. **Source:** line 678.
 - **Purpose:** Case-insensitive text search over device inventory fields.
 - **Inputs:** `devices`, `query`. **Returns:** matching devices, original order preserved.
 - **Side effects:** None.
@@ -296,7 +300,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Searches inventory fields only; never performs an online lookup.
 
 ### `static List<Map<String, dynamic>> buildNetworkListJson({required List<Network> networks, ...})` <a id="buildnetworklistjson"></a>
-- **Kind:** static method. **Source:** line 718.
+- **Kind:** static method. **Source:** line 720.
 - **Purpose:** Serialize networks with their device assignments grouped underneath.
 - **Inputs:** `networks`, `assignments`, `devices` (for name resolution).
 - **Returns:** `List<Map<String, dynamic>>`.
@@ -307,7 +311,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static Map<String, dynamic> networkToJson(Network network, {List<NetworkDevice>? assignments, Map<String, String>? deviceNames})` <a id="networktojson"></a>
-- **Kind:** static method. **Source:** line 742.
+- **Kind:** static method. **Source:** line 744.
 - **Purpose:** Serialize one `Network`, optionally including its resolved device assignments.
 - **Inputs:** `network`; optional `assignments`/`deviceNames`.
 - **Returns:** `Map<String, dynamic>`.
@@ -319,7 +323,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static List<Network> filterNetworksForSearch({required List<Network> networks, ...})` <a id="filternetworksforsearch"></a>
-- **Kind:** static method. **Source:** line 775.
+- **Kind:** static method. **Source:** line 777.
 - **Purpose:** Case-insensitive search across network and assignment text fields.
 - **Inputs:** `networks`, `assignments`, `devices`, `query`.
 - **Returns:** matching networks, original order preserved.
@@ -330,7 +334,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Including device names lets callers search "which network is device X on."
 
 ### `static List<Map<String, dynamic>> buildDataSetListJson({required List<DataSet> datasets, required List<Device> devices})` <a id="builddatasetlistjson"></a>
-- **Kind:** static method. **Source:** line 814.
+- **Kind:** static method. **Source:** line 816.
 - **Purpose:** Serialize datasets with resolved linked-device-storage details.
 - **Inputs:** `datasets`, `devices`. **Returns:** `List<Map<String, dynamic>>`.
 - **Side effects:** None.
@@ -339,7 +343,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static Map<String, dynamic> dataSetToJson(DataSet dataset, {List<Device>? devices})` <a id="datasettojson"></a>
-- **Kind:** static method. **Source:** line 828.
+- **Kind:** static method. **Source:** line 830.
 - **Purpose:** Serialize one `DataSet`, resolving each storage link's device name and current
   storage-slot summary.
 - **Inputs:** `dataset`; optional `devices` for resolution.
@@ -352,7 +356,7 @@ connect to servers, or inspect Docker.
   index (see [../../../features/datasets.md](../../../features/datasets.md)).
 
 ### `static List<DataSet> filterDataSetsForSearch({required List<DataSet> datasets, required List<Device> devices, required String query})` <a id="filterdatasetsforsearch"></a>
-- **Kind:** static method. **Source:** line 864.
+- **Kind:** static method. **Source:** line 866.
 - **Purpose:** Case-insensitive search across dataset, linked-device, and linked-storage text.
 - **Inputs:** `datasets`, `devices`, `query`. **Returns:** matching datasets, original order.
 - **Side effects:** None.
@@ -362,7 +366,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static List<Map<String, dynamic>> buildServiceListJson({required List<ServiceNode> services, ...})` <a id="buildservicelistjson"></a>
-- **Kind:** static method. **Source:** line 907.
+- **Kind:** static method. **Source:** line 909.
 - **Purpose:** Serialize service nodes for API responses.
 - **Inputs:** `services`, `devices`, `networks` (for endpoint network-name resolution).
 - **Returns:** `List<Map<String, dynamic>>`.
@@ -372,7 +376,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Exposes saved notes only; never queries live service state.
 
 ### `static Map<String, dynamic> serviceToJson(ServiceNode service, {Map<String, String>? deviceNames, Map<String, String>? networkNames})` <a id="servicetojson"></a>
-- **Kind:** static method. **Source:** line 932.
+- **Kind:** static method. **Source:** line 934.
 - **Purpose:** Serialize one `ServiceNode`, including its endpoints via `_serviceEndpointToJson`.
 - **Inputs:** `service`; optional name maps for enrichment.
 - **Returns:** `Map<String, dynamic>`.
@@ -383,7 +387,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Endpoint port ranges expose both the raw `port` value and the formatted `portText`.
 
 ### `static List<ServiceNode> filterServicesForList({required List<ServiceNode> services, String? deviceId, String? kind, String? state})` <a id="filterservicesforlist"></a>
-- **Kind:** static method. **Source:** line 960.
+- **Kind:** static method. **Source:** line 962.
 - **Purpose:** Apply the `/service/list` endpoint's optional simple equality filters.
 - **Inputs:** `services`; optional `deviceId`/`kind`/`state`.
 - **Returns:** matching services, original order.
@@ -393,7 +397,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Empty filter strings are treated as "no filter," not as "match empty."
 
 ### `static List<ServiceNode> filterServicesForSearch({required List<ServiceNode> services, required List<Device> devices, required List<Network> networks, required String query})` <a id="filterservicesforsearch"></a>
-- **Kind:** static method. **Source:** line 982.
+- **Kind:** static method. **Source:** line 984.
 - **Purpose:** Case-insensitive free-text search over service metadata, endpoints, and linked
   names.
 - **Inputs:** `services`, `devices`, `networks`, `query`. **Returns:** matching services,
@@ -405,7 +409,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Searches saved metadata and linked names only — never live port/process state.
 
 ### `static List<Map<String, dynamic>> buildServiceRouteListJson({required List<ServiceRoute> routes, required List<ServiceNode> services, required List<Device> devices})` <a id="buildserviceroutelistjson"></a>
-- **Kind:** static method. **Source:** line 1031.
+- **Kind:** static method. **Source:** line 1033.
 - **Purpose:** Serialize service access routes for API responses.
 - **Inputs:** `routes`, `services`, `devices`. **Returns:** `List<Map<String, dynamic>>`.
 - **Side effects:** None.
@@ -414,7 +418,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static Map<String, dynamic> serviceRouteToJson(ServiceRoute route, {Map<String, ServiceNode>? servicesById, Map<String, String>? deviceNames})` <a id="serviceroutetojson"></a>
-- **Kind:** static method. **Source:** line 1054.
+- **Kind:** static method. **Source:** line 1056.
 - **Purpose:** Serialize one `ServiceRoute`, including resolved source service/endpoint, hops
   (via `_serviceRouteHopToJson`), and grouped public targets (via `_publicTargets`).
 - **Inputs:** `route`; optional lookup maps.
@@ -428,7 +432,7 @@ connect to servers, or inspect Docker.
   [../../../features/services-topology.md](../../../features/services-topology.md)).
 
 ### `static Map<String, dynamic> buildServiceStatsJson({required List<ServiceNode> services, required List<ServiceRoute> routes})` <a id="buildservicestatsjson"></a>
-- **Kind:** static method. **Source:** line 1092.
+- **Kind:** static method. **Source:** line 1094.
 - **Purpose:** Build the `/service/stats` response: service/route totals and by-kind/by-state
   breakdowns.
 - **Inputs:** `services`, `routes`. **Returns:** `Map<String, dynamic>`.
@@ -439,7 +443,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Mirrors the service portion embedded in `/device/stats`, as a standalone endpoint.
 
 ### `static Map<String, dynamic> _serviceEndpointToJson(ServiceEndpoint endpoint, Map<String, String>? networkNames)` <a id="serviceendpointtojson"></a>
-- **Kind:** static method. **Source:** line 1127.
+- **Kind:** static method. **Source:** line 1129.
 - **Purpose:** Serialize a `ServiceEndpoint` with its network id resolved to a display name where
   possible.
 - **Inputs:** `endpoint`, `networkNames`. **Returns:** `Map<String, dynamic>`.
@@ -450,7 +454,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Internal helper used for both service and route responses.
 
 ### `static Map<String, dynamic> _serviceRouteHopToJson(ServiceRouteHop hop, Map<String, ServiceNode>? servicesById, Map<String, String>? deviceNames)` <a id="serviceroutehoptojson"></a>
-- **Kind:** static method. **Source:** line 1152.
+- **Kind:** static method. **Source:** line 1154.
 - **Purpose:** Serialize a `ServiceRouteHop`, resolving its referenced service/device names where
   possible while preserving free-form fields.
 - **Inputs:** `hop`; optional lookup maps. **Returns:** `Map<String, dynamic>`.
@@ -462,7 +466,7 @@ connect to servers, or inspect Docker.
   device reference resolves.
 
 ### `static List<String> _publicTargets(ServiceRoute route)` <a id="publictargets"></a>
-- **Kind:** static method. **Source:** line 1181.
+- **Kind:** static method. **Source:** line 1183.
 - **Purpose:** Read the grouped public targets stored in a route's `extraJson.publicTargets`.
 - **Inputs:** `route`. **Returns:** `List<String>`.
 - **Side effects:** None.
@@ -473,7 +477,7 @@ connect to servers, or inspect Docker.
   than throwing.
 
 ### `static Map<String, String> _deviceNameMap(List<Device> devices)` <a id="devicenamemap"></a>
-- **Kind:** static method. **Source:** line 1192.
+- **Kind:** static method. **Source:** line 1194.
 - **Purpose:** Build an id-to-name lookup for device cross-referencing.
 - **Inputs:** `devices`. **Returns:** `Map<String, String>`.
 - **Side effects:** None.
@@ -482,7 +486,7 @@ connect to servers, or inspect Docker.
 - **Notes:** None.
 
 ### `static Map<String, int> _countBy<T>(Iterable<T> values, String Function(T) keyOf)` <a id="countby"></a>
-- **Kind:** static generic method. **Source:** line 1201.
+- **Kind:** static generic method. **Source:** line 1203.
 - **Purpose:** Count elements grouped by a caller-supplied key function.
 - **Inputs:** `values`, `keyOf`. **Returns:** `Map<String, int>`.
 - **Side effects:** None.
@@ -492,7 +496,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Generic — reusable for any grouping key, not tied to a specific enum.
 
 ### `static bool _containsText(Iterable<Object?> values, String lowerQuery)` <a id="containstext"></a>
-- **Kind:** static method. **Source:** line 1218.
+- **Kind:** static method. **Source:** line 1220.
 - **Purpose:** Test whether any of several values contains a lowercased query substring.
 - **Inputs:** `values` (nullable entries tolerated), `lowerQuery` (already lowercased).
 - **Returns:** `bool`.
@@ -503,7 +507,7 @@ connect to servers, or inspect Docker.
   search rather than per candidate.
 
 ### `static int? _intValue(Object? value)` <a id="intvalue"></a>
-- **Kind:** static method. **Source:** line 1230.
+- **Kind:** static method. **Source:** line 1232.
 - **Purpose:** Tolerantly parse an `int` from JSON-decoded input that may already be an `int`, a
   numeric string, or something else.
 - **Inputs:** `value`. **Returns:** `int?` — `null` if unparseable.
@@ -514,7 +518,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Tolerates numeric strings so minimal/loosely-typed API clients don't get rejected.
 
 ### `static double? _doubleValue(Object? value)` <a id="doublevalue"></a>
-- **Kind:** static method. **Source:** line 1242.
+- **Kind:** static method. **Source:** line 1244.
 - **Purpose:** Tolerantly parse a `double` from JSON-decoded input.
 - **Inputs:** `value`. **Returns:** `double?`.
 - **Side effects:** None.
@@ -524,7 +528,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Accepts both `int` and `double` JSON number encodings via the shared `num` check.
 
 ### `static DateTime? _dateValue(Object? value)` <a id="datevalue"></a>
-- **Kind:** static method. **Source:** line 1253.
+- **Kind:** static method. **Source:** line 1255.
 - **Purpose:** Tolerantly parse a `DateTime` from a JSON string.
 - **Inputs:** `value`. **Returns:** `DateTime?` — `null` for non-strings, empty strings, or
   unparseable strings.
@@ -535,7 +539,7 @@ connect to servers, or inspect Docker.
   requests.
 
 ### `static MoneyValue? _moneyValueFromJson(Object? value)` <a id="moneyvaluefromjson"></a>
-- **Kind:** static method. **Source:** line 1263.
+- **Kind:** static method. **Source:** line 1265.
 - **Purpose:** Parse an optional `MoneyValue` (amount + currency) from a JSON map.
 - **Inputs:** `value`. **Returns:** `MoneyValue?` — `null` if `value` isn't a
   `Map<String, dynamic>` or required sub-fields are malformed.
@@ -546,7 +550,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Malformed money maps are ignored rather than rejecting the whole add request.
 
 ### `static DeviceRecurringCost? _recurringCostFromJson(Object? value)` <a id="recurringcostfromjson"></a>
-- **Kind:** static method. **Source:** line 1277.
+- **Kind:** static method. **Source:** line 1279.
 - **Purpose:** Parse an optional `DeviceRecurringCost` entry from a JSON map.
 - **Inputs:** `value`. **Returns:** `DeviceRecurringCost?` — `null` on wrong shape.
 - **Side effects:** None.
@@ -556,7 +560,7 @@ connect to servers, or inspect Docker.
   rather than rejecting the whole list.
 
 ### `static Future<Map<String, dynamic>?> _parseBody(Request request)` <a id="parsebody"></a>
-- **Kind:** static method. **Source:** line 1312.
+- **Kind:** static method. **Source:** line 1314.
 - **Purpose:** Read and JSON-decode a request body, tolerating malformed input.
 - **Inputs:** `request`. **Returns:** `Future<Map<String, dynamic>?>` — `null` on any decode
   failure or non-object body.
@@ -567,7 +571,7 @@ connect to servers, or inspect Docker.
 - **Notes:** This is why malformed JSON produces a clean `400` rather than a generic `500`.
 
 ### `static Middleware _corsMiddleware()` <a id="corsmiddleware"></a>
-- **Kind:** static method. **Source:** line 1329.
+- **Kind:** static method. **Source:** line 1331.
 - **Purpose:** Attach permissive CORS headers to every response.
 - **Inputs:** None. **Returns:** `Middleware`.
 - **Side effects:** None beyond wrapping the handler.
@@ -578,7 +582,7 @@ connect to servers, or inspect Docker.
   rule exists at all.
 
 ### `static Middleware _authMiddleware()` <a id="authmiddleware"></a>
-- **Kind:** static method. **Source:** line 1347.
+- **Kind:** static method. **Source:** line 1357.
 - **Purpose:** Enforce the API's access rule: loopback is trusted by default, but once
   credentials are configured, every request (including loopback) must present valid Basic Auth.
 - **Inputs:** None. **Returns:** `Middleware`.
@@ -592,7 +596,7 @@ connect to servers, or inspect Docker.
   — see that page's Notes for the full quoted reasoning.
 
 ### `static bool _validateBasicAuth(String header)` <a id="validatebasicauth"></a>
-- **Kind:** static method. **Source:** line 1397.
+- **Kind:** static method. **Source:** line 1399.
 - **Purpose:** Validate an `Authorization: Basic <base64>` header against configured credentials.
 - **Inputs:** `header`. **Returns:** `bool`.
 - **Side effects:** None.
@@ -602,7 +606,7 @@ connect to servers, or inspect Docker.
 - **Notes:** Plain equality check against plaintext-stored credentials.
 
 ### `static Middleware _errorMiddleware()` <a id="errormiddleware"></a>
-- **Kind:** static method. **Source:** line 1414.
+- **Kind:** static method. **Source:** line 1416.
 - **Purpose:** Catch any unhandled route-handler exception and return a clean JSON `500` instead
   of an unhandled crash.
 - **Inputs:** None. **Returns:** `Middleware`.

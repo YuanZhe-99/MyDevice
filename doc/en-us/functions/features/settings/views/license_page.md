@@ -5,7 +5,10 @@
 string ends with a notice that the Simplified/Traditional Chinese conversion tables used by the
 optional on-device AI insight cards
 ([`chinese_convert_data.md`](../../../shared/utils/chinese_convert_data.md)) are derived from
-OpenCC, Copyright (c) Carbo Kuo and contributors, under the Apache License 2.0. It has no state, no
+OpenCC, Copyright (c) Carbo Kuo and contributors, under the Apache License 2.0. Since 1.6.1 it
+also ends with a notice that bundled images are not part of the GPL-3.0 source (pointing to the
+three `SOURCES.md` files), that some device thumbnails are manufacturers' product images, and
+that all product names, logos and brands are trademarks of their owners. It has no state, no
 network or storage access, and no branching logic — it is pushed from
 [`settings_page.dart`](settings_page.md) via the "License" list tile.
 

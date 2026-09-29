@@ -170,6 +170,17 @@ Not copied to the other repos — no other app has these.
 | fallback facts | 回退事实 | the plainer second try sent when the model declines the first facts |
 | regenerate | 重新生成 | the card's refresh action |
 | weak linking | 弱链接 | linking FoundationModels so the app still launches where it does not exist |
+| hand-picked thumbnail | 手选缩略图 | a bundled thumbnail the user chose for a device (`templateImage`) |
+| thumbnail candidate | 候选缩略图 | an entry of the ranked chooser grid |
+| image editor | 图片编辑器 | the crop / remove-background / fit screen for a user's own photo |
+| remove background | 去背景 | clearing a plain background connected to the image edges |
+| size in circle | 圆内占比 | how much of the avatar circle the trimmed device fills |
+| crop | 裁切 | keeping one region of the source image |
+| source registry | 来源注册表 | the ordered list of device-search sources, each with an on/off switch |
+| fallback source | 后备来源 | a source queried only when every other source found nothing (Wikipedia) |
+| tech specs page | 技术规格页 | Apple Support's per-product specification page |
+| user agent | 用户代理 | the `User-Agent` header a search request sends |
+| infobox | 信息框 | the summary table at the top of a Wikipedia article |
 
 ## 6. Review checklist (run before committing a Chinese page)
 

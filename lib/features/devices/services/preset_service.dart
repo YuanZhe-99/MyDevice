@@ -104,7 +104,12 @@ class PresetService {
     String? name,
   }) async {
     final templates = await loadTemplates();
-    return matchTemplateImage(templates, brand: brand, model: model, name: name);
+    return matchTemplateImage(
+      templates,
+      brand: brand,
+      model: model,
+      name: name,
+    );
   }
 
   /// Purpose: Match a device to a template thumbnail by normalized identity.
@@ -148,6 +153,78 @@ class PresetService {
     }
     return null;
   }
+
+  /// Purpose: Tell whether an asset path is one of the bundled thumbnails.
+  /// Inputs: `templates` — the catalog; `asset` — a stored `templateImage`.
+  /// Returns: True when some template carries exactly that `image`.
+  /// Side effects: None.
+  /// Notes: A thumbnail chosen by hand may be renamed or dropped by a later
+  /// release; the avatar then falls back to automatic matching instead of
+  /// showing a broken image.
+  static bool isTemplateImage(List<DeviceTemplate> templates, String asset) =>
+      templates.any((t) => t.image == asset);
+
+  /// Purpose: Order every bundled thumbnail by how well it fits a device.
+  /// Inputs: `templates` to rank; the device's `brand`, `model` and `name`.
+  /// Returns: One template per distinct `image`, best candidates first.
+  /// Side effects: None.
+  /// Notes: Feeds the hand-picked thumbnail chooser, so the list is always
+  /// complete: an exact [matchTemplateImage]-style identity hit comes first,
+  /// then templates sharing the most words (lowercase letter/digit runs) with
+  /// the device (the brand counts as one of them), ties and the rest in
+  /// catalog order. Several templates often share one file (sibling
+  /// models); the first in catalog order stands for it. Unlike automatic
+  /// matching this is deliberately fuzzy, because the user makes the final
+  /// choice.
+  static List<DeviceTemplate> rankTemplateImageCandidates(
+    List<DeviceTemplate> templates, {
+    String? brand,
+    String? model,
+    String? name,
+  }) {
+    final exact = matchTemplateImage(
+      templates,
+      brand: brand,
+      model: model,
+      name: name,
+    );
+    final wanted = {..._tokens(brand), ..._tokens(model), ..._tokens(name)};
+    final seen = <String>{};
+    final scored = <(DeviceTemplate, int, int)>[];
+    var order = 0;
+    for (final t in templates) {
+      final image = t.image;
+      if (image == null || !seen.add(image)) continue;
+      var score = 0;
+      if (wanted.isNotEmpty) {
+        final have = {
+          ..._tokens(t.brand),
+          ..._tokens(t.model),
+          ..._tokens(t.name),
+        };
+        score = have.intersection(wanted).length;
+      }
+      if (image == exact) score = 1 << 20;
+      scored.add((t, score, order++));
+    }
+    scored.sort((a, b) {
+      final byScore = b.$2.compareTo(a.$2);
+      return byScore != 0 ? byScore : a.$3.compareTo(b.$3);
+    });
+    return [for (final s in scored) s.$1];
+  }
+
+  /// Purpose: Split an identity string into lowercase word tokens.
+  /// Inputs: `value`, which may be null.
+  /// Returns: The set of letter/digit runs, e.g. `{ipad, pro, 13, m4}`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
+  static Set<String> _tokens(String? value) => {
+    for (final m in RegExp(
+      r'[a-z0-9]+',
+    ).allMatches((value ?? '').toLowerCase()))
+      m.group(0)!,
+  };
 
   /// Purpose: Reduce a device identity string to its comparison key.
   /// Inputs: `value`.
@@ -307,6 +384,9 @@ class DeviceTemplate {
   /// throw. It exists because a template may list several capacities and
   /// silently taking the first made every multi-capacity template
   /// (a MacBook Pro offering 512 GB through 4 TB) collapse to its smallest.
+  ///
+  /// The template's thumbnail is carried as `templateImage`, so the device
+  /// keeps it after the user renames it.
   Device toDevice({
     List<CpuInfo>? cpuPresets,
     List<GpuInfo>? gpuPresets,
@@ -351,6 +431,7 @@ class DeviceTemplate {
       battery: battery,
       os: os,
       releaseDate: releaseDate,
+      templateImage: image,
     );
   }
 }

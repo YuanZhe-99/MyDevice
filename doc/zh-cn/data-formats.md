@@ -9,7 +9,7 @@
 `Device` 字段：
 
 - **身份：** `id`（UUID v4，省略时生成）、`name`。
-- **类别：** `category`（`DeviceCategory`：`desktop`、`laptop`、`phone`、`tablet`、`headphone`、`watch`、`router`、`gameConsole`、`vps`、`devBoard`、`other`）、`emoji`、`imagePath`、`brand`、`model`、`serialNumber`。
+- **类别：** `category`（`DeviceCategory`：`desktop`、`laptop`、`phone`、`tablet`、`headphone`、`watch`、`router`、`gameConsole`、`vps`、`devBoard`、`other`）、`emoji`、`imagePath`、`templateImage`、`brand`、`model`、`serialNumber`。`templateImage`（自 1.6.1 起，可选，为 null 时省略）是用户手选的内置缩略图，写法与模板的 `image` 完全相同（`assets/device_images/<file>.png`）。旧版构建经 `extraJson` 保留它，并回退到自动匹配。
 - **CPU/GPU：** `cpu`（`CpuInfo`：`model`、`architecture`、`frequency`、`performanceCores`、`efficiencyCores`、`threads`、`cache`，加 `extraJson`）、`gpu`（`GpuInfo`：`model`、`architecture`，加 `extraJson`）。
 - **RAM：** `ram`（自由文本大小字符串）、`ramType`（`RamType`：`ddr3`、`lpddr3`、`ddr4`、`lpddr4`、`lpddr4x`、`ddr5`、`lpddr5`、`lpddr5x`、`lpddr6`，各带 `'LPDDR5X'` 风格的 `displayName` getter）。
 - **存储：** `storage`（`List<StorageInfo>`；每个 `StorageInfo` 有 `capacity`、`type`（`StorageType`：`ssd`、`sdCard`、`hdd`）、`interface_`（`StorageInterface`：`m2Nvme`、`sata25`、`m2Sata`、`usb`）、`serialNumber`、`brand`，加 `extraJson`）。`StorageInfo.fromJson` 为向后兼容也接受遗留普通字符串格式（如 `"512 GB"`）。
@@ -141,11 +141,11 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 
 ```json
 { "name": "iPhone 15 Pro", "category": "phone", "brand": "Apple", "model": "iPhone 15 Pro",
-  "image": "assets/device_images/iphone-15-pro-vector.png" }
+  "image": "assets/device_images/apple-iphone-15-pro-back.png" }
 ```
 
 缩略图是 256 px 见方、背景透明的 PNG，每个可见像素（alpha > 8）都位于内切圆内，因为每个头像都按该圆裁剪。
-缩略图在显示时与设备匹配，绝不存储在设备上（见
+缩略图在显示时与设备匹配；只有用户手选的缩略图会作为设备的 `templateImage` 存储。由模板创建的设备也会把模板的 `image` 存在那里（见
 [在线搜索与预设](features/online-search-and-presets.md#device-thumbnails)）。
 
 **新增设备：** 追加条目，运行 `dart run tool/sort_templates.dart` 恢复排序，再运行

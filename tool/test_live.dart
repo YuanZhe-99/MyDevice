@@ -1,74 +1,62 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+// End-to-end run of the online device search against the live sources.
+//
+// Run with:  dart run tool/test_live.dart [query ...]
+//
+// Not part of `flutter test` or CI (it makes real network requests). For
+// each query it prints every result with its source, then fetches the
+// detail page of the first result from each source and prints the fields
+// the editor would fill in. `tool/check_sources.dart` is the quicker
+// per-source health check.
+
 import 'package:my_device/features/devices/services/device_search_service.dart';
 
-/// Purpose: Initialize startup services and launch the app entry point.
-/// Inputs: None.
+const _defaultQueries = [
+  'MacBook Pro 14 M4 Pro',
+  'iPhone 16',
+  'ThinkPad X1 Carbon',
+  'Galaxy S24 Ultra',
+  'Steam Deck',
+];
+
+/// Purpose: Search each query and fetch one detail page per source.
+/// Inputs: Command-line `args` — queries to run instead of the defaults.
 /// Returns: None.
-/// Side effects: None.
+/// Side effects: Issues HTTP requests; prints to stdout.
 /// Notes: Primarily intended for local validation or one-off tooling.
-void main() async {
-  print('=== Search: iPhone 15 Pro ===');
-  try {
-    final results = await DeviceSearchService.search('iPhone 15 Pro');
-    print('Total results: ${results.length}');
-    for (final r in results) {
-      print('  [${r.source}] ${r.name}');
-      if (r.chipset != null) print('    CPU: ${r.chipset}');
-      if (r.gpuName != null) print('    GPU: ${r.gpuName}');
-      if (r.screenSize != null) print('    Screen: ${r.screenSize}');
-      if (r.screenResolutionW != null) print('    Res: ${r.screenResolutionW}x${r.screenResolutionH}');
-      print('    URL: ${r.sourceUrl}');
+Future<void> main(List<String> args) async {
+  print('Sources: ${DeviceSearchService.sourceNames.join(', ')}');
+  for (final query in args.isEmpty ? _defaultQueries : args) {
+    print('\n=== $query ===');
+    final response = await DeviceSearchService.search(query);
+    for (final o in response.outcomes) {
+      print('  ${o.source}: ${o.status.name}, ${o.resultCount} result(s)');
     }
-  } catch (e) {
-    print('Error: $e');
-  }
-
-  print('\n=== Search: ThinkPad X1 Carbon ===');
-  try {
-    final results = await DeviceSearchService.search('ThinkPad X1 Carbon');
-    print('Total results: ${results.length}');
-    for (final r in results.take(10)) {
-      print('  [${r.source}] ${r.name}');
-      if (r.chipset != null) print('    CPU: ${r.chipset}');
-      if (r.gpuName != null) print('    GPU: ${r.gpuName}');
-      if (r.screenSize != null) print('    Screen: ${r.screenSize}');
-      if (r.screenResolutionW != null) print('    Res: ${r.screenResolutionW}x${r.screenResolutionH}');
+    final detailed = <String>{};
+    for (final r in response.results) {
+      print('  [${r.source}] ${r.name}  ${r.sourceUrl}');
+      if (!detailed.add(r.source)) continue;
+      final d = await DeviceSearchService.fetchDetail(r);
+      print('      detailFetched=${d.detailFetched}');
+      for (final (label, value) in [
+        ('brand/model', '${d.brand} / ${d.model}'),
+        ('chip', d.chipset),
+        ('gpu', d.gpuName),
+        ('ram', d.ram),
+        ('storage', d.storage),
+        ('screen', d.screenSize),
+        (
+          'resolution',
+          d.screenResolutionW == null
+              ? null
+              : '${d.screenResolutionW}x${d.screenResolutionH}',
+        ),
+        ('battery', d.battery),
+        ('os', d.os),
+        ('released', d.releaseDate?.toIso8601String().split('T').first),
+        ('image', d.imageUrl),
+      ]) {
+        if (value != null) print('      $label: $value');
+      }
     }
-  } catch (e) {
-    print('Error: $e');
-  }
-
-  print('\n=== Search: Galaxy S24 Ultra ===');
-  try {
-    final results = await DeviceSearchService.search('Galaxy S24 Ultra');
-    print('Total results: ${results.length}');
-    for (final r in results) {
-      print('  [${r.source}] ${r.name}');
-      if (r.chipset != null) print('    CPU: ${r.chipset}');
-      if (r.gpuName != null) print('    GPU: ${r.gpuName}');
-      if (r.screenSize != null) print('    Screen: ${r.screenSize}');
-    }
-  } catch (e) {
-    print('Error: $e');
-  }
-
-  // Test fetchDetail on a Notebookcheck result
-  print('\n=== Fetch Detail: Notebookcheck ===');
-  try {
-    final results = await DeviceSearchService.search('ThinkPad X1 Carbon');
-    final nbResults = results.where((r) => r.source == 'Notebookcheck').toList();
-    if (nbResults.isNotEmpty) {
-      print('Fetching detail for: ${nbResults[0].name}');
-      final detail = await DeviceSearchService.fetchDetail(nbResults[0]);
-      print('  Image: ${detail.imageUrl}');
-      print('  CPU: ${detail.chipset}');
-      print('  GPU: ${detail.gpuName}');
-      print('  Screen: ${detail.screenSize}');
-      print('  Res: ${detail.screenResolutionW}x${detail.screenResolutionH}');
-      print('  detailFetched: ${detail.detailFetched}');
-    }
-  } catch (e) {
-    print('Error: $e');
   }
 }

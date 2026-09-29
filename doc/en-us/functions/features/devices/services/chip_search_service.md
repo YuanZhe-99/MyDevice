@@ -16,8 +16,10 @@ points here, [`searchCpu`](#searchcpu) and [`searchGpu`](#searchgpu), always run
 checks required by `AGENTS.md`'s Build Flavors section (see
 [Architecture](../../../../architecture.md#appflavor) for `AppFlavor`); the other three are
 [`device_search_service.md`](device_search_service.md)'s early returns and two UI call sites
-(`device_edit_page.dart`'s three online-search buttons, `device_list_page.dart`'s online search
-FAB) outside this file, not re-verified as part of this batch.
+outside this file: `device_edit_page.dart`'s three online-search buttons (the CPU and GPU buttons
+behind `AppFlavor.isFull`, the device-search button behind `AppFlavor.deviceSearchExposed`) and
+`device_list_page.dart`'s online search FAB (behind `AppFlavor.deviceSearchExposed`, which equals
+`isFull` — see [`../../../app/flavor.md`](../../../app/flavor.md)).
 
 ## Declarations
 

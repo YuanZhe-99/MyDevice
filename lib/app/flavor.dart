@@ -17,4 +17,10 @@ class AppFlavor {
 
   /// True when built as the full-featured version.
   static const isFull = !isStore;
+
+  /// Whether the "Fetch Device Info" search is offered in the UI (full
+  /// builds only). Set to false to hide the button and the list shortcut
+  /// while keeping the service, parsers, fixtures and tests — the switch for
+  /// the day every source stops answering.
+  static const deviceSearchExposed = isFull;
 }

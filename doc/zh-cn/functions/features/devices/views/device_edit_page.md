@@ -1,6 +1,6 @@
 # lib/features/devices/views/device_edit_page.dart
 
-单个 `Device` 的增/改表单（模型来源 `lib/features/devices/models/device.dart`；完整字段列表见 [数据格式 — 设备](../../../../data-formats.md#device-libfeaturesdevicesmodelsdevicedart)）。`DeviceEditPage`/`_DeviceEditPageState` 拥有每个可编辑属性的一个 `TextEditingController`（或普通字段）——包括每个存储行和每个循环成本草稿各一套控制器——并在保存时把全部组装进新 `Device`。它集成 `PresetService`（捆绑 CPU/GPU/品牌预设，经私有 `_CpuPresetPicker`/`_GpuPresetPicker` 底部面板浏览）、`chip_search_dialog.dart`/`device_search_dialog.dart` 的在线搜索对话框（门控于 `AppFlavor.isFull`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `DeviceExchangeRateService`（购买/出售价格和每个循环成本的货币转换）。保存也是应用中保持 [数据集](../../../../features/datasets.md) 存储链接有效的唯一地方：本文件跨添加/移除跟踪每个存储行的原始槽索引，并在保存时把结果旧→新映射传给 `DataSetStorage.remapDeviceStorageLinks()`——见 [`_save`](#_save) 和 [数据集 — remapDeviceStorageLinks()](../../../../features/datasets.md#remapdevicestoragelinks)。此表单编辑的更广功能和生命周期/财务模型也见 [设备](../../../../features/devices.md)。
+单个 `Device` 的增/改表单（模型来源 `lib/features/devices/models/device.dart`；完整字段列表见 [数据格式 — 设备](../../../../data-formats.md#device-libfeaturesdevicesmodelsdevicedart)）。`DeviceEditPage`/`_DeviceEditPageState` 拥有每个可编辑属性的一个 `TextEditingController`（或普通字段）——包括每个存储行和每个循环成本草稿各一套控制器——并在保存时把全部组装进新 `Device`。它集成 `PresetService`（捆绑 CPU/GPU/品牌预设，经私有 `_CpuPresetPicker`/`_GpuPresetPicker` 底部面板浏览）、`chip_search_dialog.dart`/`device_search_dialog.dart` 的在线搜索对话框（设备搜索门控于 `AppFlavor.deviceSearchExposed`，芯片搜索门控于 `AppFlavor.isFull`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `DeviceExchangeRateService`（购买/出售价格和每个循环成本的货币转换）。保存也是应用中保持 [数据集](../../../../features/datasets.md) 存储链接有效的唯一地方：本文件跨添加/移除跟踪每个存储行的原始槽索引，并在保存时把结果旧→新映射传给 `DataSetStorage.remapDeviceStorageLinks()`——见 [`_save`](#_save) 和 [数据集 — remapDeviceStorageLinks()](../../../../features/datasets.md#remapdevicestoragelinks)。此表单编辑的更广功能和生命周期/财务模型也见 [设备](../../../../features/devices.md)。图标区编辑三种互斥的图标来源——emoji、存储的照片（`_imagePath`，经 [device_image_editor_page.md](device_image_editor_page.md) 中的图片编辑器挑选并编辑）和手选缩略图（`_templateImage`，经 [template_image_picker.md](../widgets/template_image_picker.md) 选定）；选定其一即清除另外两者。
 
 ## 声明
 
@@ -38,10 +38,13 @@
 | [`_applySearchResult`](#_applysearchresult) | 方法（`_DeviceEditPageState`） | A | 把搜索结果字段映射应用到表单，把 CPU/GPU 文本与加载预设模糊匹配。 |
 | [`_detectLogoForModel`](#_detectlogoformodel) | 方法（`_DeviceEditPageState`） | A | 为实时输入的 CPU/GPU 型号字符串找到 SVG logo 路径。 |
 | `_brandLogoWidget` | 方法（组件辅助） | B | 渲染小 SVG logo（着色为 `onSurface`），`logoPath` 为 null 时无。 |
-| `_showEmojiPicker` | 方法（`_DeviceEditPageState`） | B | 以 `emojiGridColumns(表单宽度)` 列显示 `_commonEmojis` 底部面板网格；点击一个设 `_emoji` 并清除 `_imagePath`。CPU / GPU 预设面板以 `sheetInitialSize(窗口高度, preferred: 0.6)` 打开。 |
-| [`_pickImage`](#_pickimage) | 方法（`_DeviceEditPageState`） | A | 让用户挑照片并采用为设备图标，清除任何 emoji。 |
-| `_removeIcon` | 方法（`_DeviceEditPageState`） | B | 清除 `_emoji` 和 `_imagePath` 两者。 |
-| `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览（随名称/品牌/型号变化重建，因此匹配的模板缩略图会实时出现）加图像挑/emoji 挑/移除操作；`avatarSize`（56，或双栏左窗格中的 `editAvatarSize`）与 `stacked`（chip 居中放在预览之下而非旁边）。 |
+| `_showEmojiPicker` | 方法（`_DeviceEditPageState`） | B | 以 `emojiGridColumns(表单宽度)` 列显示 `_commonEmojis` 底部面板网格；点击一个设 `_emoji` 并清除 `_imagePath` 和 `_templateImage`。CPU / GPU 预设面板以 `sheetInitialSize(窗口高度, preferred: 0.6)` 打开。 |
+| [`_pickImage`](#_pickimage) | 方法（`_DeviceEditPageState`） | A | 挑照片、经图片编辑器处理，并把结果（或原图）采用为设备图标。 |
+| [`_editImage`](#_editimage) | 方法（`_DeviceEditPageState`） | A | 在图片编辑器中重新打开当前照片，并把编辑后的 PNG 作为新文件采用。 |
+| [`_useImage`](#_useimage) | 方法（`_DeviceEditPageState`） | A | 把已存储图像设为设备图标，清除 emoji 和任何手选缩略图。 |
+| [`_chooseThumbnail`](#_choosethumbnail) | 方法（`_DeviceEditPageState`） | A | 让用户手选内置缩略图，候选按已输入的名称/品牌/型号排序。 |
+| `_removeIcon` | 方法（`_DeviceEditPageState`） | B | 清除 `_emoji`、`_imagePath` 和 `_templateImage`。 |
+| `_buildIconSection` | 方法（组件辅助） | B | 渲染头像预览（随名称/品牌/型号变化重建，因此匹配的模板缩略图会实时出现；传入 `_templateImage`，使手选缩略图优先）加 chip：emoji、挑选/更换图像、编辑图像（仅有照片时）、选择缩略图，以及移除（三种图标来源任一已设时）；`avatarSize`（56，或双栏左窗格中的 `editAvatarSize`）与 `stacked`（chip 居中放在预览之下而非旁边）。 |
 | `_buildNameField` | 方法（组件辅助） | B | 带校验的名称 `TextFormField`，单列与双栏左窗格共享。 |
 | `_buildCategoryField` | 方法（组件辅助） | B | 类别 `DropdownButtonFormField`，同样共享。 |
 | `_buildFormBody` | 方法（组件辅助） | B | 在同一个 `Form` 内选择布局：`_buildFields` 的单列 `ListView`，或——`useDetailTwoPane` 通过时——一个 `Row`：`detailLeftPaneWidth` 宽的左窗格（`editAvatarSize` 尺寸的堆叠图标区、名称、类别；钉住窗格高度的 `SingleChildScrollView` 作软键盘兜底）加右侧其余字段的 `ListView`。 |
@@ -51,7 +54,7 @@
 | `_addRecurringCost` | 方法（`_DeviceEditPageState`） | B | 追加新空白 `_RecurringCostDraft`（默认种类 `other`，货币 = `_defaultCurrency`）。 |
 | `_buildRecurringCostCard` | 方法（组件辅助） | B | 渲染一个循环成本草稿的可编辑卡片（种类/名/计费周期/货币字段/移除按钮）。 |
 | `_buildFinancialSection` | 方法（组件辅助） | B | 渲染获取/生命周期/购买/出售/循环成本财务小节。 |
-| `build` | 方法（组件） | B | 围绕 `_buildFormBody` 构建脚手架和应用栏（保存 + 在线搜索操作）。 |
+| `build` | 方法（组件） | B | 围绕 `_buildFormBody` 构建脚手架和应用栏（保存 + 在线搜索操作，后者仅在 `AppFlavor.deviceSearchExposed` 时）。 |
 | `_RecurringCostDraft`（构造函数） | 构造函数 | B | 创建带新鲜金额/名/汇率控制器、`billingCycle` 默认月度、`autoRate` 默认 true 的草稿。 |
 | [`_RecurringCostDraft.fromCost`](#_recurringcostdraft-fromcost) | 工厂构造函数（`_RecurringCostDraft`） | A | 把持久化 `DeviceRecurringCost` 转换为可编辑草稿。 |
 | `dispose` | 方法（`_RecurringCostDraft`） | B | 释放草稿的三个控制器。 |
@@ -65,7 +68,7 @@
 | [`_filtered`](#_filtered-gpu)（GPU） | getter（`_GpuPresetPickerState`） | A | 过滤 `widget.presets` 到 model/architecture 含当前搜索查询的条目。 |
 | `build` | 方法（组件，`_GpuPresetPickerState`） | B | 渲染可拖拽面板：搜索字段加 `_filtered` 预设列表。 |
 
-行数说明：对此文件 `grep -c 'Purpose:'` 返回 58，与上面 58 行精确匹配——本文件每个声明（含每个字段映射标签辅助）都带仓库标准 `/// Purpose:` 文档注释块。
+行数说明：对此文件 `grep -c 'Purpose:'` 返回 61，与上面 61 行精确匹配——本文件每个声明（含每个字段映射标签辅助）都带仓库标准 `/// Purpose:` 文档注释块。
 
 锚点碰撞说明：`_filtered` 声明两次（`_CpuPresetPickerState` 一次、`_GpuPresetPickerState` 一次，都 Tier A）。按裸名锚点规则这些会碰撞，因此本页用 `_filtered-cpu` / `_filtered-gpu` 消歧而非通常裸名锚点——用上面表格的链接，别凭名猜锚点。
 
@@ -73,7 +76,7 @@
 
 ### `void initState()` <a id="initstate"></a>
 - **种类：** `_DeviceEditPageState` 的方法（组件生命周期）
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 131 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 135 行）
 - **用途：** 从 `widget.device`（新设备用默认）初始化每个文本控制器和可编辑字段，含重建逐槽存储编辑器行，然后启动异步预设/财务设置加载。
 - **输入：** 无（读取 `widget.device`；`widget.searchResult` 稍后在 `_loadPresets` 内消费）。
 - **返回：** 无。
@@ -85,7 +88,7 @@
   4. 购买/出售价格：用 `.amount.toString()` 播种金额控制器；只在价格存在**且**其 `currency != defaultCurrency` 时播种*汇率*控制器（否则留空）——[`_parseRate`](#_parserate) 保存时再次强制相同规则。
   5. CPU/GPU：从 `d?.cpu`/`d?.gpu` 字段播种每个控制器（数字字段经 `.toString()`）。
   6. 屏幕分辨率宽/高同样播种。
-  7. 复制 `category`（默认 `DeviceCategory.phone`）和生命周期/财务字段：购买/发布/退役日期、获取类型、退役/出售标志、购买/出售货币和自动汇率标志。
+  7. 把 `emoji`、`imagePath` 和 `templateImage`（手选缩略图）复制进 `_emoji` / `_imagePath` / `_templateImage`；复制 `category`（默认 `DeviceCategory.phone`）和生命周期/财务字段：购买/发布/退役日期、获取类型、退役/出售标志、购买/出售货币和自动汇率标志。
   8. 经 [`_RecurringCostDraft.fromCost`](#_recurringcostdraft-fromcost) 把 `d?.recurringCosts` 转换为草稿。
   9. 存储：`d != null && d.storage.isNotEmpty` 时循环 `i` 对 `d.storage`，用 `_parseValueUnit` 解析每个槽 `capacity` 并填充五个平行列表，加 `_storageOriginalIndices.add(i)`——记录槽的原始索引供稍后重映射。否则播种带 `_storageOriginalIndices = [null]` 的单个空行。
   10. 调用 `_loadPresets()` 然后 `_loadFinancialSettings()`（即发即忘异步，不 await）。
@@ -94,7 +97,7 @@
 
 ### `Future<void> _loadFinancialSettings()` <a id="_loadfinancialsettings"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 254 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 259 行）
 - **用途：** 加载应用级默认货币和自动更新汇率偏好，并为尚未从旧默认定制走的购买/出售价格字段采用新默认货币。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -104,12 +107,12 @@
   2. 组件不再挂载时提前返回。
   3. 在 `setState` 中：覆盖前捕获旧 `_defaultCurrency`，然后覆盖它和 `_autoUpdateRates`。
   4. 这是新设备（`widget.device?.purchasePrice == null`）且 `_purchaseCurrency` 仍等于*旧*默认时把 `_purchaseCurrency` 更新为新默认（`_soldCurrency`/`soldPrice` 相同检查）。既有设备已设货币即使碰巧等于旧默认也保持不动。
-- **用法：** 从 `initState` 调用一次（第 246 行）；别处不调用。
+- **用法：** 从 `initState` 调用一次（第 251 行）；别处不调用。
 - **备注：** 独立于 `_loadPresets()` 运行——两者都是 `initState` 的即发即忘，各在调用 `setState` 前自己检查 `mounted`。
 
 ### `Future<void> _loadPresets()` <a id="_loadpresets"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 278 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 283 行）
 - **用途：** 加载捆绑 CPU/GPU/品牌预设列表，然后——对从在线搜索结果创建设备——预设可用后把该结果应用到表单。
 - **输入：** 无。
 - **返回：** `Future<void>`。
@@ -118,12 +121,12 @@
   1. Await `PresetService.loadCpus()`、`loadGpus()`、`loadBrands()`。
   2. 挂载时 `setState` `_cpuPresets`/`_gpuPresets`/`_brandPresets`。
   3. `widget.searchResult != null`（页面经设备列表搜索流程的 `DeviceEditPage(searchResult: result)` 打开，见 `device_list_page.dart`）时调用 `_applySearchResult(widget.searchResult!)`，使 CPU/GPU 对现已加载预设的模糊匹配能运行。
-- **用法：** 从 `initState` 调用一次（第 245 行）。
+- **用法：** 从 `initState` 调用一次（第 250 行）。
 - **备注：** 搜索结果应用*在*预设 `setState` 之后排序（而非从 `initState` 独立触发），正为让 `_applySearchResult` 中的 CPU/GPU 预设匹配有数据可匹配。
 
 ### `static (String, String) _parseValueUnit(String? value)` <a id="_parsevalueunit"></a>
 - **种类：** `_DeviceEditPageState` 的静态方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 347 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 352 行）
 - **用途：** 把 `"16 GB"` 或 `"512 GB NVMe SSD"` 之类自由文本容量/尺寸字符串解析为编辑器单独金额+单位字段的 `(value, unit)` 对。
 - **输入：** `value` — 原始字符串（如 `Device.ram` 或 `StorageInfo.capacity`），可空。
 - **返回：** `(String, String)` 记录 — 如 `('16', 'GB')`；`value` 为 null/空白时 `('', 'GB')`；无识别单位时 `(trimmed, 'GB')`。
@@ -139,35 +142,35 @@
   _ramCtrl = TextEditingController(text: ramParsed.$1);
   _ramUnit = ramParsed.$2;
   ```
-  （`initState`，第 140 行）；也 `initState` 每个存储槽（第 224 行）和 `_applySearchResult` 内 RAM/存储字段（第 869、876 行）使用。
-- **备注：** 只识别 `MB`/`GB`/`TB`——匹配 `_memoryUnits`（第 338 行）；调用方对返回值用 Dart 位置记录 `.$1`/`.$2` 访问器。
+  （`initState`，第 145 行）；也 `initState` 每个存储槽（第 229 行）和 `_applySearchResult` 内 RAM/存储字段（第 875、882 行）使用。
+- **备注：** 只识别 `MB`/`GB`/`TB`——匹配 `_memoryUnits`（第 343 行）；调用方对返回值用 Dart 位置记录 `.$1`/`.$2` 访问器。
 
 ### `double? _parseMoney(String value)` <a id="_parsemoney"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 390 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 395 行）
 - **用途：** 把用户输入金额字段解析为 `double`，容忍千位分隔符逗号。
 - **输入：** `value` — 价格/金额 `TextEditingController` 的原始文本。
 - **返回：** `double?` — 空白或不可解析时 `null`。
 - **副作用：** 无。
 - **算法：** 修剪字符串并剥离每个 `,` 字符，然后空结果返回 `null` 否则对清洗字符串 `double.tryParse`。
 - **用法：**
-  `purchasePrice = await DeviceExchangeRateService.convertOptional(amount: _parseMoney(_purchasePriceCtrl.text), ...)`（`_save`，第 502 行）；也用于出售价格和每个循环成本金额（第 523 行）。
+  `purchasePrice = await DeviceExchangeRateService.convertOptional(amount: _parseMoney(_purchasePriceCtrl.text), ...)`（`_save`，第 507 行）；也用于出售价格和每个循环成本金额（第 528 行）。
 - **备注：** 逗号剥离意味着 `"1,234.56"` 解析为 `1234.56`；无其他分组/小数约定处理（如 `.` 作千位分隔符）。
 
 ### `double? _parseRate(TextEditingController controller, String currency)` <a id="_parserate"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 401 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 406 行）
 - **用途：** 解析货币字段的手动汇率覆盖，但只在那个货币实际不同于设备默认货币时。
 - **输入：** `controller` — 汇率 `TextEditingController`；`currency` — 配对金额字段当前使用的货币代码。
 - **返回：** `double?` — `currency == _defaultCurrency`（无需转换，因此任何遗留汇率文本被忽略）或字段不可解析时 `null`；否则解析汇率。
 - **副作用：** 无。
 - **算法：** `currency == _defaultCurrency` 时立即返回 `null`；否则委托 [`_parseMoney`](#_parsemoney)`(controller.text)`。
-- **用法：** `manualRate: _purchaseAutoRate ? null : _parseRate(_purchaseRateCtrl, _purchaseCurrency)`（`_save`，第 508 行）；出售价格和每个循环成本相同模式。
+- **用法：** `manualRate: _purchaseAutoRate ? null : _parseRate(_purchaseRateCtrl, _purchaseCurrency)`（`_save`，第 513 行）；出售价格和每个循环成本相同模式。
 - **备注：** 调用方调用前已对 `autoRate` 门控（自动汇率开启时直接传 `null`），因此 `_parseRate` 只需处理"与默认货币相同" case——两个守卫互补，非冗余。
 
 ### `Future<void> _save()` <a id="_save"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 458 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 463 行）
 - **用途：** 验证表单、从所有编辑器状态组装 `Device`（重算存储槽索引并转换货币字段）、持久化它，并重映射受存储槽变化影响的任何数据集存储链接。
 - **输入：** 无（读取整个组件状态）。
 - **返回：** `Future<void>`。
@@ -177,16 +180,16 @@
   2. 循环 `_storageEntries` 构建 `storageList`（`List<StorageInfo>`）和 `storageIndexMap`（`Map<int,int>`，旧槽索引 → 新槽索引）。行只在有非空容量值、存储类型、接口、品牌或序列号之一时幸存——全空白行完全丢弃。对每个 `_storageOriginalIndices[i]` 非 null 的保留行，追加前记录 `storageIndexMap[originalIndex] = storageList.length`（行*新*位置）——正是 [`DataSetStorage.remapDeviceStorageLinks`](../../../../features/datasets.md#remapdevicestoragelinks) 期望的 `indexMap` 形态。无原始索引的行（本会话添加）贡献 `storageList` 但不贡献 `storageIndexMap`。每个保留行的 `extraJson` 在该原始槽仍存在时从 `widget.device!.storage[originalIndex]` 带过，否则 `{}`。
   3. 在 `try`/`on ExchangeRateException` 内：await 购买价格和出售价格的 `DeviceExchangeRateService.convertOptional`，和每个带可解析金额的 `_recurringCostDrafts` 条目 `.convert`（无可解析金额的草稿跳过——从保存设备丢弃）。`ExchangeRateException` 时显示本地化 snackbar（`exchangeRateManualRequired` 或 `exchangeRateUnavailable`，按 `e.message` 选）并在不保存任何东西下返回。
   4. 计算 `isSold = _isSold`；`isRetired = _isRetired || isSold`（出售总是蕴含退役，镜像 [设备 — 生命周期与财务跟踪](../../../../features/devices.md#lifecycle-and-finance-tracking) 的 `lifecycleStatus` 优先级）。
-  5. 构造新 `Device(...)`，复用 `widget.device?.id`（编辑保持相同 id；添加时省略让构造函数生成新鲜 UUID）、新构建 `storageList` 和从每个对应原始嵌套对象（`cpu`、`gpu`、设备本身）复制的 `extraJson` 或新设备 `{}`。
+  5. 构造新 `Device(...)`，复用 `widget.device?.id`（编辑保持相同 id；添加时省略让构造函数生成新鲜 UUID）、新构建 `storageList`、来自图标状态的 `emoji`/`imagePath`/`templateImage` 和从每个对应原始嵌套对象（`cpu`、`gpu`、设备本身）复制的 `extraJson` 或新设备 `{}`。
   6. Await `DeviceStorage.addOrUpdate(device)`。
   7. 编辑既有设备（`widget.device != null`）时 await `DataSetStorage.remapDeviceStorageLinks(deviceId: ..., oldSlotCount: widget.device!.storage.length, indexMap: storageIndexMap)`——槽被移除/压实后保持 `DataSet` 存储链接有效的集成点（见 [数据集 — remapDeviceStorageLinks()](../../../../features/datasets.md#remapdevicestoragelinks)；其恒等映射短路使无槽实际移动时这是空操作）。
   8. 调用 `AutoSyncService.instance.notifySaved()`（见 [WebDAV 同步](../../../../sync.md)）并仍挂载时经 `Navigator.of(context).pop()` 弹出页面。
-- **用法：** `TextButton(onPressed: _save, child: Text(l10n.save))`（`build`，第 1563 行）。
+- **用法：** `TextButton(onPressed: _save, child: Text(l10n.save))`（`build`，第 1661 行）。
 - **备注：** 全新设备（`widget.device == null`）绝不调用 `remapDeviceStorageLinks`——尚无要重映射的东西。金额空/不可解析的循环成本草稿静默丢弃而非以零金额保存。
 
 ### `Future<void> _showSearchDialog()` <a id="_showsearchdialog"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 791 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 797 行）
 - **用途：** 打开带表单当前字段值播种的在线设备搜索对话框，并应用用户选择从结果导入的任何字段。
 - **输入：** 无（读取当前控制器/状态值）。
 - **返回：** `Future<void>`。
@@ -196,80 +199,124 @@
   2. 用那个查询加每个其他"当前值"（品牌、型号、芯片组、GPU、组合 RAM、*第一*存储槽组合容量、屏幕尺寸/分辨率、电池、操作系统、发布日期、图像路径）调用 `showDeviceSearchDialog`，使对话框能逐字段显示当前-vs-获取比较。
   3. 对话框被关闭（`result == null`）或期间组件卸载时提前返回。
   4. 否则调用 `_applySearchResult(result)`。
-- **用法：** `IconButton(icon: const Icon(Icons.travel_explore), onPressed: _showSearchDialog)`，只在 `if (AppFlavor.isFull)` 时显示（`build`，第 1557–1562 行；商店构建门控见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）。
+- **用法：** `IconButton(icon: const Icon(Icons.travel_explore), onPressed: _showSearchDialog)`，只在 `if (AppFlavor.deviceSearchExposed)` 时显示（`build`，第 1655–1660 行；该标志目前等于 `AppFlavor.isFull`，其存在是为了能在不移除服务的情况下隐藏按钮——商店构建门控见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）。
 - **备注：** 只有*第一*存储槽容量被提供为搜索对话框的"当前"上下文——额外槽不体现在查询/当前值负载中。
 
 ### `void _applySearchResult(Map<String, dynamic> result)` <a id="_applysearchresult"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 826 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 832 行）
 - **用途：** 把在线搜索对话框返回（或经 `DeviceEditPage(searchResult: ...)` 带入）的字段映射应用到编辑表单，可能时把 CPU/GPU 文本与加载预设模糊匹配。
 - **输入：** `result` — 按字段名键控的松散类型映射（`brand`、`model`、`chipset`、`gpuName`、`ram`、`storage`、`screenSize`、`screenResolutionW`/`H`、`battery`、`os`、`releaseDate`、`image`）；每个键可选且使用前类型检查。
 - **返回：** 无。
 - **副作用：** 覆盖所有字段更新的一个 `setState`。
 - **算法**（全部在一个 `setState` 内）：
   1. `brand`/`model`：作为 `String` 存在时直接复制进控制器。
-  2. `chipset`：小写并对照每个加载 `_cpuPresets` 条目的小写 `model` 用**互包子串包含**（`chipsetLower.contains(presetLower) || presetLower.contains(chipsetLower)`）比较；第一个匹配经 `_applyCpuPreset` 应用。无预设匹配时把原始芯片组字符串直接写进 `_cpuModelCtrl` 并 bump `_cpuAutoKey`（强制 `Autocomplete` 组件重建，因为只设 `.text` 不刷新它——见 `build` 的 `ValueKey('cpu_auto_$_cpuAutoKey')`，第 1823 行）。
+  2. `chipset`：小写并对照每个加载 `_cpuPresets` 条目的小写 `model` 用**互包子串包含**（`chipsetLower.contains(presetLower) || presetLower.contains(chipsetLower)`）比较；第一个匹配经 `_applyCpuPreset` 应用。无预设匹配时把原始芯片组字符串直接写进 `_cpuModelCtrl` 并 bump `_cpuAutoKey`（强制 `Autocomplete` 组件重建，因为只设 `.text` 不刷新它——见 `build` 的 `ValueKey('cpu_auto_$_cpuAutoKey')`，第 1920 行）。
   3. `gpuName`：对 `_gpuPresets` 相同互包子串匹配，相同原始文本回退。
   4. `ram`：经 `_parseValueUnit` 解析进 `_ramCtrl`/`_ramUnit`。
   5. `storage`：经 `_parseValueUnit` 解析并只写入槽 **0**（`_storageEntries[0]`/`_storageUnits[0]`），若存在任何存储行。
   6. `screenSize`、`battery`、`os`：直接复制进控制器。
   7. `screenResolutionW`/`screenResolutionH`：经 `.toString()` 复制（作为 `int`）。
   8. `releaseDate`：是 `DateTime` 时直接复制进 `_releaseDate`。
-  9. `image`：存在时设 `_imagePath` 并清除 `_emoji`（导入照片总是胜过任何先前选 emoji）。
-- **用法：** 页面带搜索结果打开时 `_loadPresets` 的 `_applySearchResult(widget.searchResult!)`（第 289 行）；就地对话框搜索后 `_showSearchDialog` 的 `_applySearchResult(result)`（第 818 行）。
+  9. `image`：存在时设 `_imagePath` 并清除 `_emoji` 和 `_templateImage`（导入照片总是胜过任何先前选 emoji 或手选缩略图）。
+- **用法：** 页面带搜索结果打开时 `_loadPresets` 的 `_applySearchResult(widget.searchResult!)`（第 294 行）；就地对话框搜索后 `_showSearchDialog` 的 `_applySearchResult(result)`（第 824 行）。
 - **备注：** CPU/GPU 匹配刻意宽松（互包子串，非精确），使如结果的 `"Apple A17 Pro"` 能匹配更短预设名或反之；因为基于子串，含糊/短型号字符串可能匹配错误预设——与 `_detectLogoForModel` 和 `device_detail_page.dart` 品牌/型号 logo 检测器相同的权衡。
 
 ### `String? _detectLogoForModel(String model)` <a id="_detectlogoformodel"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 928 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 935 行）
 - **用途：** 为输入中的 CPU/GPU 型号字符串找到 SVG logo 资产路径，用小本地品牌表加 Mali 特定 ARM 映射。
 - **输入：** `model` — `_cpuModelCtrl`/`_gpuModelCtrl` 的活文本。
 - **返回：** `String?` — `assets/logos/*.svg` 路径，或 `null`。
 - **副作用：** 无。
 - **算法：** 小写 `model`；按声明顺序迭代本文件自己的 `_brandLogoMap`（11 条目 `const` 映射：nvidia、amd、intel、apple、qualcomm、mediatek、samsung、broadcom、mali→arm.svg、google、razer）并返回小写型号*以*其*开始*的第一个条目；无匹配返回 `null`。
-- **用法：** `_brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text))` 和 `_brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text))`，每次 `build` 调用在 CPU/GPU 小节页头旁实时重建（第 1799、1901 行）。
+- **用法：** `_brandLogoWidget(_detectLogoForModel(_cpuModelCtrl.text))` 和 `_brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text))`，每次 `build` 调用在 CPU/GPU 小节页头旁实时重建（第 1896、1998 行）。
 - **备注：** 本文件 `_brandLogoMap` 是比 `device_detail_page.dart` 的 `_brandLogoMap`/`_detectModelLogo`（约 39 条目、那里 `contains` 基础对比这里 `startsWith`）更小、独立的表——两者不共享且可能彼此漂移失同步。
 
 ### `Future<void> _pickImage()` <a id="_pickimage"></a>
 - **种类：** `_DeviceEditPageState` 的方法
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 1057 行）
-- **用途：** 让用户从设备图库/文件系统挑照片并采用为设备图标。
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 1068 行）
+- **用途：** 让用户挑照片、在图片编辑器中编辑，并把结果采用为设备图标。
 - **输入：** 无。
 - **返回：** `Future<void>`。
-- **副作用：** 调用 `ImageService.pickAndSaveImage()`（文件选择器加把所选图像复制进应用存储）；成功时 `setState` `_imagePath` 并清除 `_emoji`。
-- **算法：** Await `ImageService.pickAndSaveImage()`；返回非 null 本地路径时 `setState` `_imagePath = path` 和 `_emoji = null`（图像总是替换任何 emoji，匹配 `_applySearchResult` 的 `image` 处理和 `_showEmojiPicker`/`_removeIcon` 的反向）。
-- **用法：** `_buildIconSection` 中的 `IconButton(..., onPressed: _pickImage)`（第 1114 行）。
-- **备注：** 用户取消选择器（`path == null`）时无变化——两种方式都不浮出错误。
+- **副作用：** 显示平台文件选择器（`ImageService.pickImageFile`）和图片编辑器（`showDeviceImageEditor`，见 [device_image_editor_page.md](device_image_editor_page.md)）；在 `images/` 下写入一个新文件；经 [`_useImage`](#_useimage) 更新组件状态。
+- **算法：**
+  1. Await `ImageService.pickImageFile()`；取消或未挂载时返回。
+  2. Await `showDeviceImageEditor(context, file, allowOriginal: true)`；编辑器被取消（`result == null`）时返回。
+  3. `result.png` 为 null（"使用原图"，或编辑器无法解码的文件）时用 `ImageService.saveImageFile(file)` 原样存储文件；否则用 `ImageService.saveImageBytes(png, '.png')` 存储编辑后的 PNG。
+  4. 仍挂载时调用 `_useImage(path)`。
+- **用法：** `_buildIconSection` 中的 `ActionChip(..., onPressed: _pickImage)`（第 1201 行），已有照片时标签为 `deviceChangeImage`，否则为 `devicePickImage`。
+- **备注：** 取消选择器或编辑器不添加任何东西，也不浮出错误。"使用原图"保留编辑器出现之前原样复制文件的行为（见 [image_service.md](../../../shared/services/image_service.md#saveimagefile)）。
+
+### `Future<void> _editImage()` <a id="_editimage"></a>
+- **种类：** `_DeviceEditPageState` 的方法
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 1092 行）
+- **用途：** 在图片编辑器中重新打开设备当前照片并采用编辑结果。
+- **输入：** 无（读取 `_imagePath`）。
+- **返回：** `Future<void>`。
+- **副作用：** 显示图片编辑器；把编辑后的 PNG 作为新文件写到 `images/` 下；经 [`_useImage`](#_useimage) 更新组件状态。
+- **算法：**
+  1. `_imagePath` 为 null 时返回。
+  2. 用 `ImageService.resolve` 解析它；未挂载或文件已不存在时返回。
+  3. Await `showDeviceImageEditor(context, file)`（无"使用原图"选项）；结果不带 PNG 时返回。
+  4. 经 `ImageService.saveImageBytes(png, '.png')` 存储，仍挂载时调用 `_useImage(path)`。
+- **用法：** `_buildIconSection` 中的 `ActionChip(..., label: Text(l10n.deviceEditImage), onPressed: _editImage)`（第 1207 行），只在 `_imagePath != null` 时显示。
+- **备注：** 编辑结果绝不覆盖既有文件：先前的文件以无引用状态留在磁盘上，与替换照片时完全一样。
+
+### `void _useImage(String path)` <a id="_useimage"></a>
+- **种类：** `_DeviceEditPageState` 的方法
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 1111 行）
+- **用途：** 把已存储图像设为设备图标。
+- **输入：** `path` — 应用目录下的相对路径（如 `images/<uuid>.png`）。
+- **返回：** 无。
+- **副作用：** 一次 `setState`。
+- **算法：** 在 `setState` 中设 `_imagePath = path` 并清除 `_emoji` 和 `_templateImage`。
+- **用法：** [`_pickImage`](#_pickimage)（第 1082 行）和 [`_editImage`](#_editimage)（第 1102 行）的最后一步。
+- **备注：** 清除手选缩略图是因为照片无论如何都会在头像中遮住它；这使三种图标来源保持互斥，与 `_showEmojiPicker`、`_removeIcon` 和 `_applySearchResult` 的 `image` 处理一致。
+
+### `Future<void> _chooseThumbnail()` <a id="_choosethumbnail"></a>
+- **种类：** `_DeviceEditPageState` 的方法
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 1127 行）
+- **用途：** 让用户手动选择内置设备缩略图，用于自动模板匹配未命中的情况。
+- **输入：** 无（读取 `_category`、名称/品牌/型号控制器和 `_templateImage`）。
+- **返回：** `Future<void>`。
+- **副作用：** 显示缩略图选择底部面板（`showTemplateImagePicker`，见 [template_image_picker.md](../widgets/template_image_picker.md)）；选定时一次 `setState`。
+- **算法：**
+  1. Await `showTemplateImagePicker(context, category: _category, brand:, model:, name:, current: _templateImage)`，传入品牌、型号和名称中当前已输入的修剪后文本（空则 null），使候选缩略图据此排序。
+  2. 面板被关闭（`choice == null`）或组件卸载时返回。
+  3. 在 `setState` 中：`_templateImage = choice.asset`，并清除 `_emoji` 和 `_imagePath`，使所选缩略图成为头像显示的内容。
+- **用法：** `_buildIconSection` 中的 `ActionChip(..., label: Text(l10n.deviceChooseThumbnail), onPressed: _chooseThumbnail)`（第 1212 行），始终显示。
+- **备注：** 选择"自动"返回 `asset` 为 null 的 `TemplateImageChoice`，它清除手选缩略图（且仍清除 emoji/照片），使头像回退到按身份自动匹配。该值由 [`_save`](#_save) 保存为 `Device.templateImage`。
 
 ### `factory _RecurringCostDraft.fromCost(DeviceRecurringCost cost)` <a id="_recurringcostdraft-fromcost"></a>
 - **种类：** `_RecurringCostDraft` 的工厂构造函数
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 2319 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 2416 行）
 - **用途：** 把持久化 `DeviceRecurringCost` 转换为循环成本小节的可编辑草稿（带自己文本控制器）。
 - **输入：** `cost` — `widget.device.recurringCosts` 的既有 `DeviceRecurringCost`。
 - **返回：** 从 `cost` 播种的新 `_RecurringCostDraft` 实例。
 - **副作用：** 创建 3 个 `TextEditingController`。
 - **算法：** 直接复制 `kind`、`billingCycle`、`price.currency`、`price.autoRate`、`name` 和 `price.amount.toString()`。对汇率字段，只在 `price.currency != price.defaultCurrency` 时用 `price.exchangeRate.toString()` 播种，否则留空——`initState` 应用到购买/出售汇率字段的相同"只在货币不同于默认时显示手动汇率"规则。在 `existing` 中保留对原始 `cost` 的引用（[`_save`](#_save) 用它保留记录 `id` 和 `extraJson`）。
-- **用法：** `_recurringCostDrafts.addAll(d?.recurringCosts.map(_RecurringCostDraft.fromCost) ?? const [])`（`initState`，第 212 行）。
+- **用法：** `_recurringCostDrafts.addAll(d?.recurringCosts.map(_RecurringCostDraft.fromCost) ?? const [])`（`initState`，第 217 行）。
 - **备注：** `existing` 正是让 `_save` 区分编辑的既有循环成本（保留其 `id`/`extraJson`）与经 `_addRecurringCost` 添加的全新（`existing == null`，得新鲜 `id`）的东西。
 
 ### `List<CpuInfo> get _filtered`（`_CpuPresetPickerState` 中） <a id="_filtered-cpu"></a>
 - **种类：** `_CpuPresetPickerState` 的 getter
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 2373 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 2470 行）
 - **用途：** 把底部面板预设列表过滤到 model 或 architecture 文本含当前搜索查询的条目。
 - **输入：** 无（读取 `_query`、`widget.presets`）。
 - **返回：** `List<CpuInfo>` — `_query` 为空时所有预设，否则过滤子集。
 - **副作用：** 无。
 - **算法：** `_query` 为空时返回未过滤 `widget.presets`；否则小写查询并只保留小写 `model` 或 `architecture` 含它的预设（`model`/`architecture` 为 null 的预设检查时当作空字符串）。
-- **用法：** `build` 顶部 `final items = _filtered;`（第 2403 行），既用于条目数也作为 `ListView.builder` 项。
+- **用法：** `build` 顶部 `final items = _filtered;`（第 2500 行），既用于条目数也作为 `ListView.builder` 项。
 - **备注：** 匹配只子串/不区分大小写，无模糊或多 token 匹配——两词查询不会匹配以不同顺序含两词的 model。
 
 ### `List<GpuInfo> get _filtered`（`_GpuPresetPickerState` 中） <a id="_filtered-gpu"></a>
 - **种类：** `_GpuPresetPickerState` 的 getter
-- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 2485 行）
+- **来源：** `lib/features/devices/views/device_edit_page.dart`（第 2582 行）
 - **用途：** 把底部面板预设列表过滤到 model 或 architecture 文本含当前搜索查询的条目。
 - **输入：** 无（读取 `_query`、`widget.presets`）。
 - **返回：** `List<GpuInfo>` — `_query` 为空时所有预设，否则过滤子集。
 - **副作用：** 无。
 - **算法：** 与 [`_CpuPresetPickerState._filtered`](#_filtered-cpu) 相同，对 `GpuInfo`/`widget.presets` 而非 `CpuInfo`。
-- **用法：** `build` 顶部 `final items = _filtered;`（第 2502 行）。
+- **用法：** `build` 顶部 `final items = _filtered;`（第 2599 行）。
 - **备注：** 与 CPU 选择器 `_filtered` 相同的子串/仅不区分大小写注意。

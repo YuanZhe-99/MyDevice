@@ -11,6 +11,9 @@ class DeviceAvatar extends StatelessWidget {
   final DeviceCategory category;
   final String? emoji;
   final String? imagePath;
+
+  /// Bundled thumbnail the user chose by hand; wins over matching.
+  final String? templateImage;
   final double size;
 
   /// Identity used to look up a matching template thumbnail when the device
@@ -20,17 +23,20 @@ class DeviceAvatar extends StatelessWidget {
   final String? name;
 
   /// Purpose: Create a device avatar instance.
-  /// Inputs: `category`, optional `emoji` / `imagePath`, the device identity
-  /// (`brand`, `model`, `name`) for the template thumbnail, and `size`.
+  /// Inputs: `category`, optional `emoji` / `imagePath` / `templateImage`,
+  /// the device identity (`brand`, `model`, `name`) for the template
+  /// thumbnail, and `size`.
   /// Returns: A new `DeviceAvatar` instance.
   /// Side effects: None.
-  /// Notes: Priority is emoji, then the user's photo, then the matching
-  /// template thumbnail, then the category icon.
+  /// Notes: Priority is emoji, then the user's photo, then the thumbnail
+  /// chosen by hand, then the matching template thumbnail, then the
+  /// category icon.
   const DeviceAvatar({
     super.key,
     required this.category,
     this.emoji,
     this.imagePath,
+    this.templateImage,
     this.brand,
     this.model,
     this.name,
@@ -47,6 +53,7 @@ class DeviceAvatar extends StatelessWidget {
       category: device.category,
       emoji: device.emoji,
       imagePath: device.imagePath,
+      templateImage: device.templateImage,
       brand: device.brand,
       model: device.model,
       name: device.name,
@@ -105,40 +112,56 @@ class DeviceAvatar extends StatelessWidget {
     return _templateOrFallback(context);
   }
 
-  /// Purpose: Show the matching template thumbnail, or the category icon.
+  /// Purpose: Show the chosen or matching template thumbnail, or the icon.
   /// Inputs: `context`.
   /// Returns: `Widget`.
   /// Side effects: May load the template catalog once.
   /// Notes: Resolves synchronously once the catalog is cached, so rebuilds do
-  /// not flash the fallback. Internal helper used within this file only.
+  /// not flash the fallback. A hand-picked [templateImage] that is no longer
+  /// in the catalog is ignored in favour of matching. Internal helper used
+  /// within this file only.
   Widget _templateOrFallback(BuildContext context) {
-    if (brand == null && model == null && name == null) {
+    if (templateImage == null &&
+        brand == null &&
+        model == null &&
+        name == null) {
       return _fallbackIcon(context);
     }
     final cached = PresetService.cachedTemplates;
     if (cached != null) {
-      final asset = PresetService.matchTemplateImage(
-        cached,
-        brand: brand,
-        model: model,
-        name: name,
-      );
+      final asset = _resolveTemplate(cached);
       return asset == null
           ? _fallbackIcon(context)
           : _templateImage(context, asset);
     }
     return FutureBuilder<String?>(
-      future: PresetService.findTemplateImage(
-        brand: brand,
-        model: model,
-        name: name,
-      ),
+      future: PresetService.loadTemplates().then(_resolveTemplate),
       builder: (context, snap) {
         final asset = snap.data;
         return asset == null
             ? _fallbackIcon(context)
             : _templateImage(context, asset);
       },
+    );
+  }
+
+  /// Purpose: Pick the thumbnail asset this avatar should show.
+  /// Inputs: `templates` — the loaded catalog.
+  /// Returns: The hand-picked asset when it is still bundled, otherwise the
+  /// automatically matched one, or null.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
+  String? _resolveTemplate(List<DeviceTemplate> templates) {
+    final chosen = templateImage;
+    if (chosen != null && PresetService.isTemplateImage(templates, chosen)) {
+      return chosen;
+    }
+    if (brand == null && model == null && name == null) return null;
+    return PresetService.matchTemplateImage(
+      templates,
+      brand: brand,
+      model: model,
+      name: name,
     );
   }
 

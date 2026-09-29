@@ -43,6 +43,7 @@
   },
   {
     "name": "Apple AirPods Pro 2",
+    "image": "assets/device_images/apple-airpods-pro-2.png",
     "category": "headphone",
     "brand": "Apple",
     "model": "AirPods Pro (2nd generation)",
@@ -50,6 +51,7 @@
   },
   {
     "name": "Apple Watch SE (2nd gen)",
+    "image": "assets/device_images/apple-watch-se-2.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch SE (2nd generation) 44mm",
@@ -66,6 +68,7 @@
   },
   {
     "name": "Apple Watch Series 10",
+    "image": "assets/device_images/apple-watch-series-10.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch Series 10 46mm",
@@ -82,6 +85,7 @@
   },
   {
     "name": "Apple Watch Series 7",
+    "image": "assets/device_images/apple-watch-series-7.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch Series 7 45mm",
@@ -98,6 +102,7 @@
   },
   {
     "name": "Apple Watch Series 8",
+    "image": "assets/device_images/apple-watch-series-8.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch Series 8 45mm",
@@ -114,6 +119,7 @@
   },
   {
     "name": "Apple Watch Series 9",
+    "image": "assets/device_images/apple-watch-series-9.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch Series 9 45mm",
@@ -130,6 +136,7 @@
   },
   {
     "name": "Apple Watch Ultra",
+    "image": "assets/device_images/apple-watch-ultra.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch Ultra 49mm",
@@ -146,6 +153,7 @@
   },
   {
     "name": "Apple Watch Ultra 2",
+    "image": "assets/device_images/apple-watch-ultra-2.png",
     "category": "watch",
     "brand": "Apple",
     "model": "Watch Ultra 2",
@@ -554,7 +562,7 @@
   },
   {
     "name": "Google Pixel 9",
-    "image": "assets/device_images/google-pixel-9-obsidian-front.png",
+    "image": "assets/device_images/google-pixel-9-pro-hazel-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 9",
@@ -594,7 +602,7 @@
   },
   {
     "name": "Google Pixel 9 Pro XL",
-    "image": "assets/device_images/google-pixel-9-pro-xl-obsidian-front.png",
+    "image": "assets/device_images/google-pixel-9-pro-hazel-front.png",
     "category": "phone",
     "brand": "Google",
     "model": "Pixel 9 Pro XL",
@@ -832,7 +840,7 @@
   },
   {
     "name": "iPad mini (A17 Pro)",
-    "image": "assets/device_images/ipad-mini-a17-pro-frontside.png",
+    "image": "assets/device_images/apple-ipad-mini-a17-pro.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad mini (7th generation)",
@@ -852,7 +860,7 @@
   },
   {
     "name": "iPad Pro 11\" (M4)",
-    "image": "assets/device_images/apple-ipad-pro-11.png",
+    "image": "assets/device_images/apple-ipad-pro-m4.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad Pro 11-inch (M4)",
@@ -873,7 +881,7 @@
   },
   {
     "name": "iPad Pro 13\" (M4)",
-    "image": "assets/device_images/apple-ipad-pro-11.png",
+    "image": "assets/device_images/apple-ipad-pro-m4.png",
     "category": "tablet",
     "brand": "Apple",
     "model": "iPad Pro 13-inch (M4)",
@@ -1056,7 +1064,7 @@
   },
   {
     "name": "iPhone 14",
-    "image": "assets/device_images/iphone-14-plus-back.png",
+    "image": "assets/device_images/apple-iphone-14-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14",
@@ -1076,7 +1084,7 @@
   },
   {
     "name": "iPhone 14 Plus",
-    "image": "assets/device_images/iphone-14-plus-back.png",
+    "image": "assets/device_images/apple-iphone-14-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 14 Plus",
@@ -1178,7 +1186,7 @@
   },
   {
     "name": "iPhone 15 Pro",
-    "image": "assets/device_images/iphone-15-pro-vector.png",
+    "image": "assets/device_images/apple-iphone-15-pro-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15 Pro",
@@ -1199,7 +1207,7 @@
   },
   {
     "name": "iPhone 15 Pro Max",
-    "image": "assets/device_images/iphone-15-pro-max-vector.png",
+    "image": "assets/device_images/apple-iphone-15-pro-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 15 Pro Max",
@@ -1325,7 +1333,7 @@
   },
   {
     "name": "iPhone 17",
-    "image": "assets/device_images/iphone-17-vector.png",
+    "image": "assets/device_images/apple-iphone-17-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone 17",
@@ -1402,7 +1410,7 @@
   },
   {
     "name": "iPhone Air",
-    "image": "assets/device_images/iphone-air-vector.png",
+    "image": "assets/device_images/apple-iphone-air-back.png",
     "category": "phone",
     "brand": "Apple",
     "model": "iPhone Air",
@@ -1498,7 +1506,7 @@
   },
   {
     "name": "MacBook Air 13\" (M4)",
-    "image": "assets/device_images/macbook-air-m4.png",
+    "image": "assets/device_images/apple-macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 13-inch (M4)",
@@ -1519,7 +1527,7 @@
   },
   {
     "name": "MacBook Air 13\" (M5)",
-    "image": "assets/device_images/macbook-air-m4.png",
+    "image": "assets/device_images/apple-macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 13-inch (M5)",
@@ -1537,7 +1545,7 @@
   },
   {
     "name": "MacBook Air 15\" (M4)",
-    "image": "assets/device_images/macbook-air-m4.png",
+    "image": "assets/device_images/apple-macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 15-inch (M4)",
@@ -1558,7 +1566,7 @@
   },
   {
     "name": "MacBook Air 15\" (M5)",
-    "image": "assets/device_images/macbook-air-m4.png",
+    "image": "assets/device_images/apple-macbook-air-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Air 15-inch (M5)",
@@ -1576,7 +1584,7 @@
   },
   {
     "name": "MacBook Pro 14\" (M4 Pro)",
-    "image": "assets/device_images/macbook-pro-16-2021.png",
+    "image": "assets/device_images/apple-macbook-pro-14-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 14-inch (M4 Pro)",
@@ -1597,7 +1605,7 @@
   },
   {
     "name": "MacBook Pro 14\" (M4)",
-    "image": "assets/device_images/macbook-pro-16-2021.png",
+    "image": "assets/device_images/apple-macbook-pro-14-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 14-inch (M4)",
@@ -1617,7 +1625,7 @@
   },
   {
     "name": "MacBook Pro 14\" (M5)",
-    "image": "assets/device_images/macbook-pro-16-2021.png",
+    "image": "assets/device_images/apple-macbook-pro-14-m4.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 14-inch (M5)",
@@ -1635,7 +1643,7 @@
   },
   {
     "name": "MacBook Pro 16\" (M4 Pro)",
-    "image": "assets/device_images/macbook-pro-16-2021.png",
+    "image": "assets/device_images/apple-macbook-pro-16-2024.png",
     "category": "laptop",
     "brand": "Apple",
     "model": "MacBook Pro 16-inch (M4 Pro)",

@@ -722,6 +722,57 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deviceChangeImage => 'Change';
 
   @override
+  String get deviceChooseThumbnail => 'Thumbnail';
+
+  @override
+  String get deviceThumbnailAutomatic => 'Automatic';
+
+  @override
+  String get deviceThumbnailSearch => 'Search thumbnails';
+
+  @override
+  String get deviceEditImage => 'Edit Image';
+
+  @override
+  String get imageEditorTitle => 'Edit Image';
+
+  @override
+  String get imageEditorUse => 'Use';
+
+  @override
+  String get imageEditorUseOriginal => 'Use Original';
+
+  @override
+  String get imageEditorCropHint => 'Drag and zoom to choose the part to keep';
+
+  @override
+  String get imageEditorRemoveBackground => 'Remove background';
+
+  @override
+  String get imageEditorRemoveBackgroundDesc =>
+      'Clears a plain background connected to the edges';
+
+  @override
+  String get imageEditorTolerance => 'Tolerance';
+
+  @override
+  String get imageEditorRoundedCorners => 'Rounded corners';
+
+  @override
+  String get imageEditorRoundedCornersDesc =>
+      'For a phone or tablet cropped tightly against a busy background';
+
+  @override
+  String get imageEditorSizeInCircle => 'Size in circle';
+
+  @override
+  String get imageEditorReset => 'Reset';
+
+  @override
+  String get imageEditorDecodeFailed =>
+      'This image cannot be edited; it is used unchanged';
+
+  @override
   String get deviceRemoveIcon => 'Remove Icon';
 
   @override

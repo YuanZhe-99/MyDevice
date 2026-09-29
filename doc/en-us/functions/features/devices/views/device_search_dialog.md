@@ -1,8 +1,8 @@
 # lib/features/devices/views/device_search_dialog.dart
 
 Modal, two-phase dialog for finding a device online and importing selected fields into the
-edit form. Backed by `lib/features/devices/services/device_search_service.dart` (Notebookcheck /
-Notebookcheck scraping, gated by `AppFlavor.isStore` — see
+edit form. Backed by `lib/features/devices/services/device_search_service.dart` (Apple Support, Notebookcheck and PhoneDB,
+with Wikipedia as fallback source, gated by `AppFlavor.isStore` — see
 [Online Search and Presets](../../../../features/online-search-and-presets.md)) and
 `lib/shared/services/image_service.dart` for downloading a matched device photo. It is opened
 both from `device_edit_page.dart` (prefilled with the form's current values, so the preview can
@@ -99,7 +99,8 @@ top-level function and is included here per the "every declaration gets a row" r
 - **Inputs:** None (reads `_queryController.text`).
 - **Returns:** `Future<void>`.
 - **Side effects:** Three `setState` calls (start, success, failure); performs a network-backed
-  search across Notebookcheck and PhoneDB, and records a per-source outcome so a blocked or
+  search across the source registry (Apple Support, Notebookcheck, PhoneDB, then Wikipedia as a
+  fallback source), and records a per-source outcome so a blocked or
   changed source is reported as such instead of as "no results".
 - **Algorithm:**
   1. Trims the query; returns immediately if empty.

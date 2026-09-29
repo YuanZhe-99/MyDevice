@@ -2,7 +2,7 @@
 
 `ChipSearchService` 先搜索捆绑 CPU/GPU 预设，然后——仅 full 风格构建——并行查询 TechPowerUp、AMD 官方站和 Intel 官方站，用 Startpage 作为 URL 发现代理（此服务不发出任何搜索引擎提供 API 调用；它抓取 Startpage 自己的结果页）。概念总览见 [在线搜索与预设 — 芯片规格搜索](../../../../features/online-search-and-presets.md#chip-spec-search---chip_search_servicedart)，`ChipSearchResult.toCpuInfo`/`toGpuInfo` 产生的 `CpuInfo`/`GpuInfo` 形态见 [`device.md`](../models/device.md)。
 
-**商店风格门控**：与 [`device_search_service.md`](device_search_service.md) 的提前返回模式不同，这里两个公共入口点 [`searchCpu`](#searchcpu) 和 [`searchGpu`](#searchgpu) 无论风格总是运行其本地 `presets` 搜索——只有*在线*部分包在 `if (AppFlavor.isFull) { ... }` 中，源码直接确认。这是 `AGENTS.md` Build Flavors 小节要求的四个门控检查之一（`AppFlavor` 见 [架构](../../../../architecture.md#appflavor)）；其他三个是 [`device_search_service.md`](device_search_service.md) 的提前返回和本文件外两个 UI 调用点（`device_edit_page.dart` 的三个在线搜索按钮、`device_list_page.dart` 的在线搜索 FAB），不在此批重新验证。
+**商店风格门控**：与 [`device_search_service.md`](device_search_service.md) 的提前返回模式不同，这里两个公共入口点 [`searchCpu`](#searchcpu) 和 [`searchGpu`](#searchgpu) 无论风格总是运行其本地 `presets` 搜索——只有*在线*部分包在 `if (AppFlavor.isFull) { ... }` 中，源码直接确认。这是 `AGENTS.md` Build Flavors 小节要求的四个门控检查之一（`AppFlavor` 见 [架构](../../../../architecture.md#appflavor)）；其他三个是 [`device_search_service.md`](device_search_service.md) 的提前返回和本文件外两个 UI 调用点：`device_edit_page.dart` 的三个在线搜索按钮（CPU 和 GPU 按钮受 `AppFlavor.isFull` 门控，设备搜索按钮受 `AppFlavor.deviceSearchExposed` 门控）和 `device_list_page.dart` 的在线搜索 FAB（受 `AppFlavor.deviceSearchExposed` 门控，它等于 `isFull`——见 [`../../../app/flavor.md`](../../../app/flavor.md)）。
 
 ## 声明
 

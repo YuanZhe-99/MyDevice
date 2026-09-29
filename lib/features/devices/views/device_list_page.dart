@@ -649,14 +649,14 @@ class _DeviceListPageState extends State<DeviceListPage> {
           : Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (AppFlavor.isFull)
+                if (AppFlavor.deviceSearchExposed)
                   FloatingActionButton.small(
                     heroTag: 'search',
                     onPressed: _addFromSearch,
                     tooltip: l10n.fetchFromInternet,
                     child: const Icon(Icons.travel_explore),
                   ),
-                if (AppFlavor.isFull) const SizedBox(height: 8),
+                if (AppFlavor.deviceSearchExposed) const SizedBox(height: 8),
                 FloatingActionButton.small(
                   heroTag: 'template',
                   onPressed: _addFromTemplate,

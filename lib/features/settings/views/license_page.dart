@@ -79,5 +79,22 @@ Simplified/Traditional Chinese conversion tables (used by the optional
 on-device AI insight cards) are derived from OpenCC
 (https://github.com/BYVoid/OpenCC), Copyright (c) Carbo Kuo and contributors,
 licensed under the Apache License, Version 2.0. You may obtain a copy of the
-License at http://www.apache.org/licenses/LICENSE-2.0.''';
+License at http://www.apache.org/licenses/LICENSE-2.0.
+
+---
+
+Bundled images (device thumbnails, brand logos, service icons) are not
+part of the GPL-3.0 source. Each file's source, author and license is
+listed in assets/device_images/SOURCES.md, assets/logos/SOURCES.md and
+assets/service_icons/SOURCES.md in the source repository
+(https://github.com/YuanZhe-99/MyDevice). Freely licensed photos keep their
+Creative Commons or public-domain terms; the authors are credited there.
+Some device thumbnails are manufacturers' product images (Apple, Microsoft,
+ASUS, Intel, Razer, Samsung) that are not freely licensed; they are
+included only to identify the device and will be removed if the copyright
+holder asks.
+
+All product names, logos and brands are trademarks of their respective
+owners. They are used only to identify devices, chips and services; their
+use implies no affiliation with or endorsement by the owners.''';
 }

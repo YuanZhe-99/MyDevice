@@ -86,6 +86,16 @@ local API server, system tray, and launch-at-startup integration. See
   desktop preview with copy/save actions (see
   [Services and Topology](features/services-topology.md)).
 
+## Image editor decoding (all platforms)
+
+The device image editor (1.6.1) decodes a picked photo with the platform codec
+(`ui.ImageDescriptor`), downscaling to 1024 px while decoding, so it reads whatever Flutter can
+display on that platform and applies EXIF orientation the same way the app shows the photo.
+Support for formats such as HEIC therefore depends on the platform. When the platform codec
+refuses a file, `package:image` is tried (JPEG, PNG, WebP, GIF, BMP, TIFF); when both refuse it,
+a newly picked photo is stored unchanged (as with "Use Original"). Processing runs in
+`Isolate.run`, so the UI stays responsive on every platform.
+
 ## Desktop local API server
 
 `lib/shared/services/local_api_server.dart` (`LocalApiServer`) runs a Shelf-based HTTP

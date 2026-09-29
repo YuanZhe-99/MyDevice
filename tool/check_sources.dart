@@ -12,9 +12,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-const _userAgent =
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
-    '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+import 'package:my_device/features/devices/services/device_search_service.dart';
+
+// The app's own user agent, so this check sees what the app sees. A
+// browser user agent sent from Dart gets HTTP 403 from Notebookcheck's
+// Cloudflare front, which is what made the search look dead in 1.6.0.
+const _userAgent = DeviceSearchService.userAgent;
 
 const _blockMarkers = [
   'challenges.cloudflare.com',
@@ -169,9 +172,63 @@ Future<void> main(List<String> args) async {
     ),
   );
 
+  checks.add(
+    await _probe(
+      client,
+      'Apple docs index',
+      Uri.parse('https://support.apple.com/en-us/docs/iphone'),
+      anchors: ['class="product-name"', '/docs/iphone/'],
+    ),
+  );
+
+  checks.add(
+    await _probe(
+      client,
+      'Apple docs page',
+      Uri.parse('https://support.apple.com/en-us/docs/iphone/301045'),
+      anchors: ['link-text="tech specs"'],
+    ),
+  );
+
+  checks.add(
+    await _probe(
+      client,
+      'Apple tech specs',
+      Uri.parse('https://support.apple.com/en-us/121029'),
+      anchors: ['<h1', '<h3', 'cdsassets.apple.com', 'Year introduced'],
+    ),
+  );
+
+  checks.add(
+    await _probe(
+      client,
+      'Wikipedia search',
+      Uri.parse(
+        'https://en.wikipedia.org/w/api.php?action=query&list=search'
+        '&srsearch=${Uri.encodeQueryComponent(query)}&srlimit=8'
+        '&srnamespace=0&format=json&formatversion=2',
+      ),
+      anchors: ['"search":', '"title":'],
+    ),
+  );
+
+  checks.add(
+    await _probe(
+      client,
+      'Wikipedia infobox',
+      Uri.parse(
+        'https://en.wikipedia.org/w/api.php?action=parse&page=Steam_Deck'
+        '&prop=wikitext&section=0&redirects=1&format=json&formatversion=2',
+      ),
+      anchors: ['{{Infobox', '| cpu'],
+    ),
+  );
+
   client.close();
 
-  final width = checks.map((c) => c.source.length).reduce((a, b) => a > b ? a : b);
+  final width = checks
+      .map((c) => c.source.length)
+      .reduce((a, b) => a > b ? a : b);
   for (final check in checks) {
     stdout.writeln(
       '${check.source.padRight(width)}  '

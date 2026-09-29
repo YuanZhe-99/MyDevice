@@ -15,7 +15,10 @@ current source in `lib/features/*/models/*.dart`, not a general Flutter data-mod
 - **Identity:** `id` (UUID v4, generated if omitted), `name`.
 - **Category:** `category` (`DeviceCategory`: `desktop`, `laptop`, `phone`, `tablet`,
   `headphone`, `watch`, `router`, `gameConsole`, `vps`, `devBoard`, `other`), `emoji`,
-  `imagePath`, `brand`, `model`, `serialNumber`.
+  `imagePath`, `templateImage`, `brand`, `model`, `serialNumber`. `templateImage` (since 1.6.1,
+  optional, omitted when null) is the bundled thumbnail the user chose by hand, written exactly as
+  a template's `image` (`assets/device_images/<file>.png`). Older builds keep it through
+  `extraJson` and fall back to automatic matching.
 - **CPU/GPU:** `cpu` (`CpuInfo`: `model`, `architecture`, `frequency`,
   `performanceCores`, `efficiencyCores`, `threads`, `cache`, plus `extraJson`), `gpu`
   (`GpuInfo`: `model`, `architecture`, plus `extraJson`).
@@ -235,13 +238,14 @@ Optional `image` names a bundled thumbnail of the device itself:
 
 ```json
 { "name": "iPhone 15 Pro", "category": "phone", "brand": "Apple", "model": "iPhone 15 Pro",
-  "image": "assets/device_images/iphone-15-pro-vector.png" }
+  "image": "assets/device_images/apple-iphone-15-pro-back.png" }
 ```
 
 Thumbnails are 256 px square PNGs with a transparent background, and every visible pixel
 (alpha > 8) lies inside the inscribed circle, because each avatar clips to that circle. They are
-matched to devices at display time and never stored on a device (see
-[Online Search and Presets](features/online-search-and-presets.md#device-thumbnails)).
+matched to devices at display time; only a thumbnail the user chose by hand is stored, as the
+device's `templateImage`. A device created from a template stores the template's `image` there
+too (see [Online Search and Presets](features/online-search-and-presets.md#device-thumbnails)).
 
 **Adding a device:** append the entry, run `dart run tool/sort_templates.dart` to restore
 the sort order, then `dart run tool/validate_json.dart`. The validator checks required

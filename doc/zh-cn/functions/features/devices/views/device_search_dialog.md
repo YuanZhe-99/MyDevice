@@ -1,6 +1,6 @@
 # lib/features/devices/views/device_search_dialog.dart
 
-两阶段模态对话框，用于在线找设备并把所选字段导入编辑表单。由 `lib/features/devices/services/device_search_service.dart`（Notebookcheck / PhoneDB 抓取，门控于 `AppFlavor.isStore`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `lib/shared/services/image_service.dart` 支撑下载匹配设备照片。从 `device_edit_page.dart`（用表单当前值预填，使预览能逐字段显示"当前 vs 获取"）和 `device_list_page.dart` 的搜索 FAB（无当前值打开，供给全新 `DeviceEditPage`）两者打开。
+两阶段模态对话框，用于在线找设备并把所选字段导入编辑表单。由 `lib/features/devices/services/device_search_service.dart`（Apple Support、Notebookcheck 和 PhoneDB 抓取，以 Wikipedia 作为后备来源，门控于 `AppFlavor.isStore`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `lib/shared/services/image_service.dart` 支撑下载匹配设备照片。从 `device_edit_page.dart`（用表单当前值预填，使预览能逐字段显示"当前 vs 获取"）和 `device_list_page.dart` 的搜索 FAB（无当前值打开，供给全新 `DeviceEditPage`）两者打开。
 
 ## 声明
 
@@ -71,7 +71,7 @@
 - **用途：** 对 `DeviceSearchService.search` 运行当前查询并把结果加载进对话框状态。
 - **输入：** 无（读取 `_queryController.text`）。
 - **返回：** `Future<void>`。
-- **副作用：** 三个 `setState` 调用（开始、成功、失败）；跨 Notebookcheck 和 PhoneDB 执行网络支撑搜索，并记录逐数据源的结果状态，使被拦截或结构变化的数据源如实上报，而不是显示为「无结果」。
+- **副作用：** 三个 `setState` 调用（开始、成功、失败）；跨来源注册表（Apple Support、Notebookcheck、PhoneDB，再以 Wikipedia 作为后备来源）执行网络支撑搜索，并记录逐数据源的结果状态，使被拦截或结构变化的数据源如实上报，而不是显示为「无结果」。
 - **算法：**
   1. 修剪查询；为空立即返回。
   2. 设 `_searching = true`、清除 `_error` 和 `_results`。

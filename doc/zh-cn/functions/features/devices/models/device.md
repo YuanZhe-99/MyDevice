@@ -67,13 +67,13 @@
 | [`toJson`](#devicedata-tojson) | 方法（`DeviceData`） | A | 把此值序列化为 JSON 兼容映射。 |
 | [`DeviceData.fromJson`](#devicedata-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `DeviceData`。 |
 
-行数（58）不匹配 `grep -c 'Purpose:' device.dart`（31）。到 `StorageInterface.fromJson` 为止的每个声明（25 行）带自动生成 `/// Purpose:` 文档注释块，`DeviceData` 的三个声明（最后 3 行）也带——31 个注释中的 28 个，加 `StorageInfo` 的构造函数/`isEmpty`/`displayString`（3 个）占全部 31。从 `StorageInfo.toJson` 开始贯穿整个 `MoneyValue`、`DeviceRecurringCost` 和 `Device` 类（27 个声明：`StorageInfo.toJson`/`fromJson`/`mergeUnknownFieldsFrom`、全部四个 `MoneyValue` 声明、全部六个 `DeviceRecurringCost` 声明和全部十四个 `Device` 声明）完全没有 `/// Purpose:` 块——大多数情况连普通文档注释都没有。这是直接读文件确认的，不是从注释密度假设；按每个声明无论是否带自动生成注释都出现的分层规则，那 27 个声明每个仍在这里索引。`DeviceLifecycleStatus`（无自己 getter/方法的裸三值枚举）无行，与本文档集只索引可执行声明而非裸类型声明一致。
+行数（58）与 `grep -c 'Purpose:' device.dart`（58）精确匹配。1.6.1 之前只有 31 个声明带 `/// Purpose:` 块：从 `StorageInfo.toJson` 开始贯穿整个 `MoneyValue`、`DeviceRecurringCost` 和 `Device` 类的 27 个声明（`StorageInfo.toJson`/`fromJson`/`mergeUnknownFieldsFrom`、全部四个 `MoneyValue` 声明、全部六个 `DeviceRecurringCost` 声明和全部十四个 `Device` 声明）完全没有该块。1.6.1 的文档审核为这 27 个声明在源码中补上了 Purpose/Inputs/Returns/Side effects/Notes 块（仅注释改动），因此行数与注释数现在一致。`DeviceLifecycleStatus`（无自己 getter/方法的裸三值枚举）无行，与本文档集只索引可执行声明而非裸类型声明一致。
 
 ## 文档
 
 ### `static DeviceCategory fromJson(String value)` <a id="devicecategory-fromjson"></a>
 - **种类：** 枚举 `DeviceCategory` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 103 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 104 行）。
 - **用途：** 从其序列化名解析 `DeviceCategory`，任何无法识别值默认 `other`。
 - **输入：** `value`。
 - **返回：** `DeviceCategory` — 绝不 `null`。
@@ -88,7 +88,7 @@
 
 ### `static DeviceAcquisitionType? fromJson(String? value)` <a id="deviceacquisitiontype-fromjson"></a>
 - **种类：** 枚举 `DeviceAcquisitionType` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 126 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 127 行）。
 - **用途：** 从其序列化名解析 `DeviceAcquisitionType`。
 - **输入：** `value` — 可空。
 - **返回：** `DeviceAcquisitionType?` — `value` 为 `null` 或无法识别时 `null`。
@@ -99,7 +99,7 @@
 
 ### `static RecurringCostKind fromJson(String? value)` <a id="recurringcostkind-fromjson"></a>
 - **种类：** 枚举 `RecurringCostKind` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 156 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 157 行）。
 - **用途：** 解析 `RecurringCostKind`，无法识别或缺席默认 `other`。
 - **输入：** `value` — 可空。
 - **返回：** `RecurringCostKind` — 绝不 `null`。
@@ -110,7 +110,7 @@
 
 ### `static BillingCycle fromJson(String? value)` <a id="billingcycle-fromjson"></a>
 - **种类：** 枚举 `BillingCycle` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 178 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 179 行）。
 - **用途：** 解析 `BillingCycle`，无法识别或缺席默认 `monthly`。
 - **输入：** `value` — 可空。
 - **返回：** `BillingCycle` — 绝不 `null`。
@@ -121,7 +121,7 @@
 
 ### `const CpuInfo({this.model, this.architecture, this.frequency, this.performanceCores, this.efficiencyCores, this.threads, this.cache, this.extraJson = const {}})` <a id="cpuinfo-new"></a>
 - **种类：** `CpuInfo` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 199 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 200 行）。
 - **用途：** 持有设备 CPU 规格——型号、架构、频率、核心/线程数、缓存——加任何无法识别 JSON 字段。
 - **输入：** 所有字段可选；`extraJson` 默认 `{}`。
 - **返回：** 新 `CpuInfo`。
@@ -132,7 +132,7 @@
 
 ### `Map<String, dynamic> toJson()` <a id="cpuinfo-tojson"></a>
 - **种类：** `CpuInfo` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 230 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 231 行）。
 - **用途：** 把此 CPU 规格序列化为持久化在设备 `cpu` 字段内的 JSON。
 - **输入：** 无。
 - **返回：** `Map<String, dynamic>` — 先展开 `extraJson`，然后只非 null 已知字段。
@@ -143,7 +143,7 @@
 
 ### `factory CpuInfo.fromJson(Map<String, dynamic> json)` <a id="cpuinfo-fromjson"></a>
 - **种类：** `CpuInfo` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 246 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 247 行）。
 - **用途：** 从 JSON 解析 `CpuInfo`，容忍替代 `performanceCores` 的较旧 `cores` 键。
 - **输入：** `json`。
 - **返回：** 新 `CpuInfo`；`extraJson` 持有不在 `_cpuInfoJsonKeys` 的每个键。
@@ -154,7 +154,7 @@
 
 ### `CpuInfo mergeUnknownFieldsFrom(CpuInfo other, {CpuInfo? base})` <a id="cpuinfo-mergeunknownfieldsfrom"></a>
 - **种类：** `CpuInfo` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 262 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 263 行）。
 - **用途：** 三方合并此 `CpuInfo` 的未知 JSON 字段与另一个的，使无法识别键像已知字段一样经受同步合并。
 - **输入：** `other` — 另一侧（`this` 为本地时典型为远程）；可选 `base` — 上次同步快照。
 - **返回：** 新 `CpuInfo`——与 `this` 相同已知字段、`extraJson` 被合并结果替换。
@@ -165,7 +165,7 @@
 
 ### `const GpuInfo({this.model, this.architecture, this.extraJson = const {}})` <a id="gpuinfo-new"></a>
 - **种类：** `GpuInfo` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 285 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 286 行）。
 - **用途：** 持有设备 GPU 型号/架构加任何无法识别 JSON 字段。
 - **输入：** 所有字段可选；`extraJson` 默认 `{}`。
 - **返回：** 新 `GpuInfo`。
@@ -176,7 +176,7 @@
 
 ### `Map<String, dynamic> toJson()` <a id="gpuinfo-tojson"></a>
 - **种类：** `GpuInfo` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 300 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 301 行）。
 - **用途：** 把此 GPU 规格序列化为持久化在设备 `gpu` 字段内的 JSON。
 - **输入：** 无。
 - **返回：** `Map<String, dynamic>`。
@@ -187,7 +187,7 @@
 
 ### `factory GpuInfo.fromJson(Map<String, dynamic> json)` <a id="gpuinfo-fromjson"></a>
 - **种类：** `GpuInfo` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 311 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 312 行）。
 - **用途：** 从 JSON 解析 `GpuInfo`。
 - **输入：** `json`。
 - **返回：** 新 `GpuInfo`；`extraJson` 持有不在 `_gpuInfoJsonKeys` 的每个键。
@@ -198,7 +198,7 @@
 
 ### `GpuInfo mergeUnknownFieldsFrom(GpuInfo other, {GpuInfo? base})` <a id="gpuinfo-mergeunknownfieldsfrom"></a>
 - **种类：** `GpuInfo` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 322 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 323 行）。
 - **用途：** 三方合并此 `GpuInfo` 的未知 JSON 字段与另一个的。
 - **输入：** `other`；可选 `base`。
 - **返回：** 带合并 `extraJson` 的新 `GpuInfo`。
@@ -209,7 +209,7 @@
 
 ### `static StorageType? fromJson(String? value)` <a id="storagetype-fromjson"></a>
 - **种类：** 枚举 `StorageType` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 352 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 353 行）。
 - **用途：** 从其序列化名解析 `StorageType`。
 - **输入：** `value` — 可空。
 - **返回：** `StorageType?` — `value` 为 `null` 或无法识别时 `null`。
@@ -220,7 +220,7 @@
 
 ### `String get displayName`（RamType） <a id="ramtype-displayname"></a>
 - **种类：** 枚举 `RamType` 的 getter。
-- **来源：** `lib/features/devices/models/device.dart`（第 382 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 383 行）。
 - **用途：** 返回 RAM 标准的惯用大写显示名（如 `RamType.lpddr5x` → `"LPDDR5X"`），区别于持久化 JSON 使用的小写 `jsonValue`/`name`。
 - **输入：** 无。
 - **返回：** `String`。
@@ -231,7 +231,7 @@
 
 ### `static RamType? fromJson(String? value)` <a id="ramtype-fromjson"></a>
 - **种类：** 枚举 `RamType` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 399 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 400 行）。
 - **用途：** 从其序列化名解析 `RamType`。
 - **输入：** `value` — 可空。
 - **返回：** `RamType?`。
@@ -242,7 +242,7 @@
 
 ### `static StorageInterface? fromJson(String? value)` <a id="storageinterface-fromjson"></a>
 - **种类：** 枚举 `StorageInterface` 的静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 424 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 425 行）。
 - **用途：** 从其序列化名解析 `StorageInterface`。
 - **输入：** `value` — 可空。
 - **返回：** `StorageInterface?`。
@@ -253,7 +253,7 @@
 
 ### `const StorageInfo({this.capacity, this.type, this.interface_, this.serialNumber, this.brand, this.extraJson = const {}})` <a id="storageinfo-new"></a>
 - **种类：** `StorageInfo` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 444 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 445 行）。
 - **用途：** 持有一个存储设备的容量、类型、物理接口、序列号和品牌。
 - **输入：** 所有字段可选。
 - **返回：** 新 `StorageInfo`。
@@ -264,7 +264,7 @@
 
 ### `String get displayString`（StorageInfo） <a id="storageinfo-displaystring"></a>
 - **种类：** `StorageInfo` 的 getter。
-- **来源：** `lib/features/devices/models/device.dart`（第 472 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 473 行）。
 - **用途：** 构建此存储条目的人类可读单行摘要，如 `"512 GB SSD (M.2 NVMe)"`。
 - **输入：** 无。
 - **返回：** `String` — 空格连接部分；每个字段都 null 时空字符串。
@@ -275,84 +275,84 @@
 
 ### `Map<String, dynamic> toJson()` <a id="storageinfo-tojson"></a>
 - **种类：** `StorageInfo` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 495 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 501 行）。
 - **用途：** 把此存储条目序列化为持久化在设备 `storage` 列表内的 JSON。
 - **输入：** 无。
 - **返回：** `Map<String, dynamic>`。
 - **副作用：** 无。
 - **算法：** 与 `CpuInfo.toJson` 相同的展开-然后-已知字段形态；`type`/`interface_` 经其 `.jsonValue`（枚举名）序列化。
 - **用法：** 被 [`Device.toJson`](#device-tojson) 为 `storage` 每个条目调用，也被 [`mergeUnknownFieldsFrom`](#storageinfo-mergeunknownfieldsfrom) 调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释（见声明表上方的行数说明）。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上（见声明表上方的行数说明）。
 
 ### `factory StorageInfo.fromJson(dynamic json)` <a id="storageinfo-fromjson"></a>
 - **种类：** `StorageInfo` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 504 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 517 行）。
 - **用途：** 从当前 JSON 对象形态或遗留普通字符串形态（如 `"512 GB"`）解析 `StorageInfo`。
 - **输入：** `json` — `dynamic`，非 `Map<String, dynamic>`，正为接受任一形态。
 - **返回：** 新 `StorageInfo`；普通字符串输入时只设 `capacity`，每个其他字段 `null`。
 - **副作用：** 无。
 - **算法：** 1. `json is String` 时直接返回 `StorageInfo(capacity: json)`——遗留路径。2. 否则转换为 `Map<String, dynamic>` 并提取每个已知字段，`type`/`interface` 经各自 `fromJson` 枚举解析器解析。
 - **用法：** 被 [`Device.fromJson`](#device-fromjson) 为设备 `storage` 数组每个条目调用（它本身分支于整个 `storage` 值是遗留单字符串还是列表——见 [`Device.fromJson`](#device-fromjson)）。
-- **备注：** 这是本文件唯一对同一字段接受两种结构不同 JSON 形态的模型——存储成为结构化对象前写的数据的普通字符串，和当前对象形态。其参数类型是 `dynamic` 而非 `Map<String, dynamic>` 正为允许这个。此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 这是本文件唯一对同一字段接受两种结构不同 JSON 形态的模型——存储成为结构化对象前写的数据的普通字符串，和当前对象形态。其参数类型是 `dynamic` 而非 `Map<String, dynamic>` 正为允许这个。此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `StorageInfo mergeUnknownFieldsFrom(StorageInfo other, {StorageInfo? base})` <a id="storageinfo-mergeunknownfieldsfrom"></a>
 - **种类：** `StorageInfo` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 520 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 538 行）。
 - **用途：** 三方合并此 `StorageInfo` 的未知 JSON 字段与另一个的。
 - **输入：** `other`；可选 `base`。
 - **返回：** 带合并 `extraJson` 的新 `StorageInfo`。
 - **副作用：** 无。
 - **算法：** 与 `CpuInfo.mergeUnknownFieldsFrom` 相同形态。
 - **用法：** 被 [`Device.mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom) 对每对索引对齐 `storage` 条目调用一次（两侧列表长度不同时条目如何配对见该条目 Algorithm）。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `const MoneyValue({required this.amount, required this.currency, required this.defaultCurrency, required this.convertedAmount, required this.exchangeRate, required this.autoRate, this.rateUpdatedAt, this.extraJson = const {}})` <a id="moneyvalue-new"></a>
 - **种类：** `MoneyValue` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 543 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 567 行）。
 - **用途：** 持有以任何货币输入的价格及其到应用默认货币的转换、所用汇率和该汇率是自动还是手动。
 - **输入：** `amount`、`currency`、`defaultCurrency`、`convertedAmount`、`exchangeRate`、`autoRate` 必填；可选 `rateUpdatedAt`、`extraJson`。
 - **返回：** 新 `MoneyValue`。
 - **副作用：** 无。
 - **算法：** 平凡字段赋值——此构造函数自己不做任何转换；调用方从 [`DeviceExchangeRateService.convert`](../services/exchange_rate_service.md#convert)/`convertOptional` 获得已填充 `MoneyValue`，它们调用此构造函数前计算 `convertedAmount`/`exchangeRate`。
 - **用法：** 被 `DeviceExchangeRateService.convert`（见 [`exchange_rate_service.md`](../services/exchange_rate_service.md)）调用，它是完整 `MoneyValue` 通常从零构造的唯一地方。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `Map<String, dynamic> toJson()` <a id="moneyvalue-tojson"></a>
 - **种类：** `MoneyValue` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 554 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 583 行）。
 - **用途：** 把此货币值序列化为持久化在 `purchasePrice`、`soldPrice` 或 `DeviceRecurringCost.price` 内的 JSON。
 - **输入：** 无。
 - **返回：** 带 `amount`、`currency`、`defaultCurrency`、`convertedAmount`、`exchangeRate`、`autoRate` 和存在时 `rateUpdatedAt`（ISO-8601）的 `Map<String, dynamic>`。
 - **副作用：** 无。
 - **算法：** 直接字段映射（不同于本文件其他 `toJson`，除 `rateUpdatedAt` 外每个已知字段无条件，非 `if (x != null)` 门控，因为 `amount` 到 `autoRate` 都非可空）。
 - **用法：** 被 [`Device.toJson`](#device-tojson) 为 `purchasePrice`/`soldPrice`、被 [`DeviceRecurringCost.toJson`](#devicerecurringcost-tojson) 为 `price` 调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `factory MoneyValue.fromJson(Map<String, dynamic> json)` <a id="moneyvalue-fromjson"></a>
 - **种类：** `MoneyValue` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 566 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 601 行）。
 - **用途：** 从 JSON 解析 `MoneyValue`，容忍替代 `defaultCurrency` 的较旧 `baseCurrency` 键和缺失 `convertedAmount`。
 - **输入：** `json`。
 - **返回：** 新 `MoneyValue`。
 - **副作用：** 无。
 - **算法：** 1. 把 `amount`/`currency` 作为必填读取。2. `defaultCurrency` 回退遗留 `json['baseCurrency']` 键，两者都不在时再回退 `currency` 本身。3. `exchangeRate` 缺席默认 `1.0`。4. `convertedAmount` 键本身缺失时回退 `amount * exchangeRate`（而非总是信任存储值）。5. `autoRate` 默认 `true`。6. `rateUpdatedAt` 只在存在时经 `DateTime.parse` 解析。
 - **用法：** 被 [`Device.fromJson`](#device-fromjson) 为 `purchasePrice`/`soldPrice`、被 [`DeviceRecurringCost.fromJson`](#devicerecurringcost-fromjson) 为 `price` 调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。`baseCurrency` → `defaultCurrency` 重命名和派生 `convertedAmount` 回退都是较旧持久化数据的真实向后兼容路径，非投机——直接在此代码确认。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。`baseCurrency` → `defaultCurrency` 重命名和派生 `convertedAmount` 回退都是较旧持久化数据的真实向后兼容路径，非投机——直接在此代码确认。
 
 ### `MoneyValue mergeUnknownFieldsFrom(MoneyValue other, {MoneyValue? base})` <a id="moneyvalue-mergeunknownfieldsfrom"></a>
 - **种类：** `MoneyValue` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 588 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 628 行）。
 - **用途：** 三方合并此 `MoneyValue` 的未知 JSON 字段与另一个的。
 - **输入：** `other`；可选 `base`。
 - **返回：** 带合并 `extraJson` 的新 `MoneyValue`。
 - **副作用：** 无。
 - **算法：** 与 `CpuInfo.mergeUnknownFieldsFrom` 相同形态。
 - **用法：** 被 [`Device.mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom) 为 `purchasePrice`/`soldPrice`（只在两侧该字段都有非 null 值时）、被 [`DeviceRecurringCost.mergeUnknownFieldsFrom`](#devicerecurringcost-mergeunknownfieldsfrom) 为嵌套 `price` 调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `DeviceRecurringCost({String? id, required this.kind, this.name, required this.price, this.billingCycle = BillingCycle.monthly, this.extraJson = const {}})` <a id="devicerecurringcost-new"></a>
 - **种类：** `DeviceRecurringCost` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 609 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 655 行）。
 - **用途：** 持有一个循环设备成本（租赁、保险、订阅或其他），未提供时生成新鲜 UUID `id`。
 - **输入：** 可选 `id`（`null` 自动生成）；`kind`、`price` 必填；可选 `name`；`billingCycle` 默认 `monthly`。
 - **返回：** 新 `DeviceRecurringCost`。
@@ -372,11 +372,11 @@
   );
   ```
   （来自 `device_edit_page.dart` 的保存处理器；传 `draft.existing?.id` 在编辑时保留相同 `id` 而非铸造新的）
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。真正新成本传 `id: null` 触发 UUID 生成；传既有 id（如用法示例）是让编辑成本不像是同步合并眼中的删除-并-重建所必需（合并按 `id` 而非内容匹配记录——见 [三方合并](../../../../algorithms/three-way-merge.md)，注意 `DeviceRecurringCost` 本身作为 `Device` 内嵌套结构合并，不是自己的顶层 `mergeRecords<T>` 集合）。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。真正新成本传 `id: null` 触发 UUID 生成；传既有 id（如用法示例）是让编辑成本不像是同步合并眼中的删除-并-重建所必需（合并按 `id` 而非内容匹配记录——见 [三方合并](../../../../algorithms/three-way-merge.md)，注意 `DeviceRecurringCost` 本身作为 `Device` 内嵌套结构合并，不是自己的顶层 `mergeRecords<T>` 集合）。
 
 ### `double get annualConvertedAmount`（DeviceRecurringCost） <a id="devicerecurringcost-annualconvertedamount"></a>
 - **种类：** `DeviceRecurringCost` 的 getter。
-- **来源：** `lib/features/devices/models/device.dart`（第 618 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 669 行）。
 - **用途：** 基于其 `billingCycle` 把此循环成本投影为等价年度转换金额。
 - **输入：** 无。
 - **返回：** `double`。
@@ -387,42 +387,42 @@
 
 ### `Map<String, dynamic> toJson()` <a id="devicerecurringcost-tojson"></a>
 - **种类：** `DeviceRecurringCost` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 625 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 686 行）。
 - **用途：** 把此循环成本序列化为持久化在设备 `recurringCosts` 列表内的 JSON。
 - **输入：** 无。
 - **返回：** 带 `id`、`kind`、`name`（已设时）、`price`（嵌套 `MoneyValue.toJson()`）、`billingCycle` 的 `Map<String, dynamic>`。
 - **副作用：** 无。
 - **算法：** 展开-然后-已知字段形态，嵌套 `price.toJson()`。
 - **用法：** 被 [`Device.toJson`](#device-tojson) 为 `recurringCosts` 每个条目调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `factory DeviceRecurringCost.fromJson(Map<String, dynamic> json)` <a id="devicerecurringcost-fromjson"></a>
 - **种类：** `DeviceRecurringCost` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 634 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 700 行）。
 - **用途：** 从 JSON 解析 `DeviceRecurringCost`。
 - **输入：** `json`。
 - **返回：** 新 `DeviceRecurringCost`；`price` 缺失时抛（必填、非可空）。
 - **副作用：** 无。
 - **算法：** 直接字段提取；`kind`/`billingCycle` 经其枚举 `fromJson` 解析器；`price` 在必填 `json['price']` 映射上经 `MoneyValue.fromJson`。
 - **用法：** 被 [`Device.fromJson`](#device-fromjson) 为 `recurringCosts` 每个条目调用。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `DeviceRecurringCost mergeUnknownFieldsFrom(DeviceRecurringCost other, {DeviceRecurringCost? base})` <a id="devicerecurringcost-mergeunknownfieldsfrom"></a>
 - **种类：** `DeviceRecurringCost` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 644 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 716 行）。
 - **用途：** 三方合并此成本的未知 JSON 字段与另一个的，含嵌套 `price` 自己的未知字段。
 - **输入：** `other`；可选 `base`。
 - **返回：** 带合并 `extraJson` 和合并 `price` 的新 `DeviceRecurringCost`。
 - **副作用：** 无。
 - **算法：** 1. 从 `toJson()` 开始，与其他模型类相同经 `mergeUnknownJsonFields` 合并进 `extraJson`。2. 额外用 `price.mergeUnknownFieldsFrom(other.price, base: base?.price).toJson()` 覆盖 `json['price']`——这是本文件唯一合并触碰 `extraJson` 之外嵌套字段的类，因为 `price` 本身是有自己未知字段要保留的模型。3. 经 `DeviceRecurringCost.fromJson` 重新解析。
 - **用法：** 被 [`Device.mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom) 对每对索引对齐 `recurringCosts` 条目调用一次。
-- **备注：** 此声明源码无 `/// Purpose:` 文档注释。与 `CpuInfo`/`GpuInfo`/`StorageInfo` 的合并方法（只碰 `extraJson`）不同，这个也递归进 `price` 的合并——已知 `kind`/`name`/`billingCycle` 字段仍无条件来自 `this`，与别处相同。
+- **备注：** 此声明的 `/// Purpose:` 块在 1.6.1 补上。与 `CpuInfo`/`GpuInfo`/`StorageInfo` 的合并方法（只碰 `extraJson`）不同，这个也递归进 `price` 的合并——已知 `kind`/`name`/`billingCycle` 字段仍无条件来自 `this`，与别处相同。
 
 ### `Device({String? id, required this.name, required this.category, ..., DateTime? modifiedAt, this.extraJson = const {}})` <a id="device-new"></a>
 - **种类：** `Device` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 699 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 781 行）。
 - **用途：** 创建设备记录，两者都未提供时生成新鲜 UUID `id` 和 UTC `modifiedAt` 时间戳。
-- **输入：** `name`、`category` 必填；每个其他字段（身份、规格、位置、生命周期、财务、`notes`）可选带合理默认（`cpu`/`gpu` 默认空 `const` 实例、`storage`/`recurringCosts` 默认 `[]`、`isRetired`/`isSold` 默认 `false`）。
+- **输入：** `name`、`category` 必填；每个其他字段（身份、规格、位置、生命周期、财务、`notes`）可选带合理默认（`cpu`/`gpu` 默认空 `const` 实例、`storage`/`recurringCosts` 默认 `[]`、`isRetired`/`isSold` 默认 `false`）。图标字段是 `emoji`、`imagePath`（用户自己的照片），以及自 1.6.1 起的 `templateImage`——用户手选的内置缩略图资源路径（与 `DeviceTemplate.image` 的存储形式相同），在 `DeviceAvatar` 中优先于自动模板匹配。
 - **返回：** 新 `Device`。
 - **副作用：** 无（除 `Uuid().v4()`/`DateTime.now()` 调用——无 IO）。
 - **算法：** 初始化器列表中 `id = id ?? const Uuid().v4()`、`modifiedAt = modifiedAt ?? DateTime.now().toUtc()`；所有其他字段带声明默认普通赋值。
@@ -444,7 +444,7 @@
 
 ### `DeviceLifecycleStatus get lifecycleStatus` <a id="lifecyclestatus"></a>
 - **种类：** `Device` 的 getter。
-- **来源：** `lib/features/devices/models/device.dart`（第 736 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 825 行）。
 - **用途：** 从 `isSold`/`isRetired` 标志派生设备生命周期桶（`sold`/`retired`/`inService`），两者都设时 `isSold` 优先。
 - **输入：** 无。
 - **返回：** `DeviceLifecycleStatus`。
@@ -459,7 +459,7 @@
 
 ### `bool get hasFinancialData` <a id="hasfinancialdata"></a>
 - **种类：** `Device` 的 getter。
-- **来源：** `lib/features/devices/models/device.dart`（第 744 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 844 行）。
 - **用途：** 返回此设备是否记录任何财务数据——购买价格、出售价格或至少一个循环成本。
 - **输入：** 无。
 - **返回：** `bool`。
@@ -474,7 +474,7 @@
 
 ### `int? serviceDays({DateTime? asOf})` <a id="servicedays"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 747 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 853 行）。
 - **用途：** 计算此设备已（或曾）在用天数，从 `purchaseDate` 计到或现在（仍在使用）或 `retiredDate`（否则）。
 - **输入：** 可选 `asOf` — "仍在使用"分支覆盖"现在"；默认 `DateTime.now()`。
 - **返回：** `int?` — `purchaseDate` 未设时 `null`；否则至少 `1`。
@@ -489,7 +489,7 @@
 
 ### `double recurringCostThrough({DateTime? asOf})` <a id="recurringcostthrough"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 754 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 866 行）。
 - **用途：** 对每个循环成本的每日等价费率跨设备总服务天数求和，给出迄今（或投影到 `asOf`）花在循环成本上的总金额。
 - **输入：** 可选 `asOf`，转发给 [`serviceDays`](#servicedays)。
 - **返回：** `double` — `serviceDays` 为 `null`（无 `purchaseDate`）时 `0`。
@@ -504,7 +504,7 @@
 
 ### `double totalCost({DateTime? asOf})` <a id="totalcost"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 763 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 880 行）。
 - **用途：** 计算此设备总拥有成本：购买价格加累积循环成本，减任何回收出售价格。
 - **输入：** 可选 `asOf`，转发给 [`recurringCostThrough`](#recurringcostthrough)。
 - **返回：** `double`。
@@ -520,7 +520,7 @@
 
 ### `double? averageDailyCost({DateTime? asOf})` <a id="averagedailycost"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 769 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 892 行）。
 - **用途：** 计算拥有此设备的平均每日成本，无财务数据或无可度量天数的 `purchaseDate` 时为 `null`。
 - **输入：** 可选 `asOf`，转发给 [`serviceDays`](#servicedays) 和 [`totalCost`](#totalcost) 两者。
 - **返回：** `double?` — `serviceDays` 为 `null` 或 [`hasFinancialData`](#hasfinancialdata) 为 `false` 时 `null`；否则 `totalCost(asOf: asOf) / days`。
@@ -535,7 +535,7 @@
 
 ### `double? get ppi` <a id="ppi"></a>
 - **种类：** `Device` 的 getter。
-- **来源：** `lib/features/devices/models/device.dart`（第 776 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 905 行）。
 - **用途：** 从设备屏幕分辨率和物理屏幕尺寸计算每英寸像素。
 - **输入：** 无。
 - **返回：** `double?` — 分辨率或可解析屏幕对角线缺失时 `null`。
@@ -551,7 +551,7 @@
 
 ### `static double? _parseScreenDiagonal(String? s)` <a id="_parsescreendiagonal"></a>
 - **种类：** `Device` 的私有静态方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 785 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 920 行）。
 - **用途：** 把自由文本屏幕尺寸字符串（如 `6.7"`、`15.6 inch`、`13寸`）解析为普通数字英寸值。
 - **输入：** `s` — 可空、自由文本。
 - **返回：** `double?` — `s` 为 null/空或清洗字符串解析不为数字时 `null`。
@@ -562,9 +562,9 @@
 
 ### `Device copyWith({...many optional fields..., bool clearEmoji = false, ...})` <a id="copywith"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 794 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 936 行）。
 - **用途：** 创建此设备的任何子集字段被替换的副本，并对每个可空字段有完全置 null 的显式 `clearXxx` 标志（因为 Dart 中可选参数传 `null` 与"未提供"无法区分）。
-- **输入：** 每个要替换字段一个可选参数，加每个可空字段一个 `bool clearXxx = false` 改为清除它（如 `clearEmoji`、`clearBrand`、`clearPurchasePrice`……）；`id` 和 `extraJson` 总是原样带过（根本不是参数）；未显式传入时 `modifiedAt` 默认新鲜 `DateTime.now().toUtc()`。
+- **输入：** 每个要替换字段一个可选参数，加每个可空字段一个 `bool clearXxx = false` 改为清除它（如 `clearEmoji`、`clearImagePath`、`clearTemplateImage`、`clearBrand`、`clearPurchasePrice`……）；`id` 和 `extraJson` 总是原样带过（根本不是参数）；未显式传入时 `modifiedAt` 默认新鲜 `DateTime.now().toUtc()`。
 - **返回：** 相同 `id`、所有指定替换已应用、所有指定 `clearXxx` 字段已置 null、其他一切不变的新 `Device`。
 - **副作用：** 无。
 - **算法：** 对每个可清除字段：`clearXxx ? null : (xxx ?? this.xxx)`；对不可清除字段（`name`、`category`、`cpu`、`gpu`、`storage`、`isRetired`、`isSold`、`recurringCosts`）：`xxx ?? this.xxx`；`modifiedAt: modifiedAt ?? DateTime.now().toUtc()`。
@@ -574,23 +574,23 @@
 
 ### `Map<String, dynamic> toJson()` <a id="device-tojson"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 900 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 1053 行）。
 - **用途：** 把此设备序列化为持久化在 `device_data.json` 并经同步到 WebDAV 远程的 JSON。
 - **输入：** 无。
 - **返回：** `Map<String, dynamic>`——先展开 `extraJson`，然后每个已知字段，大多数 `if (field != null)` 门控；`cpu`/`gpu` 只在 `if (!cpu.isEmpty)`/`if (!gpu.isEmpty)` 时包含；`storage`/`recurringCosts` 只在 `if (...isNotEmpty)` 时包含；`isRetired`/`isSold` 只在 `if (true)` 时包含（`false` 时完全省略）；`id`/`name`/`category`/`modifiedAt` 总是存在。
 - **副作用：** 无。
 - **算法：** 带上面条件包含规则的直接字段到键映射；嵌套值（`cpu`、`gpu`、每个 `storage`/`recurringCosts` 条目、`purchasePrice`/`soldPrice`）经自己的 `toJson()` 序列化。
 - **用法：** 被 [`DeviceData.toJson`](#devicedata-tojson) 为每个设备调用，被 `local_api_server.dart` 的 `mergeUnknownFields` 回调（`primary.mergeUnknownFieldsFrom(...)`）经 [`mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom) 间接调用。
-- **备注：** `isRetired`/`isSold` 为 `false` 时完全省略（而非写 `false`）让常见 case（在用设备）留在持久化 JSON 外——这是存储大小优化，非正确性要求，因为 [`Device.fromJson`](#device-fromjson) 缺席时把两者默认 `false`。
+- **备注：** `isRetired`/`isSold` 为 `false` 时完全省略（而非写 `false`）让常见 case（在用设备）留在持久化 JSON 外——这是存储大小优化，非正确性要求，因为 [`Device.fromJson`](#device-fromjson) 缺席时把两者默认 `false`。`templateImage` 只在设置时写出，因此没有手选缩略图的设备序列化结果与 1.6.1 之前完全相同；该键列在 `_deviceJsonKeys` 中，因此是已知字段而非 `extraJson`。
 
 ### `factory Device.fromJson(Map<String, dynamic> json)` <a id="device-fromjson"></a>
 - **种类：** `Device` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 937 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 1097 行）。
 - **用途：** 从 JSON 解析 `Device`，容忍遗留单字符串 `storage` 形态加当前对象列表形态。
 - **输入：** `json`。
 - **返回：** 新 `Device`；`id`/`name`/`category`/`modifiedAt` 缺失时抛（都必填、非可空读取）。
 - **副作用：** 无。
-- **算法：** 大多数字段直接字段提取；`cpu`/`gpu` 存在时经 [`CpuInfo.fromJson`](#cpuinfo-fromjson)/[`GpuInfo.fromJson`](#gpuinfo-fromjson)，否则空 `const` 默认；`storage` 分支于 `json['storage']` 是 `String`（遗留：经 `StorageInfo.fromJson` 包进单元素列表）还是 `List`（映射每个条目）；日期字段经 `DateTime.parse`；`extraJson` 经 `unknownJsonFields(json, _deviceJsonKeys)`。
+- **算法：** 大多数字段直接字段提取；`cpu`/`gpu` 存在时经 [`CpuInfo.fromJson`](#cpuinfo-fromjson)/[`GpuInfo.fromJson`](#gpuinfo-fromjson)，否则空 `const` 默认；`storage` 分支于 `json['storage']` 是 `String`（遗留：经 `StorageInfo.fromJson` 包进单元素列表）还是 `List`（映射每个条目）；日期字段经 `DateTime.parse`；可选的 `templateImage` 字符串原样复制；`extraJson` 经 `unknownJsonFields(json, _deviceJsonKeys)`。
 - **用法：**
   ```dart
   final json = jsonDecode(raw) as Map<String, dynamic>;
@@ -601,7 +601,7 @@
 
 ### `Device mergeUnknownFieldsFrom(Device other, {Device? base})` <a id="device-mergeunknownfieldsfrom"></a>
 - **种类：** `Device` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 1001 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 1168 行）。
 - **用途：** 合并此设备的未知 JSON 字段与另一个的，并额外把相同三方未知字段合并递归进每个嵌套值对象（`cpu`、`gpu`、每个 `storage` 条目、`purchasePrice`、`soldPrice`、每个 `recurringCosts` 条目），使同步合并期间无嵌套无法识别字段丢失。
 - **输入：** `other` — 另一侧（secondary）；可选 `base` — 上次同步快照。
 - **返回：** 新 `Device`——与 `this` 相同已知顶层字段，但每个嵌套值对象的 `extraJson` 对照 `other` 对应值合并，经 `Device.fromJson` 重新解析。
@@ -613,11 +613,11 @@
       primary.mergeUnknownFieldsFrom(secondary, base: base),
   ```
   （来自 `lib/shared/services/sync_merge.dart` 的 `mergeDeviceData`，作为 `mergeUnknownFields` 回调传入 `mergeRecords<Device>`——`mergeRecords<T>` 在调用此之前如何决定哪侧是 `primary`/`secondary` 见 [三方合并](../../../../algorithms/three-way-merge.md)）
-- **备注：** 这里列表合并严格**索引对齐**，不经 `storage`/`recurringCosts` 条目自身内任何身份匹配（`StorageInfo`/`DeviceRecurringCost` 列表项除位置外无稳定跨侧匹配键，除 `DeviceRecurringCost` 确实有 `id`，此方法*不*用其匹配）——两侧在不同位置重排或插入/移除条目时，这会把无关条目 `extraJson` 在同一索引合并到一起。这是真实、源码确认的限制，非假设边缘 case。此声明源码无 `/// Purpose:` 文档注释。
+- **备注：** 这里列表合并严格**索引对齐**，不经 `storage`/`recurringCosts` 条目自身内任何身份匹配（`StorageInfo`/`DeviceRecurringCost` 列表项除位置外无稳定跨侧匹配键，除 `DeviceRecurringCost` 确实有 `id`，此方法*不*用其匹配）——两侧在不同位置重排或插入/移除条目时，这会把无关条目 `extraJson` 在同一索引合并到一起。这是真实、源码确认的限制，非假设边缘 case。此声明的 `/// Purpose:` 块在 1.6.1 补上。
 
 ### `const DeviceData({this.devices = const [], this.extraJson = const {}})` <a id="devicedata-new"></a>
 - **种类：** `DeviceData` 的构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 1084 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 1251 行）。
 - **用途：** 持有持久化到 `device_data.json` 的顶层设备列表。
 - **输入：** 可选 `devices`（默认 `[]`）；可选 `extraJson`。
 - **返回：** 新 `DeviceData`。
@@ -632,7 +632,7 @@
 
 ### `Map<String, dynamic> toJson()` <a id="devicedata-tojson"></a>
 - **种类：** `DeviceData` 的方法。
-- **来源：** `lib/features/devices/models/device.dart`（第 1091 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 1258 行）。
 - **用途：** 把设备列表容器序列化为写入 `device_data.json` 的 JSON。
 - **输入：** 无。
 - **返回：** 带 `devices`（每个经 [`Device.toJson`](#device-tojson) 序列化）加任何保留 `extraJson` 的 `Map<String, dynamic>`。
@@ -643,7 +643,7 @@
 
 ### `factory DeviceData.fromJson(Map<String, dynamic> json)` <a id="devicedata-fromjson"></a>
 - **种类：** `DeviceData` 的工厂构造函数。
-- **来源：** `lib/features/devices/models/device.dart`（第 1101 行）。
+- **来源：** `lib/features/devices/models/device.dart`（第 1268 行）。
 - **用途：** 从 `device_data.json` 的解码内容解析 `DeviceData`。
 - **输入：** `json`。
 - **返回：** 新 `DeviceData`；`devices` 键缺席时默认 `[]`。

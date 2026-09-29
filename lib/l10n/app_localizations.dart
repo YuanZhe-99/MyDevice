@@ -1445,6 +1445,102 @@ abstract class AppLocalizations {
   /// **'Change'**
   String get deviceChangeImage;
 
+  /// No description provided for @deviceChooseThumbnail.
+  ///
+  /// In en, this message translates to:
+  /// **'Thumbnail'**
+  String get deviceChooseThumbnail;
+
+  /// No description provided for @deviceThumbnailAutomatic.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get deviceThumbnailAutomatic;
+
+  /// No description provided for @deviceThumbnailSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search thumbnails'**
+  String get deviceThumbnailSearch;
+
+  /// No description provided for @deviceEditImage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Image'**
+  String get deviceEditImage;
+
+  /// No description provided for @imageEditorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Image'**
+  String get imageEditorTitle;
+
+  /// No description provided for @imageEditorUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use'**
+  String get imageEditorUse;
+
+  /// No description provided for @imageEditorUseOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Use Original'**
+  String get imageEditorUseOriginal;
+
+  /// No description provided for @imageEditorCropHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and zoom to choose the part to keep'**
+  String get imageEditorCropHint;
+
+  /// No description provided for @imageEditorRemoveBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove background'**
+  String get imageEditorRemoveBackground;
+
+  /// No description provided for @imageEditorRemoveBackgroundDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears a plain background connected to the edges'**
+  String get imageEditorRemoveBackgroundDesc;
+
+  /// No description provided for @imageEditorTolerance.
+  ///
+  /// In en, this message translates to:
+  /// **'Tolerance'**
+  String get imageEditorTolerance;
+
+  /// No description provided for @imageEditorRoundedCorners.
+  ///
+  /// In en, this message translates to:
+  /// **'Rounded corners'**
+  String get imageEditorRoundedCorners;
+
+  /// No description provided for @imageEditorRoundedCornersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'For a phone or tablet cropped tightly against a busy background'**
+  String get imageEditorRoundedCornersDesc;
+
+  /// No description provided for @imageEditorSizeInCircle.
+  ///
+  /// In en, this message translates to:
+  /// **'Size in circle'**
+  String get imageEditorSizeInCircle;
+
+  /// No description provided for @imageEditorReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get imageEditorReset;
+
+  /// No description provided for @imageEditorDecodeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This image cannot be edited; it is used unchanged'**
+  String get imageEditorDecodeFailed;
+
   /// No description provided for @deviceRemoveIcon.
   ///
   /// In en, this message translates to:

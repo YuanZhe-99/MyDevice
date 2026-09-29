@@ -146,6 +146,17 @@
 | fallback facts | 回退事实 | 模型拒绝第一组事实时发送的更朴素的第二次尝试 |
 | regenerate | 重新生成 | 卡片的刷新操作 |
 | weak linking | 弱链接 | 链接 FoundationModels 的方式，使应用在没有该框架的系统上仍能启动 |
+| hand-picked thumbnail | 手选缩略图 | 用户为设备选定的内置缩略图（`templateImage`） |
+| thumbnail candidate | 候选缩略图 | 排序后的选择网格中的一项 |
+| image editor | 图片编辑器 | 对用户自己的照片进行裁切、去背景和适配的界面 |
+| remove background | 去背景 | 清除与图片边缘相连的纯色背景 |
+| size in circle | 圆内占比 | 修剪后的设备占头像圆的比例 |
+| crop | 裁切 | 保留源图中的一个区域 |
+| source registry | 来源注册表 | 设备搜索来源的有序列表，每项都有开关 |
+| fallback source | 后备来源 | 仅当其他来源都找不到时才查询的来源（维基百科） |
+| tech specs page | 技术规格页 | Apple 支持网站上每个产品的规格页面 |
+| user agent | 用户代理 | 搜索请求发送的 `User-Agent` 请求头 |
+| infobox | 信息框 | 维基百科条目顶部的摘要表格 |
 
 ## 6. 复核清单（提交中文页前运行）
 

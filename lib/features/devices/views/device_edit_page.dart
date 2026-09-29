@@ -17,8 +17,10 @@ import '../services/device_storage.dart';
 import '../services/exchange_rate_service.dart';
 import '../services/preset_service.dart';
 import '../widgets/device_avatar.dart';
+import '../widgets/template_image_picker.dart';
 import '../widgets/device_category_icon.dart';
 import 'chip_search_dialog.dart';
+import 'device_image_editor_page.dart';
 import 'device_search_dialog.dart';
 
 class DeviceEditPage extends StatefulWidget {
@@ -78,6 +80,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
 
   String? _emoji;
   String? _imagePath;
+  String? _templateImage;
 
   late DeviceCategory _category;
   DateTime? _purchaseDate;
@@ -138,6 +141,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _serialNumberCtrl = TextEditingController(text: d?.serialNumber ?? '');
     _emoji = d?.emoji;
     _imagePath = d?.imagePath;
+    _templateImage = d?.templateImage;
     final ramParsed = _parseValueUnit(d?.ram);
     _ramCtrl = TextEditingController(text: ramParsed.$1);
     _ramUnit = ramParsed.$2;
@@ -563,6 +567,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       category: _category,
       emoji: _emoji,
       imagePath: _imagePath,
+      templateImage: _templateImage,
       brand: _nonEmpty(_brandCtrl.text),
       model: _nonEmpty(_modelCtrl.text),
       serialNumber: _nonEmpty(_serialNumberCtrl.text),
@@ -902,6 +907,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       if (result['image'] is String) {
         _imagePath = result['image'];
         _emoji = null;
+        _templateImage = null;
       }
     });
   }
@@ -1030,6 +1036,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                         setState(() {
                           _emoji = emoji;
                           _imagePath = null;
+                          _templateImage = null;
                         });
                         Navigator.pop(context);
                       },
@@ -1050,19 +1057,88 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     );
   }
 
-  /// Purpose: Pick image from user-provided input.
+  /// Purpose: Pick a photo, let the user edit it, and use the result.
   /// Inputs: None.
   /// Returns: `Future<void>`.
-  /// Side effects: Updates widget state and triggers a rebuild.
-  /// Notes: Internal helper used within this file only.
+  /// Side effects: Shows the file picker and the image editor; writes the
+  /// image under `images/`; updates widget state.
+  /// Notes: "Use original" (or a file the editor cannot decode) stores the
+  /// file unchanged, as before the editor existed; cancelling the editor
+  /// adds nothing. Internal helper used within this file only.
   Future<void> _pickImage() async {
-    final path = await ImageService.pickAndSaveImage();
-    if (path != null) {
-      setState(() {
-        _imagePath = path;
-        _emoji = null;
-      });
-    }
+    final file = await ImageService.pickImageFile();
+    if (file == null || !mounted) return;
+    final result = await showDeviceImageEditor(
+      context,
+      file,
+      allowOriginal: true,
+    );
+    if (result == null) return;
+    final png = result.png;
+    final path = png == null
+        ? await ImageService.saveImageFile(file)
+        : await ImageService.saveImageBytes(png, '.png');
+    if (!mounted) return;
+    _useImage(path);
+  }
+
+  /// Purpose: Re-open the current photo in the image editor.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Shows the image editor; writes the edited image as a new
+  /// file under `images/`; updates widget state.
+  /// Notes: The previous file stays on disk unreferenced, as when a photo
+  /// is replaced. Internal helper used within this file only.
+  Future<void> _editImage() async {
+    final current = _imagePath;
+    if (current == null) return;
+    final file = await ImageService.resolve(current);
+    if (!mounted || !file.existsSync()) return;
+    final result = await showDeviceImageEditor(context, file);
+    final png = result?.png;
+    if (png == null) return;
+    final path = await ImageService.saveImageBytes(png, '.png');
+    if (!mounted) return;
+    _useImage(path);
+  }
+
+  /// Purpose: Make a stored image the device's icon.
+  /// Inputs: `path` — relative path under the app directory.
+  /// Returns: None.
+  /// Side effects: Updates widget state and triggers a rebuild.
+  /// Notes: Clears the emoji and any hand-picked thumbnail, which the photo
+  /// would hide anyway. Internal helper used within this file only.
+  void _useImage(String path) {
+    setState(() {
+      _imagePath = path;
+      _emoji = null;
+      _templateImage = null;
+    });
+  }
+
+  /// Purpose: Let the user choose a bundled thumbnail by hand.
+  /// Inputs: None.
+  /// Returns: `Future<void>`.
+  /// Side effects: Shows the thumbnail chooser; updates widget state.
+  /// Notes: Candidates are ranked against what is typed in name, brand and
+  /// model now. Choosing a thumbnail clears the emoji and photo so it is
+  /// what the avatar shows; "Automatic" clears the choice. Internal helper
+  /// used within this file only.
+  Future<void> _chooseThumbnail() async {
+    final choice = await showTemplateImagePicker(
+      context,
+      category: _category,
+      brand: _nonEmpty(_brandCtrl.text),
+      model: _nonEmpty(_modelCtrl.text),
+      name: _nonEmpty(_nameCtrl.text),
+      current: _templateImage,
+    );
+    if (choice == null || !mounted) return;
+    setState(() {
+      _templateImage = choice.asset;
+      _emoji = null;
+      _imagePath = null;
+    });
   }
 
   /// Purpose: Provide the internal remove icon helper for this file.
@@ -1074,6 +1150,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     setState(() {
       _emoji = null;
       _imagePath = null;
+      _templateImage = null;
     });
   }
 
@@ -1099,6 +1176,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         category: _category,
         emoji: _emoji,
         imagePath: _imagePath,
+        templateImage: _templateImage,
         brand: _nonEmpty(_brandCtrl.text),
         model: _nonEmpty(_modelCtrl.text),
         name: _nonEmpty(_nameCtrl.text),
@@ -1122,7 +1200,18 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
           ),
           onPressed: _pickImage,
         ),
-        if (_emoji != null || _imagePath != null)
+        if (_imagePath != null)
+          ActionChip(
+            avatar: const Icon(Icons.auto_fix_high, size: 18),
+            label: Text(l10n.deviceEditImage),
+            onPressed: _editImage,
+          ),
+        ActionChip(
+          avatar: const Icon(Icons.photo_library_outlined, size: 18),
+          label: Text(l10n.deviceChooseThumbnail),
+          onPressed: _chooseThumbnail,
+        ),
+        if (_emoji != null || _imagePath != null || _templateImage != null)
           ActionChip(
             avatar: const Icon(Icons.clear, size: 18),
             label: Text(l10n.deviceRemoveIcon),
@@ -1563,7 +1652,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       appBar: AppBar(
         title: Text(_isEditing ? l10n.editDevice : l10n.addDevice),
         actions: [
-          if (AppFlavor.isFull)
+          if (AppFlavor.deviceSearchExposed)
             IconButton(
               icon: const Icon(Icons.travel_explore),
               tooltip: l10n.fetchFromInternet,

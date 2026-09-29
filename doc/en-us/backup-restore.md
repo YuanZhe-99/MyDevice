@@ -182,4 +182,7 @@ lifecycle/finance in `v0.4.0`; service data added in `v0.5.6`).
 
 Handles file picking, URL download, UUID filenames under `images/`, relative path
 resolution, and deletion — the primitives that `Device.imagePath` and the sync/backup
-image logic build on.
+image logic build on. Since 1.6.1 it also stores the image editor's output
+(`saveImageBytes`, always a new `images/<uuid>.png`) and decodes a photo for editing
+(`loadEditableImage`). An edited photo is therefore an ordinary new image file; the file it
+replaced is no longer referenced, so backups and exports stop carrying it.

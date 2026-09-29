@@ -93,13 +93,51 @@ device needs an icon:
   `ClipOval` + `BoxFit.cover`, center-cropped over a `surfaceContainerHighest`
   background with a subtle `outlineVariant` border — this keeps transparent PNGs
   visible against the circular frame.
+- Else, if `templateImage` (a thumbnail the user chose by hand) names a bundled thumbnail that
+  still exists, that is shown (since 1.6.1; a path a later release removed is ignored).
 - Else, if the device's brand+model (or name) equals a bundled template that has an `image`,
   that transparent thumbnail is shown (`PresetService.matchTemplateImage`; normalized exact match,
-  so `iPhone 15` never takes the `iPhone 15 Pro` photo). This is display-only: nothing is written
-  to the device, so existing devices get thumbnails too and older builds just show the icon.
+  so `iPhone 15` never takes the `iPhone 15 Pro` photo). This match is display-only: nothing is
+  written to the device, so existing devices get thumbnails too and older builds just show the icon.
 - Any missing/failed image (including `Image.file`'s `errorBuilder`) falls back to a
   consistent outline category icon (`deviceCategoryIcon(category)` from
   `device_category_icon.dart`).
+
+## Icon and image <a id="icon-and-image"></a>
+
+The editor's icon section (`_buildIconSection` in `device_edit_page.dart`) shows the live avatar
+and these chips; each choice clears the others, since only one of them can show:
+
+| Chip | Does | Stored as |
+|---|---|---|
+| **Icon** | Emoji picker | `emoji` |
+| **Pick Image** / **Change** | File picker, then the image editor | `imagePath` (a new file under `images/`) |
+| **Edit Image** (when a photo is set) | Re-opens the current photo in the image editor | `imagePath` (a new file) |
+| **Thumbnail** | Searchable grid of bundled thumbnails, best candidates first, with **Automatic** first ([details](online-search-and-presets.md#device-thumbnails)) | `templateImage`, or nothing for Automatic |
+| **Remove Icon** | Clears all three | — |
+
+**Image editor (since 1.6.1)** — `lib/features/devices/views/device_image_editor_page.dart`,
+opened by `showDeviceImageEditor`. A picked photo is decoded by the platform codec (so formats
+Flutter can show, and EXIF orientation, behave as on screen; `package:image` is the fallback),
+reduced to 1024 px while decoding, and edited with:
+
+- **Crop** — drag and pinch/scroll-zoom a square view with a circle guide; the visible part is
+  the region kept.
+- **Remove background** with a **Tolerance** slider — the same edge flood fill as the thumbnail
+  tooling, which clears a plain background connected to the border and keeps a white screen or
+  logo inside the device.
+- **Rounded corners** — a rounded-rectangle mask instead of removal, for a phone or tablet
+  cropped tightly against a busy background.
+- **Size in circle** (40–100 %) — how much of the circle the trimmed device fills; lower values
+  leave more margin around it.
+
+A small preview (384 px source, 256 px output) runs in an isolate about 150 ms after each change,
+shown both large and at list size on the avatar's own fill colour. **Use** makes the final image —
+a 512 px transparent PNG — and saves it as a new `images/<uuid>.png`. When adding a photo, **Use
+Original** (or a file neither decoder can read) stores the file unchanged as before 1.6.1;
+cancelling adds nothing. The previous file of an edited or replaced photo stays on disk
+unreferenced, as it always has. The pipeline is `processDeviceImage` in
+`lib/shared/utils/device_image_processing.dart`, shared with `tool/prepare_device_image.dart`.
 
 ## Related
 

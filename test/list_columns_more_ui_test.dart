@@ -63,8 +63,10 @@ void main() {
       ready: find.text('网络 2'),
     );
 
-    testWidgets('a Z Fold 8 in landscape carries two columns', (tester) async {
-      await pumpAt(tester, 933, 704);
+    testWidgets('a Z Fold 8 carries two columns, a tablet three at 300 dp', (
+      tester,
+    ) async {
+      await pumpAt(tester, 933, 704); // Z Fold 8 landscape
       final first = tester.getTopLeft(tiles.at(0));
       final second = tester.getTopLeft(tiles.at(1));
       final third = tester.getTopLeft(tiles.at(2));
@@ -72,18 +74,14 @@ void main() {
       expect(second.dx, greaterThan(first.dx));
       expect(third.dy, greaterThan(first.dy));
       expect(tester.takeException(), isNull);
-    });
 
-    testWidgets('a tablet in landscape carries three at 300 dp', (
-      tester,
-    ) async {
-      // 1024 − 81 rail − 16 padding = 927 ≥ 300 × 3 + 12 × 2 = 924.
-      await pumpAt(tester, 1024, 768);
-      final first = tester.getTopLeft(tiles.at(0));
-      final third = tester.getTopLeft(tiles.at(2));
-      final fourth = tester.getTopLeft(tiles.at(3));
-      expect(third.dy, first.dy);
-      expect(fourth.dy, greaterThan(first.dy));
+      // 1024 - 81 rail - 16 padding = 927 >= 300 x 3 + 12 x 2 = 924.
+      await pumpAt(tester, 1024, 768); // tablet landscape
+      final tFirst = tester.getTopLeft(tiles.at(0));
+      final tThird = tester.getTopLeft(tiles.at(2));
+      final tFourth = tester.getTopLeft(tiles.at(3));
+      expect(tThird.dy, tFirst.dy);
+      expect(tFourth.dy, greaterThan(tFirst.dy));
       expect(tester.takeException(), isNull);
     });
 

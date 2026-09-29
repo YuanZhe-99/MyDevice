@@ -57,10 +57,7 @@ void main() {
         isNotebookcheckSearchPage(fixture('notebookcheck_no_results.html')),
         isTrue,
       );
-      expect(
-        isPhonedbResultsPage(fixture('phonedb_no_results.html')),
-        isTrue,
-      );
+      expect(isPhonedbResultsPage(fixture('phonedb_no_results.html')), isTrue);
     });
 
     test('a page with results is also recognised', () {
@@ -161,115 +158,137 @@ void main() {
     });
 
     test('scores partial matches between 0 and 1', () {
-      expect(relevanceScore('Galaxy Z Fold8', 'Galaxy F56'), closeTo(0.5, 1e-9));
+      expect(
+        relevanceScore('Galaxy Z Fold8', 'Galaxy F56'),
+        closeTo(0.5, 1e-9),
+      );
       expect(relevanceScore('', 'anything'), 0);
     });
   });
 
   group('value parsers', () {
+    // Each parser has one table of (input, expected); every row is checked and
+    // a failure names the input that broke.
+    void table<I, O>(O Function(I) parse, List<(I, O)> rows) {
+      for (final (input, expected) in rows) {
+        expect(parse(input), expected, reason: 'input: $input');
+      }
+    }
+
     test('parseCapacity normalises decimal and binary units', () {
-      expect(parseCapacity('12 GB , LPDDR5x'), '12 GB');
-      expect(parseCapacity('256 GB UFS 4.0 Flash, 256 GB , 217.8 GB free'),
-          '256 GB');
-      expect(parseCapacity('12 GiB RAM'), '12 GB');
-      expect(parseCapacity('256 GB ROM'), '256 GB');
-      expect(parseCapacity('no capacity here'), isNull);
+      table<String, String?>(parseCapacity, [
+        ('12 GB , LPDDR5x', '12 GB'),
+        ('256 GB UFS 4.0 Flash, 256 GB , 217.8 GB free', '256 GB'),
+        ('12 GiB RAM', '12 GB'),
+        ('256 GB ROM', '256 GB'),
+        ('no capacity here', null),
+      ]);
     });
 
     test('parseMemory splits a combined storage/RAM string', () {
-      expect(parseMemory('256GB 12GB RAM'), ('12 GB', '256 GB'));
-      expect(parseMemory('1TB 16GB RAM'), ('16 GB', '1 TB'));
-      expect(parseMemory('8GB RAM'), ('8 GB', null));
-      expect(parseMemory(null), (null, null));
+      table<String?, (String?, String?)>(parseMemory, [
+        ('256GB 12GB RAM', ('12 GB', '256 GB')),
+        ('1TB 16GB RAM', ('16 GB', '1 TB')),
+        ('8GB RAM', ('8 GB', null)),
+        (null, (null, null)),
+      ]);
     });
 
     test('parseScreenSize reads inches', () {
-      expect(parseScreenSize('7.60 inch 4:3, 2448 x 1848 pixel'), '7.60"');
-      expect(parseScreenSize('6.80" 3120x1440'), '6.80"');
-      expect(parseScreenSize('16.2 inches'), '16.2"');
+      table<String, String?>(parseScreenSize, [
+        ('7.60 inch 4:3, 2448 x 1848 pixel', '7.60"'),
+        ('6.80" 3120x1440', '6.80"'),
+        ('16.2 inches', '16.2"'),
+      ]);
     });
 
     test('parseScreenSizeMm converts phonedb millimetres to inches', () {
-      expect(parseScreenSizeMm('159.3 mm'), '6.27"');
-      expect(parseScreenSizeMm('0 mm'), isNull);
+      table<String, String?>(parseScreenSizeMm, [
+        ('159.3 mm', '6.27"'),
+        ('0 mm', null),
+      ]);
     });
 
     test('parseResolution prefers the pixel-labelled figure', () {
       // "4:3" must not be mistaken for a resolution.
-      expect(
-        parseResolution('7.60 inch 4:3, 2448 x 1848 pixel 404 PPI'),
-        (2448, 1848),
-      );
-      expect(parseResolution('1080x2340'), (1080, 2340));
-      expect(parseResolution('no resolution'), (null, null));
+      table<String, (int?, int?)>(parseResolution, [
+        ('7.60 inch 4:3, 2448 x 1848 pixel 404 PPI', (2448, 1848)),
+        ('1080x2340', (1080, 2340)),
+        ('no resolution', (null, null)),
+      ]);
     });
 
     test('parseBattery reads mAh and Wh', () {
-      expect(parseBattery('4800 mAh Lithium-Ion, Silicon-Carbon- Anode'),
-          '4800 mAh');
-      expect(parseBattery('100 Wh'), '100 Wh');
-      expect(parseBattery('unknown'), isNull);
+      table<String, String?>(parseBattery, [
+        ('4800 mAh Lithium-Ion, Silicon-Carbon- Anode', '4800 mAh'),
+        ('100 Wh', '100 Wh'),
+        ('unknown', null),
+      ]);
     });
 
     test('parseMonth accepts full names and abbreviations', () {
-      expect(parseMonth('September'), 9);
-      expect(parseMonth('Mar'), 3);
-      expect(parseMonth('xx'), isNull);
+      table<String, int?>(parseMonth, [
+        ('September', 9),
+        ('Mar', 3),
+        ('xx', null),
+      ]);
     });
 
     test('parseReleaseDate reads year-first dates', () {
-      expect(parseReleaseDate('2026 Mar 12'), DateTime(2026, 3, 12));
-      expect(
-        parseReleaseDate('Released 2024, September 20'),
-        DateTime(2024, 9, 20),
-      );
-      expect(parseReleaseDate('2024, September'), DateTime(2024, 9));
-      expect(parseReleaseDate('nothing'), isNull);
+      table<String, DateTime?>(parseReleaseDate, [
+        ('2026 Mar 12', DateTime(2026, 3, 12)),
+        ('Released 2024, September 20', DateTime(2024, 9, 20)),
+        ('2024, September', DateTime(2024, 9)),
+        ('nothing', null),
+      ]);
     });
 
     test('parseUsDate reads the Notebookcheck MM/DD/YYYY form', () {
-      expect(parseUsDate('07/22/2026'), DateTime(2026, 7, 22));
-      expect(parseUsDate('13/22/2026'), isNull);
+      table<String, DateTime?>(parseUsDate, [
+        ('07/22/2026', DateTime(2026, 7, 22)),
+        ('13/22/2026', null),
+      ]);
     });
 
     test('parseChipName drops clock and core detail', () {
-      expect(
-        parseChipName(
+      table<String, String?>(parseChipName, [
+        (
           'Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy 8c/8t, '
-          '2 x 4.7 GHz Qualcomm Oryon Gen 3 Prime',
+              '2 x 4.7 GHz Qualcomm Oryon Gen 3 Prime',
+          'Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy',
         ),
-        'Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy',
-      );
-      expect(parseChipName('Qualcomm Adreno 840'), 'Qualcomm Adreno 840');
+        ('Qualcomm Adreno 840', 'Qualcomm Adreno 840'),
+      ]);
     });
 
-    test('isLikelyDeviceImage rejects adverts even with an image extension', () {
-      expect(
-        isLikelyDeviceImage(
-          'https://www.notebookcheck.net/fileadmin/Notebooks/x.jpg',
-        ),
-        isTrue,
-      );
-      expect(isLikelyDeviceImage('https://images.amazon.com/thing.jpg'),
-          isFalse);
-      expect(isLikelyDeviceImage('https://x.test/banner.png'), isFalse);
-      expect(isLikelyDeviceImage('https://x.test/page.html'), isFalse);
-    });
+    test(
+      'isLikelyDeviceImage rejects adverts even with an image extension',
+      () {
+        table<String, bool>(isLikelyDeviceImage, [
+          ('https://www.notebookcheck.net/fileadmin/Notebooks/x.jpg', true),
+          ('https://images.amazon.com/thing.jpg', false),
+          ('https://x.test/banner.png', false),
+          ('https://x.test/page.html', false),
+        ]);
+      },
+    );
 
     test('splitBrandModel keeps multi-word brands intact', () {
-      expect(splitBrandModel('Samsung Galaxy Z Fold8'),
-          ('Samsung', 'Galaxy Z Fold8'));
-      expect(splitBrandModel('Raspberry Pi 5'), ('Raspberry Pi', '5'));
-      expect(splitBrandModel('Solo'), ('Solo', null));
+      table<String, (String?, String?)>(splitBrandModel, [
+        ('Samsung Galaxy Z Fold8', ('Samsung', 'Galaxy Z Fold8')),
+        ('Raspberry Pi 5', ('Raspberry Pi', '5')),
+        ('Solo', ('Solo', null)),
+      ]);
     });
   });
 
   group('parseNotebookcheckSpecs', () {
     late Map<String, String> specs;
 
-    setUpAll(() => specs = parseNotebookcheckSpecs(
-          fixture('notebookcheck_detail.html'),
-        ));
+    setUpAll(
+      () =>
+          specs = parseNotebookcheckSpecs(fixture('notebookcheck_detail.html')),
+    );
 
     test('reads every mapped label', () {
       expect(
@@ -295,8 +314,10 @@ void main() {
     });
 
     test('yields the values the search result maps onto', () {
-      expect(parseChipName(specs['Processor']),
-          'Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy');
+      expect(
+        parseChipName(specs['Processor']),
+        'Qualcomm Snapdragon 8 Elite Gen 5 for Galaxy',
+      );
       expect(specs['Graphics adapter'], 'Qualcomm Adreno 840');
       expect(parseCapacity(specs['Memory']), '12 GB');
       expect(parseCapacity(specs['Storage']), '256 GB');
@@ -308,17 +329,17 @@ void main() {
     });
 
     test('returns an empty map when the markup is unrecognised', () {
-      expect(parseNotebookcheckSpecs('<html><body>nothing</body></html>'),
-          isEmpty);
+      expect(
+        parseNotebookcheckSpecs('<html><body>nothing</body></html>'),
+        isEmpty,
+      );
     });
   });
 
   group('parsePhonedbSpecs', () {
     late Map<String, String> specs;
 
-    setUpAll(
-      () => specs = parsePhonedbSpecs(fixture('phonedb_detail.html')),
-    );
+    setUpAll(() => specs = parsePhonedbSpecs(fixture('phonedb_detail.html')));
 
     test('reads the datasheet rows', () {
       expect(specs['Brand'], 'Samsung');

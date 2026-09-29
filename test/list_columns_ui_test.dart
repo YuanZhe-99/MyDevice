@@ -77,50 +77,55 @@ void main() {
     }
   }
 
-  testWidgets('a Z Fold 8 in landscape lays the list out in two columns', (
+  testWidgets('a Z Fold 8 splits in landscape and stays single in portrait', (
     tester,
   ) async {
-    await pumpAt(tester, 933, 704);
-    expect(deviceTiles, findsWidgets);
-    // Two tiles with the same top edge means two columns. Tops rather than
-    // centres, because the long-named tile is taller than its neighbour and
-    // the row top-aligns its cells.
-    final first = tester.getTopLeft(deviceTiles.at(0));
-    final second = tester.getTopLeft(deviceTiles.at(1));
-    expect(second.dy, first.dy);
-    expect(second.dx, greaterThan(first.dx));
-    // Swipe actions are dropped once the tiles stop spanning the full width;
-    // the trailing menu carries edit and delete instead.
-    expect(find.byType(Dismissible), findsNothing);
-    expect(find.byType(PopupMenuButton<String>), findsWidgets);
-    expect(tester.takeException(), isNull);
+    // (width, height, columns, why)
+    const cases = <(double, double, int, String)>[
+      (933, 704, 2, 'Z Fold 8 landscape lays the list out in two columns'),
+      (704, 933, 1, 'the same device in portrait stays on one column'),
+    ];
+    for (final (w, h, columns, why) in cases) {
+      await pumpAt(tester, w, h);
+      expect(deviceTiles, findsWidgets, reason: why);
+      // Two tiles with the same top edge means two columns. Tops rather than
+      // centres, because the long-named tile is taller than its neighbour and
+      // the row top-aligns its cells.
+      final first = tester.getTopLeft(deviceTiles.at(0));
+      final second = tester.getTopLeft(deviceTiles.at(1));
+      if (columns == 2) {
+        expect(second.dy, first.dy, reason: why);
+        expect(second.dx, greaterThan(first.dx), reason: why);
+        // Swipe actions are dropped once the tiles stop spanning the full
+        // width; the trailing menu carries edit and delete instead.
+        expect(find.byType(Dismissible), findsNothing, reason: why);
+        expect(find.byType(PopupMenuButton<String>), findsWidgets);
+      } else {
+        expect(second.dy, greaterThan(first.dy), reason: why);
+        expect(second.dx, first.dx, reason: why);
+        // Single column keeps swipe-to-edit and swipe-to-delete.
+        expect(find.byType(Dismissible), findsWidgets, reason: why);
+      }
+      expect(tester.takeException(), isNull, reason: why);
+    }
   });
 
-  testWidgets('the same device in portrait stays on one column', (
+  testWidgets('a phone, portrait or landscape, cannot split or pick columns', (
     tester,
   ) async {
-    await pumpAt(tester, 704, 933);
-    final first = tester.getTopLeft(deviceTiles.at(0));
-    final second = tester.getTopLeft(deviceTiles.at(1));
-    expect(second.dy, greaterThan(first.dy));
-    expect(second.dx, first.dx);
-    // Single column keeps swipe-to-edit and swipe-to-delete.
-    expect(find.byType(Dismissible), findsWidgets);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('a phone shows no column control at all', (tester) async {
-    await pumpAt(tester, 411, 914); // Pixel 10 Pro Fold cover screen
-    expect(columnButton, findsNothing);
-    expect(find.byType(Dismissible), findsWidgets);
-  });
-
-  testWidgets('a phone in landscape cannot split either', (tester) async {
-    await pumpAt(tester, 915, 412);
-    expect(columnButton, findsNothing);
-    final first = tester.getTopLeft(deviceTiles.at(0));
-    final second = tester.getTopLeft(deviceTiles.at(1));
-    expect(second.dx, first.dx);
+    // (width, height, why)
+    const cases = <(double, double, String)>[
+      (411, 914, 'Pixel 10 Pro Fold cover screen'),
+      (915, 412, 'a phone in landscape'),
+    ];
+    for (final (w, h, why) in cases) {
+      await pumpAt(tester, w, h);
+      expect(columnButton, findsNothing, reason: why);
+      expect(find.byType(Dismissible), findsWidgets, reason: why);
+      final first = tester.getTopLeft(deviceTiles.at(0));
+      final second = tester.getTopLeft(deviceTiles.at(1));
+      expect(second.dx, first.dx, reason: why);
+    }
   });
 
   testWidgets('a wide window offers the column control and stores the pick', (

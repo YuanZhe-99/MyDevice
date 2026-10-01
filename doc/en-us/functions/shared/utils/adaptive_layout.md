@@ -306,7 +306,10 @@ repeated as rows here.
 - **Notes:** With the Expressive bottom bar the shell uses `extendBody`, so pages draw behind the
   bar and the Scaffold reports the bar's height as `MediaQuery.padding.bottom`. A `ListView` with no
   `padding` applies that inset by itself; one with an explicit `padding` does not, so it passes the
-  padding through here. Elsewhere (the classic bar, a rail, a route pushed above the shell) the inset
-  is only the system's, so the call is harmless. Unlike MyAnime there is no `shellListBottomInset`:
+  padding through here. Elsewhere (the classic bar, a rail, a route pushed on the root navigator) the
+  inset is only the system's, so the call is harmless. A route pushed on the shell's own navigator (a
+  plain `Navigator.of(context).push` from a tab page) lives inside the shell and is covered by the bar
+  too, as is a bottom sheet opened without `useRootNavigator: true`; this app pushes pages and opens
+  sheets on the root navigator, and any page that does not must use this helper. Unlike MyAnime there is no `shellListBottomInset`:
   the device list's `bottom: 80` is clearance for its three stacked floating action buttons and
   stays the inner value.

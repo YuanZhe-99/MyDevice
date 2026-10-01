@@ -171,7 +171,7 @@
 - **算法：**
   1. Await `PresetService.loadTemplates()`（惰性加载/缓存行为见 [在线搜索与预设 — 捆绑预设](../../../../features/online-search-and-presets.md#bundled-presets--preset_servicedart)）。
   2. 未挂载提前返回。
-  3. 在滚动控制模态底部面板显示 `_TemplatePicker`，await 所选 `DeviceTemplate?`。
+  3. 在根导航器上（`useRootNavigator: true`，Expressive 悬浮栏因而不会遮住它）的滚动控制模态底部面板显示 `_TemplatePicker`，await 所选 `DeviceTemplate?`。
   4. 挑了模板且组件仍挂载时：await `PresetService.loadCpus()`/`loadGpus()`（也惰性缓存），解析后未挂载提前返回，然后调用 `template.toDevice(cpuPresets: cpus, gpuPresets: gpus)` 从模板构建具体 `Device`、压入 `DeviceEditPage(device: device)` 并重载。
 - **用法：** `build` 中"从模板添加"FAB 的 `onPressed: _addFromTemplate,`（`lib/features/devices/views/device_list_page.dart`，第 662 行）。
 - **备注：** 三个单独 `mounted` 检查守卫三个 await 步骤（模板加载、选择器结果、cpu/gpu 预设加载），因为用户可在任一期间导航离开页面。

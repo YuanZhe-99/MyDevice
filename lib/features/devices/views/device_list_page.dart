@@ -372,6 +372,9 @@ class _DeviceListPageState extends State<DeviceListPage> {
     final choice = await showModalBottomSheet<_TemplateChoice>(
       context: context,
       isScrollControlled: true,
+      // Above the shell: a sheet in the shell navigator would sit behind the
+      // Expressive floating bar.
+      useRootNavigator: true,
       builder: (ctx) => _TemplatePicker(templates: templates, brands: brands),
     );
     if (choice != null && mounted) {

@@ -210,4 +210,4 @@
 - **返回：** `EdgeInsets` — 在 `padding` 底部加上 `MediaQuery.paddingOf(context).bottom` 的结果。
 - **副作用：** 无。
 - **用法：** 每个壳标签页中显式传了 `padding` 的滚动视图——设备列表的五个列表、服务列表的四个、网络列表的三个、数据集列表的可重排列表与双列列表——以及设置详情页（WebDAV、隐私政策、许可证）。
-- **备注：** Expressive 底栏时壳使用 `extendBody`，页面绘制在栏后面，Scaffold 把栏高作为 `MediaQuery.padding.bottom` 报告。没有 `padding` 的 `ListView` 会自己应用该内缩；显式传了 `padding` 的则不会，所以要把内边距经此函数传入。其他情形（经典栏、导航栏、压在壳之上的路由）下该内缩只是系统的，调用无害。与 MyAnime 不同，这里没有 `shellListBottomInset`：设备列表的 `bottom: 80` 是为三个叠放的浮动操作按钮留的空间，作为内层值保留。
+- **备注：** Expressive 底栏时壳使用 `extendBody`，页面绘制在栏后面，Scaffold 把栏高作为 `MediaQuery.padding.bottom` 报告。没有 `padding` 的 `ListView` 会自己应用该内缩；显式传了 `padding` 的则不会，所以要把内边距经此函数传入。其他情形（经典栏、导航栏、推在根导航器上的路由）下该内缩只是系统的，调用无害。推在壳自己的导航器上的路由（从标签页直接 `Navigator.of(context).push`）位于壳之内，同样会被栏遮住，未带 `useRootNavigator: true` 打开的底部面板亦然；本应用把页面和面板都开在根导航器上，不这样做的页面必须使用此助手。与 MyAnime 不同，这里没有 `shellListBottomInset`：设备列表的 `bottom: 80` 是为三个叠放的浮动操作按钮留的空间，作为内层值保留。

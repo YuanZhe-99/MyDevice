@@ -244,7 +244,8 @@ Row-count note: `grep -c 'Purpose:'` on this file returns 45, matching the 45 ro
      [Online Search and Presets](../../../../features/online-search-and-presets.md#bundled-presets--preset_servicedart)
      for the lazy-load/caching behavior).
   2. Returns early if unmounted.
-  3. Shows `_TemplatePicker` in a scroll-controlled modal bottom sheet, awaiting the selected
+  3. Shows `_TemplatePicker` in a scroll-controlled modal bottom sheet on the root navigator
+     (`useRootNavigator: true`, so the Expressive floating bar cannot cover it), awaiting the selected
      `DeviceTemplate?`.
   4. If a template was picked and the widget is still mounted: awaits
      `PresetService.loadCpus()`/`loadGpus()` (also lazily cached), returns early if unmounted after

@@ -432,7 +432,11 @@ tabs reserved nothing for it. With the floating Expressive bar and `extendBody` 
   max(viewPadding.bottom, padding.bottom)` in a `Builder` around the body); a shell test asserts the
   FAB clears the bar.
 - Pages pushed on the root navigator (detail and edit pages, the map and the topology) sit above the
-  shell and are unaffected; the inset there is only the system's.
+  shell and are unaffected; the inset there is only the system's. The converse holds: a route pushed
+  on the shell's own navigator (plain `Navigator.of(context).push` from a tab page) and a modal bottom
+  sheet opened without `useRootNavigator: true` live inside the shell and are covered by the bar, so
+  every push and sheet from a shell page passes `rootNavigator: true` / `useRootNavigator: true` (the
+  device list's template picker sheet included). The 1.7.x audit found no other gaps.
 
 Not done, deliberately: a `NavigationDrawer` above 1240 dp. The rail is correct through extra-large
 here, and a third navigation mode is not worth its cost.

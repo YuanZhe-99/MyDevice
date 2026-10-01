@@ -269,7 +269,7 @@ final showRail = switch (placement) {
 - 显式传了 `padding` 的（以及任何贴底的非滚动布局）要写成 `navBarAwarePadding(context, <原内边距>)`，它会加上 `MediaQuery.paddingOf(context).bottom`。每个标签页都已逐一检查：设备列表（可重排列表和四个列表）、服务列表（四个视图）、网络列表（三个列表）、数据集列表（可重排列表和多列列表），以及托管在右侧窗格中的设置详情页（WebDAV、隐私政策、许可证）。
 - 设备列表预留的 `bottom: 80` 是给它三个叠放浮动操作按钮的避让，导航栏不会移除它们——它作为内层值保留，`navBarAwarePadding` 套在外面。MyDevice 没有 `shellListBottomInset`（那是 MyAnime 的）。
 - 浮动操作按钮：每个页面自己的 `Scaffold` 按 `viewPadding` 放置它们，而 `extendBody` 不会提高 `viewPadding`，所以壳自己提高它（在 body 外的 `Builder` 中令 `viewPadding.bottom = max(viewPadding.bottom, padding.bottom)`）；壳测试断言浮动按钮位于栏的上方。
-- 推在根导航器上的页面（详情页与编辑页、地图和拓扑）位于壳之上，不受影响；那里的内缩只是系统的。
+- 推在根导航器上的页面（详情页与编辑页、地图和拓扑）位于壳之上，不受影响；那里的内缩只是系统的。反过来：推在壳自己导航器上的路由（从标签页直接 `Navigator.of(context).push`）以及未带 `useRootNavigator: true` 打开的模态底部面板位于壳之内，会被栏遮住，所以壳页面发出的每次 push 与面板都传 `rootNavigator: true` / `useRootNavigator: true`（包括设备列表的模板选择器面板）。1.7.x 的检查没有发现其他缺口。
 
 刻意不做：1240 dp 以上的 `NavigationDrawer`。导航栏在此直到 extra-large 都正确，第三种导航模式不值其成本。
 

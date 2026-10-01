@@ -78,6 +78,20 @@ Future<void> search(WidgetTester tester, String query) async {
 }
 
 void main() {
+  testWidgets('the picker sheet opens above the shell, not behind the bar', (
+    tester,
+  ) async {
+    await openTemplateSheet(tester);
+
+    // A sheet on the shell's navigator would be drawn behind the Expressive
+    // floating bar; on the root navigator both lookups find the same one.
+    final context = tester.element(find.byType(TextField).last);
+    expect(
+      Navigator.of(context),
+      same(Navigator.of(context, rootNavigator: true)),
+    );
+  });
+
   testWidgets('a multi-capacity template asks which capacity to use', (
     tester,
   ) async {

@@ -484,7 +484,12 @@ double settingsLeftPaneWidth(double contentWidth) {
 /// `MediaQuery.padding.bottom`. Scroll views with an explicit padding do not
 /// apply that inset themselves; passing their padding through here leaves room
 /// to scroll the last content above the bar. Elsewhere (classic bar, rail,
-/// pushed routes) the inset is just the system's, so this is harmless.
+/// routes pushed on the root navigator) the inset is just the system's, so
+/// this is harmless. A route pushed on the shell's own navigator (a plain
+/// `Navigator.of(context).push` from a tab page) lives inside the shell and
+/// is covered by the bar too, as is a bottom sheet opened without
+/// `useRootNavigator: true`; this app pushes pages and opens sheets on the
+/// root navigator, and any page that does not must use this helper.
 EdgeInsets navBarAwarePadding(BuildContext context, EdgeInsets padding) =>
     padding.copyWith(
       bottom: padding.bottom + MediaQuery.paddingOf(context).bottom,

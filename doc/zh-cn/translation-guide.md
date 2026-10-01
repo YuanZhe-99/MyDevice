@@ -45,11 +45,11 @@
 
 ### 5.1 共享核心（四个仓库相同）
 
-| 英语 | 中文 | 备注 |
+| English | 中文 | Notes |
 |---|---|---|
 | sync / synchronization | 同步 | |
 | three-way merge | 三方合并 | base/local/remote 三方 |
-| base snapshot | 基线快照 | 合并比较使用的 `.sync_base` 副本 |
+| base snapshot | 基线快照 | the `.sync_base` copy used for merge comparison |
 | conflict / conflict resolution | 冲突 / 冲突解决 | |
 | auto-resolve | 自动解决 | |
 | backup / restore | 备份 / 恢复 | |

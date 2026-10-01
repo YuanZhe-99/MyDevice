@@ -1974,4 +1974,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiFinanceRecurring => 'Recurring Costs';
+
+  @override
+  String get settingsUiStyle => 'Interface style';
+
+  @override
+  String get settingsUiStyleDesc =>
+      'Expressive uses rounder shapes, bolder titles and a floating navigation bar. Material 3 is the standard look with a full-width bar.';
+
+  @override
+  String get settingsUiStyleMaterial3 => 'Material 3';
+
+  @override
+  String get settingsUiStyleExpressive => 'Expressive';
+
+  @override
+  String get backupModuleProfile => 'Profile';
+
+  @override
+  String get profileTitle => 'Profile';
+
+  @override
+  String get profileName => 'Name';
+
+  @override
+  String get profileNamePlaceholder => 'Set your name';
+
+  @override
+  String get profileEditHint => 'Name and avatar sync across your devices';
+
+  @override
+  String get profileChangeAvatar => 'Choose avatar';
+
+  @override
+  String get profileRemoveAvatar => 'Remove';
+
+  @override
+  String get profileAvatarError => 'This image could not be used';
+
+  @override
+  String get profileOpenSettings => 'Profile and settings';
 }

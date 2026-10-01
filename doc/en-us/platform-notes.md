@@ -86,6 +86,15 @@ local API server, system tray, and launch-at-startup integration. See
   desktop preview with copy/save actions (see
   [Services and Topology](features/services-topology.md)).
 
+## Dynamic color (since 1.7.0)
+
+The app uses native Material 3 with a blue seed color (`AppTheme.seedColor`). On **Android 12 and
+newer** the wallpaper-derived scheme (Material You, via the `dynamic_color` package) replaces the seed
+scheme. On Windows and macOS the same plugin would return the system accent color, which would
+override the app's own color, so dynamic color is deliberately allowed on Android only (`MyDeviceApp.build`);
+iOS, desktop and Android 11 or older use the seed scheme. The plugin adds registrant entries under
+`linux/`, `macos/` and `windows/` that are committed with the lockfile.
+
 ## Image editor decoding (all platforms)
 
 The device image editor (1.6.1) decodes a picked photo with the platform codec

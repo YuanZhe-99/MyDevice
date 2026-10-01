@@ -167,8 +167,9 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 | 网络分配 | `network_data.json` | 是 | 复合键加内容比较 |
 | 数据集 | `dataset_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录 |
 | 服务与服务路由 | `service_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录服务/路由 |
-| 图像 | `images/` | 是 | 仅引用文件名比较 |
-| 主题、语言区域、备份设置、排序偏好、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
+| 个人资料（名称和头像） | `profile.json` | 是 | 自 1.7.0 起：每个字段按各自的 `displayNameUpdatedAt` / `avatarUpdatedAt` 后写者胜；从不冲突 |
+| 图像和头像 | `images/` | 是 | 仅引用文件名比较；包含个人资料头像 |
+| 主题、界面风格（`uiStyle`）、语言区域、备份设置、排序偏好、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
 | WebDAV 凭据 | `webdav_config.json` | 否 | 仅本地机密/配置 |
 | 同步基础快照 | `.sync_base/*.json` | 否 | 本地合并跟踪 |
 | 备份 | `backups/backup_*.json` | 否 | 本地恢复；v2 捆绑引用去重图像 blob |
@@ -189,6 +190,30 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 - **`storagePath` 归 `setStoragePath` 所有。** 偏好写入会把映射中 `storagePath` 下的任何内容替换为当前自定义路径，没有自定义路径时删除该键，因此保存主题或列数选择永远不会移动或丢失数据。
 - **收编游离副本（1.5.7）。** 1.5.7 之前，`readConfig`/`writeConfig` 使用当前存储文件夹，而自定义路径位于默认文件夹，因此移动后偏好读作默认值，新偏好写进自定义文件夹里的第二个 `storage_config.json`。现在对某个自定义路径的首次配置访问会检查该文件夹：那里的游离 `storage_config.json` 被合并进默认文件——它的键较新，因此胜出，`storagePath` 除外——然后被删除。无法读取或解析的游离文件保持不动。
 - **更改存储路径。** 旧文件夹中除顶层 `storage_config.json` 外的一切都移到新文件夹（见 [`DeviceStorage.setStoragePath`](functions/features/devices/services/device_storage.md#setstoragepath)）。目标位置已存在的文件胜出，其源副本留在原处。留在旧文件夹中的每个文件——复制失败的，或因目标已有同名文件而被跳过的——都会被报告回来，设置页连同旧文件夹路径一起列出它们，因为应用在新位置看不到它们。
+
+## `profile.json` <a id="profilejson"></a>
+
+`profile.json`（1.7.0）是第五个已注册的模块，因此它同样会同步、会备份、包含在 ZIP 导出中，并有自己的 `.sync_base/profile.json`。它保存用户的名称和头像（见 [`features/profile.md`](features/profile.md)）：
+
+```json
+{
+  "version": 1,
+  "displayName": "Yuan",
+  "displayNameUpdatedAt": "2026-10-01T14:06:42.530801Z",
+  "avatar": "images/avatar_2953ac52-337e-4271-a8e1-bcd97ee416ba.jpg",
+  "avatarUpdatedAt": "2026-10-01T14:08:59.163627Z"
+}
+```
+
+- `displayName` / `displayNameUpdatedAt`——名称及其最后更改时间（UTC）。保存时会去除首尾空白；清除它会写入 `"displayName": null` 和新的时间戳。
+- `avatar` / `avatarUpdatedAt`——相对于数据目录的头像路径（`images/avatar_<uuid>.jpg`，512 x 512 的 JPEG）及其最后更改时间（UTC）。被移除的头像写作显式的 `"avatar": null` 加时间戳，因此移除也会同步。
+- 字段只有在有时间戳后才会写出；没有时间戳的字段表示“从未设置”，合并时总是输给设置过的一侧。每个字段独立地按后写者胜合并——见 [`sync.md`](sync.md#the-profile-file)。未知键会保留。`version` 为 `1`。
+- 头像图片是 `images/` 中的普通文件，因此经由引擎的仅引用添加式图像阶段同步（该模块通过 `profileReferencedImages` 报告它），并与其他图像一起备份和导出。每个新头像都使用全新的文件名，因为图像同步从不覆盖已存在的文件；被替换的头像只在本地删除，因此旧头像会留在 WebDAV 服务器和其他设备上。
+- 1.7.0 之前的构建从不请求 `profile.json`，因此它不会影响它们。
+
+### `storage_config.json` 键 `uiStyle`
+
+自 1.7.0 起，`storage_config.json` 可能包含 `"uiStyle": "material3"`。只存储非默认的 Material 3 风格；默认的 Expressive 风格（悬浮导航栏、更圆的形状、更粗的标题）就是没有这个键。本地偏好，从不同步。
 
 ## `ai_insights.json` <a id="ai_insightsjson"></a>
 
@@ -228,4 +253,4 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 
 ## 写入安全（自 1.6.2 起）
 
-四个数据文件（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`）、`storage_config.json` 和 `exchange_rates.json` 都是原子替换的：新内容先写入同文件夹的 `<name>.tmp-<微秒>` 文件，再重命名覆盖目标（若 Windows 报告目标被锁定则短暂重试）。数据存储还按文件路径串行化其读-改-写操作。磁盘上的 JSON 形态以及同步/备份格式不变；游离的 `*.tmp-*` 文件只可能在崩溃后残留，可安全删除。
+数据文件（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`，自 1.7.0 起还有 `profile.json`）、`storage_config.json` 和 `exchange_rates.json` 都是原子替换的：新内容先写入同文件夹的 `<name>.tmp-<微秒>` 文件，再重命名覆盖目标（若 Windows 报告目标被锁定则短暂重试）。数据存储还按文件路径串行化其读-改-写操作。磁盘上的 JSON 形态以及同步/备份格式不变；游离的 `*.tmp-*` 文件只可能在崩溃后残留，可安全删除。

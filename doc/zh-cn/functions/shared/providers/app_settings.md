@@ -118,3 +118,7 @@
 - **算法：** 每个字段为 `参数 ?? this.字段`，唯独 `locale: clearLocale ? null : (locale ?? this.locale)`——`clearLocale` 优先于任何传入 `locale` 值。
 - **用法：** 从 `setThemeMode`、`setLocale`、`setOnDeviceAiEnabled` 和 `setOnDeviceAiPreferFast` 调用。
 - **备注：** `clearLocale` 标志正是让"显式把语言区域设为 null"在 `copyWith` 模式中可与"不碰语言区域"区分的东西，因为传 `locale: null` 否则与省略参数无法区分。
+
+## 界面风格（自 1.7.0 起）
+
+`AppSettings` 新增 `uiStyle`（`AppUiStyle`，默认 `AppUiStyle.expressive`），出现在构造函数、`copyWith` 和 `_loadPersisted` 中（后者把 `DeviceStorage.getUiStyle()`——`'material3'` 或 null——映射为枚举）。新方法 `AppSettingsNotifier.setUiStyle(AppUiStyle style)`（Tier B）更新 `state`，并经 `DeviceStorage.setUiStyle('material3' 或 null)` 持久化，因此只有非默认的 Material 3 风格会存储，即 `storage_config.json` 中的 `uiStyle: "material3"`。`MyDeviceApp.build` 把 `settings.uiStyle` 传给 `AppTheme.light`/`dark`，主题因此立即重建；`ShellScaffold` 监视 `appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)`，Expressive 时构建 `_FloatingNavBar`。该设置是本地的，从不同步。

@@ -57,3 +57,23 @@ Tapping either navigation calls `context.go(_routes[index])`. Nothing is statefu
 device swaps one rendering for the other on the next frame with no route change. Each tab page
 brings its own `Scaffold` (app bar, floating action buttons), so a page body never sits under the
 bottom bar and reserves no inset for it.
+
+## Interface style and the floating navigation bar (since 1.7.0)
+
+`ShellScaffold` is a `ConsumerWidget` (`build(BuildContext context, WidgetRef ref)`). It watches
+`appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)`. On a narrow window (no rail)
+the `Scaffold`'s `bottomNavigationBar` is the private `_FloatingNavBar` for the Expressive style (the
+default) and the stock full-width `NavigationBar` for Material 3. The rail branch ignores the setting.
+
+| Declaration | Kind | Tier | Purpose |
+|---|---|---|---|
+| `_FloatingNavBar` | class (private) | A | The bottom bar drawn as a floating pill-shaped island. |
+| `_FloatingNavBar.new` | constructor | B | Create the bar from `selectedIndex`, `onDestinationSelected`, `destinations`. |
+| `_FloatingNavBar.build` | method | B | Build the island: margins, rounded surface, inner bar. |
+
+`_FloatingNavBar` wraps the stock `NavigationBar` (height 68, transparent) in a `Material` with
+`StadiumBorder`, `surfaceContainer` color, elevation 3, capped at 480 dp wide, inside a `SafeArea`
+with a minimum 16/0/16/12 margin. The island carries `ValueKey('floatingNavBarIsland')` so tests can
+tell it from the classic bar. It sits in the `bottomNavigationBar` slot rather than over the body (no
+`extendBody`), so page layout and FAB positions are unchanged; the bottom system inset is applied once
+outside the island and removed for the inner bar.

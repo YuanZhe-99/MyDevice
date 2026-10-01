@@ -147,8 +147,10 @@
         }
       ]
     }
-=== [19] GET /dav/files/u/MyDevice/.lock -> 200
+=== [19] GET /dav/files/u/MyDevice/profile.json -> 404
   authorization: <basic-auth>
-=== [20] DELETE /dav/files/u/MyDevice/.lock -> 204
+=== [20] GET /dav/files/u/MyDevice/.lock -> 200
+  authorization: <basic-auth>
+=== [21] DELETE /dav/files/u/MyDevice/.lock -> 204
   authorization: <basic-auth>
   if-match: "<etag>"

@@ -110,7 +110,8 @@ PROPFIND failure; `_syncImages` then skips the image phase with a visible warnin
 instead of treating the unknown remote state as empty — this previously caused every
 referenced image to be re-uploaded after a transient PROPFIND failure. Downloaded images
 set the local-data-changed flag so UI pages reload even when the data JSON itself didn't
-change.
+change. Since 1.7.0 the union also includes the profile avatar's basename, which the profile
+module reports through its `referencedImages` hook (see [The profile file](#the-profile-file)).
 
 ## Per-file data merge rules
 
@@ -120,6 +121,7 @@ change.
 | `network_data.json` | `Network` records by `id`/`modifiedAt`; `NetworkDevice` assignments by composite key and content comparison |
 | `dataset_data.json` | `DataSet` records by `id` and `modifiedAt` |
 | `service_data.json` | `ServiceNode` and `ServiceRoute` records by `id` and `modifiedAt`; endpoints and route hops follow their parent record |
+| `profile.json` | Per-field last writer wins (display name by `displayNameUpdatedAt`, avatar by `avatarUpdatedAt`); never a conflict (since 1.7.0) |
 
 Each data file's merge has **per-file error handling** — one malformed file does not
 block the others from syncing. Local files are re-read after network I/O to detect
@@ -144,6 +146,36 @@ worked example.
 Because `NetworkDevice` has no timestamp to show in a conflict, **the conflict dialog
 falls back to showing the record ID** for `NetworkDevice` assignments instead of a bare
 `modifiedAt` on both sides (which is what it shows for every other record type).
+
+## The profile file
+
+Since 1.7.0 the registry holds a fifth module, `profile.json` — the user's display name and avatar
+(schema in [`data-formats.md`](data-formats.md#profilejson), feature in
+[`features/profile.md`](features/profile.md)). It goes through the same engine steps, after the other
+four, under the same `.lock`, with its own `.sync_base/profile.json`.
+
+- **The merge never produces a conflict, and needs no base.** Each field merges independently by last
+  writer wins on its own timestamp: the name by `displayNameUpdatedAt`, the avatar by
+  `avatarUpdatedAt`. A strictly later remote timestamp wins, a tie keeps local, and a side that never
+  set the field always loses to one that did. A name changed on one device and an avatar changed on
+  another therefore both survive. Unknown keys are unioned with local winning, and the higher
+  `version` is kept.
+- **Removal is explicit.** Clearing the avatar writes `"avatar": null` with a new timestamp (and
+  clearing the name writes `"displayName": null`), so the removal wins the merge like any other edit
+  instead of being mistaken for a field that was never set.
+- **Avatar names are unique.** The avatar is an ordinary file in `images/` and travels through the
+  additive image phase (the module's `referencedImages` returns its basename). Image sync never
+  overwrites a file that already exists on the other side and never deletes, so every new avatar gets
+  a fresh `images/avatar_<uuid>.jpg` name; re-using one name would leave other devices showing the old
+  picture. The replaced avatar is deleted on the device that changed it only: **old avatars remain on
+  the WebDAV server and on other devices** (a known limitation).
+- **Older builds ignore it.** The engine only requests the file names it has registered and never
+  lists the remote root, so a build older than 1.7.0 never fetches `profile.json`; the avatar file
+  sits harmlessly in `images/`.
+- **Cost.** One extra `GET profile.json` per sync (a 404 for a library that never set a profile); the
+  recorded WebDAV request-sequence goldens were re-recorded and gained only that request.
+- Every profile save calls `AutoSyncService.notifySaved`, so the debounced sync runs shortly after an
+  edit; after a sync or restore rewrites local data the profile provider reloads.
 
 ## Force upload / force download
 

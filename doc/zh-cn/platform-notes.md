@@ -42,6 +42,10 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - 本地经 `key.properties` 签名可选；CI 用 GitHub Secrets。
 - 拓扑 PNG 导出 iOS 用 `share_plus`、Android 用 `com.yuanzhe.my_device/share` 方法通道加 `FileProvider`、桌面用带复制/保存操作的预览（见 [服务与拓扑](features/services-topology.md)）。
 
+## 动态取色（自 1.7.0 起） <a id="dynamic-color-since-170"></a>
+
+应用使用原生 Material 3 与蓝色种子色（`AppTheme.seedColor`）。在 **Android 12 及更高版本**上，壁纸派生的配色方案（Material You，经由 `dynamic_color` 包）会替换种子配色。在 Windows 和 macOS 上同一插件会返回系统强调色，那会覆盖应用自己的颜色，因此动态取色刻意只在 Android 上放行（`MyDeviceApp.build`）；iOS、桌面以及 Android 11 及更低版本使用种子配色。该插件会在 `linux/`、`macos/` 和 `windows/` 下新增注册文件条目，它们与锁文件一同提交。
+
 ## 图片编辑器解码（所有平台） <a id="image-editor-decoding-all-platforms"></a>
 
 设备图片编辑器（1.6.1）用平台编解码器（`ui.ImageDescriptor`）解码所选照片，并在解码时即缩小到 1024 px，因此它能读取 Flutter 在该平台上可显示的任何格式，并以应用显示照片时相同的方式应用 EXIF 方向。因此 HEIC 等格式是否受支持取决于平台。平台编解码器拒绝某文件时改试 `package:image`（JPEG、PNG、WebP、GIF、BMP、TIFF）；两者都拒绝时，新选的照片原样存储（与“使用原图”相同）。处理在 `Isolate.run` 中运行，因此在每个平台上 UI 都保持响应。

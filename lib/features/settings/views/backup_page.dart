@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/data_modules.dart' show profileModuleId;
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
@@ -519,6 +520,7 @@ class _RestoreModuleDialogState extends State<_RestoreModuleDialog> {
       'datasets': (l10n.backupModuleDatasets, Icons.folder_outlined),
       'services': (l10n.backupModuleServices, Icons.dns_outlined),
       'images': (l10n.backupModuleImages, Icons.image_outlined),
+      profileModuleId: (l10n.backupModuleProfile, Icons.person_outline),
     };
     return AlertDialog(
       title: Text(l10n.backupRestoreModules),

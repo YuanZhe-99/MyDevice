@@ -639,3 +639,16 @@ path provider.
 - **Usage:** For callers and tests that only need a yes/no; `settings_page.dart` checks `saved`
   and `unmoved` separately to pick its message.
 - **Notes:** None.
+
+## Interface style (since 1.7.0)
+
+| Declaration | Kind | Tier | Purpose |
+|---|---|---|---|
+| `getUiStyle()` | static method | A | Read the interface style. |
+| `setUiStyle(name)` | static method | A | Persist the interface style. |
+
+- **`static Future<String?> getUiStyle()`** — returns `'material3'` when `storage_config.json` has
+  `uiStyle: "material3"`, otherwise null (the default Expressive style). Reads the config only.
+- **`static Future<void> setUiStyle(String? name)`** — read-modify-writes `storage_config.json`:
+  `'material3'` writes `uiStyle: "material3"`, anything else removes the key, so a default install's
+  config stays free of it. Local preference, never synced.

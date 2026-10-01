@@ -1933,4 +1933,44 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiFinanceRecurring => '継続費用';
+
+  @override
+  String get settingsUiStyle => 'インターフェーススタイル';
+
+  @override
+  String get settingsUiStyleDesc =>
+      'Expressive は丸みのある形、太めの見出し、フローティングナビゲーションバーを使います。Material 3 は全幅バーの標準デザインです。';
+
+  @override
+  String get settingsUiStyleMaterial3 => 'Material 3';
+
+  @override
+  String get settingsUiStyleExpressive => 'Expressive';
+
+  @override
+  String get backupModuleProfile => 'プロフィール';
+
+  @override
+  String get profileTitle => 'プロフィール';
+
+  @override
+  String get profileName => '名前';
+
+  @override
+  String get profileNamePlaceholder => '名前を設定';
+
+  @override
+  String get profileEditHint => '名前とアバターはデバイス間で同期されます';
+
+  @override
+  String get profileChangeAvatar => 'アバターを選択';
+
+  @override
+  String get profileRemoveAvatar => '削除';
+
+  @override
+  String get profileAvatarError => 'この画像は使用できません';
+
+  @override
+  String get profileOpenSettings => 'プロフィールと設定';
 }

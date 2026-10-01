@@ -214,3 +214,7 @@
 - **算法：** Await 获取/保存调用，返回非 null 时显示 `exchangeRateUpdated`，否则 `exchangeRateUpdateFailed`。
 - **用法：** `build` 中"Refresh Exchange Rates"块的 `onTap: _refreshExchangeRates`（`lib/features/settings/views/settings_page.dart`，第 807 行）。
 - **备注：** 无。
+
+## 个人资料头部与界面风格（自 1.7.0 起）
+
+一级设置列表以 `const ProfileHeader()`（头像和名称；见 [../../profile/views/profile_header.md](../../profile/views/profile_header.md)）开头，位于*通用*之前，因此单栏和双栏布局都会显示。*通用*在主题选择器之后新增**界面风格**一行：一个 `ListTile`（图标 `Icons.auto_awesome_outlined`，标题和说明来自 `settingsUiStyle` / `settingsUiStyleDesc`）和一个带 *Material 3* 与 *Expressive*（`settingsUiStyleMaterial3` / `settingsUiStyleExpressive`）的 `SegmentedButton<AppUiStyle>`，排版与主题选择器一致。选择会调用 `AppSettingsNotifier.setUiStyle`。该风格是本地设置，不同步。

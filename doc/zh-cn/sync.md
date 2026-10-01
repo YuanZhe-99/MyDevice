@@ -47,7 +47,7 @@ WebDAV 页前台同步操作——手动同步、冲突终定上传、强制上�
 
 ## 图像同步 <a id="image-sync"></a>
 
-图像**增量和仅引用**同步：同步引擎计算本地和远程 `Device` 记录引用的 `imagePath` 基名并集，只传输那些文件。孤儿图像（无设备再引用）不重复上传或下载——这包括在图片编辑器（1.6.1）中编辑过的照片的原图，因为编辑结果保存为新文件而非覆盖原文件。远程图像目录列表任何 PROPFIND 失败时返回 `null`；`_syncImages` 然后带可见警告跳过图像阶段，而非把未知远程状态当作空——这先前导致瞬时 PROPFIND 失败后每个引用图像被重新上传。下载图像设本地数据变更标志，使即使数据 JSON 本身未变 UI 页也重载。
+图像**增量和仅引用**同步：同步引擎计算本地和远程 `Device` 记录引用的 `imagePath` 基名并集，只传输那些文件。孤儿图像（无设备再引用）不重复上传或下载——这包括在图片编辑器（1.6.1）中编辑过的照片的原图，因为编辑结果保存为新文件而非覆盖原文件。远程图像目录列表任何 PROPFIND 失败时返回 `null`；`_syncImages` 然后带可见警告跳过图像阶段，而非把未知远程状态当作空——这先前导致瞬时 PROPFIND 失败后每个引用图像被重新上传。下载图像设本地数据变更标志，使即使数据 JSON 本身未变 UI 页也重载。自 1.7.0 起，并集还包含个人资料头像的基名，由个人资料模块通过其 `referencedImages` 钩子报告（见[个人资料文件](#the-profile-file)）。
 
 ## 逐文件数据合并规则
 
@@ -57,6 +57,7 @@ WebDAV 页前台同步操作——手动同步、冲突终定上传、强制上�
 | `network_data.json` | `Network` 记录按 `id`/`modifiedAt`；`NetworkDevice` 赋值按复合键和内容比较 |
 | `dataset_data.json` | `DataSet` 记录按 `id` 和 `modifiedAt` |
 | `service_data.json` | `ServiceNode` 和 `ServiceRoute` 记录按 `id` 和 `modifiedAt`；端点和路由跳跟随其父记录 |
+| `profile.json` | 按字段后写者胜（名称看 `displayNameUpdatedAt`，头像看 `avatarUpdatedAt`）；从不冲突（自 1.7.0 起） |
 
 每个数据文件合并有**逐文件错误处理**——一个格式错误文件不阻塞其他文件同步。网络 IO 后重新读取本地文件检测*同步期间*发生的并发用户编辑。`_atomicWrite()` 用 tmp-然后-重命名避免损坏本地文件。`_syncing` 防止并发同步运行。
 
@@ -67,6 +68,18 @@ WebDAV 页前台同步操作——手动同步、冲突终定上传、强制上�
 `NetworkDevice` 无 `id` 无 `modifiedAt`（见 [数据格式](data-formats.md#network--networkdevice-libfeaturesnetworkmodelsnetworkdart)），因此其合并（`sync_merge.dart` 的 `mergeAssignments`）用复合键 `(networkId, deviceId)` 并对照基础快照比较*序列化 JSON 内容*检测哪侧（些）变了，因为无可比较时间戳。精确算法见 [三方合并 — mergeAssignments 复合键内容比较合并](algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)，完整示例见 [同步演练 — NetworkDevice 赋值示例](examples/sync-walkthrough.md#networkdevice-assignment-example)。
 
 因为 `NetworkDevice` 无可显示冲突时间戳，**冲突对话框为 `NetworkDevice` 赋值回退显示记录 ID** 而非两侧裸 `modifiedAt`（每个其他记录类型显示的）。
+
+## 个人资料文件
+
+自 1.7.0 起，注册表包含第五个模块 `profile.json`——用户的名称和头像（schema 见 [`data-formats.md`](data-formats.md#profilejson)，功能见 [`features/profile.md`](features/profile.md)）。
+它在另外四个模块之后走同一套引擎步骤，处在同一个 `.lock` 之下，并有自己的 `.sync_base/profile.json`。
+
+- **合并从不产生冲突，也不需要基线。**每个字段按各自的时间戳独立地后写者胜：名称看 `displayNameUpdatedAt`，头像看 `avatarUpdatedAt`。远程时间戳严格更晚才胜出，相同时保留本地，从未设置该字段的一侧总是输给设置过的一侧。因此一台设备改了名称、另一台设备改了头像，两者都会保留。未知键取并集，本地优先，并保留较高的 `version`。
+- **移除是显式的。**清除头像会写入带新时间戳的 `"avatar": null`（清除名称则写入 `"displayName": null`），因此移除与其他编辑一样赢得合并，而不会被误认为从未设置的字段。
+- **头像文件名唯一。**头像是 `images/` 中的普通文件，经由添加式图像阶段传输（该模块的 `referencedImages` 返回它的基名）。图像同步从不覆盖另一侧已存在的文件，也从不删除，因此每个新头像都使用全新的 `images/avatar_<uuid>.jpg` 名称；复用同一个名称会让其他设备一直显示旧图。被替换的头像只在做出更改的那台设备上删除：**旧头像会留在 WebDAV 服务器和其他设备上**（已知限制）。
+- **旧版本忽略它。**引擎只请求它已注册的文件名，也从不列出远程根目录，因此 1.7.0 之前的构建从不获取 `profile.json`；头像文件无害地躺在 `images/` 中。
+- **开销。**每次同步多一次 `GET profile.json`（从未设置个人资料的数据会得到 404）；已录制的 WebDAV 请求序列黄金文件已重新录制，只多了这一个请求。
+- 每次保存个人资料都会调用 `AutoSyncService.notifySaved`，因此防抖同步会在编辑后不久运行；同步或恢复重写本地数据后，个人资料 provider 会重新加载。
 
 ## 强制上传 / 强制下载 <a id="force-upload--force-download"></a>
 

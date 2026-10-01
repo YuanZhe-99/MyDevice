@@ -257,3 +257,7 @@
 包括已有的路由器和 VPS 提供商标志。`TemplateIcon` 将完整透明 SVG 放在边长为头像直径
 64% 的正方形内，圆形边界不会裁剪图标。单色品牌标志跟随主题前景色；CloudCone 保留原生透明 PNG 的颜色；没有资源的品牌
 保留类别图标。此选择器显示不修改设备的用户自选表情或图像。
+
+## 个人资料头像（自 1.7.0 起）
+
+设备列表是首页，因此它的应用栏带有个人资料头像：`AppBar.leading` 是一个 `IconButton`（提示文字 `profileOpenSettings`），内含 `ProfileAvatar(radius: 16)`，起始内边距 8，位于应用标题左侧；点击调用 `context.go('/settings')`。头像只出现在这一页。见 [../../profile/views/profile_avatar.md](../../profile/views/profile_avatar.md)。

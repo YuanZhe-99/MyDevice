@@ -18,7 +18,7 @@
 
 ## 应用壳：`lib/app/`
 
-- **`app.dart`** — `MyDeviceApp`，监视 `appSettingsProvider` 并构建 `MaterialApp.router` 的 `ConsumerWidget`。它把主题模式、语言区域、支持语言区域和 `routerConfig: appRouter` 接在一起。应用标题字面为 `'MyDevice!!!!!'`。
+- **`app.dart`** — `MyDeviceApp`，监视 `appSettingsProvider` 并构建 `MaterialApp.router` 的 `ConsumerWidget`。它把主题模式、语言区域、支持语言区域和 `routerConfig: appRouter` 接在一起。应用标题字面为 `'MyDevice!!!!!'`。自 1.7.0 起它把 `MaterialApp.router` 包在 `DynamicColorBuilder` 中，仅在 Android 上使用壁纸配色方案，并把用户的界面风格传给主题。
 - **`router.dart`** — `appRouter` 是 `initialLocation: '/devices'` 的 `GoRouter`，带包裹 `ShellScaffold` 的单个 `ShellRoute`。五个标签路由住在那个壳内，在窄于 600 逻辑像素的窗口上由底部 `NavigationBar` 到达，更宽的窗口上由侧边 `NavigationRail` 到达——这是 `lib/shared/utils/adaptive_layout.dart` 里 `useNavigationRail` 的仅宽度决策（见[自适应布局](adaptive-layout.md)）。其他每一页都推到壳之上的根导航器：
 
   | 路径 | 页面 |
@@ -29,7 +29,7 @@
   | `/datasets` | `DataSetListPage` |
   | `/settings` | `SettingsPage` |
 
-- **`theme.dart`** — `AppTheme.light` / `AppTheme.dark` 用 `flex_color_scheme` 的 `FlexThemeData` 构建，两者都用 `FlexScheme.blue`、`FlexSurfaceMode.levelSurfacesLowScaffold`、Material 3 和底部导航栏的 `NavigationDestinationLabelBehavior.onlyShowSelected`。浅色用 `blendLevel: 7` / `blendOnLevel: 10`；深色用 `blendLevel: 13` / `blendOnLevel: 20`。
+- **`theme.dart`** — `AppUiStyle`（Material 3 或 Expressive）与 `AppTheme`。`AppTheme.light` / `AppTheme.dark` 是接受可选动态 `ColorScheme` 和 `AppUiStyle`（默认 Expressive）的方法；配色为 `ColorScheme.fromSeed(AppTheme.seedColor)`（`0xFF1565C0`，蓝色），除非传入动态配色方案（仅 Android，见 `app.dart`）。Material 3 是 Flutter 原版主题加描边文本框；Expressive 在其上叠加主题层面的近似（更大的圆角、按下变形的按钮、更粗的标题、2024 版进度条与滑块、淡入前进页面转场），不改变布局或配色。自 1.7.0 起已移除 `flex_color_scheme`。
 - <a id="appflavor"></a>**`flavor.dart`** — `AppFlavor` 读取编译期 `FLAVOR` dart-define（`String.fromEnvironment('FLAVOR', defaultValue: 'full')`）。`AppFlavor.isStore` 只在 define 恰好是 `'store'` 时为 true；`AppFlavor.isFull` 是其否定。这如何门控在线搜索见 [在线搜索与预设](features/online-search-and-presets.md)。
 
 ## 状态管理
@@ -70,6 +70,13 @@ lib/
       services/preset_service.dart
       views/     (… device_image_editor_page)
       widgets/   (device_avatar, device_category_icon, template_image_picker)
+    profile/                  # 同步的名称和头像（1.7.0）
+      models/profile_data.dart
+      services/profile_merge.dart
+      services/profile_store.dart
+      providers/profile_provider.dart
+      views/profile_avatar.dart
+      views/profile_header.dart
     network/
       models/network.dart
       services/network_storage.dart
@@ -125,7 +132,7 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 ## 核心架构规则 <a id="core-architecture-rules"></a>
 
 - 导航用带上面列出的五个标签 `ShellRoute` 的 `go_router`。
-- 视觉系统经 `flex_color_scheme` 用 Material 3。
+- 视觉系统是原生 Material 3（`ColorScheme.fromSeed`，Android 动态取色），并带用户可选的界面风格：Material 3 或 Expressive（默认；含悬浮导航栏），在本地以 `uiStyle` 存于 `storage_config.json`。硬编码颜色仅限于财务图表的分类色板和与主题无关的遮罩。
 - 每个宽度或高度决策——布局能否分栏、导航放在哪里、能容纳多少列、对话框能多高——都经过 `lib/shared/utils/adaptive_layout.dart`。组件文件里把尺寸和数字比较就是 bug。见[自适应布局](adaptive-layout.md)。
 - 文件 IO 经 `DeviceStorage.getAppDir()`，使用户配置的自定义存储路径（`storage_config.json`）总是被尊重。本地偏好是例外：它们和自定义路径本身位于平台默认文件夹中唯一的 `storage_config.json`，只经 `DeviceStorage.readConfig`/`writeConfig` 读写，因此移动数据从不触及它们（见 [数据格式](data-formats.md#storage_configjson)）。
 - JSON 输出用 `JsonEncoder.withIndent('  ')` 美化打印。

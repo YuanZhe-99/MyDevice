@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/ai/services/on_device_ai_service.dart';
+import '../../app/theme.dart';
 import '../../features/devices/services/device_storage.dart';
 
 class AppSettingsNotifier extends StateNotifier<AppSettings> {
@@ -31,6 +32,9 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
   Future<void> _loadPersisted() async {
     final modeStr = await DeviceStorage.getThemeMode();
     final localeTag = await DeviceStorage.getLocaleTag();
+    final uiStyle = (await DeviceStorage.getUiStyle()) == 'material3'
+        ? AppUiStyle.material3
+        : AppUiStyle.expressive;
     final onDeviceAiEnabled = await DeviceStorage.getOnDeviceAiEnabled();
     final onDeviceAiPreferFast = await DeviceStorage.getOnDeviceAiPreferFast();
 
@@ -49,6 +53,7 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     state = AppSettings(
       themeMode: themeMode,
       locale: locale,
+      uiStyle: uiStyle,
       onDeviceAiEnabled: onDeviceAiEnabled,
       onDeviceAiPreferFast: onDeviceAiPreferFast,
     );
@@ -89,6 +94,20 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     }
   }
 
+  /// Purpose: Change the interface style (1.7.0).
+  /// Inputs: `style`.
+  /// Returns: None.
+  /// Side effects: Updates state and persists `uiStyle` to
+  /// `storage_config.json` (only Material 3 is stored).
+  /// Notes: Local setting, never synced. Expressive also selects the floating
+  /// navigation bar.
+  void setUiStyle(AppUiStyle style) {
+    state = state.copyWith(uiStyle: style);
+    DeviceStorage.setUiStyle(
+      style == AppUiStyle.material3 ? 'material3' : null,
+    );
+  }
+
   /// Purpose: Turn on-device AI on or off.
   /// Inputs: `enabled`.
   /// Returns: None.
@@ -117,6 +136,9 @@ class AppSettings {
   final ThemeMode themeMode;
   final Locale? locale;
 
+  /// The interface style (1.7.0): Material 3, or Expressive (the default).
+  final AppUiStyle uiStyle;
+
   /// Whether on-device AI (the insight cards) is on. Device-local.
   final bool onDeviceAiEnabled;
 
@@ -124,7 +146,7 @@ class AppSettings {
   final bool onDeviceAiPreferFast;
 
   /// Purpose: Create an app settings instance.
-  /// Inputs: `themeMode`, `locale`, `onDeviceAiEnabled`,
+  /// Inputs: `themeMode`, `locale`, `uiStyle`, `onDeviceAiEnabled`,
   /// `onDeviceAiPreferFast`.
   /// Returns: A new `AppSettings` instance.
   /// Side effects: None.
@@ -132,6 +154,7 @@ class AppSettings {
   const AppSettings({
     this.themeMode = ThemeMode.system,
     this.locale,
+    this.uiStyle = AppUiStyle.expressive,
     this.onDeviceAiEnabled = false,
     this.onDeviceAiPreferFast = false,
   });
@@ -144,6 +167,7 @@ class AppSettings {
   AppSettings copyWith({
     ThemeMode? themeMode,
     Locale? locale,
+    AppUiStyle? uiStyle,
     bool? onDeviceAiEnabled,
     bool? onDeviceAiPreferFast,
     bool clearLocale = false,
@@ -151,6 +175,7 @@ class AppSettings {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
       locale: clearLocale ? null : (locale ?? this.locale),
+      uiStyle: uiStyle ?? this.uiStyle,
       onDeviceAiEnabled: onDeviceAiEnabled ?? this.onDeviceAiEnabled,
       onDeviceAiPreferFast: onDeviceAiPreferFast ?? this.onDeviceAiPreferFast,
     );

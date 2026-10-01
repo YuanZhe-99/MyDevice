@@ -10,8 +10,10 @@ restored data, and [WebDAV Sync](sync.md) for why restoring interacts with auto-
 Each `backups/backup_*.json` bundle (`_backupFormat: 2`) stores:
 
 - The raw JSON string content of each present data module file (`device_data.json`,
-  `network_data.json`, `dataset_data.json`, `service_data.json` — the same four files
-  from the [Persisted Data Inventory](data-formats.md#persisted-data-inventory)).
+  `network_data.json`, `dataset_data.json`, `service_data.json`, and since 1.7.0 `profile.json` —
+  the files from the [Persisted Data Inventory](data-formats.md#persisted-data-inventory)). A bundle
+  from 1.6.2 or earlier has no `profile.json` and never touches it on restore; the restore dialog
+  labels the module "Profile" (`backupModuleProfile`).
 - An `_imageRefs` map from `images/<filename>` to a content-addressed blob name
   `<sha256><ext>` stored under `backups/blobs/`.
 
@@ -147,7 +149,7 @@ After a successful restore:
 
 ## ZIP export/import
 
-`import_export_service.dart` exports the four data JSON files plus every file under
+`import_export_service.dart` exports the data JSON files (including `profile.json` since 1.7.0) plus every file under
 `images/` into a ZIP archive, and imports the reverse. On import, each archive entry name
 is normalized and must be either one of the known data file names or match
 `images/<flat-name>` (confirmed in source: `normalizedName.startsWith('images/') &&

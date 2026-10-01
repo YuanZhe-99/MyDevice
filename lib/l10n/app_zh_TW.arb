@@ -684,5 +684,18 @@
   "aiLanguageUnsupported": "裝置端模型無法使用這種語言寫作。",
   "aiOpenSettings": "設定",
   "aiFinanceCosts": "成本",
-  "aiFinanceRecurring": "週期費用"
+  "aiFinanceRecurring": "週期費用",
+  "settingsUiStyle": "介面風格",
+  "settingsUiStyleDesc": "Expressive 使用更圓潤的形狀、更粗的標題和懸浮導覽列。Material 3 為標準外觀，使用通欄導覽列。",
+  "settingsUiStyleMaterial3": "Material 3",
+  "settingsUiStyleExpressive": "Expressive",
+  "backupModuleProfile": "個人資料",
+  "profileTitle": "個人資料",
+  "profileName": "名稱",
+  "profileNamePlaceholder": "設定你的名稱",
+  "profileEditHint": "名稱和頭像會在你的裝置間同步",
+  "profileChangeAvatar": "選擇頭像",
+  "profileRemoveAvatar": "移除",
+  "profileAvatarError": "無法使用此圖片",
+  "profileOpenSettings": "個人資料與設定"
 }

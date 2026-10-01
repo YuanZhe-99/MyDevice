@@ -672,5 +672,18 @@
   "aiLanguageUnsupported": "オンデバイスモデルはこの言語で書けません。",
   "aiOpenSettings": "設定",
   "aiFinanceCosts": "コスト",
-  "aiFinanceRecurring": "継続費用"
+  "aiFinanceRecurring": "継続費用",
+  "settingsUiStyle": "インターフェーススタイル",
+  "settingsUiStyleDesc": "Expressive は丸みのある形、太めの見出し、フローティングナビゲーションバーを使います。Material 3 は全幅バーの標準デザインです。",
+  "settingsUiStyleMaterial3": "Material 3",
+  "settingsUiStyleExpressive": "Expressive",
+  "backupModuleProfile": "プロフィール",
+  "profileTitle": "プロフィール",
+  "profileName": "名前",
+  "profileNamePlaceholder": "名前を設定",
+  "profileEditHint": "名前とアバターはデバイス間で同期されます",
+  "profileChangeAvatar": "アバターを選択",
+  "profileRemoveAvatar": "削除",
+  "profileAvatarError": "この画像は使用できません",
+  "profileOpenSettings": "プロフィールと設定"
 }

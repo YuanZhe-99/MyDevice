@@ -76,3 +76,20 @@ module here: it is device-local and never synced, backed up or exported.
 
 `packages/myapps_data/doc/en-us/functions/src/modules/data_module.md` and
 `packages/myapps_data/doc/en-us/functions/src/storage/storage_adapter.md`.
+
+## Profile module (since 1.7.0)
+
+`profile.json` (the synced display name and avatar) is the fifth module, appended **last** to
+`deviceModuleRegistry` so the indices of the existing four stay unchanged. New declarations:
+
+| Declaration | Kind | Tier | Purpose |
+|---|---|---|---|
+| `profileFileName` | constant | B | Local and remote name of the profile file, `'profile.json'` (frozen, I1/I2). |
+| `profileModuleId` | constant | B | Backup bundle module key, `'profile'` (frozen, I2). |
+| `validateProfileJson(json)` | function | A | Throw unless the payload is a JSON object; the model is tolerant inside it. |
+| `profileReferencedImages(json)` | function | A | Return the avatar's basename (or an empty set; malformed input also yields an empty set), so the avatar travels through the engine's image phase with the device images. |
+| `buildProfileModule()` | function | A | Build the profile `DataModule`: the merge is `mergeProfileJson` and is conflict-free (per-field last writer wins), so `baseJson` and `autoResolve` are unused and the module never reaches the conflict dialog. |
+
+Builds older than 1.7.0 never request the file, so adding the module leaves them unaffected; every
+sync costs one extra `GET profile.json`. See [features/profile.md](../../features/profile.md) and
+[../../sync.md](../../sync.md).

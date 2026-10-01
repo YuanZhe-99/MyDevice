@@ -188,3 +188,9 @@ are no misattached blocks and no undocumented tail declarations in this file.
 - **Notes:** The actual day-based deletion logic (`_cleanOldBackups()`) lives in
   `BackupService`, not here — this method only persists the chosen threshold; see
   [Backup, Restore, and Export](../../../../backup-restore.md#retention).
+
+## Profile module label (since 1.7.0)
+
+The restore-module dialog's label map gains `profileModuleId: (l10n.backupModuleProfile,
+Icons.person_outline)`, so a backup that contains `profile.json` offers a *Profile* module (restore
+label *Profile*).

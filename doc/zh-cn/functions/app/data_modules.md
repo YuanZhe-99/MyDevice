@@ -49,3 +49,17 @@
 ## 契约文档在哪里
 
 `packages/myapps_data/doc/en-us/functions/src/modules/data_module.md` 和 `packages/myapps_data/doc/en-us/functions/src/storage/storage_adapter.md`。
+
+## 个人资料模块（自 1.7.0 起）
+
+`profile.json`（同步的名称和头像）是第五个模块，**追加在** `deviceModuleRegistry` **末尾**，因此原有四个模块的索引保持不变。新增声明：
+
+| 声明 | 种类 | Tier | 用途 |
+|---|---|---|---|
+| `profileFileName` | 常量 | B | 个人资料文件的本地和远程名称 `'profile.json'`（冻结，I1/I2）。 |
+| `profileModuleId` | 常量 | B | 备份捆绑模块键 `'profile'`（冻结，I2）。 |
+| `validateProfileJson(json)` | 函数 | A | 除非载荷是 JSON 对象否则抛出；模型对象内部容错。 |
+| `profileReferencedImages(json)` | 函数 | A | 返回头像的基名（或空集合；格式错误的输入同样得到空集合），使头像与设备图片一起经引擎图像阶段传输。 |
+| `buildProfileModule()` | 函数 | A | 构建个人资料 `DataModule`：合并是 `mergeProfileJson` 且无冲突（按字段后写者胜），因此 `baseJson` 和 `autoResolve` 未使用，该模块从不进入冲突对话框。 |
+
+1.7.0 之前的构建从不请求该文件，因此加入该模块不影响它们；每次同步多一次 `GET profile.json`。见 [features/profile.md](../../features/profile.md) 和 [../../sync.md](../../sync.md)。

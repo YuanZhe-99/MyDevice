@@ -480,6 +480,34 @@ class DeviceStorage {
     await _writeConfigToDefault(out);
   }
 
+  /// Purpose: Read the interface style (1.7.0).
+  /// Inputs: None.
+  /// Returns: `Future<String?>` — `'material3'`, or null for the default
+  /// Expressive style.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Local setting, never synced. Only the non-default Material 3
+  /// style is stored, as `uiStyle: "material3"`.
+  static Future<String?> getUiStyle() async {
+    final config = await readConfig();
+    return config['uiStyle'] == 'material3' ? 'material3' : null;
+  }
+
+  /// Purpose: Persist the interface style (1.7.0).
+  /// Inputs: `name` — `'material3'`, or null for the default Expressive style.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Writes `uiStyle: "material3"` or removes the key, so a default
+  /// install's config stays free of it.
+  static Future<void> setUiStyle(String? name) async {
+    final config = await readConfig();
+    if (name == 'material3') {
+      config['uiStyle'] = 'material3';
+    } else {
+      config.remove('uiStyle');
+    }
+    await writeConfig(config);
+  }
+
   /// Purpose: Implement the get theme mode behavior for this file.
   /// Inputs: None.
   /// Returns: `Future<String?>`.

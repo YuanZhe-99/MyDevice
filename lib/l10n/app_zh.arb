@@ -674,5 +674,18 @@
   "aiLanguageUnsupported": "端侧模型无法使用这种语言写作。",
   "aiOpenSettings": "设置",
   "aiFinanceCosts": "成本",
-  "aiFinanceRecurring": "周期费用"
+  "aiFinanceRecurring": "周期费用",
+  "settingsUiStyle": "界面风格",
+  "settingsUiStyleDesc": "Expressive 使用更圆润的形状、更粗的标题和悬浮导航栏。Material 3 为标准外观，使用通栏导航栏。",
+  "settingsUiStyleMaterial3": "Material 3",
+  "settingsUiStyleExpressive": "Expressive",
+  "backupModuleProfile": "个人资料",
+  "profileTitle": "个人资料",
+  "profileName": "名称",
+  "profileNamePlaceholder": "设置你的名称",
+  "profileEditHint": "名称和头像会在你的设备间同步",
+  "profileChangeAvatar": "选择头像",
+  "profileRemoveAvatar": "移除",
+  "profileAvatarError": "无法使用此图片",
+  "profileOpenSettings": "个人资料与设置"
 }

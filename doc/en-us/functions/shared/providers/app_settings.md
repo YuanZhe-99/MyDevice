@@ -160,3 +160,14 @@ matches `grep -c '/// Purpose:' lib/shared/providers/app_settings.dart` (9).
 - **Notes:** The `clearLocale` flag is what makes "explicitly set locale to null" distinguishable
   from "don't touch locale" in a `copyWith` pattern, since passing `locale: null` would otherwise
   be indistinguishable from omitting the parameter.
+
+## Interface style (since 1.7.0)
+
+`AppSettings` gains `uiStyle` (`AppUiStyle`, default `AppUiStyle.expressive`), present in the
+constructor, `copyWith` and `_loadPersisted` (which maps `DeviceStorage.getUiStyle()` — `'material3'`
+or null — to the enum). New method `AppSettingsNotifier.setUiStyle(AppUiStyle style)` (Tier B) updates
+`state` and persists through `DeviceStorage.setUiStyle('material3' or null)`, so only the non-default
+Material 3 style is stored, as `uiStyle: "material3"` in `storage_config.json`. `MyDeviceApp.build`
+passes `settings.uiStyle` to `AppTheme.light`/`dark`, so the theme rebuilds at once; `ShellScaffold`
+watches `appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)` and builds
+`_FloatingNavBar` for Expressive. The setting is local and never synced.

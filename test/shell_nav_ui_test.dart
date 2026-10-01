@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:my_device/app/theme.dart';
 import 'package:my_device/l10n/app_localizations.dart';
+import 'package:my_device/shared/providers/app_settings.dart';
 import 'package:my_device/shared/widgets/shell_scaffold.dart';
 
 /// Purpose: Test that the shell swaps its bottom bar for a rail on wide windows.
@@ -16,7 +19,12 @@ import 'package:my_device/shared/widgets/shell_scaffold.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> pumpAt(WidgetTester tester, double width, double height) async {
+  Future<void> pumpAt(
+    WidgetTester tester,
+    double width,
+    double height, {
+    AppUiStyle uiStyle = AppUiStyle.expressive,
+  }) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = Size(width, height);
     addTearDown(tester.view.reset);
@@ -46,11 +54,18 @@ void main() {
     addTearDown(router.dispose);
 
     await tester.pumpWidget(
-      MaterialApp.router(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('zh'),
-        routerConfig: router,
+      ProviderScope(
+        overrides: [
+          appSettingsProvider.overrideWithValue(
+            AppSettingsNotifier.fixed(AppSettings(uiStyle: uiStyle)),
+          ),
+        ],
+        child: MaterialApp.router(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('zh'),
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pumpAndSettle();
@@ -91,6 +106,43 @@ void main() {
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('bottom bar style', () {
+    const island = ValueKey('floatingNavBarIsland');
+
+    testWidgets('the default Expressive style floats the bar as an island', (
+      tester,
+    ) async {
+      await pumpAt(tester, 412, 915);
+      expect(find.byKey(island), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(island),
+          matching: find.byType(NavigationBar),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the Material 3 style keeps the classic bar', (tester) async {
+      await pumpAt(tester, 412, 915, uiStyle: AppUiStyle.material3);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byKey(island), findsNothing);
+    });
+
+    testWidgets('the rail ignores the setting', (tester) async {
+      await pumpAt(tester, 933, 704);
+      expect(find.byType(NavigationRail), findsOneWidget);
+      expect(find.byKey(island), findsNothing);
+    });
+
+    testWidgets('tapping an island destination navigates', (tester) async {
+      await pumpAt(tester, 412, 915);
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      expect(find.text('page /settings'), findsOneWidget);
+    });
   });
 
   testWidgets('the rail carries the same five destinations, in order', (

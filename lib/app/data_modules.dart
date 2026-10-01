@@ -7,6 +7,7 @@
 /// Notes: Registry order is the sync/backup/progress order and
 /// matches the previous `_dataFileNames` list exactly. File names and module
 /// IDs are persisted compatibility contracts (I1/I2) and must never change.
+/// Since 1.7.0 the registry also holds `profile.json`, appended last.
 /// `ai_insights.json` (the on-device AI cache, v1.6.0) is deliberately not a
 /// module here: it is device-local, never synced, backed up or exported.
 library;
@@ -21,6 +22,8 @@ import '../features/datasets/models/dataset.dart';
 import '../features/devices/models/device.dart';
 import '../features/devices/services/device_storage.dart';
 import '../features/network/models/network.dart';
+import '../features/profile/models/profile_data.dart';
+import '../features/profile/services/profile_merge.dart';
 import '../features/services/models/service.dart';
 import '../shared/services/sync_merge.dart';
 
@@ -95,6 +98,12 @@ const dataSetDataFileName = 'dataset_data.json';
 
 /// Data file holding service nodes and routes.
 const serviceDataFileName = 'service_data.json';
+
+/// Local and remote name of the profile file (1.7.0; I1/I2).
+const profileFileName = 'profile.json';
+
+/// Backup bundle module key for that file (1.7.0; I2).
+const profileModuleId = 'profile';
 
 /// Purpose: Extract device image basenames referenced by device records.
 /// Inputs: [json] raw or merged `device_data.json`.
@@ -208,27 +217,26 @@ class _SingleMerge<R, D> {
 /// Returns: The devices [DataModule].
 /// Side effects: None.
 /// Notes: The only module contributing referenced images.
-DataModule buildDevicesModule() => _singleContainerModule<DeviceMergeResult, Device>(
-  fileName: deviceDataFileName,
-  moduleId: deviceModuleId,
-  validate: (json) =>
-      DeviceData.fromJson(jsonDecode(json) as Map<String, dynamic>),
-  referencedImages: deviceReferencedImages,
-  merge: _SingleMerge<DeviceMergeResult, Device>(
-    run: (local, remote, base, autoResolve) =>
-        mergeDeviceData(local, remote, base, autoResolve: autoResolve),
-    hasConflicts: (r) => r.hasConflicts,
-    conflicts: (r) => r.conflicts,
-    encodeMerged: (r) =>
-        DeviceData(devices: r.merged, extraJson: r.extraJson).toJson(),
-    encodeResolved: (r, choices) => r
-        .buildResolved({
+DataModule buildDevicesModule() =>
+    _singleContainerModule<DeviceMergeResult, Device>(
+      fileName: deviceDataFileName,
+      moduleId: deviceModuleId,
+      validate: (json) =>
+          DeviceData.fromJson(jsonDecode(json) as Map<String, dynamic>),
+      referencedImages: deviceReferencedImages,
+      merge: _SingleMerge<DeviceMergeResult, Device>(
+        run: (local, remote, base, autoResolve) =>
+            mergeDeviceData(local, remote, base, autoResolve: autoResolve),
+        hasConflicts: (r) => r.hasConflicts,
+        conflicts: (r) => r.conflicts,
+        encodeMerged: (r) =>
+            DeviceData(devices: r.merged, extraJson: r.extraJson).toJson(),
+        encodeResolved: (r, choices) => r.buildResolved({
           for (final entry in choices.entries)
             if (entry.value is Device) entry.key: entry.value as Device,
-        })
-        .toJson(),
-  ),
-);
+        }).toJson(),
+      ),
+    );
 
 /// Purpose: Describe `network_data.json` to the shared engines.
 /// Inputs: None.
@@ -249,12 +257,10 @@ DataModule buildNetworksModule() =>
         hasConflicts: (r) => r.hasConflicts,
         conflicts: (r) => r.conflicts,
         encodeMerged: (r) => r.buildResolved(const {}).toJson(),
-        encodeResolved: (r, choices) => r
-            .buildResolved({
-              for (final entry in choices.entries)
-                if (entry.value is Network) entry.key: entry.value as Network,
-            })
-            .toJson(),
+        encodeResolved: (r, choices) => r.buildResolved({
+          for (final entry in choices.entries)
+            if (entry.value is Network) entry.key: entry.value as Network,
+        }).toJson(),
       ),
     );
 
@@ -275,12 +281,10 @@ DataModule buildDataSetsModule() =>
         hasConflicts: (r) => r.hasConflicts,
         conflicts: (r) => r.conflicts,
         encodeMerged: (r) => r.buildResolved(const {}).toJson(),
-        encodeResolved: (r, choices) => r
-            .buildResolved({
-              for (final entry in choices.entries)
-                if (entry.value is DataSet) entry.key: entry.value as DataSet,
-            })
-            .toJson(),
+        encodeResolved: (r, choices) => r.buildResolved({
+          for (final entry in choices.entries)
+            if (entry.value is DataSet) entry.key: entry.value as DataSet,
+        }).toJson(),
       ),
     );
 
@@ -330,21 +334,74 @@ DataModule buildServicesModule() => DataModule(
               ),
           ],
           buildResolvedJson: (resolutions) => _prettyJson.convert(
-            result.buildResolved(Map<String, dynamic>.from(resolutions)).toJson(),
+            result
+                .buildResolved(Map<String, dynamic>.from(resolutions))
+                .toJson(),
           ),
         );
       },
 );
 
+/// Purpose: Validate a `profile.json` payload before it is written.
+/// Inputs: [json] raw module content.
+/// Returns: None; throws when the payload is not a JSON object.
+/// Side effects: None.
+/// Notes: The model is tolerant inside the object.
+void validateProfileJson(String json) {
+  ProfileData.fromJson(jsonDecode(json));
+}
+
+/// Purpose: Extract the avatar image basename referenced by the profile.
+/// Inputs: [json] raw or merged module JSON.
+/// Returns: A set holding the avatar's basename, or empty.
+/// Side effects: None.
+/// Notes: This is what makes the avatar file travel through the engine's
+/// image phase alongside the device images. Malformed input yields an empty
+/// set.
+Set<String> profileReferencedImages(String json) {
+  try {
+    final avatar = ProfileData.fromJson(jsonDecode(json)).avatar;
+    return avatar == null ? {} : {p.basename(avatar)};
+  } catch (_) {
+    return {};
+  }
+}
+
+/// Purpose: Describe `profile.json` to the shared engines (1.7.0).
+/// Inputs: None.
+/// Returns: The profile [DataModule].
+/// Side effects: None.
+/// Notes: Conflict-free (each field is last-writer-wins by its own
+/// timestamp), so `baseJson` and `autoResolve` are unused. Builds older than
+/// 1.7.0 never request this file, so adding it leaves them unaffected.
+DataModule buildProfileModule() => DataModule(
+  fileName: profileFileName,
+  moduleId: profileModuleId,
+  validate: validateProfileJson,
+  referencedImages: profileReferencedImages,
+  merge:
+      ({
+        required String localJson,
+        required String remoteJson,
+        required String? baseJson,
+        required bool autoResolve,
+      }) => ModuleMergeOutcome(
+        mergedJson: mergeProfileJson(localJson, remoteJson),
+      ),
+);
+
 /// Purpose: Provide MyDevice's ordered module registry.
 /// Inputs: None.
-/// Returns: A registry holding devices, networks, datasets, and services.
+/// Returns: A registry holding devices, networks, datasets, services, then the
+/// profile (1.7.0).
 /// Side effects: None.
 /// Notes: Order matches the previous hardcoded `_dataFileNames` list and is
-/// behaviorally significant for sync order, progress, and backup key order.
+/// behaviorally significant for sync order, progress, and backup key order. The profile
+/// module is appended last (1.7.0).
 final ModuleRegistry deviceModuleRegistry = ModuleRegistry([
   buildDevicesModule(),
   buildNetworksModule(),
   buildDataSetsModule(),
   buildServicesModule(),
+  buildProfileModule(),
 ]);

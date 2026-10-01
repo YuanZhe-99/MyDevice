@@ -272,8 +272,9 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Network assignments | `network_data.json` | Yes | Composite key plus content comparison |
 | Datasets | `dataset_data.json` | Yes | Per-record by `id` and `modifiedAt` |
 | Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
-| Images | `images/` | Yes | Referenced-only filename comparison |
-| Theme, locale, backup settings, sort preferences, home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
+| Profile (display name and avatar) | `profile.json` | Yes | Per-field last writer wins by `displayNameUpdatedAt` / `avatarUpdatedAt` (since 1.7.0); never conflicts |
+| Images and avatar | `images/` | Yes | Referenced-only filename comparison; includes the profile avatar |
+| Theme, interface style (`uiStyle`), locale, backup settings, sort preferences, home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
 | Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
@@ -334,6 +335,43 @@ it left behind (see [`storage_config.json`](#storage_configjson),
   a file of that name — is reported back, and Settings lists them with the old folder's path,
   because the app cannot see them at the new location.
 
+## `profile.json` <a id="profilejson"></a>
+
+`profile.json` (1.7.0) is the fifth registered module, so it also syncs, is backed up, is included in
+ZIP export, and has its own `.sync_base/profile.json`. It holds the user's display name and avatar
+(see [`features/profile.md`](features/profile.md)):
+
+```json
+{
+  "version": 1,
+  "displayName": "Yuan",
+  "displayNameUpdatedAt": "2026-10-01T14:06:42.530801Z",
+  "avatar": "images/avatar_2953ac52-337e-4271-a8e1-bcd97ee416ba.jpg",
+  "avatarUpdatedAt": "2026-10-01T14:08:59.163627Z"
+}
+```
+
+- `displayName` / `displayNameUpdatedAt` — the name and when it last changed (UTC). Trimmed on save;
+  clearing it writes `"displayName": null` with a new timestamp.
+- `avatar` / `avatarUpdatedAt` — the avatar as a path relative to the data directory
+  (`images/avatar_<uuid>.jpg`, a 512 x 512 JPEG) and when it last changed (UTC). A removed avatar is
+  written as an explicit `"avatar": null` with its timestamp, so the removal syncs.
+- A field is written only once it has a timestamp; a field with no timestamp means "never set" and
+  always loses a merge to one that was set. Each field merges by last writer wins, independently of
+  the other — see [`sync.md`](sync.md#the-profile-file). Unknown keys survive. `version` is `1`.
+- The avatar image is an ordinary file in `images/`, so it syncs through the engine's referenced-only
+  additive image phase (the module reports it through `profileReferencedImages`), and is backed up and
+  exported with the other images. Each new avatar gets a fresh file name, because image sync never
+  overwrites an existing file; replaced avatars are deleted locally only, so old ones remain on the
+  WebDAV server and other devices.
+- Builds older than 1.7.0 never request `profile.json`, so it does not affect them.
+
+### `storage_config.json` key `uiStyle`
+
+Since 1.7.0 `storage_config.json` may hold `"uiStyle": "material3"`. Only the non-default Material 3
+style is stored; the default Expressive style (floating navigation bar, rounder shapes, bolder
+titles) is the absence of the key. Local preference, never synced.
+
 ## `ai_insights.json`
 
 The on-device AI insight cache (v1.6.0), written atomically through `AiInsightsCache` with its own
@@ -384,4 +422,4 @@ generated insights* in Settings deletes it.
 
 ## Write safety (since 1.6.2)
 
-The four data files (`device_data.json`, `network_data.json`, `dataset_data.json`, `service_data.json`), `storage_config.json` and `exchange_rates.json` are replaced atomically: the new content goes to a same-folder `<name>.tmp-<microseconds>` file that is renamed over the target (retried briefly if Windows reports the target as locked). The data storages additionally serialise their read-modify-write operations per file path. The on-disk JSON shape and the sync/backup formats are unchanged; a stray `*.tmp-*` file can only remain after a crash and is safe to delete.
+The data files (`device_data.json`, `network_data.json`, `dataset_data.json`, `service_data.json`, and since 1.7.0 `profile.json`), `storage_config.json` and `exchange_rates.json` are replaced atomically: the new content goes to a same-folder `<name>.tmp-<microseconds>` file that is renamed over the target (retried briefly if Windows reports the target as locked). The data storages additionally serialise their read-modify-write operations per file path. The on-disk JSON shape and the sync/backup formats are unchanged; a stray `*.tmp-*` file can only remain after a crash and is safe to delete.

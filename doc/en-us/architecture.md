@@ -26,7 +26,9 @@ overall repository layout of MyDevice!!!!!. For data-level details see
 
 - **`app.dart`** — `MyDeviceApp`, a `ConsumerWidget` that watches `appSettingsProvider`
   and builds a `MaterialApp.router`. It wires theme mode, locale, supported locales, and
-  `routerConfig: appRouter` together. The app title is literally `'MyDevice!!!!!'`.
+  `routerConfig: appRouter` together. The app title is literally `'MyDevice!!!!!'`. Since 1.7.0 it wraps
+  the `MaterialApp.router` in a `DynamicColorBuilder`, uses the wallpaper scheme on Android only, and
+  passes the user's interface style to the theme.
 - **`router.dart`** — `appRouter` is a `GoRouter` with `initialLocation: '/devices'` and a
   single `ShellRoute` wrapping a `ShellScaffold`. Five tab routes live inside that shell,
   reached from a bottom `NavigationBar` on windows narrower than 600 logical pixels and from a
@@ -42,11 +44,13 @@ overall repository layout of MyDevice!!!!!. For data-level details see
   | `/datasets` | `DataSetListPage` |
   | `/settings` | `SettingsPage` |
 
-- **`theme.dart`** — `AppTheme.light` / `AppTheme.dark` are built with
-  `flex_color_scheme`'s `FlexThemeData`, both using `FlexScheme.blue`,
-  `FlexSurfaceMode.levelSurfacesLowScaffold`, Material 3, and
-  `NavigationDestinationLabelBehavior.onlyShowSelected` for the bottom nav bar. Light uses
-  `blendLevel: 7` / `blendOnLevel: 10`; dark uses `blendLevel: 13` / `blendOnLevel: 20`.
+- **`theme.dart`** — `AppUiStyle` (Material 3 or Expressive) and `AppTheme`. `AppTheme.light` /
+  `AppTheme.dark` are methods taking an optional dynamic `ColorScheme` and an `AppUiStyle` (default
+  Expressive); the scheme is `ColorScheme.fromSeed(AppTheme.seedColor)` (`0xFF1565C0`, blue) unless
+  a dynamic scheme (Android only, see `app.dart`) is passed. Material 3 is Flutter's stock theme plus
+  outlined text fields; Expressive layers a theme-level approximation on top (larger corner radii,
+  press-to-morph buttons, bolder titles, 2024 progress indicators and sliders, fade-forward page
+  transition) without changing layout or colors. `flex_color_scheme` is gone since 1.7.0.
 - <a id="appflavor"></a>**`flavor.dart`** — `AppFlavor` reads a compile-time `FLAVOR` dart-define
   (`String.fromEnvironment('FLAVOR', defaultValue: 'full')`). `AppFlavor.isStore` is true
   only when the define is exactly `'store'`; `AppFlavor.isFull` is its negation. See
@@ -97,6 +101,13 @@ lib/
       services/preset_service.dart
       views/     (… device_image_editor_page)
       widgets/   (device_avatar, device_category_icon, template_image_picker)
+    profile/                  # synced display name and avatar (1.7.0)
+      models/profile_data.dart
+      services/profile_merge.dart
+      services/profile_store.dart
+      providers/profile_provider.dart
+      views/profile_avatar.dart
+      views/profile_header.dart
     network/
       models/network.dart
       services/network_storage.dart
@@ -167,7 +178,7 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
 ## Core architecture rules
 
 - Navigation uses `go_router` with a `ShellRoute` for the five tabs listed above.
-- The visual system uses Material 3 via `flex_color_scheme`.
+- The visual system is native Material 3 (`ColorScheme.fromSeed`, Android dynamic color) with a user-selectable interface style: Material 3 or Expressive (default; with the floating navigation bar), stored locally as `uiStyle` in `storage_config.json`. Hard-coded colors are limited to the finance chart's categorical palette and theme-independent overlays.
 - Every width or height decision — whether a layout may split, where navigation lives, how many
   columns fit, how tall a dialog may be — goes through `lib/shared/utils/adaptive_layout.dart`. A
   widget file that compares a size against a number is a bug. See

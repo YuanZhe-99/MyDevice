@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1493** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1550** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1616** declarations — 123 more than
-1493 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1676** declarations — 126 more than
+1550 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the
 constants, enums, typedefs and private regular expressions of the 1.6.0 on-device AI files under
 `features/ai/` and the two insight fact builders, and the classes, enum, constants and typedefs of
@@ -19,6 +19,8 @@ number. The 1.6.1 documentation audit added the missing blocks to the 27 tail de
 `device.dart` and to three constructors in `device_search_service.dart`, so those no longer count
 toward the gap.
 
+**1.7.0 recount.** The measured `/// Purpose:` count is 1550 (1493 before) and the rows sum to 1676 (1616 before), so the gap grows from 123 to 126: the release added 60 documented declarations (the six `features/profile/` files with 44, five in `data_modules.dart`, five in `theme.dart`, three in `shell_scaffold.dart`, two in `device_storage.dart`, one in `app_settings.dart`), three of them constants or fields without a `Purpose:` comment.
+
 The `/// Purpose:` figure is verified against source with
 `grep -r '/// Purpose:' lib --include=*.dart` (excluding `lib/l10n/`). The declaration totals are
 hand-maintained and were **re-audited in the current workspace**: every per-file row equals the Declarations
@@ -28,9 +30,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 877 |
-| Tier B (index row only) | 739 |
-| **Total** | **1616** |
+| Tier A (full entry) | 906 |
+| Tier B (index row only) | 770 |
+| **Total** | **1676** |
 
 ## Root (`lib/`)
 
@@ -45,8 +47,8 @@ its per-file row and both total tables in the same commit.
 | `lib/app/app.dart` | [app/app.md](app/app.md) | 2 | 0 |
 | `lib/app/flavor.dart` | [app/flavor.md](app/flavor.md) | 4 | 1 |
 | `lib/app/router.dart` | [app/router.md](app/router.md) | 1 | 0 |
-| `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 14 | 14 |
-| `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 3 | 3 |
+| `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 19 | 17 |
+| `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 8 | 7 |
 
 ## features/ai/
 
@@ -79,7 +81,7 @@ its per-file row and both total tables in the same commit.
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 40 | 37 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 39 | 27 |
-| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 54 | 31 |
+| `lib/features/devices/services/device_storage.dart` | [features/devices/services/device_storage.md](features/devices/services/device_storage.md) | 56 | 33 |
 | `lib/features/devices/services/exchange_rate_service.dart` | [features/devices/services/exchange_rate_service.md](features/devices/services/exchange_rate_service.md) | 25 | 24 |
 | `lib/features/devices/services/finance_insight_facts.dart` | [features/devices/services/finance_insight_facts.md](features/devices/services/finance_insight_facts.md) | 5 | 1 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 19 | 15 |
@@ -103,6 +105,20 @@ its per-file row and both total tables in the same commit.
 | `lib/features/network/views/network_detail_page.dart` | [features/network/views/network_detail_page.md](features/network/views/network_detail_page.md) | 26 | 11 |
 | `lib/features/network/views/network_edit_page.dart` | [features/network/views/network_edit_page.md](features/network/views/network_edit_page.md) | 9 | 1 |
 | `lib/features/network/views/network_list_page.dart` | [features/network/views/network_list_page.md](features/network/views/network_list_page.md) | 16 | 6 |
+
+## features/profile/
+
+| Source file | Page | Declarations | Tier A count |
+|---|---|---|---|
+| `lib/features/profile/models/profile_data.dart` | [features/profile/models/profile_data.md](features/profile/models/profile_data.md) | 8 | 2 |
+| `lib/features/profile/services/profile_merge.dart` | [features/profile/services/profile_merge.md](features/profile/services/profile_merge.md) | 4 | 2 |
+| `lib/features/profile/services/profile_store.dart` | [features/profile/services/profile_store.md](features/profile/services/profile_store.md) | 10 | 6 |
+| `lib/features/profile/providers/profile_provider.dart` | [features/profile/providers/profile_provider.md](features/profile/providers/profile_provider.md) | 7 | 2 |
+| `lib/features/profile/views/profile_avatar.dart` | [features/profile/views/profile_avatar.md](features/profile/views/profile_avatar.md) | 5 | 3 |
+| `lib/features/profile/views/profile_header.dart` | [features/profile/views/profile_header.md](features/profile/views/profile_header.md) | 10 | 4 |
+
+The synced profile (1.7.0): display name and avatar. See [../features/profile.md](../features/profile.md).
+
 
 ## features/services/
 
@@ -138,13 +154,13 @@ its per-file row and both total tables in the same commit.
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1493/1616 hand-documented declarations above).
+the 1550/1676 hand-documented declarations above).
 
 ## shared/
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
-| `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 9 | 9 |
+| `lib/shared/providers/app_settings.dart` | [shared/providers/app_settings.md](shared/providers/app_settings.md) | 10 | 9 |
 | `lib/shared/services/auto_sync_service.dart` | [shared/services/auto_sync_service.md](shared/services/auto_sync_service.md) | 20 | 5 |
 | `lib/shared/services/backup_service.dart` | [shared/services/backup_service.md](shared/services/backup_service.md) | 12 | 12 |
 | `lib/shared/services/image_service.dart` | [shared/services/image_service.md](shared/services/image_service.md) | 11 | 11 |
@@ -166,7 +182,7 @@ the 1493/1616 hand-documented declarations above).
 | `lib/shared/views/webdav_config_page.dart` | [shared/views/webdav_config_page.md](shared/views/webdav_config_page.md) | 23 | 12 |
 | `lib/shared/widgets/adaptive_tile_grid.dart` | [shared/widgets/adaptive_tile_grid.md](shared/widgets/adaptive_tile_grid.md) | 3 | 3 |
 | `lib/shared/widgets/map_picker_page.dart` | [shared/widgets/map_picker_page.md](shared/widgets/map_picker_page.md) | 6 | 2 |
-| `lib/shared/widgets/shell_scaffold.dart` | [shared/widgets/shell_scaffold.md](shared/widgets/shell_scaffold.md) | 5 | 2 |
+| `lib/shared/widgets/shell_scaffold.dart` | [shared/widgets/shell_scaffold.md](shared/widgets/shell_scaffold.md) | 8 | 3 |
 | `lib/shared/widgets/template_icon.dart` | [shared/widgets/template_icon.md](shared/widgets/template_icon.md) | 2 | 0 |
 
 ## Area totals
@@ -174,12 +190,13 @@ the 1493/1616 hand-documented declarations above).
 | Area | Files | Declarations | Tier A | Tier B |
 |---|---|---|---|---|
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
-| `app/` | 5 | 24 | 18 | 6 |
+| `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
 | `features/datasets/` | 4 | 51 | 32 | 19 |
-| `features/devices/` | 18 | 493 | 278 | 215 |
+| `features/devices/` | 18 | 495 | 280 | 215 |
 | `features/network/` | 5 | 77 | 43 | 34 |
+| `features/profile/` | 6 | 44 | 19 | 25 |
 | `features/services/` | 17 | 536 | 233 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 24 | 259 | 185 | 74 |
-| **Total** | **87** | **1616** | **877** | **739** |
+| `shared/` | 24 | 263 | 186 | 77 |
+| **Total** | **93** | **1676** | **906** | **770** |

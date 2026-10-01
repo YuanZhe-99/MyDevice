@@ -447,3 +447,13 @@
 - **算法：** `saved && unmoved.isEmpty`。
 - **用法：** 供只需要是/否的调用方和测试使用；`settings_page.dart` 分别检查 `saved` 和 `unmoved` 来选择提示。
 - **备注：** 无。
+
+## 界面风格（自 1.7.0 起）
+
+| 声明 | 种类 | Tier | 用途 |
+|---|---|---|---|
+| `getUiStyle()` | 静态方法 | A | 读取界面风格。 |
+| `setUiStyle(name)` | 静态方法 | A | 持久化界面风格。 |
+
+- **`static Future<String?> getUiStyle()`**——当 `storage_config.json` 含 `uiStyle: "material3"` 时返回 `'material3'`，否则返回 null（默认的 Expressive 风格）。只读取配置。
+- **`static Future<void> setUiStyle(String? name)`**——读取-修改-写入 `storage_config.json`：`'material3'` 写入 `uiStyle: "material3"`，其他值移除该键，因此默认安装的配置里没有它。本地偏好，从不同步。

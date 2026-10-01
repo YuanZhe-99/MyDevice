@@ -236,6 +236,8 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 
 超过它，壳在侧边渲染 `NavigationRail`；低于它，则是一直以来的底部 `NavigationBar`。两者都由 [`shell_scaffold.dart`](functions/shared/widgets/shell_scaffold.md) 里的同一份目的地列表构建，因此不可能漂移。导航栏（NavigationRail）把目的地居中（`groupAlignment: 0`）而非采用默认的顶部对齐：顶部对齐是为了坐在前导菜单按钮或 FAB 之下，而这里两者都没有，五个目的地钉在 704 dp 高的栏顶部会让整个下半部空着。导航栏放在滚动视图里，紧凑高度的窗口不会让它溢出。
 
+自 1.7.0 起，底栏有两种外观，由本地界面风格设置（`uiStyle`）决定：**Expressive**（默认）把它绘制成悬浮的胶囊形“岛”，带左右和底部边距，宽度封顶 480 dp；**Material 3** 保留经典的通栏 `NavigationBar`。无论哪种，它都位于壳 `Scaffold` 的 `bottomNavigationBar` 槽位而不是盖在 body 之上，因此两种风格下页面布局和悬浮按钮位置完全相同。导航栏（NavigationRail）忽略该设置。
+
 **这是刻意的仅宽度判断，绝不能经由 `canSplitLayout`。** 导航栏不是分栏。它用宽度——只要测试通过就充裕——换取高度——并不充裕。它帮助最大的场景恰恰是分栏规则拒绝的那个：横持的普通手机 915 × 412，底栏花掉 19% 的高度做导航，而 915 逻辑像素的宽度闲置。分栏规则同样拒绝的 Z Fold 8 竖屏，出于同一理由得到导航栏。
 
 一个后果贯穿应用其余部分：只要导航栏显示，`shellContentWidth(screenWidth)` 就减去 `navRailWidth`（81 = 80 dp 导航栏加 1 dp 分割线），壳内每个容量都从它测量，绝不用原始屏幕宽度：四个列表的列数，以及服务概览的拓扑卡片动作行。

@@ -305,3 +305,14 @@ are no misattached blocks and no undocumented declarations in this file.
 - **Usage:** `onTap: _refreshExchangeRates` on the "Refresh Exchange Rates" tile in `build`
   (`lib/features/settings/views/settings_page.dart`, line 807).
 - **Notes:** None.
+
+## Profile header and interface style (since 1.7.0)
+
+The first-level settings list starts with `const ProfileHeader()` (avatar and name; see
+[../../profile/views/profile_header.md](../../profile/views/profile_header.md)) before *General*, so it
+appears in both the one-pane and the two-pane layout. *General* gains an **Interface style** row
+right after the theme picker: a `ListTile` (icon `Icons.auto_awesome_outlined`, title and description
+from `settingsUiStyle` / `settingsUiStyleDesc`) and a `SegmentedButton<AppUiStyle>` with *Material 3*
+and *Expressive* (`settingsUiStyleMaterial3` / `settingsUiStyleExpressive`), laid out like the theme
+picker. Selecting calls `AppSettingsNotifier.setUiStyle`. The style is a local setting and is not
+synced.

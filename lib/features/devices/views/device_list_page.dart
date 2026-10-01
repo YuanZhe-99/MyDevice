@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../app/flavor.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/views/device_map_page.dart';
 import '../../../shared/widgets/adaptive_tile_grid.dart';
 import '../../../shared/widgets/template_icon.dart';
+import '../../profile/views/profile_avatar.dart';
 import '../models/device.dart';
 import '../services/device_storage.dart';
 import '../services/exchange_rate_service.dart';
@@ -521,6 +524,16 @@ class _DeviceListPageState extends State<DeviceListPage> {
 
     return Scaffold(
       appBar: AppBar(
+        // The profile avatar sits left of the title (1.7.0); it opens
+        // Settings, whose header edits the name and avatar.
+        leading: Padding(
+          padding: const EdgeInsetsDirectional.only(start: 8),
+          child: IconButton(
+            tooltip: l10n.profileOpenSettings,
+            onPressed: () => context.go('/settings'),
+            icon: const ProfileAvatar(radius: 16),
+          ),
+        ),
         title: Text(l10n.appTitle),
         actions: [
           IconButton(

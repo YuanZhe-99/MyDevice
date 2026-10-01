@@ -6,7 +6,7 @@
 
 每个 `backups/backup_*.json` 捆绑（`_backupFormat: 2`）存储：
 
-- 每个存在数据模块文件的原始 JSON 字符串内容（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`——[持久化数据清单](data-formats.md#persisted-data-inventory) 的相同四个文件）。
+- 每个存在数据模块文件的原始 JSON 字符串内容（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`，自 1.7.0 起还有 `profile.json`——见[持久化数据清单](data-formats.md#persisted-data-inventory)）。1.6.2 及更早的捆绑没有 `profile.json`，恢复时从不触及它；恢复对话框把该模块标为“个人资料”（`backupModuleProfile`）。
 - 从 `images/<filename>` 到存储在 `backups/blobs/` 下的内容寻址 blob 名 `<sha256><ext>` 的 `_imageRefs` 映射。
 
 ```dart
@@ -94,7 +94,7 @@ class RestoreResult {
 
 ## ZIP 导出/导入 <a id="zip-exportimport"></a>
 
-`import_export_service.dart` 把四个数据 JSON 文件加 `images/` 下每个文件导出进 ZIP 存档，导入则反之。导入时每个存档条目名被规范化且必须是已知数据文件名之一或匹配 `images/<扁平名>`（源码确认：`normalizedName.startsWith('images/') && normalizedName.split('/').length == 2`，即 `images/` 后恰好一个路径段）——任何其他、或含 `..` 的任何名字被拒绝。解析输出路径写入前也用 `path.isWithin(appDir, outFile)` 双重检查。
+`import_export_service.dart` 把数据 JSON 文件（自 1.7.0 起包括 `profile.json`）加 `images/` 下每个文件导出进 ZIP 存档，导入则反之。导入时每个存档条目名被规范化且必须是已知数据文件名之一或匹配 `images/<扁平名>`（源码确认：`normalizedName.startsWith('images/') && normalizedName.split('/').length == 2`，即 `images/` 后恰好一个路径段）——任何其他、或含 `..` 的任何名字被拒绝。解析输出路径写入前也用 `path.isWithin(appDir, outFile)` 双重检查。
 
 **文档化 v1.2.2 修复：** 此检查的早期版本只测试 `normalizedName.startsWith('images/')`——它对 `images/` 下*任何*嵌套路径（如某些规范化后的 `images/../../evil.txt`，或简单 `images/sub/dir/file`）都为 `true`，因此总是通过并放行允许列表本应拒绝的嵌套条目。当前检查额外要求 `images/` 前缀后恰好一个路径段（`split('/').length == 2`），封住那个缺口。这是 `AGENTS.md` "ZIP import must keep path traversal protection" 规则引用的路径遍历保护。
 

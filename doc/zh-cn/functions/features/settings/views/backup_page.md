@@ -117,3 +117,7 @@
 - **算法：** 与 [`_toggleAutoBackup`](#_toggleautobackup) 相同形态：本地 `setState`、镜像到服务静态字段、await 持久化调用。
 - **用法：** `build` 中保留 `DropdownButton<int>` 的 `onChanged: (v) { if (v != null) _setRetention(v); }`（`lib/features/settings/views/backup_page.dart`，第 360 行）。
 - **备注：** 实际基于天的删除逻辑（`_cleanOldBackups()`）住在 `BackupService`，不在这里——此方法只持久化所选阈值；见 [备份、恢复与导出 — 保留](../../../../backup-restore.md#retention)。
+
+## 个人资料模块标签（自 1.7.0 起）
+
+恢复模块对话框的标签映射新增 `profileModuleId: (l10n.backupModuleProfile, Icons.person_outline)`，因此包含 `profile.json` 的备份会提供“个人资料”模块（恢复标签为*个人资料*）。

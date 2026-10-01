@@ -36,3 +36,15 @@
 - **备注：** 两种渲染都从此读取，所以一个目的地不可能只出现在其中一个，或两者顺序不同。
 
 `ShellScaffold` 构造函数、`build` 和 `_ShellDestination` 构造函数是 Tier B。`build` 是纯组件组合：读 `MediaQuery.sizeOf(context).width`，低于 `navRailMinWidth` 时返回 `bottomNavigationBar` 为 `NavigationBar` 的 `Scaffold`；达到及以上时返回 body 为 `Row` 的 `Scaffold`——`NavigationRail`（`groupAlignment: 0` 让五个目的地居中而非钉在顶部，`labelType: all`，外包 `SingleChildScrollView` + `ConstrainedBox` + `IntrinsicHeight` 让紧凑高度窗口滚动导航栏而非溢出）、1 dp `VerticalDivider`，以及放在 `Expanded` 里的 child。点击任一导航都调用 `context.go(_routes[index])`。没有任何状态，所以折叠设备时下一帧就在两种渲染间切换，不改变路由。每个标签页自带 `Scaffold`（应用栏、浮动操作按钮），因此页面 body 从不位于底栏之下，也不为它预留内缩。
+
+## 界面风格与悬浮导航栏（自 1.7.0 起）
+
+`ShellScaffold` 是 `ConsumerWidget`（`build(BuildContext context, WidgetRef ref)`）。它监视 `appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)`。在窄窗口（无导航栏 NavigationRail）上，Expressive 风格（默认）的 `Scaffold.bottomNavigationBar` 是私有的 `_FloatingNavBar`，Material 3 则是原版通栏 `NavigationBar`。导航栏分支忽略该设置。
+
+| 声明 | 种类 | Tier | 用途 |
+|---|---|---|---|
+| `_FloatingNavBar` | 类（私有） | A | 绘制成悬浮胶囊形“岛”的底栏。 |
+| `_FloatingNavBar.new` | 构造函数 | B | 由 `selectedIndex`、`onDestinationSelected`、`destinations` 创建该栏。 |
+| `_FloatingNavBar.build` | 方法 | B | 构建岛：边距、圆角表面、内部栏。 |
+
+`_FloatingNavBar` 把原版 `NavigationBar`（高度 68，透明）包在 `StadiumBorder`、`surfaceContainer` 颜色、阴影高度 3、宽度封顶 480 dp 的 `Material` 里，外层是最小边距 16/0/16/12 的 `SafeArea`。岛带有 `ValueKey('floatingNavBarIsland')`，测试据此区分它与经典栏。它位于 `bottomNavigationBar` 槽位而不是盖在 body 之上（无 `extendBody`），因此页面布局和悬浮按钮位置不变；底部系统边距只在岛外应用一次，并对内部栏移除。

@@ -362,3 +362,10 @@ full diameter, never tinted). Otherwise they use the bundled `brands.json` catal
 transparent SVG in a square 64% of the avatar diameter; no part is cropped by the circle.
 Monochrome brand marks follow the theme foreground colour; CloudCone retains its original transparent PNG colours. Brands without an asset retain their
 category icon. This picker decoration does not modify the device's user-selected emoji or image.
+
+## Profile avatar (since 1.7.0)
+
+The device list is the home page, so its app bar carries the profile avatar: `AppBar.leading` is an
+`IconButton` (tooltip `profileOpenSettings`) holding `ProfileAvatar(radius: 16)` inside a start
+padding of 8, left of the app title; tapping it calls `context.go('/settings')`. The avatar appears
+on this page only. See [../../profile/views/profile_avatar.md](../../profile/views/profile_avatar.md).

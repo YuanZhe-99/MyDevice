@@ -373,6 +373,12 @@ rail top-aligns to sit under a leading menu button or FAB, and this one has neit
 destinations pinned to the top of a 704 dp rail would leave its whole lower half empty. The rail
 sits inside a scroll view so a compact-height window cannot overflow it.
 
+Since 1.7.0 the bottom bar has two looks, chosen by the local interface style setting (`uiStyle`):
+**Expressive** (the default) draws it as a floating, pill-shaped island with side and bottom margins,
+capped at 480 dp wide; **Material 3** keeps the classic full-width `NavigationBar`. Either way it sits
+in the shell `Scaffold`'s `bottomNavigationBar` slot rather than over the body, so page layout and
+FAB positions are identical in both styles. The rail ignores the setting.
+
 **This is width-only on purpose, and must not be routed through `canSplitLayout`.** A rail is not a
 split. It trades width — abundant whenever the test passes — for height, which is not. The case it
 helps most is precisely the one the split rule rejects: an ordinary phone in landscape at

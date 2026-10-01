@@ -398,6 +398,7 @@ class _DataSetListPageState extends State<DataSetListPage> {
             )
           : _reordering
           ? ReorderableListView.builder(
+              padding: navBarAwarePadding(context, EdgeInsets.zero),
               itemCount: _datasets.length,
               onReorderItem: _onReorder,
               itemBuilder: (context, index) {
@@ -417,7 +418,10 @@ class _DataSetListPageState extends State<DataSetListPage> {
             )
           : columns > 1
           ? ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: navBarAwarePadding(
+                context,
+                const EdgeInsets.symmetric(horizontal: 8),
+              ),
               itemCount: listRowCount(sorted.length, columns),
               itemBuilder: (context, index) => adaptiveTileRow(
                 rowIndex: index,

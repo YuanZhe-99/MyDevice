@@ -374,10 +374,35 @@ destinations pinned to the top of a 704 dp rail would leave its whole lower half
 sits inside a scroll view so a compact-height window cannot overflow it.
 
 Since 1.7.0 the bottom bar has two looks, chosen by the local interface style setting (`uiStyle`):
-**Expressive** (the default) draws it as a floating, pill-shaped island with side and bottom margins,
-capped at 480 dp wide; **Material 3** keeps the classic full-width `NavigationBar`. Either way it sits
-in the shell `Scaffold`'s `bottomNavigationBar` slot rather than over the body, so page layout and
-FAB positions are identical in both styles. The rail ignores the setting.
+**Expressive** (the default) draws it as a floating pill; **Material 3** keeps the classic full-width
+`NavigationBar`. Since 1.7.1 the Expressive pill is **compact** — it hugs its items instead of
+spanning the width, shows icon and label only for the selected destination (the others are icons with
+tooltips), and floats **over the page**: the shell `Scaffold` sets `extendBody`, so content scrolls
+behind the bar and the Scaffold reports the bar's height as `MediaQuery.padding.bottom`. Pages
+therefore reserve that height (see [Bottom padding behind the bar](#bottom-padding-behind-the-bar)).
+Material 3 is unchanged: the bar sits in the `bottomNavigationBar` slot and takes its own space.
+
+### Choosing the navigation placement (since 1.7.1)
+
+Three local settings (`storage_config.json`, never synced; Settings › General) refine the width-only
+rule above, resolved in `ShellScaffold`:
+
+```dart
+final showRail = alwaysSide || (wide && !(expressive && wideBottom));
+```
+
+- `alwaysSideNav` (default off, labelled *not recommended*): use the rail on **every** width, in both
+  styles — on a phone the rail takes about 81 dp from the content.
+- `wideBottomNav` (default off, **Expressive only**): keep the floating bar at the bottom on wide
+  windows instead of the rail. Material 3 ignores it. It is hidden while `alwaysSideNav` is on.
+- `navRailRight` (default off = left): the rail goes on the left, or on the right as
+  `Row([Expanded(child), VerticalDivider, rail])`. Shown for Material 3 always, and for Expressive
+  while the rail can appear (`alwaysSideNav` on or `wideBottomNav` off). Applies in both styles.
+
+Known approximation: `shellContentWidth` still subtracts the rail's 81 dp whenever
+`useNavigationRail` is true, even when the wide bottom bar is chosen, and does not subtract it on a
+narrow window with `alwaysSideNav`; the column counts are therefore slightly conservative on a wide
+window and slightly generous on a narrow one. Correctness is unaffected.
 
 **This is width-only on purpose, and must not be routed through `canSplitLayout`.** A rail is not a
 split. It trades width — abundant whenever the test passes — for height, which is not. The case it
@@ -391,12 +416,26 @@ One consequence follows through the rest of the app: `shellContentWidth(screenWi
 capacity inside the shell is measured from that, never from the raw screen width: the four lists'
 column counts and the topology card's action row on the services overview.
 
-**Deliberately not ported from MyAnime: a bottom-bar inset.** MyAnime's scrolling pages reserve
-80 dp for the bottom bar and drop it to 16 under a rail. MyDevice does not need to. Its shell
-`Scaffold` holds the bottom bar and each tab page brings its own `Scaffold` for its app bar and
-floating action buttons, so a page body never sits under the bar in the first place. The
-`bottom: 80` the device list reserves is clearance for its stack of three floating action buttons,
-which the rail does not remove — do not "fix" it by routing it through the navigation rule.
+### Bottom padding behind the bar
+
+Before 1.7.1 a page body never sat under the bar (the bar owned a `Scaffold` slot), so the shell
+tabs reserved nothing for it. With the floating Expressive bar and `extendBody` they must:
+
+- A `ListView`/`GridView` that passes **no** `padding` gets the inset automatically.
+- One that passes an explicit `padding` (and any bottom-anchored, non-scrolling layout) wraps it as
+  `navBarAwarePadding(context, <original padding>)`, which adds `MediaQuery.paddingOf(context).bottom`.
+  Every tab was audited: the device list (reorderable list and four lists), the service list (four
+  views), the network list (three lists), the data-set list (reorderable and multi-column lists) and
+  the settings detail pages hosted in the right pane (WebDAV, Privacy policy, License).
+- The `bottom: 80` the device list reserves is clearance for its stack of three floating action
+  buttons, which the rail does not remove — it stays the inner value, with `navBarAwarePadding`
+  outside it. MyDevice has no `shellListBottomInset` (that is MyAnime's).
+- Floating action buttons: each page's own `Scaffold` places them from `viewPadding`, which
+  `extendBody` does not raise, so the shell raises it itself (`viewPadding.bottom =
+  max(viewPadding.bottom, padding.bottom)` in a `Builder` around the body); a shell test asserts the
+  FAB clears the bar.
+- Pages pushed on the root navigator (detail and edit pages, the map and the topology) sit above the
+  shell and are unaffected; the inset there is only the system's.
 
 Not done, deliberately: a `NavigationDrawer` above 1240 dp. The rail is correct through extra-large
 here, and a third navigation mode is not worth its cost.

@@ -34,7 +34,7 @@
 - [服务与拓扑](features/services-topology.md) — 手动服务清单、路由/跳、拓扑图视图、FRP 风格建模、模板。
 - [在线搜索与预设](features/online-search-and-presets.md) — 设备/芯片在线搜索、商店风格门控、捆绑预设。
 - [地图](features/map.md) — 只读设备地图和全屏位置选择器。
-- [个人资料](features/profile.md)——同步的名称和头像（1.7.0）。
+- [个人资料](features/profile.md)——同步的名称和头像（1.7.0；头像编辑器 1.7.1）。
 
 ### 算法
 

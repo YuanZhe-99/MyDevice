@@ -92,3 +92,7 @@
 - **算法：** 移除 `oldIndex` 处网络并在 `newIndex` 重新插入；调用 `setState` 立即反映重排；加载当前 `NetworkData`（读取最新 `assignments`）并 await `NetworkStorage.save(NetworkData(networks: _networks, assignments: data.assignments))` 持久化新网络顺序而不打扰赋值。
 - **用法：** `build` 中 `_reordering` 为 true 时显示的 `ReorderableListView.builder` 上的 `onReorderItem: _onReorder,`。
 - **备注：** 文档注释说明 `onReorderItem`（而非较旧 `onReorder` 回调）已在移除后调整 `newIndex`，因此这里无需额外索引调整逻辑——与 `_DeviceListPageState._onReorder`（`../../devices/views/device_list_page.md#_onreorder`）相同约定。
+
+## 悬浮栏后面的底部内边距（自 1.7.1 起）
+
+Expressive 底栏悬浮在页面之上（`ShellScaffold` 使用 `extendBody`），所以显式传了 `padding` 的滚动视图要经 `navBarAwarePadding(context, ...)`（见 [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)）传入，才能把最后的内容滚到栏的上方。此处涉及：可重排列表以及两个 `ListView.builder`（单列和多列），内边距均为 8。网络详情页是推在壳之上的，不受影响。

@@ -14,11 +14,12 @@ row; `formMaxWidth` for the network edit form; `emojiCellMinWidth`, `emojiCellGa
 `emojiMaxColumns` for the emoji picker; `accessPatternCardMinWidth` and `accessPatternMaxColumns`
 for the guided access-path page's pattern cards; `sheetCompactHeight` and `sheetMaxSize` for the
 draggable sheets; and `settingsRightPaneMinWidth` and `readingMaxWidth` for the settings family.
-Sixteen pure functions sit on top of them.
+Seventeen pure functions sit on top of them (the last, `navBarAwarePadding`, is the only one that touches Flutter).
 
-The module deliberately depends on nothing but `dart:core` — it holds no Flutter imports, and
-`canSplitLayout` takes two doubles rather than a `Size` for exactly that reason — so every helper
-is directly unit-testable (`test/adaptive_layout_test.dart`), and the rendered result is covered
+The module's width logic deliberately depends on nothing but `dart:core` — `canSplitLayout` takes two
+doubles rather than a `Size` for exactly that reason — so those helpers are directly unit-testable;
+since 1.7.1 the file imports `package:flutter/widgets.dart` solely for `navBarAwarePadding`, which
+needs a `BuildContext`. Every helper is testable (`test/adaptive_layout_test.dart`), and the rendered result is covered
 separately at real device geometries by `test/shell_nav_ui_test.dart`,
 `test/dialog_layout_ui_test.dart`, `test/list_columns_ui_test.dart`,
 `test/list_columns_more_ui_test.dart` and `test/service_columns_ui_test.dart`.
@@ -27,7 +28,8 @@ The prose derivation of these numbers, the foldable device tables and the reconc
 Google's guidance live in [../../../adaptive-layout.md](../../../adaptive-layout.md). This page
 documents the declarations.
 
-Consumers: `shell_scaffold.dart` for `useNavigationRail`; the four list pages for
+Consumers: `shell_scaffold.dart` for `useNavigationRail`; the five shell tab pages (and the settings pages
+hosted in its detail pane) for `navBarAwarePadding`; the four list pages for
 `listColumnCount`, `columnCapacity`, `shellContentWidth` and their tile minimums, and
 `device_storage.dart` for `listColumnsAuto` and `listMaxColumns` when validating the stored
 preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
@@ -59,6 +61,7 @@ preference; `adaptive_tile_grid.dart` for `listRowCount` and `listTileGap`;
 | [`accessPatternColumns`](#accesspatterncolumns) | top-level function | A | Return how many access-pattern cards share a row. |
 | [`sheetInitialSize`](#sheetinitialsize) | top-level function | A | Return the fraction of the window a draggable sheet opens to. |
 | [`settingsLeftPaneWidth`](#settingsleftpanewidth) | top-level function | A | Return the width of the settings page's fixed left pane. |
+| [`navBarAwarePadding`](#navbarawarepadding) | top-level function | A | Add the floating navigation bar's height to a page's padding. |
 
 The thirty-five constants are documented in source with the reason for each value and are not
 repeated as rows here.
@@ -289,3 +292,21 @@ repeated as rows here.
   `ListTile`s with trailing dropdowns. The cap binds only on a Z Fold 5 in portrait (578 → 298)
   and a hand-resized desktop window; `test/adaptive_layout_test.dart` loops every width from the
   split floor to 2000 dp asserting the detail pane clears its minimum.
+
+### `EdgeInsets navBarAwarePadding(BuildContext context, EdgeInsets padding)` <a id="navbarawarepadding"></a>
+- **Kind:** top-level function (since 1.7.1).
+- **Source:** `lib/shared/utils/adaptive_layout.dart`.
+- **Purpose:** Add the floating navigation bar's height to a page's padding.
+- **Inputs:** `context` — inside a shell page; `padding` — the page's own padding.
+- **Returns:** `EdgeInsets` — `padding` with `MediaQuery.paddingOf(context).bottom` added to its bottom.
+- **Side effects:** None.
+- **Usage:** Every shell tab page's scroll view with an explicit `padding` — the device list's five
+  lists, the service list's four, the network list's three, the data-set list's reorderable and
+  two-column lists — and the settings detail pages (WebDAV, Privacy policy, License).
+- **Notes:** With the Expressive bottom bar the shell uses `extendBody`, so pages draw behind the
+  bar and the Scaffold reports the bar's height as `MediaQuery.padding.bottom`. A `ListView` with no
+  `padding` applies that inset by itself; one with an explicit `padding` does not, so it passes the
+  padding through here. Elsewhere (the classic bar, a rail, a route pushed above the shell) the inset
+  is only the system's, so the call is harmless. Unlike MyAnime there is no `shellListBottomInset`:
+  the device list's `bottom: 80` is clearance for its three stacked floating action buttons and
+  stays the inner value.

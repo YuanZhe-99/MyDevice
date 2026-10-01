@@ -1,8 +1,8 @@
 # lib/shared/utils/adaptive_layout.dart
 
-全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`；网络编辑表单用的 `formMaxWidth`；emoji 选择器用的 `emojiCellMinWidth`、`emojiCellGap` 和 `emojiMaxColumns`；引导式访问路径页的模式卡片用的 `accessPatternCardMinWidth` 和 `accessPatternMaxColumns`；可拖拽表单用的 `sheetCompactHeight` 和 `sheetMaxSize`；以及设置家族用的 `settingsRightPaneMinWidth` 和 `readingMaxWidth`。其上有十六个纯函数。
+全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`；网络编辑表单用的 `formMaxWidth`；emoji 选择器用的 `emojiCellMinWidth`、`emojiCellGap` 和 `emojiMaxColumns`；引导式访问路径页的模式卡片用的 `accessPatternCardMinWidth` 和 `accessPatternMaxColumns`；可拖拽表单用的 `sheetCompactHeight` 和 `sheetMaxSize`；以及设置家族用的 `settingsRightPaneMinWidth` 和 `readingMaxWidth`。其上有十七个纯函数（最后一个 `navBarAwarePadding` 是唯一接触 Flutter 的）。
 
-该模块刻意只依赖 `dart:core`——不含 Flutter import，`canSplitLayout` 正因此接收两个 double 而非 `Size`——所以每个助手都能直接单元测试（`test/adaptive_layout_test.dart`），渲染结果则由 `test/shell_nav_ui_test.dart`、`test/dialog_layout_ui_test.dart`、`test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart` 和 `test/service_columns_ui_test.dart` 在真实设备几何上单独覆盖。
+该模块的宽度逻辑刻意只依赖 `dart:core`——`canSplitLayout` 正因此接收两个 double 而非 `Size`——所以这些助手可直接单元测试；自 1.7.1 起文件为 `navBarAwarePadding`（它需要 `BuildContext`）单独导入 `package:flutter/widgets.dart`。每个助手都能直接单元测试（`test/adaptive_layout_test.dart`），渲染结果则由 `test/shell_nav_ui_test.dart`、`test/dialog_layout_ui_test.dart`、`test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart` 和 `test/service_columns_ui_test.dart` 在真实设备几何上单独覆盖。
 
 这些数字的散文推导、折叠屏设备表以及与 Google 指南的对照见 [../../../adaptive-layout.md](../../../adaptive-layout.md)。本页记录声明。
 
@@ -28,6 +28,7 @@
 | [`accessPatternColumns`](#accesspatterncolumns) | 顶层函数 | A | 返回一行放几张访问模式卡片。 |
 | [`sheetInitialSize`](#sheetinitialsize) | 顶层函数 | A | 返回可拖拽表单打开时占窗口的比例。 |
 | [`settingsLeftPaneWidth`](#settingsleftpanewidth) | 顶层函数 | A | 返回设置页固定左窗格的宽度。 |
+| [`navBarAwarePadding`](#navbarawarepadding) | 顶层函数 | A | 把悬浮导航栏的高度加到页面的内边距上。 |
 
 三十五个常量在源码中连同每个值的理由一起记录，此处不重复成行。
 
@@ -200,3 +201,13 @@
 - **副作用：** 无。
 - **用法：** `_SettingsPageState.build`，为 `_buildSettingsList` 外的 `SizedBox` 定宽。
 - **备注：** 左窗格比详情页的需要更多空间，因为它装的是带尾部下拉的完整 `ListTile`。封顶只在 Z Fold 5 竖屏（578 → 298）和手动缩小的桌面窗口上生效；`test/adaptive_layout_test.dart` 循环从分栏下限到 2000 dp 的每个宽度断言详情窗格超过其最小值。
+
+### `EdgeInsets navBarAwarePadding(BuildContext context, EdgeInsets padding)` <a id="navbarawarepadding"></a>
+- **种类：** 顶层函数（自 1.7.1 起）。
+- **来源：** `lib/shared/utils/adaptive_layout.dart`。
+- **用途：** 把悬浮导航栏的高度加到页面的内边距上。
+- **输入：** `context` — 位于壳页面内；`padding` — 页面自己的内边距。
+- **返回：** `EdgeInsets` — 在 `padding` 底部加上 `MediaQuery.paddingOf(context).bottom` 的结果。
+- **副作用：** 无。
+- **用法：** 每个壳标签页中显式传了 `padding` 的滚动视图——设备列表的五个列表、服务列表的四个、网络列表的三个、数据集列表的可重排列表与双列列表——以及设置详情页（WebDAV、隐私政策、许可证）。
+- **备注：** Expressive 底栏时壳使用 `extendBody`，页面绘制在栏后面，Scaffold 把栏高作为 `MediaQuery.padding.bottom` 报告。没有 `padding` 的 `ListView` 会自己应用该内缩；显式传了 `padding` 的则不会，所以要把内边距经此函数传入。其他情形（经典栏、导航栏、压在壳之上的路由）下该内缩只是系统的，调用无害。与 MyAnime 不同，这里没有 `shellListBottomInset`：设备列表的 `bottom: 80` 是为三个叠放的浮动操作按钮留的空间，作为内层值保留。

@@ -180,3 +180,7 @@ Row count (16) matches `grep -c 'Purpose:' dataset_list_page.dart` (16) exactly.
   forward any `extraJson` on the top-level `DataSetData` — if the persisted file ever had unknown
   top-level keys there, a reorder would drop them (this file's `DataSetData` model does have an
   `extraJson` field, but this call site doesn't pass it through).
+
+## Bottom padding behind the floating bar (since 1.7.1)
+
+The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the reorderable list (which had no padding and now passes `navBarAwarePadding(context, EdgeInsets.zero)`) and the multi-column `ListView.builder` (horizontal 8). The single-column `ListView` passes no `padding`, so it already applies the inset itself.

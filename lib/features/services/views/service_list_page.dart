@@ -372,7 +372,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
         .length;
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: navBarAwarePadding(context, const EdgeInsets.all(16)),
       children: [
         LayoutBuilder(
           builder: (context, constraints) {
@@ -522,7 +522,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
       });
 
     return ListView(
-      padding: const EdgeInsets.all(8),
+      padding: navBarAwarePadding(context, const EdgeInsets.all(8)),
       children: adaptiveTileRows(
         columns: columns,
         itemCount: entries.length,
@@ -552,7 +552,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
   Widget _buildRoutes(AppLocalizations l10n, int columns) {
     if (_routes.isEmpty) return _emptyState(l10n.noServiceRoutes);
     return ListView(
-      padding: const EdgeInsets.all(8),
+      padding: navBarAwarePadding(context, const EdgeInsets.all(8)),
       children: adaptiveTileRows(
         columns: columns,
         itemCount: _routes.length,
@@ -577,7 +577,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     }
 
     return ListView(
-      padding: const EdgeInsets.all(8),
+      padding: navBarAwarePadding(context, const EdgeInsets.all(8)),
       children: [
         if (conflicts.isNotEmpty)
           Card(

@@ -189,3 +189,7 @@
 - **算法：** 把动态 `record.modifiedAt` 访问包进 `try`/`catch`；访问成功且值是 `DateTime` 时返回 `value.toLocal().toString()`；访问抛（无 `modifiedAt` getter 类型如 `NetworkDevice` 的 `NoSuchMethodError`）或值不是 `DateTime` 时落入返回 `null`。
 - **用法：** `_ConflictDialog.build` 调用两次（`lib/shared/views/webdav_config_page.dart`，第 732-733 行），`conflict.localRecord` 一次、`conflict.remoteRecord` 一次。
 - **备注：** 这是 [WebDAV 同步 — NetworkDevice 复合键合并](../../../sync.md#networkdevice-composite-key-merge) 文档化回退背后的机制：因为 `NetworkDevice` 无 `modifiedAt`，这为它返回 `null`，对话框回退 `l10n.syncConflictRecordId(conflict.id)`（复合键，如 `net-home:dev-1`）而非时间戳——每个其他记录类型显示真实 `modifiedAt`。
+
+## 悬浮栏后面的底部内边距（自 1.7.1 起）
+
+Expressive 底栏悬浮在页面之上（`ShellScaffold` 使用 `extendBody`），所以显式传了 `padding` 的滚动视图要经 `navBarAwarePadding(context, ...)`（见 [`adaptive_layout.md`](../utils/adaptive_layout.md)）传入，才能把最后的内容滚到栏的上方。此处涉及：表单 `ListView`（内边距 16），它也是设置详情窗格中的页面。在推入的路由上，额外的内缩只是系统的，因此那里没有变化。

@@ -360,7 +360,7 @@ class _NetworkListPageState extends State<NetworkListPage> {
             )
           : _reordering
           ? ReorderableListView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: navBarAwarePadding(context, const EdgeInsets.all(8)),
               itemCount: _networks.length,
               onReorderItem: _onReorder,
               itemBuilder: (context, index) {
@@ -381,7 +381,7 @@ class _NetworkListPageState extends State<NetworkListPage> {
             )
           : columns == 1
           ? ListView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: navBarAwarePadding(context, const EdgeInsets.all(8)),
               itemCount: sorted.length,
               itemBuilder: (context, index) {
                 final net = sorted[index];
@@ -389,7 +389,7 @@ class _NetworkListPageState extends State<NetworkListPage> {
               },
             )
           : ListView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: navBarAwarePadding(context, const EdgeInsets.all(8)),
               itemCount: listRowCount(sorted.length, columns),
               itemBuilder: (context, index) => adaptiveTileRow(
                 rowIndex: index,

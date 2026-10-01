@@ -14,7 +14,7 @@ file stays the single source of truth. See
 | `ProfileNotifier.fixed` | constructor (`ProfileNotifier`) | B | Create a notifier with a fixed profile and no I/O; for tests. |
 | [`reload`](#reload) | method (`ProfileNotifier`) | A | Re-read `profile.json` into the state. |
 | `setName` | method (`ProfileNotifier`) | B | Save a new display name; empty clears it. |
-| `pickAvatar` | method (`ProfileNotifier`) | B | Pick and save a new avatar; false when the picker was cancelled. |
+| `setAvatarJpeg` | method (`ProfileNotifier`) | B | Save an avatar produced by the avatar editor (1.7.1). |
 | `removeAvatar` | method (`ProfileNotifier`) | B | Remove the avatar. |
 | `dispose` | method (`ProfileNotifier`) | B | Unsubscribe from local-data changes. |
 
@@ -35,7 +35,8 @@ declaration without a `/// Purpose:` comment.
 
 ## Edits
 
-`setName`, `pickAvatar` and `removeAvatar` call the matching `ProfileStore` method and then replace
-the state with the returned profile. `pickAvatar` returns `false` when the picker was cancelled; an
-unreadable image propagates as an exception for the dialog to report. `dispose` calls
+`setName`, `setAvatarJpeg` and `removeAvatar` call the matching `ProfileStore` method and then replace
+the state with the returned profile. Since 1.7.1 picking and editing happen in the dialog before
+`setAvatarJpeg(Uint8List jpeg)` is called (it replaces 1.7.0's `pickAvatar`); an unreadable image
+is reported by the dialog's `_run`. `dispose` calls
 `removeOnLocalDataChanged(reload)`.

@@ -236,13 +236,35 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 
 超过它，壳在侧边渲染 `NavigationRail`；低于它，则是一直以来的底部 `NavigationBar`。两者都由 [`shell_scaffold.dart`](functions/shared/widgets/shell_scaffold.md) 里的同一份目的地列表构建，因此不可能漂移。导航栏（NavigationRail）把目的地居中（`groupAlignment: 0`）而非采用默认的顶部对齐：顶部对齐是为了坐在前导菜单按钮或 FAB 之下，而这里两者都没有，五个目的地钉在 704 dp 高的栏顶部会让整个下半部空着。导航栏放在滚动视图里，紧凑高度的窗口不会让它溢出。
 
-自 1.7.0 起，底栏有两种外观，由本地界面风格设置（`uiStyle`）决定：**Expressive**（默认）把它绘制成悬浮的胶囊形“岛”，带左右和底部边距，宽度封顶 480 dp；**Material 3** 保留经典的通栏 `NavigationBar`。无论哪种，它都位于壳 `Scaffold` 的 `bottomNavigationBar` 槽位而不是盖在 body 之上，因此两种风格下页面布局和悬浮按钮位置完全相同。导航栏（NavigationRail）忽略该设置。
+自 1.7.0 起，底栏有两种外观，由本地界面风格设置（`uiStyle`）决定：**Expressive**（默认）把它绘制成悬浮的胶囊；**Material 3** 保留经典的通栏 `NavigationBar`。自 1.7.1 起 Expressive 胶囊是**紧凑**的——宽度贴合内容而不是撑满，只有选中的目的地显示图标加文字（其余只有图标并带提示），并且**悬浮在页面之上**：壳 `Scaffold` 设置了 `extendBody`，内容会滚到栏后面，Scaffold 把栏高作为 `MediaQuery.padding.bottom` 报告。因此页面要预留这段高度（见[栏后面的底部内边距](#bottom-padding-behind-the-bar)）。Material 3 不变：栏位于 `bottomNavigationBar` 槽位并占用自己的空间。
+
+### 选择导航位置（自 1.7.1 起）
+
+三个本地设置（`storage_config.json`，从不同步；设置 › 通用）细化上面的仅宽度规则，由 `ShellScaffold` 解析：
+
+```dart
+final showRail = alwaysSide || (wide && !(expressive && wideBottom));
+```
+
+- `alwaysSideNav`（默认关闭，标注为*不推荐*）：**任何**宽度都使用导航栏，两种风格均适用——手机上导航栏会占用内容约 81 dp。
+- `wideBottomNav`（默认关闭，**仅 Expressive**）：宽窗口上仍把悬浮栏放在底部而不是导航栏。Material 3 忽略它。`alwaysSideNav` 开启时隐藏。
+- `navRailRight`（默认关闭 = 左侧）：导航栏在左侧，或在右侧，即 `Row([Expanded(child), VerticalDivider, rail])`。Material 3 下始终显示，Expressive 下在导航栏可能出现时（`alwaysSideNav` 开启或 `wideBottomNav` 关闭）显示。两种风格均适用。
+
+已知的近似：只要 `useNavigationRail` 为真，`shellContentWidth` 仍扣除导航栏的 81 dp，即使选择了宽屏底栏；而窄窗口开启 `alwaysSideNav` 时则不扣除；因此列数在宽窗口上略保守、在窄窗口上略宽松。正确性不受影响。
 
 **这是刻意的仅宽度判断，绝不能经由 `canSplitLayout`。** 导航栏不是分栏。它用宽度——只要测试通过就充裕——换取高度——并不充裕。它帮助最大的场景恰恰是分栏规则拒绝的那个：横持的普通手机 915 × 412，底栏花掉 19% 的高度做导航，而 915 逻辑像素的宽度闲置。分栏规则同样拒绝的 Z Fold 8 竖屏，出于同一理由得到导航栏。
 
 一个后果贯穿应用其余部分：只要导航栏显示，`shellContentWidth(screenWidth)` 就减去 `navRailWidth`（81 = 80 dp 导航栏加 1 dp 分割线），壳内每个容量都从它测量，绝不用原始屏幕宽度：四个列表的列数，以及服务概览的拓扑卡片动作行。
 
-**刻意未从 MyAnime 移植：底栏避让。** MyAnime 的滚动页为底栏预留 80 dp，有导航栏时降到 16。MyDevice 不需要。它的壳 `Scaffold` 持有底栏，每个标签页自带 `Scaffold` 装应用栏和浮动操作按钮，页面 body 从一开始就不在底栏之下。设备列表预留的 `bottom: 80` 是给它三个叠放浮动操作按钮的避让，导航栏不会移除它们——不要通过导航规则去「修」它。
+### 栏后面的底部内边距 <a id="bottom-padding-behind-the-bar"></a>
+
+1.7.1 之前页面 body 从不位于栏之下（栏占用 `Scaffold` 的一个槽位），所以壳内各标签页没有为它预留任何东西。有了悬浮的 Expressive 栏和 `extendBody`，现在必须预留：
+
+- **没有**传 `padding` 的 `ListView`/`GridView` 会自动获得该内缩。
+- 显式传了 `padding` 的（以及任何贴底的非滚动布局）要写成 `navBarAwarePadding(context, <原内边距>)`，它会加上 `MediaQuery.paddingOf(context).bottom`。每个标签页都已逐一检查：设备列表（可重排列表和四个列表）、服务列表（四个视图）、网络列表（三个列表）、数据集列表（可重排列表和多列列表），以及托管在右侧窗格中的设置详情页（WebDAV、隐私政策、许可证）。
+- 设备列表预留的 `bottom: 80` 是给它三个叠放浮动操作按钮的避让，导航栏不会移除它们——它作为内层值保留，`navBarAwarePadding` 套在外面。MyDevice 没有 `shellListBottomInset`（那是 MyAnime 的）。
+- 浮动操作按钮：每个页面自己的 `Scaffold` 按 `viewPadding` 放置它们，而 `extendBody` 不会提高 `viewPadding`，所以壳自己提高它（在 body 外的 `Builder` 中令 `viewPadding.bottom = max(viewPadding.bottom, padding.bottom)`）；壳测试断言浮动按钮位于栏的上方。
+- 推在根导航器上的页面（详情页与编辑页、地图和拓扑）位于壳之上，不受影响；那里的内缩只是系统的。
 
 刻意不做：1240 dp 以上的 `NavigationDrawer`。导航栏在此直到 extra-large 都正确，第三种导航模式不值其成本。
 

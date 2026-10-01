@@ -518,7 +518,10 @@ class _WebDAVConfigPageState extends State<WebDAVConfigPage> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: formMaxWidth),
                 child: ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: navBarAwarePadding(
+                    context,
+                    const EdgeInsets.all(16),
+                  ),
                   children: [
                     // Presets
                     Row(

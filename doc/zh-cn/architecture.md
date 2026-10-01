@@ -132,7 +132,7 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 ## 核心架构规则 <a id="core-architecture-rules"></a>
 
 - 导航用带上面列出的五个标签 `ShellRoute` 的 `go_router`。
-- 视觉系统是原生 Material 3（`ColorScheme.fromSeed`，Android 动态取色），并带用户可选的界面风格：Material 3 或 Expressive（默认；含悬浮导航栏），在本地以 `uiStyle` 存于 `storage_config.json`。硬编码颜色仅限于财务图表的分类色板和与主题无关的遮罩。
+- 视觉系统是原生 Material 3（`ColorScheme.fromSeed`，Android 动态取色），并带用户可选的界面风格：Material 3 或 Expressive（默认；含紧凑悬浮导航栏），在本地以 `uiStyle` 存于 `storage_config.json`；导航位置（宽屏底栏、导航栏在左或在右、始终侧边）存为 `wideBottomNav`、`navRailRight` 和 `alwaysSideNav`。硬编码颜色仅限于财务图表的分类色板和与主题无关的遮罩。
 - 每个宽度或高度决策——布局能否分栏、导航放在哪里、能容纳多少列、对话框能多高——都经过 `lib/shared/utils/adaptive_layout.dart`。组件文件里把尺寸和数字比较就是 bug。见[自适应布局](adaptive-layout.md)。
 - 文件 IO 经 `DeviceStorage.getAppDir()`，使用户配置的自定义存储路径（`storage_config.json`）总是被尊重。本地偏好是例外：它们和自定义路径本身位于平台默认文件夹中唯一的 `storage_config.json`，只经 `DeviceStorage.readConfig`/`writeConfig` 读写，因此移动数据从不触及它们（见 [数据格式](data-formats.md#storage_configjson)）。
 - JSON 输出用 `JsonEncoder.withIndent('  ')` 美化打印。

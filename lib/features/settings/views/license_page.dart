@@ -28,7 +28,7 @@ class LicensePage extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: readingMaxWidth),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+            padding: navBarAwarePadding(context, const EdgeInsets.all(16)),
             child: SelectableText(
               _licenseText,
               style: Theme.of(context).textTheme.bodyMedium,

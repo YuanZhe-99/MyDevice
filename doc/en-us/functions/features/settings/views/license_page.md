@@ -27,3 +27,7 @@ network or storage access, and no branching logic — it is pushed from
 Both declarations are Tier B: the constructor is a trivial `const` forwarding constructor, and
 `build` only composes a `Scaffold`/`SingleChildScrollView`/`SelectableText` around the file's
 embedded `_licenseText` constant, with no conditional logic, loops, or I/O.
+
+## Bottom padding behind the floating bar (since 1.7.1)
+
+The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the `SingleChildScrollView` (padding 16), which is also a settings detail pane page. On a pushed route the extra inset is just the system's, so nothing changes there.

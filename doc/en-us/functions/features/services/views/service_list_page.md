@@ -228,3 +228,7 @@ editor and the guided access-path page share.
   subtitle (joined with the other `whereType<String>()`-filtered parts).
 - **Notes:** Matches on the *combination* of service id and endpoint id — a route referencing the
   same service but a different one of its endpoints does not match.
+
+## Bottom padding behind the floating bar (since 1.7.1)
+
+The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the overview `ListView` (padding 16) and the Devices, Routes and Ports views' `ListView`s (padding 8). The segmented view switcher above them is a fixed row, not scrolling content, so it needs nothing. The topology page and the editors are pushed above the shell, so they are unaffected.

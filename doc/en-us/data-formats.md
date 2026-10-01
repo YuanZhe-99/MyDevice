@@ -274,7 +274,7 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
 | Profile (display name and avatar) | `profile.json` | Yes | Per-field last writer wins by `displayNameUpdatedAt` / `avatarUpdatedAt` (since 1.7.0); never conflicts |
 | Images and avatar | `images/` | Yes | Referenced-only filename comparison; includes the profile avatar |
-| Theme, interface style (`uiStyle`), locale, backup settings, sort preferences, home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
+| Theme, interface style (`uiStyle`), navigation placement (`alwaysSideNav`, `wideBottomNav`, `navRailRight`), locale, backup settings, sort preferences, home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
 | Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
@@ -371,6 +371,18 @@ ZIP export, and has its own `.sync_base/profile.json`. It holds the user's displ
 Since 1.7.0 `storage_config.json` may hold `"uiStyle": "material3"`. Only the non-default Material 3
 style is stored; the default Expressive style (floating navigation bar, rounder shapes, bolder
 titles) is the absence of the key. Local preference, never synced.
+
+### `storage_config.json` keys `wideBottomNav`, `navRailRight`, `alwaysSideNav`
+
+Since 1.7.1 `storage_config.json` may hold three optional booleans that place the navigation. Each
+is written **only when `true`** and removed when turned off, so a default install's config has none
+of them. Local preferences, never synced.
+
+| Key | Meaning when `true` | Applies to |
+|---|---|---|
+| `wideBottomNav` | On wide windows, keep the floating bottom bar instead of the side rail. | Expressive only; Material 3 ignores it |
+| `navRailRight` | The side rail sits on the right instead of the left. | Both styles, whenever a rail shows |
+| `alwaysSideNav` | Use the side rail on every window width, narrow phones included (not recommended). | Both styles; overrides `wideBottomNav` |
 
 ## `ai_insights.json`
 

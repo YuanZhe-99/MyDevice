@@ -307,10 +307,7 @@ class DeviceStorage {
   /// Write config to the default location.
   static Future<void> _writeConfigToDefault(Map<String, dynamic> config) async {
     final file = await _getConfigFile();
-    await atomicWrite(
-      file,
-      const JsonEncoder.withIndent('  ').convert(config),
-    );
+    await atomicWrite(file, const JsonEncoder.withIndent('  ').convert(config));
   }
 
   /// Purpose: Provide the internal get file helper for this file.
@@ -504,6 +501,87 @@ class DeviceStorage {
       config['uiStyle'] = 'material3';
     } else {
       config.remove('uiStyle');
+    }
+    await writeConfig(config);
+  }
+
+  /// Purpose: Return whether the Expressive style keeps its bottom bar on
+  /// wide windows (1.7.1).
+  /// Inputs: None.
+  /// Returns: `Future<bool>` — false (side rail) by default.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Device-local, never synced; the Material 3 style always uses the
+  /// rail there.
+  static Future<bool> getWideBottomNav() async {
+    final config = await readConfig();
+    return config['wideBottomNav'] == true;
+  }
+
+  /// Purpose: Persist whether the Expressive style keeps its bottom bar on
+  /// wide windows (1.7.1).
+  /// Inputs: `enabled`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Only `true` is stored; false removes the key.
+  static Future<void> setWideBottomNav(bool enabled) async {
+    final config = await readConfig();
+    if (enabled) {
+      config['wideBottomNav'] = true;
+    } else {
+      config.remove('wideBottomNav');
+    }
+    await writeConfig(config);
+  }
+
+  /// Purpose: Return whether the side rail is used even on narrow windows
+  /// (1.7.1).
+  /// Inputs: None.
+  /// Returns: `Future<bool>` — false by default.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Device-local, never synced; not recommended on phones, so off by
+  /// default.
+  static Future<bool> getAlwaysSideNav() async {
+    final config = await readConfig();
+    return config['alwaysSideNav'] == true;
+  }
+
+  /// Purpose: Persist whether the side rail is used even on narrow windows
+  /// (1.7.1).
+  /// Inputs: `enabled`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Only `true` is stored; false removes the key.
+  static Future<void> setAlwaysSideNav(bool enabled) async {
+    final config = await readConfig();
+    if (enabled) {
+      config['alwaysSideNav'] = true;
+    } else {
+      config.remove('alwaysSideNav');
+    }
+    await writeConfig(config);
+  }
+
+  /// Purpose: Return whether the navigation rail sits on the right (1.7.1).
+  /// Inputs: None.
+  /// Returns: `Future<bool>` — false (left) by default.
+  /// Side effects: Reads `storage_config.json`.
+  /// Notes: Device-local, never synced; applies to both interface styles.
+  static Future<bool> getNavRailRight() async {
+    final config = await readConfig();
+    return config['navRailRight'] == true;
+  }
+
+  /// Purpose: Persist which side the navigation rail sits on (1.7.1).
+  /// Inputs: `right`.
+  /// Returns: `Future<void>`.
+  /// Side effects: Read-modify-writes `storage_config.json`.
+  /// Notes: Only the right side is stored; left removes the key.
+  static Future<void> setNavRailRight(bool right) async {
+    final config = await readConfig();
+    if (right) {
+      config['navRailRight'] = true;
+    } else {
+      config.remove('navRailRight');
     }
     await writeConfig(config);
   }

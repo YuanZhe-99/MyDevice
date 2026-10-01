@@ -369,3 +369,7 @@ The device list is the home page, so its app bar carries the profile avatar: `Ap
 `IconButton` (tooltip `profileOpenSettings`) holding `ProfileAvatar(radius: 16)` inside a start
 padding of 8, left of the app title; tapping it calls `context.go('/settings')`. The avatar appears
 on this page only. See [../../profile/views/profile_avatar.md](../../profile/views/profile_avatar.md).
+
+## Bottom padding behind the floating bar (since 1.7.1)
+
+The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the reorderable list and the four lists `_buildDeviceList` builds (empty, grouped, one column, several columns). Each keeps its inner `bottom: 80`, which is clearance for the stack of three floating action buttons, and `navBarAwarePadding` adds the bar's height on top.

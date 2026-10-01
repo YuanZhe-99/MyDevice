@@ -14,3 +14,7 @@
 ## 文档
 
 两个声明都是 Tier B：构造函数是平凡 `const` 转发构造函数，`build` 只在文件嵌入 `_licenseText` 常量周围组合 `Scaffold`/`SingleChildScrollView`/`SelectableText`，无条件逻辑、循环或 IO。
+
+## 悬浮栏后面的底部内边距（自 1.7.1 起）
+
+Expressive 底栏悬浮在页面之上（`ShellScaffold` 使用 `extendBody`），所以显式传了 `padding` 的滚动视图要经 `navBarAwarePadding(context, ...)`（见 [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)）传入，才能把最后的内容滚到栏的上方。此处涉及：`SingleChildScrollView`（内边距 16），它也是设置详情窗格中的页面。在推入的路由上，额外的内缩只是系统的，因此那里没有变化。

@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 /// Minimum viewport width, in logical pixels, before a layout may split.
 ///
 /// Material's *medium* width class and Android's `sw600dp` tablet threshold.
@@ -471,3 +473,19 @@ double settingsLeftPaneWidth(double contentWidth) {
   if (preferred <= capped) return preferred;
   return capped.clamp(240.0, 440.0);
 }
+
+/// Purpose: Add the floating navigation bar's height to a page's padding.
+/// Inputs: `context` — inside a shell page; `padding` — the page's own padding.
+/// Returns: `EdgeInsets` — [padding] with the bottom inset reported by the
+/// enclosing Scaffold added to its bottom.
+/// Side effects: None.
+/// Notes: With the Expressive bottom bar the shell uses `extendBody`, so pages
+/// draw behind the bar and the Scaffold reports the bar's height as
+/// `MediaQuery.padding.bottom`. Scroll views with an explicit padding do not
+/// apply that inset themselves; passing their padding through here leaves room
+/// to scroll the last content above the bar. Elsewhere (classic bar, rail,
+/// pushed routes) the inset is just the system's, so this is harmless.
+EdgeInsets navBarAwarePadding(BuildContext context, EdgeInsets padding) =>
+    padding.copyWith(
+      bottom: padding.bottom + MediaQuery.paddingOf(context).bottom,
+    );

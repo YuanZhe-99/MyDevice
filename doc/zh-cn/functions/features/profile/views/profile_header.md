@@ -14,6 +14,7 @@
 | `_ProfileDialogState.initState` | 方法（组件生命周期） | B | 用当前个人资料预填名称输入框。 |
 | `_ProfileDialogState.dispose` | 方法（组件生命周期） | B | 释放文本控制器。 |
 | [`_ProfileDialogState._run`](#_run) | 方法（`_ProfileDialogState`） | A | 以忙碌状态和错误报告运行一个头像操作。 |
+| [`_ProfileDialogState._editAvatar`](#_editavatar) | 方法（`_ProfileDialogState`） | A | 在头像编辑器中取景并存储结果（1.7.1）。 |
 | [`_ProfileDialogState._save`](#_save) | 方法（`_ProfileDialogState`） | A | 保存名称并关闭。 |
 | `_ProfileDialogState.build` | 方法（组件构建） | B | 构建对话框。 |
 
@@ -29,11 +30,17 @@
 
 ## 对话框布局
 
-一个标题为 `profileTitle` 的 `AlertDialog`，包含大号 `ProfileAvatar(radius: 48)`；一个“选择头像”`FilledButton.tonalIcon`（`profileChangeAvatar`），以及仅在已设置头像时出现的“移除”按钮（`profileRemoveAvatar`）；还有名称 `TextField`（`profileName`，`maxLength: 40`，提交即保存）。操作按钮是**取消**和**保存**。`_busy` 期间一切禁用。
+一个标题为 `profileTitle` 的 `AlertDialog`，包含大号 `ProfileAvatar(radius: 48)`（点击它调整当前头像，没有头像时则为选图）；一个“选择头像”`FilledButton.tonalIcon`（`profileChangeAvatar`），以及仅在已设置头像时出现的“调整头像”`OutlinedButton.icon`（`profileAdjustAvatar`，`Icons.crop_rotate`）和“移除”按钮（`profileRemoveAvatar`）；还有名称 `TextField`（`profileName`，`maxLength: 40`，提交即保存）。操作按钮是**取消**和**保存**。`_busy` 期间一切禁用。
 
 ## _run
 
-- **副作用：** 设置 `_busy`，等待该操作，出现任何错误时显示带 `profileAvatarError`（“无法使用此图片”）的 `SnackBar`。用于选择和移除头像。
+- **副作用：** 设置 `_busy`，等待该操作，出现任何错误时显示带 `profileAvatarError`（“无法使用此图片”）的 `SnackBar`。用于编辑和移除头像。
+
+## _editAvatar
+
+- **输入：** `loadSource`——返回要编辑的图片，或返回 null 表示停止（选择器被取消、尚无头像文件）。
+- **副作用：** 在 `_run` 内运行：打开 `showAvatarEditor`，再经 `ProfileNotifier.setAvatarJpeg` 保存结果。
+- **备注：** 退出编辑器不会保存任何内容。“选择头像”传入 `ProfileStore.pickAvatarSource`；“调整头像”和点击已设置的头像传入 `ProfileStore.readAvatarBytes`。
 
 ## _save
 

@@ -677,6 +677,14 @@
   "settingsUiStyleDesc": "Expressive は丸みのある形、太めの見出し、フローティングナビゲーションバーを使います。Material 3 は全幅バーの標準デザインです。",
   "settingsUiStyleMaterial3": "Material 3",
   "settingsUiStyleExpressive": "Expressive",
+  "settingsAlwaysSideNav": "狭い画面でもサイドナビゲーション",
+  "settingsAlwaysSideNavDesc": "スマートフォンでもサイドのレールを使います。コンテンツの幅が狭くなるため、おすすめしません。",
+  "settingsWideBottomNav": "ワイド画面でも下部ナビゲーション",
+  "settingsWideBottomNavDesc": "折りたたみ端末を開いたときやタブレット、デスクトップでも、サイドのレールではなく下部のフローティングバーを使います。",
+  "settingsRailSide": "サイドナビゲーションの位置",
+  "settingsRailSideDesc": "ワイド画面でナビゲーションレールを表示する側です。",
+  "settingsRailSideLeft": "左",
+  "settingsRailSideRight": "右",
   "backupModuleProfile": "プロフィール",
   "profileTitle": "プロフィール",
   "profileName": "名前",
@@ -685,5 +693,9 @@
   "profileChangeAvatar": "アバターを選択",
   "profileRemoveAvatar": "削除",
   "profileAvatarError": "この画像は使用できません",
-  "profileOpenSettings": "プロフィールと設定"
+  "profileOpenSettings": "プロフィールと設定",
+  "profileAdjustAvatar": "アバターを調整",
+  "profileAvatarRotate": "回転",
+  "profileAvatarReset": "リセット",
+  "profileAvatarEditorHint": "ドラッグで移動、ピンチまたはスクロールで拡大縮小します。"
 }

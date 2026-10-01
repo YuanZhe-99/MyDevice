@@ -261,3 +261,7 @@
 ## 个人资料头像（自 1.7.0 起）
 
 设备列表是首页，因此它的应用栏带有个人资料头像：`AppBar.leading` 是一个 `IconButton`（提示文字 `profileOpenSettings`），内含 `ProfileAvatar(radius: 16)`，起始内边距 8，位于应用标题左侧；点击调用 `context.go('/settings')`。头像只出现在这一页。见 [../../profile/views/profile_avatar.md](../../profile/views/profile_avatar.md)。
+
+## 悬浮栏后面的底部内边距（自 1.7.1 起）
+
+Expressive 底栏悬浮在页面之上（`ShellScaffold` 使用 `extendBody`），所以显式传了 `padding` 的滚动视图要经 `navBarAwarePadding(context, ...)`（见 [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)）传入，才能把最后的内容滚到栏的上方。此处涉及：设备列表的可重排列表，以及 `_buildDeviceList` 构建的四个列表（空、分组、单列、多列）。每个列表都保留内层的 `bottom: 80`（那是为三个叠放的浮动操作按钮留的空间），`navBarAwarePadding` 再在其上加上栏高。

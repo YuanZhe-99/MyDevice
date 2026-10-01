@@ -645,7 +645,10 @@ class _DeviceListPageState extends State<DeviceListPage> {
             )
           : _reordering
           ? ReorderableListView.builder(
-              padding: const EdgeInsets.only(bottom: 80),
+              padding: navBarAwarePadding(
+                context,
+                const EdgeInsets.only(bottom: 80),
+              ),
               itemCount: _devices.length,
               onReorderItem: _onReorder,
               itemBuilder: (context, index) {
@@ -780,7 +783,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
     final header = _buildHomeHeader(l10n, theme);
     if (sorted.isEmpty) {
       return ListView(
-        padding: const EdgeInsets.only(bottom: 80),
+        padding: navBarAwarePadding(context, const EdgeInsets.only(bottom: 80)),
         children: [
           header,
           Padding(
@@ -829,13 +832,13 @@ class _DeviceListPageState extends State<DeviceListPage> {
       }
       flush();
       return ListView(
-        padding: const EdgeInsets.only(bottom: 80),
+        padding: navBarAwarePadding(context, const EdgeInsets.only(bottom: 80)),
         children: widgets,
       );
     }
     if (columns == 1) {
       return ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80),
+        padding: navBarAwarePadding(context, const EdgeInsets.only(bottom: 80)),
         itemCount: sorted.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) return header;
@@ -844,7 +847,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
+      padding: navBarAwarePadding(context, const EdgeInsets.only(bottom: 80)),
       itemCount: listRowCount(sorted.length, columns) + 1,
       itemBuilder: (context, index) {
         if (index == 0) return header;

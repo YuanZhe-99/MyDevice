@@ -316,3 +316,27 @@ from `settingsUiStyle` / `settingsUiStyleDesc`) and a `SegmentedButton<AppUiStyl
 and *Expressive* (`settingsUiStyleMaterial3` / `settingsUiStyleExpressive`), laid out like the theme
 picker. Selecting calls `AppSettingsNotifier.setUiStyle`. The style is a local setting and is not
 synced.
+
+## Wide-screen navigation (since 1.7.1) and bottom padding
+
+Right after the interface-style row, *General* gains three rows (`_buildSettingsList`):
+
+- **Side navigation on narrow screens** — a `SwitchListTile` (icon `Icons.vertical_split_outlined`,
+  `settingsAlwaysSideNav` / `settingsAlwaysSideNavDesc`, whose text says it is not recommended),
+  first of the three, for both styles, off by default. On calls `AppSettingsNotifier.setAlwaysSideNav`
+  and the shell shows the rail on every window width, overriding the wide-bottom option.
+- **Bottom navigation on wide screens** — a `SwitchListTile` (icon `Icons.call_to_action_outlined`,
+  `settingsWideBottomNav` / `settingsWideBottomNavDesc`), shown **only for the Expressive style, and hidden while the always-side switch is on**.
+  On calls `AppSettingsNotifier.setExpressiveWideBottomNav`; the shell then keeps the floating bar
+  at the bottom on wide windows instead of showing a rail.
+- **Side navigation position** — a `ListTile` (`Icons.view_sidebar_outlined`, `settingsRailSide` /
+  `settingsRailSideDesc`) and a `SegmentedButton<bool>` with *Left* / *Right*
+  (`align_horizontal_left` / `align_horizontal_right` icons, `settingsRailSideLeft` /
+  `settingsRailSideRight`) calling `setNavRailOnRight`. Shown for Material 3 always, and for
+  Expressive while the always-side switch is on or the wide-bottom switch is off, because those are
+  the cases where a rail can appear.
+
+The settings list is a `ListView` with no explicit padding, so it already clears the floating bar.
+The hosted detail pages (WebDAV, Backup, Privacy policy, License) are also pushed full screen on
+narrow windows; their explicit scroll paddings go through `navBarAwarePadding` (Backup's `ListView`
+sets none).

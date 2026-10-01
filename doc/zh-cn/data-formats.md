@@ -169,7 +169,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 | 服务与服务路由 | `service_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录服务/路由 |
 | 个人资料（名称和头像） | `profile.json` | 是 | 自 1.7.0 起：每个字段按各自的 `displayNameUpdatedAt` / `avatarUpdatedAt` 后写者胜；从不冲突 |
 | 图像和头像 | `images/` | 是 | 仅引用文件名比较；包含个人资料头像 |
-| 主题、界面风格（`uiStyle`）、语言区域、备份设置、排序偏好、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
+| 主题、界面风格（`uiStyle`）、导航位置（`alwaysSideNav`、`wideBottomNav`、`navRailRight`）、语言区域、备份设置、排序偏好、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
 | WebDAV 凭据 | `webdav_config.json` | 否 | 仅本地机密/配置 |
 | 同步基础快照 | `.sync_base/*.json` | 否 | 本地合并跟踪 |
 | 备份 | `backups/backup_*.json` | 否 | 本地恢复；v2 捆绑引用去重图像 blob |
@@ -214,6 +214,16 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 ### `storage_config.json` 键 `uiStyle`
 
 自 1.7.0 起，`storage_config.json` 可能包含 `"uiStyle": "material3"`。只存储非默认的 Material 3 风格；默认的 Expressive 风格（悬浮导航栏、更圆的形状、更粗的标题）就是没有这个键。本地偏好，从不同步。
+
+### `storage_config.json` 键 `wideBottomNav`、`navRailRight`、`alwaysSideNav`
+
+自 1.7.1 起，`storage_config.json` 可能包含三个决定导航位置的可选布尔值。每个都**仅在为 `true` 时写入**，关闭时移除，因此默认安装的配置里一个都没有。本地偏好，从不同步。
+
+| 键 | 为 `true` 时的含义 | 适用范围 |
+|---|---|---|
+| `wideBottomNav` | 宽窗口上保留悬浮底栏，而不是侧边导航栏。 | 仅 Expressive；Material 3 忽略 |
+| `navRailRight` | 侧边导航栏在右侧而不是左侧。 | 两种风格，只要显示导航栏 |
+| `alwaysSideNav` | 任何窗口宽度（含窄屏手机）都使用侧边导航栏（不推荐）。 | 两种风格；覆盖 `wideBottomNav` |
 
 ## `ai_insights.json` <a id="ai_insightsjson"></a>
 

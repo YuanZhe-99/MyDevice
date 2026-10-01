@@ -35,6 +35,9 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     final uiStyle = (await DeviceStorage.getUiStyle()) == 'material3'
         ? AppUiStyle.material3
         : AppUiStyle.expressive;
+    final expressiveWideBottomNav = await DeviceStorage.getWideBottomNav();
+    final navRailOnRight = await DeviceStorage.getNavRailRight();
+    final alwaysSideNav = await DeviceStorage.getAlwaysSideNav();
     final onDeviceAiEnabled = await DeviceStorage.getOnDeviceAiEnabled();
     final onDeviceAiPreferFast = await DeviceStorage.getOnDeviceAiPreferFast();
 
@@ -54,6 +57,9 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
       themeMode: themeMode,
       locale: locale,
       uiStyle: uiStyle,
+      expressiveWideBottomNav: expressiveWideBottomNav,
+      navRailOnRight: navRailOnRight,
+      alwaysSideNav: alwaysSideNav,
       onDeviceAiEnabled: onDeviceAiEnabled,
       onDeviceAiPreferFast: onDeviceAiPreferFast,
     );
@@ -108,6 +114,41 @@ class AppSettingsNotifier extends StateNotifier<AppSettings> {
     );
   }
 
+  /// Purpose: Choose whether the Expressive style keeps its bottom bar on
+  /// wide windows instead of the side rail (1.7.1).
+  /// Inputs: `enabled`.
+  /// Returns: None.
+  /// Side effects: Persists the preference; the shell rebuilds.
+  /// Notes: Off (side rail) by default. Ignored by the Material 3 style.
+  void setExpressiveWideBottomNav(bool enabled) {
+    state = state.copyWith(expressiveWideBottomNav: enabled);
+    DeviceStorage.setWideBottomNav(enabled);
+  }
+
+  /// Purpose: Choose whether the side rail is used even on narrow windows
+  /// (1.7.1).
+  /// Inputs: `enabled`.
+  /// Returns: None.
+  /// Side effects: Persists the preference; the shell rebuilds.
+  /// Notes: Off by default and not recommended on phones, where the rail
+  /// takes width from the content. When on it overrides the Expressive
+  /// bottom-on-wide-screens choice.
+  void setAlwaysSideNav(bool enabled) {
+    state = state.copyWith(alwaysSideNav: enabled);
+    DeviceStorage.setAlwaysSideNav(enabled);
+  }
+
+  /// Purpose: Choose which side of the window the navigation rail sits on
+  /// (1.7.1).
+  /// Inputs: `right`.
+  /// Returns: None.
+  /// Side effects: Persists the preference; the shell rebuilds.
+  /// Notes: Left by default; applies to both styles whenever the rail shows.
+  void setNavRailOnRight(bool right) {
+    state = state.copyWith(navRailOnRight: right);
+    DeviceStorage.setNavRailRight(right);
+  }
+
   /// Purpose: Turn on-device AI on or off.
   /// Inputs: `enabled`.
   /// Returns: None.
@@ -139,6 +180,18 @@ class AppSettings {
   /// The interface style (1.7.0): Material 3, or Expressive (the default).
   final AppUiStyle uiStyle;
 
+  /// Whether the Expressive style keeps its bottom bar on wide windows
+  /// instead of the side rail (1.7.1). Off by default.
+  final bool expressiveWideBottomNav;
+
+  /// Whether the navigation rail sits on the right of the window (1.7.1).
+  /// Off (left) by default; applies to both styles.
+  final bool navRailOnRight;
+
+  /// Whether the side rail is used even on narrow windows such as phones
+  /// (1.7.1). Off by default; not recommended there.
+  final bool alwaysSideNav;
+
   /// Whether on-device AI (the insight cards) is on. Device-local.
   final bool onDeviceAiEnabled;
 
@@ -146,7 +199,8 @@ class AppSettings {
   final bool onDeviceAiPreferFast;
 
   /// Purpose: Create an app settings instance.
-  /// Inputs: `themeMode`, `locale`, `uiStyle`, `onDeviceAiEnabled`,
+  /// Inputs: `themeMode`, `locale`, `uiStyle`, `expressiveWideBottomNav`,
+  /// `navRailOnRight`, `alwaysSideNav`, `onDeviceAiEnabled`,
   /// `onDeviceAiPreferFast`.
   /// Returns: A new `AppSettings` instance.
   /// Side effects: None.
@@ -155,6 +209,9 @@ class AppSettings {
     this.themeMode = ThemeMode.system,
     this.locale,
     this.uiStyle = AppUiStyle.expressive,
+    this.expressiveWideBottomNav = false,
+    this.navRailOnRight = false,
+    this.alwaysSideNav = false,
     this.onDeviceAiEnabled = false,
     this.onDeviceAiPreferFast = false,
   });
@@ -168,6 +225,9 @@ class AppSettings {
     ThemeMode? themeMode,
     Locale? locale,
     AppUiStyle? uiStyle,
+    bool? expressiveWideBottomNav,
+    bool? navRailOnRight,
+    bool? alwaysSideNav,
     bool? onDeviceAiEnabled,
     bool? onDeviceAiPreferFast,
     bool clearLocale = false,
@@ -176,6 +236,10 @@ class AppSettings {
       themeMode: themeMode ?? this.themeMode,
       locale: clearLocale ? null : (locale ?? this.locale),
       uiStyle: uiStyle ?? this.uiStyle,
+      expressiveWideBottomNav:
+          expressiveWideBottomNav ?? this.expressiveWideBottomNav,
+      navRailOnRight: navRailOnRight ?? this.navRailOnRight,
+      alwaysSideNav: alwaysSideNav ?? this.alwaysSideNav,
       onDeviceAiEnabled: onDeviceAiEnabled ?? this.onDeviceAiEnabled,
       onDeviceAiPreferFast: onDeviceAiPreferFast ?? this.onDeviceAiPreferFast,
     );

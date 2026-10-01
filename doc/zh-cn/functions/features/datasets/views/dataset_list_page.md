@@ -116,3 +116,7 @@
 - **算法：** 移除 `oldIndex` 处数据集并在 `newIndex` 重新插入；调用 `setState`；await `DataSetStorage.save(DataSetData(datasets: _datasets))`，然后单独调用 `AutoSyncService.instance.notifySaved()`。
 - **用法：** `onReorderItem: _onReorder,` 在 `build` 中 `_reordering` 为 true 时显示的 `ReorderableListView.builder` 上。
 - **备注：** 与 `NetworkListPage._onReorder`（保存前重新加载 `assignments` 使不破坏它们）不同，此方法不带任何顶层 `DataSetData` 上 `extraJson` 地保存 `DataSetData(datasets: _datasets)`——持久化文件曾有任何未知顶层键时重排会丢弃它们（本文件 `DataSetData` 模型确实有 `extraJson` 字段，但此调用点不传递它）。
+
+## 悬浮栏后面的底部内边距（自 1.7.1 起）
+
+Expressive 底栏悬浮在页面之上（`ShellScaffold` 使用 `extendBody`），所以显式传了 `padding` 的滚动视图要经 `navBarAwarePadding(context, ...)`（见 [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)）传入，才能把最后的内容滚到栏的上方。此处涉及：可重排列表（原先没有内边距，现在传入 `navBarAwarePadding(context, EdgeInsets.zero)`）以及多列 `ListView.builder`（水平 8）。单列 `ListView` 没有传 `padding`，因此本来就会自己应用该内缩。

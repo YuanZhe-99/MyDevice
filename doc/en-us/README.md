@@ -64,7 +64,7 @@ the `myapps_data` package embedded at `packages/myapps_data`, documented at
 - [Online Search and Presets](features/online-search-and-presets.md) — device/chip online
   search, store-flavor gating, bundled presets.
 - [Map](features/map.md) — the read-only device map and the full-screen location picker.
-- [Profile](features/profile.md) — the synced display name and avatar (1.7.0).
+- [Profile](features/profile.md) — the synced display name and avatar (1.7.0; avatar editor 1.7.1).
 
 ### Algorithms
 

@@ -138,3 +138,7 @@ Row count (15) matches `grep -c 'Purpose:' network_list_page.dart` (15) exactly.
   already adjusts `newIndex` after the removal, so no extra index-adjustment logic is needed here —
   same convention as `_DeviceListPageState._onReorder`
   (`../../devices/views/device_list_page.md#_onreorder`).
+
+## Bottom padding behind the floating bar (since 1.7.1)
+
+The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the reorderable list and both `ListView.builder`s (one column and several), all padding 8. The network detail pages are pushed above the shell, so they are unaffected.

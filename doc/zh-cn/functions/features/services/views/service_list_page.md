@@ -135,3 +135,7 @@
 - **算法：** 过滤 `_routes` 到 (`sourceServiceId` 和 `sourceEndpointId` 都匹配) 或任何跳 (`serviceId` 和 `endpointId`) 都匹配的；把幸存者经 `serviceRouteDisplayTarget` 映射；用 `', '` 连接；无匹配返回 `null`。
 - **用法：** `_buildPorts` 逐端口副标题内 `_routesForEndpoint(use.service.id, use.endpoint.id)`（与其他 `whereType<String>()` 过滤部分连接）。
 - **备注：** 按*组合*服务 id 和端点 id 匹配——引用相同服务但不同端点的路由不匹配。
+
+## 悬浮栏后面的底部内边距（自 1.7.1 起）
+
+Expressive 底栏悬浮在页面之上（`ShellScaffold` 使用 `extendBody`），所以显式传了 `padding` 的滚动视图要经 `navBarAwarePadding(context, ...)`（见 [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)）传入，才能把最后的内容滚到栏的上方。此处涉及：概览 `ListView`（内边距 16）以及设备、路由、端口视图的 `ListView`（内边距 8）。它们上方的分段视图切换器是固定的一行，不是滚动内容，因此无需处理。拓扑页和各编辑页是推在壳之上的，不受影响。

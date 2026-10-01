@@ -121,4 +121,8 @@
 
 ## 界面风格（自 1.7.0 起）
 
-`AppSettings` 新增 `uiStyle`（`AppUiStyle`，默认 `AppUiStyle.expressive`），出现在构造函数、`copyWith` 和 `_loadPersisted` 中（后者把 `DeviceStorage.getUiStyle()`——`'material3'` 或 null——映射为枚举）。新方法 `AppSettingsNotifier.setUiStyle(AppUiStyle style)`（Tier B）更新 `state`，并经 `DeviceStorage.setUiStyle('material3' 或 null)` 持久化，因此只有非默认的 Material 3 风格会存储，即 `storage_config.json` 中的 `uiStyle: "material3"`。`MyDeviceApp.build` 把 `settings.uiStyle` 传给 `AppTheme.light`/`dark`，主题因此立即重建；`ShellScaffold` 监视 `appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)`，Expressive 时构建 `_FloatingNavBar`。该设置是本地的，从不同步。
+`AppSettings` 新增 `uiStyle`（`AppUiStyle`，默认 `AppUiStyle.expressive`），出现在构造函数、`copyWith` 和 `_loadPersisted` 中（后者把 `DeviceStorage.getUiStyle()`——`'material3'` 或 null——映射为枚举）。新方法 `AppSettingsNotifier.setUiStyle(AppUiStyle style)`（Tier B）更新 `state`，并经 `DeviceStorage.setUiStyle('material3' 或 null)` 持久化，因此只有非默认的 Material 3 风格会存储，即 `storage_config.json` 中的 `uiStyle: "material3"`。`MyDeviceApp.build` 把 `settings.uiStyle` 传给 `AppTheme.light`/`dark`，主题因此立即重建；`ShellScaffold` 监视 `appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)`，Expressive 时构建 `_ExpressiveNavBar`（自 1.7.1 起为紧凑悬浮胶囊）。该设置是本地的，从不同步。
+
+## 宽屏导航（自 1.7.1 起）
+
+`AppSettings` 新增 `expressiveWideBottomNav`、`navRailOnRight` 和 `alwaysSideNav`（默认均为 false），出现在构造函数、`copyWith` 和 `_loadPersisted` 中（后者从 `DeviceStorage.getWideBottomNav()` / `getNavRailRight()` / `getAlwaysSideNav()` 读取）。三个 Tier B 方法沿用 `setUiStyle` 的模式：`AppSettingsNotifier.setExpressiveWideBottomNav(bool enabled)` 让 Expressive 底栏在宽窗口上保留而不是改用侧边导航栏（Material 3 忽略），`AppSettingsNotifier.setNavRailOnRight(bool right)` 把导航栏放到右侧，`AppSettingsNotifier.setAlwaysSideNav(bool enabled)` 让窄窗口也使用导航栏（手机上不推荐；它覆盖“宽屏放底部”的选择）。两者都更新 `state` 并经 `DeviceStorage` 持久化；三个键只存在于 `storage_config.json`，从不同步。`ShellScaffold` 监视这三者。行数：13（`grep -c '/// Purpose:'`）。

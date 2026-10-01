@@ -67,11 +67,10 @@ class ShellScaffold extends ConsumerWidget {
   /// Side effects: Creates UI widgets from the current state.
   /// Notes: Keep this method cheap because Flutter may call it often. The rail
   /// and the bottom bar are two renderings of the same five destinations. The
-  /// rail appears when [useNavigationRail] says the window is wide enough,
-  /// except that the Expressive style can keep its bottom bar on wide windows
-  /// too (the bottom-navigation-on-wide-screens setting, 1.7.1). The rail sits
-  /// on the left or, by setting, the right. A further setting (off by default)
-  /// uses the rail even on narrow windows. Expressive's bottom bar floats over
+  /// rail's appearance follows the navigation-position setting (1.7.1):
+  /// never (the default), when [useNavigationRail] says the window is wide
+  /// enough, or always. The rail sits on the left or, by setting, the right.
+  /// Expressive's bottom bar floats over
   /// the pages (`extendBody`), and the Scaffold reports its height as bottom
   /// padding so every page can leave room to scroll its last content above it
   /// (see [navBarAwarePadding]). Nothing here is stateful, so folding a device
@@ -84,14 +83,11 @@ class ShellScaffold extends ConsumerWidget {
     final expressive = ref.watch(
       appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive),
     );
-    final wideBottom = ref.watch(
-      appSettingsProvider.select((s) => s.expressiveWideBottomNav),
+    final placement = ref.watch(
+      appSettingsProvider.select((s) => s.navPlacement),
     );
     final railOnRight = ref.watch(
       appSettingsProvider.select((s) => s.navRailOnRight),
-    );
-    final alwaysSide = ref.watch(
-      appSettingsProvider.select((s) => s.alwaysSideNav),
     );
     final destinations = _destinations(l10n);
     final index = _currentIndex(context);
@@ -99,10 +95,13 @@ class ShellScaffold extends ConsumerWidget {
     void select(int i) => context.go(_routes[i]);
 
     final wide = useNavigationRail(MediaQuery.sizeOf(context).width);
-    // The always-side setting (1.7.1, off by default) forces the rail on
-    // narrow windows too and takes precedence over Expressive's
-    // bottom-on-wide-screens choice.
-    final showRail = alwaysSide || (wide && !(expressive && wideBottom));
+    // The navigation-position setting (1.7.1): bottom everywhere (the
+    // default), side rail on wide windows only, or side rail everywhere.
+    final showRail = switch (placement) {
+      NavPlacement.bottom => false,
+      NavPlacement.sideOnWide => wide,
+      NavPlacement.side => true,
+    };
 
     if (!showRail) {
       if (expressive) {

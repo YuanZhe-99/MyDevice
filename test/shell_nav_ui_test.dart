@@ -28,9 +28,8 @@ void main() {
     double width,
     double height, {
     AppUiStyle uiStyle = AppUiStyle.expressive,
-    bool wideBottom = false,
+    NavPlacement placement = NavPlacement.bottom,
     bool railRight = false,
-    bool alwaysSide = false,
     Widget Function(String path)? pageBuilder,
   }) async {
     tester.view.devicePixelRatio = 1.0;
@@ -69,9 +68,8 @@ void main() {
             AppSettingsNotifier.fixed(
               AppSettings(
                 uiStyle: uiStyle,
-                expressiveWideBottomNav: wideBottom,
+                navPlacement: placement,
                 navRailOnRight: railRight,
-                alwaysSideNav: alwaysSide,
               ),
             ),
           ),
@@ -99,7 +97,7 @@ void main() {
   testWidgets('a Z Fold 8 unfolded moves navigation to the side', (
     tester,
   ) async {
-    await pumpAt(tester, 933, 704);
+    await pumpAt(tester, 933, 704, placement: NavPlacement.sideOnWide);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(tester.takeException(), isNull);
@@ -108,7 +106,7 @@ void main() {
   testWidgets('the same device in portrait still gets a rail', (tester) async {
     // 704 wide passes the width-only rail rule although the split rule
     // rejects the 3:4 shape; the two rules are independent on purpose.
-    await pumpAt(tester, 704, 933);
+    await pumpAt(tester, 704, 933, placement: NavPlacement.sideOnWide);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
   });
@@ -118,7 +116,7 @@ void main() {
   ) async {
     // The reason the rail has a rule of its own: at 412 logical pixels tall a
     // bottom bar would spend a fifth of the height, and width is what is spare.
-    await pumpAt(tester, 915, 412);
+    await pumpAt(tester, 915, 412, placement: NavPlacement.sideOnWide);
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(tester.takeException(), isNull);
@@ -145,7 +143,7 @@ void main() {
     });
 
     testWidgets('the rail ignores the setting', (tester) async {
-      await pumpAt(tester, 933, 704);
+      await pumpAt(tester, 933, 704, placement: NavPlacement.sideOnWide);
       expect(find.byType(NavigationRail), findsOneWidget);
       expect(find.byKey(island), findsNothing);
     });
@@ -161,7 +159,12 @@ void main() {
   testWidgets('the rail carries the same five destinations, in order', (
     tester,
   ) async {
-    await pumpAt(tester, 1600, 900); // desktop
+    await pumpAt(
+      tester,
+      1600,
+      900,
+      placement: NavPlacement.sideOnWide,
+    ); // desktop
     final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
     expect(rail.destinations, hasLength(5));
     expect(rail.selectedIndex, 0);
@@ -169,7 +172,7 @@ void main() {
   });
 
   testWidgets('tapping a rail destination navigates', (tester) async {
-    await pumpAt(tester, 933, 704);
+    await pumpAt(tester, 933, 704, placement: NavPlacement.sideOnWide);
     expect(find.text('page /devices'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.lan_outlined));
     await tester.pumpAndSettle();
@@ -177,59 +180,86 @@ void main() {
     final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
     expect(rail.selectedIndex, 2);
   });
-  group('wide-window navigation (1.7.1)', () {
-    testWidgets('Expressive can keep its bottom bar on a wide window', (
-      tester,
-    ) async {
-      await pumpAt(tester, 933, 704, wideBottom: true);
-      expect(find.byKey(island), findsOneWidget);
-      expect(find.byType(NavigationRail), findsNothing);
-    });
 
-    testWidgets('Material 3 ignores the wide bottom-bar setting', (
-      tester,
-    ) async {
-      await pumpAt(
-        tester,
-        933,
-        704,
-        uiStyle: AppUiStyle.material3,
-        wideBottom: true,
-      );
-      expect(find.byType(NavigationRail), findsOneWidget);
-    });
-
-    testWidgets('the rail sits on the left by default', (tester) async {
-      await pumpAt(tester, 933, 704);
-      expect(tester.getTopLeft(find.byType(NavigationRail)).dx, 0);
+  group('navigation position (1.7.1)', () {
+    test('the default placement is bottom', () {
+      expect(const AppSettings().navPlacement, NavPlacement.bottom);
     });
 
     for (final style in AppUiStyle.values) {
-      testWidgets(
-        'the always-side setting shows the rail on a phone (${style.name})',
-        (tester) async {
-          await pumpAt(tester, 412, 915, uiStyle: style, alwaysSide: true);
-          expect(find.byType(NavigationRail), findsOneWidget);
-          expect(find.byType(NavigationBar), findsNothing);
-          expect(find.byKey(island), findsNothing);
-          expect(tester.takeException(), isNull);
-        },
-      );
+      testWidgets('bottom keeps the bar on a wide window (${style.name})', (
+        tester,
+      ) async {
+        await pumpAt(tester, 933, 704, uiStyle: style);
+        expect(find.byType(NavigationRail), findsNothing);
+        expect(
+          style == AppUiStyle.expressive
+              ? find.byKey(island)
+              : find.byType(NavigationBar),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('side shows the rail on a phone (${style.name})', (
+        tester,
+      ) async {
+        await pumpAt(
+          tester,
+          412,
+          915,
+          uiStyle: style,
+          placement: NavPlacement.side,
+        );
+        expect(find.byType(NavigationRail), findsOneWidget);
+        expect(find.byType(NavigationBar), findsNothing);
+        expect(find.byKey(island), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('sideOnWide keeps the bar on a phone (${style.name})', (
+        tester,
+      ) async {
+        await pumpAt(
+          tester,
+          412,
+          915,
+          uiStyle: style,
+          placement: NavPlacement.sideOnWide,
+        );
+        expect(find.byType(NavigationRail), findsNothing);
+      });
+
+      testWidgets('sideOnWide shows the rail when wide (${style.name})', (
+        tester,
+      ) async {
+        await pumpAt(
+          tester,
+          933,
+          704,
+          uiStyle: style,
+          placement: NavPlacement.sideOnWide,
+        );
+        expect(find.byType(NavigationRail), findsOneWidget);
+      });
     }
 
-    testWidgets('the always-side setting overrides the wide bottom bar', (
-      tester,
-    ) async {
-      await pumpAt(tester, 933, 704, wideBottom: true, alwaysSide: true);
-      expect(find.byType(NavigationRail), findsOneWidget);
-      expect(find.byKey(island), findsNothing);
+    testWidgets('the rail sits on the left by default', (tester) async {
+      await pumpAt(tester, 933, 704, placement: NavPlacement.sideOnWide);
+      expect(tester.getTopLeft(find.byType(NavigationRail)).dx, 0);
     });
 
     for (final style in AppUiStyle.values) {
       testWidgets('the rail can sit on the right (${style.name})', (
         tester,
       ) async {
-        await pumpAt(tester, 933, 704, uiStyle: style, railRight: true);
+        await pumpAt(
+          tester,
+          933,
+          704,
+          uiStyle: style,
+          placement: NavPlacement.sideOnWide,
+          railRight: true,
+        );
         final rail = tester.getRect(find.byType(NavigationRail));
         expect(rail.right, 933);
         expect(find.text('page /devices'), findsOneWidget);

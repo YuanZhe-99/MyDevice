@@ -1989,25 +1989,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsUiStyleExpressive => 'Expressive';
 
   @override
-  String get settingsAlwaysSideNav => 'Side navigation on narrow screens';
+  String get settingsNavPlacement => 'Navigation position';
 
   @override
-  String get settingsAlwaysSideNavDesc =>
-      'Use the side rail on phones too. Not recommended: it takes width from the content.';
+  String get settingsNavPlacementDesc =>
+      'Bottom everywhere, at the side on wide screens such as unfolded foldables, tablets and desktop, or at the side everywhere (not recommended on phones).';
 
   @override
-  String get settingsWideBottomNav => 'Bottom navigation on wide screens';
+  String get settingsNavPlacementBottom => 'Bottom';
 
   @override
-  String get settingsWideBottomNavDesc =>
-      'On unfolded foldables, tablets and desktop windows, keep the floating bar at the bottom instead of a side rail.';
+  String get settingsNavPlacementSideOnWide => 'Side on wide';
+
+  @override
+  String get settingsNavPlacementSide => 'Side';
 
   @override
   String get settingsRailSide => 'Side navigation position';
 
   @override
   String get settingsRailSideDesc =>
-      'Where the navigation rail sits on wide screens.';
+      'Which side of the window the navigation rail sits on.';
 
   @override
   String get settingsRailSideLeft => 'Left';

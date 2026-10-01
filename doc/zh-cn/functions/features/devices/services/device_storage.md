@@ -458,20 +458,16 @@
 - **`static Future<String?> getUiStyle()`**——当 `storage_config.json` 含 `uiStyle: "material3"` 时返回 `'material3'`，否则返回 null（默认的 Expressive 风格）。只读取配置。
 - **`static Future<void> setUiStyle(String? name)`**——读取-修改-写入 `storage_config.json`：`'material3'` 写入 `uiStyle: "material3"`，其他值移除该键，因此默认安装的配置里没有它。本地偏好，从不同步。
 
-## 宽屏导航（自 1.7.1 起）
+## 导航栏位置（自 1.7.1 起）
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
-| `getWideBottomNav()` | 静态方法 | A | 读取 Expressive 底栏是否在宽窗口上保留。 |
-| `setWideBottomNav(enabled)` | 静态方法 | A | 持久化该选择。 |
+| `getNavPlacement()` | 静态方法 | A | 读取壳把导航放在哪里。 |
+| `setNavPlacement(name)` | 静态方法 | A | 持久化该选择。 |
 | `getNavRailRight()` | 静态方法 | A | 读取导航栏是否在右侧。 |
 | `setNavRailRight(right)` | 静态方法 | A | 持久化导航栏所在侧。 |
-| `getAlwaysSideNav()` | 静态方法 | A | 读取是否在窄窗口上也使用侧边导航栏。 |
-| `setAlwaysSideNav(enabled)` | 静态方法 | A | 持久化该选择。 |
 
-- **`static Future<bool> getWideBottomNav()`**——仅当 `storage_config.json` 含 `wideBottomNav: true` 时返回 `true`，否则 false（侧边导航栏）。只读取配置。
-- **`static Future<void> setWideBottomNav(bool enabled)`**——读取-修改-写入 `storage_config.json`：`true` 写入 `wideBottomNav: true`，false 移除该键。本地，从不同步。
+- **`static Future<String?> getNavPlacement()`**——当 `storage_config.json` 的 `navPlacement` 为 `'sideOnWide'` 或 `'side'` 时返回它；否则返回 null（全部底部，默认），未知值也是如此。只读取配置。
+- **`static Future<void> setNavPlacement(String? name)`**——读取-修改-写入 `storage_config.json`：写入 `'sideOnWide'` 或 `'side'`，其他值移除该键。本地，从不同步。
 - **`static Future<bool> getNavRailRight()`**——仅当配置含 `navRailRight: true` 时返回 `true`，否则 false（左侧）。
-- **`static Future<void> setNavRailRight(bool right)`**——右侧写入 `navRailRight: true`，左侧移除该键，因此默认安装的配置里没有这些键。
-- **`static Future<bool> getAlwaysSideNav()`**——仅当配置含 `alwaysSideNav: true`（任何窗口宽度都使用导航栏，手机上不推荐）时返回 `true`，否则 false。
-- **`static Future<void> setAlwaysSideNav(bool enabled)`**——写入 `alwaysSideNav: true` 或移除该键。
+- **`static Future<void> setNavRailRight(bool right)`**——右侧写入 `navRailRight: true`，左侧移除该键，因此默认安装的配置里没有这两个键。

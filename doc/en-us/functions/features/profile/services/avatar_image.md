@@ -14,6 +14,8 @@ allocation-only, so callers run them with `Isolate.run` to keep the UI responsiv
 | [`prepareAvatarSource`](#prepareavatarsource) | top-level function | A | Normalise a picked image for the editor. |
 | [`cropAvatarJpeg`](#cropavatarjpeg) | top-level function | A | Cut the square the user framed and encode it as the avatar. |
 | [`squareAvatarJpeg`](#squareavatarjpeg) | top-level function | A | Turn any decodable image into a centred square JPEG. |
+| [`prepareAvatarSourceInBackground`](#prepareavatarsourceinbackground) | top-level function | A | Run `prepareAvatarSource` in another isolate. |
+| [`cropAvatarJpegInBackground`](#cropavatarjpeginbackground) | top-level function | A | Run `cropAvatarJpeg` in another isolate. |
 
 The class `AvatarSource` and the constant `avatarSourceMaxEdge` (`2048`, the longest edge the editor
 works with) carry plain `///` descriptions, not `/// Purpose:` blocks. `squareAvatarJpeg` moved here
@@ -54,3 +56,17 @@ from `profile_store.dart` in 1.7.1.
 - **Notes:** The non-interactive path (no editor): applies EXIF orientation and takes the centred
   square with `copyResizeCropSquare`. Throws `FormatException` for non-images. The 1.7.1 UI no
   longer calls it (the editor path replaced it), but it stays as the centred-crop helper.
+
+## prepareAvatarSourceInBackground
+
+- **Inputs:** `bytes`, `quarterTurns` (default 0).
+- **Returns:** `Future<AvatarSource>`.
+- **Side effects:** Spawns a short-lived isolate.
+- **Notes:** A top-level function on purpose: a closure created inside a widget's State method also captures that State (and its controllers), which cannot be sent to another isolate, so the editor used to fail with "This image could not be used". Here the closure captures only the arguments. `test/profile_test.dart` runs both helpers for real.
+
+## cropAvatarJpegInBackground
+
+- **Inputs:** as `cropAvatarJpeg`.
+- **Returns:** `Future<Uint8List>` -- the avatar JPEG.
+- **Side effects:** Spawns a short-lived isolate.
+- **Notes:** Top-level for the same reason as `prepareAvatarSourceInBackground`.

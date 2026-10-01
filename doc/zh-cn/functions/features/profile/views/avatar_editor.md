@@ -29,7 +29,7 @@
 
 ## _prepare
 
-- **副作用：** 设置 `_busy`，在 `Isolate.run` 中运行 `prepareAvatarSource(source, quarterTurns: _turns)`，保存结果并清除 `_failed`；失败则设置 `_failed`。把 `_viewport` 清零会让下一次 `build` 重新居中图片。
+- **副作用：** 设置 `_busy`，通过顶层的 `*InBackground` 助手（`Isolate.run`）运行 `prepareAvatarSource(source, quarterTurns: _turns)`，保存结果并清除 `_failed`；失败则设置 `_failed`。把 `_viewport` 清零会让下一次 `build` 重新居中图片。
 
 ## _rotate
 
@@ -42,7 +42,7 @@
 
 ## _save
 
-- **副作用：** 读取缩放/平移矩阵，把视口的左上角和尺寸映射回源像素（`x = -tx / scale * toPixels`，`y` 同理，`side = viewport / scale * toPixels`，其中 `toPixels = image.width / baseWidth`），在 `Isolate.run` 中运行 `cropAvatarJpeg(..., size: 512)`，然后带着 JPEG 弹出路由。失败则设置 `_failed`。
+- **副作用：** 读取缩放/平移矩阵，把视口的左上角和尺寸映射回源像素（`x = -tx / scale * toPixels`，`y` 同理，`side = viewport / scale * toPixels`，其中 `toPixels = image.width / baseWidth`），通过顶层的 `*InBackground` 助手（`Isolate.run`）运行 `cropAvatarJpeg(..., size: 512)`，然后带着 JPEG 弹出路由。失败则设置 `_failed`。
 
 ## build
 

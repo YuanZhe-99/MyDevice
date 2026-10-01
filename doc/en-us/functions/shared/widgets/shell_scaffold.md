@@ -5,7 +5,7 @@
 bottom bar on a window narrower than 600 logical pixels and as a side `NavigationRail` from 600 up.
 Which one appears is `useNavigationRail`'s width-only decision — see
 [../../../adaptive-layout.md](../../../adaptive-layout.md#where-navigation-lives) — except that the
-Expressive style can keep its bottom bar on wide windows too (1.7.1). Both are built from the same
+navigation-position setting (1.7.1) can keep the bar. Both are built from the same
 `_destinations` list so they cannot drift apart. See [../../../architecture.md](../../../architecture.md).
 
 ## Declarations
@@ -55,13 +55,13 @@ Expressive style can keep its bottom bar on wide windows too (1.7.1). Both are b
 ## `build` (Tier B)
 
 `ShellScaffold` is a `ConsumerWidget` (`build(BuildContext context, WidgetRef ref)`). It watches
-four settings with `select`: `uiStyle == AppUiStyle.expressive`, `expressiveWideBottomNav`,
-`navRailOnRight` and `alwaysSideNav` (the last three since 1.7.1). Pure widget composition:
+three settings with `select`: `uiStyle == AppUiStyle.expressive`, `navPlacement` and
+`navRailOnRight` (the last two since 1.7.1). Pure widget composition:
 
-- `wide = useNavigationRail(width)`; `showRail = alwaysSide || (wide && !(expressive && wideBottom))`.
-  Material 3 ignores `wideBottomNav`, so on a wide window it always gets the rail. `alwaysSideNav`
-  (off by default, labelled not recommended) forces the rail on narrow windows too, in both styles,
-  and overrides `wideBottomNav`.
+- `wide = useNavigationRail(width)`;
+  `showRail = switch (placement) { bottom => false, sideOnWide => wide, side => true }`, the same
+  for both styles. `bottom` (the default) keeps the bar on every window, `sideOnWide` uses the rail
+  on wide windows, and `side` uses it on every width (not recommended on phones).
 - **No rail, Expressive:** `Scaffold(extendBody: true, body: ..., bottomNavigationBar:
   _ExpressiveNavBar)`. `extendBody` lets the page draw **behind** the floating bar, and the
   Scaffold reports the bar's height to the page as `MediaQuery.padding.bottom`. A page's own

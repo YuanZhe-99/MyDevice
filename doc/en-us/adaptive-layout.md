@@ -382,27 +382,24 @@ behind the bar and the Scaffold reports the bar's height as `MediaQuery.padding.
 therefore reserve that height (see [Bottom padding behind the bar](#bottom-padding-behind-the-bar)).
 Material 3 is unchanged: the bar sits in the `bottomNavigationBar` slot and takes its own space.
 
-### Choosing the navigation placement (since 1.7.1)
+### Choosing the navigation position (since 1.7.1)
 
-Three local settings (`storage_config.json`, never synced; Settings › General) refine the width-only
-rule above, resolved in `ShellScaffold`:
+One local setting, `navPlacement` (`storage_config.json`, never synced; Settings › General, both styles), refines the width-only rule above. It is resolved in `ShellScaffold`:
 
 ```dart
-final showRail = alwaysSide || (wide && !(expressive && wideBottom));
+final showRail = switch (placement) {
+  NavPlacement.bottom => false,
+  NavPlacement.sideOnWide => wide,
+  NavPlacement.side => true,
+};
 ```
 
-- `alwaysSideNav` (default off, labelled *not recommended*): use the rail on **every** width, in both
-  styles — on a phone the rail takes about 81 dp from the content.
-- `wideBottomNav` (default off, **Expressive only**): keep the floating bar at the bottom on wide
-  windows instead of the rail. Material 3 ignores it. It is hidden while `alwaysSideNav` is on.
-- `navRailRight` (default off = left): the rail goes on the left, or on the right as
-  `Row([Expanded(child), VerticalDivider, rail])`. Shown for Material 3 always, and for Expressive
-  while the rail can appear (`alwaysSideNav` on or `wideBottomNav` off). Applies in both styles.
+- `bottom` (**default**, key absent): the bar on every window, wide ones included -- the Expressive pill or the Material 3 `NavigationBar`.
+- `sideOnWide` (`"sideOnWide"`): the rail when `useNavigationRail(width)` is true, otherwise the bar. This was MyDevice's behaviour before 1.7.1.
+- `side` (`"side"`): the rail on every width, phones included -- not recommended, the rail takes about 81 dp from the content.
+- `navRailRight` (default off = left): the rail goes on the left, or on the right as `Row([Expanded(child), VerticalDivider, rail])`. Shown whenever the placement is not `bottom`; applies to both styles.
 
-Known approximation: `shellContentWidth` still subtracts the rail's 81 dp whenever
-`useNavigationRail` is true, even when the wide bottom bar is chosen, and does not subtract it on a
-narrow window with `alwaysSideNav`; the column counts are therefore slightly conservative on a wide
-window and slightly generous on a narrow one. Correctness is unaffected.
+Known approximation: `shellContentWidth` still subtracts the rail's 81 dp whenever `useNavigationRail` is true, whatever the placement, so column counts are slightly conservative on a wide window with the bar and slightly generous on a narrow window with `side`. Correctness is unaffected.
 
 **This is width-only on purpose, and must not be routed through `canSplitLayout`.** A rail is not a
 split. It trades width — abundant whenever the test passes — for height, which is not. The case it

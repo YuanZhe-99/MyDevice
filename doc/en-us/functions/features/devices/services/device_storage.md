@@ -653,28 +653,16 @@ path provider.
   `'material3'` writes `uiStyle: "material3"`, anything else removes the key, so a default install's
   config stays free of it. Local preference, never synced.
 
-## Wide-screen navigation (since 1.7.1)
+## Navigation position (since 1.7.1)
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| `getWideBottomNav()` | static method | A | Read whether the Expressive bottom bar stays on wide windows. |
-| `setWideBottomNav(enabled)` | static method | A | Persist that choice. |
+| `getNavPlacement()` | static method | A | Read where the shell puts its navigation. |
+| `setNavPlacement(name)` | static method | A | Persist that choice. |
 | `getNavRailRight()` | static method | A | Read whether the navigation rail sits on the right. |
 | `setNavRailRight(right)` | static method | A | Persist the rail side. |
-| `getAlwaysSideNav()` | static method | A | Read whether the side rail is used even on narrow windows. |
-| `setAlwaysSideNav(enabled)` | static method | A | Persist that choice. |
 
-- **`static Future<bool> getWideBottomNav()`** — `true` only when `storage_config.json` has
-  `wideBottomNav: true`; false (side rail) otherwise. Reads the config only.
-- **`static Future<void> setWideBottomNav(bool enabled)`** — read-modify-writes
-  `storage_config.json`: `true` writes `wideBottomNav: true`, false removes the key. Local, never
-  synced.
-- **`static Future<bool> getNavRailRight()`** — `true` only when the config has
-  `navRailRight: true`; false (left) otherwise.
-- **`static Future<void> setNavRailRight(bool right)`** — writes `navRailRight: true` for the right
-  side and removes the key for the left, so a default install's config stays free of these keys.
-- **`static Future<bool> getAlwaysSideNav()`** — `true` only when the config has
-  `alwaysSideNav: true` (the rail on every window width, not recommended on phones); false
-  otherwise.
-- **`static Future<void> setAlwaysSideNav(bool enabled)`** — writes `alwaysSideNav: true` or removes
-  the key.
+- **`static Future<String?> getNavPlacement()`** -- `'sideOnWide'` or `'side'` when `storage_config.json` has that `navPlacement`; null (bottom everywhere, the default) otherwise, unknown values included. Reads the config only.
+- **`static Future<void> setNavPlacement(String? name)`** -- read-modify-writes `storage_config.json`: `'sideOnWide'` or `'side'` is written; anything else removes the key. Local, never synced.
+- **`static Future<bool> getNavRailRight()`** -- `true` only when the config has `navRailRight: true`; false (left) otherwise.
+- **`static Future<void> setNavRailRight(bool right)`** -- writes `navRailRight: true` for the right side and removes the key for the left, so a default install's config stays free of both keys.

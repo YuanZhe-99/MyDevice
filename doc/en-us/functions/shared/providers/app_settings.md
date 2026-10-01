@@ -172,14 +172,6 @@ passes `settings.uiStyle` to `AppTheme.light`/`dark`, so the theme rebuilds at o
 watches `appSettingsProvider.select((s) => s.uiStyle == AppUiStyle.expressive)` and builds
 `_ExpressiveNavBar` for Expressive (a compact floating pill since 1.7.1). The setting is local and never synced.
 
-## Wide-screen navigation (since 1.7.1)
+## Navigation position (since 1.7.1)
 
-`AppSettings` gains `expressiveWideBottomNav`, `navRailOnRight` and `alwaysSideNav` (all default false),
-present in the constructor, `copyWith` and `_loadPersisted` (which reads them from `DeviceStorage.getWideBottomNav()` / `getNavRailRight()` /
-`getAlwaysSideNav()`). Three Tier B methods follow the
-`setUiStyle` pattern: `AppSettingsNotifier.setExpressiveWideBottomNav(bool enabled)` keeps the
-Expressive bottom bar on wide windows instead of the side rail (ignored by Material 3), `AppSettingsNotifier.setNavRailOnRight(bool right)` puts the rail on the right, and
-`AppSettingsNotifier.setAlwaysSideNav(bool enabled)` uses the rail even on narrow windows (not
-recommended on phones; it overrides the wide-bottom choice). Each updates `state`
-and persists through `DeviceStorage`; all three keys live only in `storage_config.json` and are never
-synced. `ShellScaffold` watches all three. Row count: 13 (`grep -c '/// Purpose:'`).
+`AppSettings` gains `navPlacement` (`NavPlacement`, defined in `lib/app/theme.dart`: `bottom`, `sideOnWide`, `side`; default `bottom`) and `navRailOnRight` (default false), present in the constructor, `copyWith` and `_loadPersisted` (which reads `DeviceStorage.getNavPlacement()` -- `'sideOnWide'`, `'side'` or null, unknown values reading as the default -- and `getNavRailRight()`). Two Tier B methods follow the `setUiStyle` pattern: `AppSettingsNotifier.setNavPlacement(NavPlacement placement)` chooses bottom everywhere (the default, for both styles), the side rail on wide windows only, or the side rail everywhere (not recommended on phones), and `AppSettingsNotifier.setNavRailOnRight(bool right)` puts the rail on the right. Each updates `state` and persists through `DeviceStorage`; both keys live only in `storage_config.json` and are never synced. `ShellScaffold` watches both. Row count: 12 (`grep -c '/// Purpose:'`).

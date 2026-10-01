@@ -178,7 +178,7 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
 ## Core architecture rules
 
 - Navigation uses `go_router` with a `ShellRoute` for the five tabs listed above.
-- The visual system is native Material 3 (`ColorScheme.fromSeed`, Android dynamic color) with a user-selectable interface style: Material 3 or Expressive (default; with the compact floating navigation bar), stored locally as `uiStyle` in `storage_config.json`; navigation placement (rail on the wide-screen bottom bar, left or right, always-side) is stored as `wideBottomNav`, `navRailRight` and `alwaysSideNav`. Hard-coded colors are limited to the finance chart's categorical palette and theme-independent overlays.
+- The visual system is native Material 3 (`ColorScheme.fromSeed`, Android dynamic color) with a user-selectable interface style: Material 3 or Expressive (default; with the compact floating navigation bar), stored locally as `uiStyle` in `storage_config.json`; navigation position (bottom everywhere by default, side rail on wide windows, or side rail everywhere; rail left or right) is stored as `navPlacement` and `navRailRight`. Hard-coded colors are limited to the finance chart's categorical palette and theme-independent overlays.
 - Every width or height decision — whether a layout may split, where navigation lives, how many
   columns fit, how tall a dialog may be — goes through `lib/shared/utils/adaptive_layout.dart`. A
   widget file that compares a size against a number is a bug. See

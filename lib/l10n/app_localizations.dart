@@ -3761,29 +3761,35 @@ abstract class AppLocalizations {
   /// **'Expressive'**
   String get settingsUiStyleExpressive;
 
-  /// No description provided for @settingsAlwaysSideNav.
+  /// No description provided for @settingsNavPlacement.
   ///
   /// In en, this message translates to:
-  /// **'Side navigation on narrow screens'**
-  String get settingsAlwaysSideNav;
+  /// **'Navigation position'**
+  String get settingsNavPlacement;
 
-  /// No description provided for @settingsAlwaysSideNavDesc.
+  /// No description provided for @settingsNavPlacementDesc.
   ///
   /// In en, this message translates to:
-  /// **'Use the side rail on phones too. Not recommended: it takes width from the content.'**
-  String get settingsAlwaysSideNavDesc;
+  /// **'Bottom everywhere, at the side on wide screens such as unfolded foldables, tablets and desktop, or at the side everywhere (not recommended on phones).'**
+  String get settingsNavPlacementDesc;
 
-  /// No description provided for @settingsWideBottomNav.
+  /// No description provided for @settingsNavPlacementBottom.
   ///
   /// In en, this message translates to:
-  /// **'Bottom navigation on wide screens'**
-  String get settingsWideBottomNav;
+  /// **'Bottom'**
+  String get settingsNavPlacementBottom;
 
-  /// No description provided for @settingsWideBottomNavDesc.
+  /// No description provided for @settingsNavPlacementSideOnWide.
   ///
   /// In en, this message translates to:
-  /// **'On unfolded foldables, tablets and desktop windows, keep the floating bar at the bottom instead of a side rail.'**
-  String get settingsWideBottomNavDesc;
+  /// **'Side on wide'**
+  String get settingsNavPlacementSideOnWide;
+
+  /// No description provided for @settingsNavPlacementSide.
+  ///
+  /// In en, this message translates to:
+  /// **'Side'**
+  String get settingsNavPlacementSide;
 
   /// No description provided for @settingsRailSide.
   ///
@@ -3794,7 +3800,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsRailSideDesc.
   ///
   /// In en, this message translates to:
-  /// **'Where the navigation rail sits on wide screens.'**
+  /// **'Which side of the window the navigation rail sits on.'**
   String get settingsRailSideDesc;
 
   /// No description provided for @settingsRailSideLeft.

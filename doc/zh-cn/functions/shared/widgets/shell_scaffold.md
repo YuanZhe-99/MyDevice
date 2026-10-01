@@ -1,6 +1,6 @@
 # lib/shared/widgets/shell_scaffold.dart
 
-`ShellScaffold` 是 `go_router` `ShellRoute` 主体：五个标签（设备/服务/网络/数据集/设置）包裹当前激活标签页，在窄于 600 逻辑像素的窗口上渲染为底部栏，600 及以上渲染为侧边 `NavigationRail`。出现哪一个是 `useNavigationRail` 的仅宽度决策——见 [../../../adaptive-layout.md](../../../adaptive-layout.md#where-navigation-lives)——但 Expressive 风格也可以在宽窗口上保留底栏（1.7.1）。两者都由同一份 `_destinations` 列表构建，因此不会漂移。见 [架构](../../../architecture.md)。
+`ShellScaffold` 是 `go_router` `ShellRoute` 主体：五个标签（设备/服务/网络/数据集/设置）包裹当前激活标签页，在窄于 600 逻辑像素的窗口上渲染为底部栏，600 及以上渲染为侧边 `NavigationRail`。出现哪一个是 `useNavigationRail` 的仅宽度决策——见 [../../../adaptive-layout.md](../../../adaptive-layout.md#where-navigation-lives)——但导航栏位置设置（1.7.1）可以保留底栏。两者都由同一份 `_destinations` 列表构建，因此不会漂移。见 [架构](../../../architecture.md)。
 
 ## 声明
 
@@ -43,9 +43,9 @@
 
 ## `build`（Tier B）
 
-`ShellScaffold` 是 `ConsumerWidget`（`build(BuildContext context, WidgetRef ref)`）。它用 `select` 监视四个设置：`uiStyle == AppUiStyle.expressive`、`expressiveWideBottomNav`、`navRailOnRight` 和 `alwaysSideNav`（后三者自 1.7.1 起）。纯组件组合：
+`ShellScaffold` 是 `ConsumerWidget`（`build(BuildContext context, WidgetRef ref)`）。它用 `select` 监视三个设置：`uiStyle == AppUiStyle.expressive`、`navPlacement` 和 `navRailOnRight`（后两者自 1.7.1 起）。纯组件组合：
 
-- `wide = useNavigationRail(width)`；`showRail = alwaysSide || (wide && !(expressive && wideBottom))`。Material 3 忽略 `wideBottomNav`，所以在宽窗口上始终是导航栏。`alwaysSideNav`（默认关闭，标注为不推荐）让窄窗口也使用导航栏，两种风格均适用，并覆盖 `wideBottomNav`。
+- `wide = useNavigationRail(width)`；`showRail = switch (placement) { bottom => false, sideOnWide => wide, side => true }`，两种风格相同。`bottom`（默认）在任何窗口都用底栏，`sideOnWide` 在宽窗口用导航栏，`side` 在任何宽度都用导航栏（手机上不推荐）。
 - **无导航栏、Expressive：** `Scaffold(extendBody: true, body: ..., bottomNavigationBar: _ExpressiveNavBar)`。`extendBody` 让页面绘制到悬浮栏**后面**，Scaffold 把栏高作为 `MediaQuery.padding.bottom` 报告给页面。页面自己的 `Scaffold` 是按 `viewPadding`（而不是 `padding`）放置浮动操作按钮的，所以 body 外包一层 `Builder`，把 `viewPadding.bottom` 提高到 `max(viewPadding.bottom, padding.bottom)`；否则浮动按钮会落在栏后面。显式传了 `padding` 的滚动视图必须自己加上栏高——见 [`adaptive_layout.md`](../utils/adaptive_layout.md) 中的 `navBarAwarePadding`。
 - **无导航栏、Material 3：** `bottomNavigationBar` 为经典通栏 `NavigationBar`，无 `extendBody`。
 - **导航栏：** 一个 `Row`，含 `NavigationRail`（`groupAlignment: 0`，`labelType: all`，外包 `SingleChildScrollView` + `ConstrainedBox` + `IntrinsicHeight` 让紧凑高度窗口滚动导航栏而非溢出）、1 dp `VerticalDivider`，以及放在 `Expanded` 里的 child。两种风格下，导航栏默认在左侧，设置 `navRailOnRight` 时在最右。

@@ -16,7 +16,7 @@ class _FakePathProvider extends PathProviderPlatform {
   Future<String?> getApplicationDocumentsPath() async => documentsPath;
 }
 
-/// Purpose: Test the Material 3 / Expressive interface styles (1.7.1) and the wide-navigation keys (1.7.1).
+/// Purpose: Test the Material 3 / Expressive interface styles (1.7.1) and the navigation keys (1.7.1).
 /// Inputs: None.
 /// Returns: None.
 /// Side effects: Creates and deletes a temporary app directory.
@@ -95,24 +95,21 @@ void main() {
       expect(await DeviceStorage.getUiStyle(), isNull);
     });
 
-    test('wide navigation keys are written only when on', () async {
-      expect(await DeviceStorage.getWideBottomNav(), isFalse);
+    test('navigation keys are written only when not default', () async {
+      expect(await DeviceStorage.getNavPlacement(), isNull);
       expect(await DeviceStorage.getNavRailRight(), isFalse);
-      expect(await DeviceStorage.getAlwaysSideNav(), isFalse);
-      await DeviceStorage.setWideBottomNav(true);
+      await DeviceStorage.setNavPlacement('sideOnWide');
       await DeviceStorage.setNavRailRight(true);
-      await DeviceStorage.setAlwaysSideNav(true);
       expect(jsonDecode(config.readAsStringSync()), {
-        'wideBottomNav': true,
+        'navPlacement': 'sideOnWide',
         'navRailRight': true,
-        'alwaysSideNav': true,
       });
-      expect(await DeviceStorage.getWideBottomNav(), isTrue);
-      expect(await DeviceStorage.getNavRailRight(), isTrue);
-      expect(await DeviceStorage.getAlwaysSideNav(), isTrue);
-      await DeviceStorage.setWideBottomNav(false);
+      expect(await DeviceStorage.getNavPlacement(), 'sideOnWide');
+      await DeviceStorage.setNavPlacement('side');
+      expect(await DeviceStorage.getNavPlacement(), 'side');
+      await DeviceStorage.setNavPlacement('nonsense');
+      expect(await DeviceStorage.getNavPlacement(), isNull);
       await DeviceStorage.setNavRailRight(false);
-      await DeviceStorage.setAlwaysSideNav(false);
       expect(jsonDecode(config.readAsStringSync()), isEmpty);
     });
   });

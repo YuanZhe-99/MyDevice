@@ -1948,24 +1948,26 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsUiStyleExpressive => 'Expressive';
 
   @override
-  String get settingsAlwaysSideNav => '狭い画面でもサイドナビゲーション';
+  String get settingsNavPlacement => 'ナビゲーションの位置';
 
   @override
-  String get settingsAlwaysSideNavDesc =>
-      'スマートフォンでもサイドのレールを使います。コンテンツの幅が狭くなるため、おすすめしません。';
+  String get settingsNavPlacementDesc =>
+      '常に下部、ワイド画面（折りたたみ端末を開いたとき、タブレット、デスクトップ）のみサイド、または常にサイド（スマートフォンでは非推奨）。';
 
   @override
-  String get settingsWideBottomNav => 'ワイド画面でも下部ナビゲーション';
+  String get settingsNavPlacementBottom => '下部';
 
   @override
-  String get settingsWideBottomNavDesc =>
-      '折りたたみ端末を開いたときやタブレット、デスクトップでも、サイドのレールではなく下部のフローティングバーを使います。';
+  String get settingsNavPlacementSideOnWide => 'ワイドはサイド';
+
+  @override
+  String get settingsNavPlacementSide => 'サイド';
 
   @override
   String get settingsRailSide => 'サイドナビゲーションの位置';
 
   @override
-  String get settingsRailSideDesc => 'ワイド画面でナビゲーションレールを表示する側です。';
+  String get settingsRailSideDesc => 'ナビゲーションレールをウィンドウのどちら側に表示するかです。';
 
   @override
   String get settingsRailSideLeft => '左';

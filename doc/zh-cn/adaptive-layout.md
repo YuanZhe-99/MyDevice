@@ -238,19 +238,24 @@ bool useNavigationRail(double screenWidth) => screenWidth >= navRailMinWidth; //
 
 自 1.7.0 起，底栏有两种外观，由本地界面风格设置（`uiStyle`）决定：**Expressive**（默认）把它绘制成悬浮的胶囊；**Material 3** 保留经典的通栏 `NavigationBar`。自 1.7.1 起 Expressive 胶囊是**紧凑**的——宽度贴合内容而不是撑满，只有选中的目的地显示图标加文字（其余只有图标并带提示），并且**悬浮在页面之上**：壳 `Scaffold` 设置了 `extendBody`，内容会滚到栏后面，Scaffold 把栏高作为 `MediaQuery.padding.bottom` 报告。因此页面要预留这段高度（见[栏后面的底部内边距](#bottom-padding-behind-the-bar)）。Material 3 不变：栏位于 `bottomNavigationBar` 槽位并占用自己的空间。
 
-### 选择导航位置（自 1.7.1 起）
+### 选择导航栏位置（自 1.7.1 起）
 
-三个本地设置（`storage_config.json`，从不同步；设置 › 通用）细化上面的仅宽度规则，由 `ShellScaffold` 解析：
+一个本地设置 `navPlacement`（`storage_config.json`，从不同步；设置 › 通用，两种风格）细化上面的仅宽度规则，由 `ShellScaffold` 解析：
 
 ```dart
-final showRail = alwaysSide || (wide && !(expressive && wideBottom));
+final showRail = switch (placement) {
+  NavPlacement.bottom => false,
+  NavPlacement.sideOnWide => wide,
+  NavPlacement.side => true,
+};
 ```
 
-- `alwaysSideNav`（默认关闭，标注为*不推荐*）：**任何**宽度都使用导航栏，两种风格均适用——手机上导航栏会占用内容约 81 dp。
-- `wideBottomNav`（默认关闭，**仅 Expressive**）：宽窗口上仍把悬浮栏放在底部而不是导航栏。Material 3 忽略它。`alwaysSideNav` 开启时隐藏。
-- `navRailRight`（默认关闭 = 左侧）：导航栏在左侧，或在右侧，即 `Row([Expanded(child), VerticalDivider, rail])`。Material 3 下始终显示，Expressive 下在导航栏可能出现时（`alwaysSideNav` 开启或 `wideBottomNav` 关闭）显示。两种风格均适用。
+- `bottom`（**默认**，无该键）：任何窗口（含宽窗口）都用底栏——Expressive 胶囊或 Material 3 `NavigationBar`。
+- `sideOnWide`（`"sideOnWide"`）：`useNavigationRail(width)` 为真时用导航栏，否则用底栏。这是 1.7.1 之前 MyDevice 的行为。
+- `side`（`"side"`）：任何宽度都用导航栏，手机也不例外——不推荐，导航栏会占用内容约 81 dp。
+- `navRailRight`（默认关闭 = 左侧）：导航栏在左侧，或在右侧，即 `Row([Expanded(child), VerticalDivider, rail])`。只要位置不是 `bottom` 就显示；两种风格均适用。
 
-已知的近似：只要 `useNavigationRail` 为真，`shellContentWidth` 仍扣除导航栏的 81 dp，即使选择了宽屏底栏；而窄窗口开启 `alwaysSideNav` 时则不扣除；因此列数在宽窗口上略保守、在窄窗口上略宽松。正确性不受影响。
+已知的近似：只要 `useNavigationRail` 为真，`shellContentWidth` 无论位置如何仍扣除导航栏的 81 dp，因此宽窗口用底栏时列数略保守，窄窗口用 `side` 时略宽松。正确性不受影响。
 
 **这是刻意的仅宽度判断，绝不能经由 `canSplitLayout`。** 导航栏不是分栏。它用宽度——只要测试通过就充裕——换取高度——并不充裕。它帮助最大的场景恰恰是分栏规则拒绝的那个：横持的普通手机 915 × 412，底栏花掉 19% 的高度做导航，而 915 逻辑像素的宽度闲置。分栏规则同样拒绝的 Z Fold 8 竖屏，出于同一理由得到导航栏。
 

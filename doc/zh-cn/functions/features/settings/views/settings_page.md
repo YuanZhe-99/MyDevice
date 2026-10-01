@@ -219,12 +219,11 @@
 
 一级设置列表以 `const ProfileHeader()`（头像和名称；见 [../../profile/views/profile_header.md](../../profile/views/profile_header.md)）开头，位于*通用*之前，因此单栏和双栏布局都会显示。*通用*在主题选择器之后新增**界面风格**一行：一个 `ListTile`（图标 `Icons.auto_awesome_outlined`，标题和说明来自 `settingsUiStyle` / `settingsUiStyleDesc`）和一个带 *Material 3* 与 *Expressive*（`settingsUiStyleMaterial3` / `settingsUiStyleExpressive`）的 `SegmentedButton<AppUiStyle>`，排版与主题选择器一致。选择会调用 `AppSettingsNotifier.setUiStyle`。该风格是本地设置，不同步。
 
-## 宽屏导航（自 1.7.1 起）与底部内边距
+## 导航栏位置（自 1.7.1 起）与底部内边距
 
-紧接界面风格一行之后，*通用*新增三行（`_buildSettingsList`）：
+紧接界面风格一行之后，*通用*新增（`_buildSettingsList`）：
 
-- **窄屏也使用侧边导航栏**——`SwitchListTile`（图标 `Icons.vertical_split_outlined`，`settingsAlwaysSideNav` / `settingsAlwaysSideNavDesc`，文案注明不推荐），三者中的第一项，两种风格都有，默认关闭。开启调用 `AppSettingsNotifier.setAlwaysSideNav`，壳在任何窗口宽度下都显示导航栏，并覆盖“宽屏放底部”选项。
-- **宽屏时导航栏放在底部**——`SwitchListTile`（图标 `Icons.call_to_action_outlined`，`settingsWideBottomNav` / `settingsWideBottomNavDesc`），**仅在 Expressive 风格下显示，且在“窄屏也使用侧边导航栏”开启时隐藏**。开启调用 `AppSettingsNotifier.setExpressiveWideBottomNav`；之后壳在宽窗口上仍把悬浮栏放在底部，而不显示导航栏。
-- **侧边导航栏位置**——一个 `ListTile`（`Icons.view_sidebar_outlined`，`settingsRailSide` / `settingsRailSideDesc`）和一个带*左侧* / *右侧*（`align_horizontal_left` / `align_horizontal_right` 图标，`settingsRailSideLeft` / `settingsRailSideRight`）的 `SegmentedButton<bool>`，调用 `setNavRailOnRight`。Material 3 下始终显示，Expressive 下在“窄屏也使用侧边导航栏”开启或“宽屏放底部”关闭时显示，因为只有这些情形才会出现导航栏。
+- **导航栏位置**——一个 `ListTile`（`Icons.view_sidebar_outlined`，`settingsNavPlacement` / `settingsNavPlacementDesc`，文案注明全部侧边在手机上不推荐）和一个带*全部底部* / *宽屏侧边* / *全部侧边*（`settingsNavPlacementBottom` / `...SideOnWide` / `...Side`）的 `SegmentedButton<NavPlacement>`，两种风格都有，默认*全部底部*。选择调用 `AppSettingsNotifier.setNavPlacement`。
+- **侧边导航栏位置**——一个 `ListTile`（`Icons.swap_horiz`，`settingsRailSide` / `settingsRailSideDesc`）和一个带*左侧* / *右侧*（`align_horizontal_left` / `align_horizontal_right` 图标）的 `SegmentedButton<bool>`，调用 `setNavRailOnRight`。只要位置不是*全部底部*就显示，因为只有那时才会出现导航栏。
 
 设置列表是没有显式内边距的 `ListView`，因此本来就会避开悬浮栏。被托管的详情页（WebDAV、备份、隐私政策、许可证）在窄窗口上也以全屏方式推入；它们显式的滚动内边距经 `navBarAwarePadding` 处理（备份页的 `ListView` 没有设置）。

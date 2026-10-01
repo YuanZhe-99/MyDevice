@@ -54,7 +54,7 @@ the user frames the circle. Opened through `showAvatarEditor`, called by the pro
 
 - **Side effects:** Reads the zoom/pan matrix, maps the viewport's top-left and size back to source
   pixels (`x = -tx / scale * toPixels`, likewise `y`, `side = viewport / scale * toPixels`, where
-  `toPixels = image.width / baseWidth`), runs `cropAvatarJpeg(..., size: 512)` in `Isolate.run`, then
+  `toPixels = image.width / baseWidth`), runs `cropAvatarJpeg(..., size: 512)` through the top-level `*InBackground` helpers (`Isolate.run`), then
   pops the route with the JPEG. A failure sets `_failed`.
 
 ## build

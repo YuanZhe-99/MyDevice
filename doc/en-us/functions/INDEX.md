@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1581** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1656** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1708** declarations — 127 more than
-1581 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1783** declarations — 127 more than
+1656 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the
 constants, enums, typedefs and private regular expressions of the 1.6.0 on-device AI files under
 `features/ai/` and the two insight fact builders, and the classes, enum, constants and typedefs of
@@ -23,6 +23,8 @@ toward the gap.
 
 **1.7.1 recount.** The measured `/// Purpose:` count is 1581 (1550 before) and the rows sum to 1708 (1676 before), so the gap grows from 126 to 127: the release added 32 declarations (`avatar_editor.dart` 13 and `avatar_image.dart` 7 as two new pages, `device_storage.dart` 4, `shell_scaffold.dart` 3, `app_settings.dart` 2, `adaptive_layout.dart` 1, `profile_header.dart` 1, `profile_store.dart` 1), 31 of them with a `Purpose:` comment (the extra `shell_scaffold.dart` row is the second private class, which has none).
 
+**1.8.0 recount.** The measured `/// Purpose:` count is 1656 (1581 before) and the rows sum to 1783 (1708 before), so the gap stays 127: four new pages (`topology_canvas_viewer.dart` 22, `dataset_topology_page.dart` 30, `dataset_topology.dart` 10, `dataset_placement.dart` 8), `dataset_list_page.dart` +6, `service_topology_page.dart` +1 and `service_topology_widgets.dart` −2 (`fitTransform` and its nested `offset` moved to the viewer), every one with a `Purpose:` comment. The Tier table's total, which read 1709 against 1708 rows, is corrected.
+
 The `/// Purpose:` figure is verified against source with
 `grep -r '/// Purpose:' lib --include=*.dart` (excluding `lib/l10n/`). The declaration totals are
 hand-maintained and were **re-audited in the current workspace**: every per-file row equals the Declarations
@@ -32,9 +34,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 926 |
-| Tier B (index row only) | 782 |
-| **Total** | **1709** |
+| Tier A (full entry) | 945 |
+| Tier B (index row only) | 838 |
+| **Total** | **1783** |
 
 ## Root (`lib/`)
 
@@ -72,8 +74,11 @@ its per-file row and both total tables in the same commit.
 |---|---|---|---|
 | `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 12 | 12 |
 | `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 9 | 9 |
+| `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 8 | 3 |
+| `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 10 | 3 |
 | `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 12 | 3 |
-| `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 18 | 8 |
+| `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 24 | 9 |
+| `lib/features/datasets/views/dataset_topology_page.dart` | [features/datasets/views/dataset_topology_page.md](features/datasets/views/dataset_topology_page.md) | 30 | 7 |
 
 ## features/devices/
 
@@ -141,8 +146,8 @@ The synced profile (1.7.0): display name and avatar. See [../features/profile.md
 | `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
-| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 39 | 18 |
-| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 27 | 8 |
+| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 40 | 18 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 25 | 7 |
 | `lib/features/services/widgets/service_avatar.dart` | [features/services/widgets/service_avatar.md](features/services/widgets/service_avatar.md) | 3 | 0 |
 | `lib/features/services/widgets/service_icon.dart` | [features/services/widgets/service_icon.md](features/services/widgets/service_icon.md) | 1 | 0 |
 
@@ -158,7 +163,7 @@ The synced profile (1.7.0): display name and avatar. See [../features/profile.md
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1581/1708 hand-documented declarations above).
+the 1656/1783 hand-documented declarations above).
 
 ## shared/
 
@@ -188,6 +193,7 @@ the 1581/1708 hand-documented declarations above).
 | `lib/shared/widgets/map_picker_page.dart` | [shared/widgets/map_picker_page.md](shared/widgets/map_picker_page.md) | 6 | 2 |
 | `lib/shared/widgets/shell_scaffold.dart` | [shared/widgets/shell_scaffold.md](shared/widgets/shell_scaffold.md) | 11 | 4 |
 | `lib/shared/widgets/template_icon.dart` | [shared/widgets/template_icon.md](shared/widgets/template_icon.md) | 2 | 0 |
+| `lib/shared/widgets/topology_canvas_viewer.dart` | [shared/widgets/topology_canvas_viewer.md](shared/widgets/topology_canvas_viewer.md) | 22 | 6 |
 
 ## Area totals
 
@@ -196,11 +202,11 @@ the 1581/1708 hand-documented declarations above).
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
-| `features/datasets/` | 4 | 51 | 32 | 19 |
+| `features/datasets/` | 7 | 105 | 46 | 59 |
 | `features/devices/` | 18 | 499 | 284 | 215 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
-| `features/services/` | 17 | 536 | 233 | 303 |
+| `features/services/` | 17 | 535 | 232 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 24 | 269 | 188 | 81 |
-| **Total** | **95** | **1708** | **926** | **782** |
+| `shared/` | 25 | 291 | 194 | 97 |
+| **Total** | **99** | **1783** | **945** | **838** |

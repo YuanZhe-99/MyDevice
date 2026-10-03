@@ -37,7 +37,7 @@
 ## DataSet / DataSetStorageLink（`lib/features/datasets/models/dataset.dart`） <a id="dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart"></a>
 
 - **`DataSet`：** `id`、`name`、`emoji`（解析时缺席默认 `'📁'`）、`storageLinks`（`List<DataSetStorageLink>`）、`modifiedAt`、`extraJson`。
-- **`DataSetStorageLink`：** `deviceId` 加 `storageIndices`（`List<int>`）——该设备 `storage` 列表上属于此数据集的存储槽*索引*。设备存储列表变化时这些索引如何保持有效见 [数据集](features/datasets.md)。
+- **`DataSetStorageLink`：** `deviceId` 加 `storageIndices`（`List<int>`）——该设备 `storage` 列表上属于此数据集的存储槽*索引*。列出的每个槽都保存该数据集一份完整、对等的副本——数据集从不拆分到多块存储上——因此可解析的槽数就是它的副本数。设备存储列表变化时这些索引如何保持有效见 [数据集](features/datasets.md)。
 
 ## ServiceNode / ServiceEndpoint / ServiceRoute / ServiceRouteHop（`lib/features/services/models/service.dart`） <a id="servicenode--serviceendpoint--serviceroute--serviceroutehop-libfeaturesservicesmodelsservicedart"></a>
 
@@ -169,7 +169,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 | 服务与服务路由 | `service_data.json` | 是 | 按 `id` 和 `modifiedAt` 逐记录服务/路由 |
 | 个人资料（名称和头像） | `profile.json` | 是 | 自 1.7.0 起：每个字段按各自的 `displayNameUpdatedAt` / `avatarUpdatedAt` 后写者胜；从不冲突 |
 | 图像和头像 | `images/` | 是 | 仅引用文件名比较；包含个人资料头像 |
-| 主题、界面风格（`uiStyle`）、导航栏位置（`navPlacement`、`navRailRight`）、语言区域、备份设置、排序偏好、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
+| 主题、界面风格（`uiStyle`）、导航栏位置（`navPlacement`、`navRailRight`）、语言区域、备份设置、排序偏好、数据集分组（`datasetGroupMode`）、首页状态筛选、列表列数偏好、默认货币、汇率设置、端侧 AI 开关、自定义存储路径 | `storage_config.json`（默认文件夹） | 否 | 本地偏好 |
 | WebDAV 凭据 | `webdav_config.json` | 否 | 仅本地机密/配置 |
 | 同步基础快照 | `.sync_base/*.json` | 否 | 本地合并跟踪 |
 | 备份 | `backups/backup_*.json` | 否 | 本地恢复；v2 捆绑引用去重图像 blob |
@@ -179,7 +179,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 
 默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`，而它本身总是留在默认文件夹；更改路径会移动存储文件夹中的其他一切——数据文件、备份、图像、`.sync_base/`、`webdav_config.json`、`ai_insights.json`——并报告留下的任何东西（见 [`storage_config.json`](#storage_configjson)、[架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
 
-- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、首页列表上次的状态筛选 `deviceStatusFilter`（为“全部”时缺席）、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)），以及端侧 AI 开关 `onDeviceAiEnabled` 和 `onDeviceAiPreferFast`（v1.6.0）——只在为 `true` 时写入、关闭时移除，属于本设备，因为是否有模型是设备的属性；见[端侧 AI](on-device-ai.md)）。
+- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、数据集列表的分组 `datasetGroupMode`（不分组时缺席；见[下文](#storage_configjson-key-datasetgroupmode)）、首页列表上次的状态筛选 `deviceStatusFilter`（为“全部”时缺席）、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)），以及端侧 AI 开关 `onDeviceAiEnabled` 和 `onDeviceAiPreferFast`（v1.6.0）——只在为 `true` 时写入、关闭时移除，属于本设备，因为是否有模型是设备的属性；见[端侧 AI](on-device-ai.md)）。
 - **`webdav_config.json`** — 仅本地 WebDAV 凭据/配置；绝不同步。
 - **`.sync_base/`** — 上次成功同步的逐数据文件基础快照（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`），用于三方合并；也持有 `upload_lock.json`，用于下次启动检测中断上传的进行中上传本地记录。见 [WebDAV 同步](sync.md)。
 - **`backups/`** — 完整 v2 捆绑格式和 blob 存储布局见 [备份与恢复](backup-restore.md)。
@@ -223,6 +223,10 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 |---|---|---|---|
 | `navPlacement` | `"sideOnWide"`、`"side"` | 缺省 = 任何窗口都用底栏（默认）。`"sideOnWide"` = 宽窗口用侧边导航栏，窄窗口用底栏。`"side"` = 任何窗口都用侧边导航栏，含手机（不推荐）。未知值按默认读。 | 两种风格 |
 | `navRailRight` | `true` | 侧边导航栏在右侧而不是左侧。 | 两种风格，只要显示导航栏 |
+
+### `storage_config.json` 键 `datasetGroupMode` <a id="storage_configjson-key-datasetgroupmode"></a>
+
+自 1.8.0 起，`storage_config.json` 可能包含 `"datasetGroupMode"`：`"device"` 或 `"storage"`——数据集列表如何对其列表块分组。仅在开启分组时写入，选择*不分组*时移除，因此默认安装的配置里没有这个键；未知值按不分组读。本地偏好，从不同步。数据集文件本身不变：数据集的副本数由其现有的 `storageLinks` 推导而来。
 
 ## `ai_insights.json` <a id="ai_insightsjson"></a>
 

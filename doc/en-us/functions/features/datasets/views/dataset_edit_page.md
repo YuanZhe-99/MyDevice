@@ -26,7 +26,7 @@ stable identifiers.
 | `build` | method (widget) | B | Build the scaffold around `_buildBody`. |
 | `_buildBody` | method (widget helper) | B | Choose the layout: a single `ListView` (emoji/name row, then the storage checklist), or — when `useDetailTwoPane` passes — a `Row` of an `editFormLeftPaneWidth`-wide fixed left pane holding the row (in a scroll view pinned to the pane height as the soft-keyboard fallback) and a right `ListView` of the checklist. |
 | `_buildHeaderRow` | method (widget helper) | B | The emoji tile and name field row — extracted from `build` unchanged. |
-| `_buildStorageChildren` | method (widget helper) | B | The storage heading, empty-state text and per-device checkbox cards — extracted from `build` unchanged. |
+| `_buildStorageChildren` | method (widget helper) | B | The storage heading ("Storages holding a copy" since 1.8.0), the note that every ticked storage holds a full copy, the empty-state text and per-device checkbox cards. |
 
 Row count (9) matches `grep -c 'Purpose:' dataset_edit_page.dart` (9) exactly.
 

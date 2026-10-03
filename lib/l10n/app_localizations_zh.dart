@@ -683,7 +683,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataSetEmoji => '图标';
 
   @override
-  String get dataSetStorages => '关联存储';
+  String get dataSetStorages => '存放副本的存储';
 
   @override
   String get dataSetNoDeviceStorages => '没有找到包含存储的设备';
@@ -1298,12 +1298,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get serviceOpenTopology => '打开拓扑图';
-
-  @override
-  String get serviceTopologySelectMode => '选择';
-
-  @override
-  String get serviceTopologyMoveMode => '移动 / 缩放';
 
   @override
   String get serviceRotateTopology => '旋转拓扑图';
@@ -2004,6 +1998,82 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get profileAvatarEditorHint => '拖动以移动，双指缩放或滚动鼠标滚轮以缩放。';
+
+  @override
+  String get topologyZoomIn => '放大';
+
+  @override
+  String get topologyZoomOut => '缩小';
+
+  @override
+  String get topologyGestureHint =>
+      '点按以选择。拖动以移动；双指缩放或 Ctrl + 滚轮缩放；滚轮移动视图（按住 Shift 横向移动）。';
+
+  @override
+  String get dataSetGroupBy => '分组';
+
+  @override
+  String get dataSetGroupNone => '不分组';
+
+  @override
+  String get dataSetGroupByDevice => '按设备';
+
+  @override
+  String get dataSetGroupByStorage => '按存储';
+
+  @override
+  String get dataSetUnlinked => '未存放在任何存储上';
+
+  @override
+  String dataSetCopies(int count) {
+    return '$count 份副本';
+  }
+
+  @override
+  String get dataSetSingleCopy => '仅一份副本';
+
+  @override
+  String dataSetAlsoOn(String places) {
+    return '其他位置：$places';
+  }
+
+  @override
+  String dataSetStorageFallback(int number) {
+    return '存储 $number';
+  }
+
+  @override
+  String get dataSetStoragesHint => '勾选的每块存储都保存一份完整的副本。';
+
+  @override
+  String get dataSetTopology => '资料集拓扑';
+
+  @override
+  String get dataSetTopologyEmpty => '还没有资料集存放在任何存储上。';
+
+  @override
+  String get dataSetTopologySelectHint => '选择设备、存储或资料集，查看副本所在的位置。';
+
+  @override
+  String get dataSetTopologyShowEmpty => '显示没有资料集的设备';
+
+  @override
+  String get dataSetTopologyNoDataSets => '没有资料集';
+
+  @override
+  String get dataSetTopologyLegendDevice => '设备';
+
+  @override
+  String get dataSetTopologyLegendStorage => '存储';
+
+  @override
+  String get dataSetTopologyLegendDataSet => '资料集副本';
+
+  @override
+  String get dataSetTopologyLegendSync => '同一资料集的副本';
+
+  @override
+  String get dataSetTopologyCopiesTitle => '副本';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -2685,7 +2755,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get dataSetEmoji => '圖示';
 
   @override
-  String get dataSetStorages => '關聯儲存';
+  String get dataSetStorages => '存放副本的儲存';
 
   @override
   String get dataSetNoDeviceStorages => '沒有找到包含儲存的裝置';
@@ -3300,12 +3370,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get serviceOpenTopology => '開啟拓撲圖';
-
-  @override
-  String get serviceTopologySelectMode => '選取';
-
-  @override
-  String get serviceTopologyMoveMode => '移動 / 縮放';
 
   @override
   String get serviceRotateTopology => '旋轉拓撲圖';
@@ -4006,4 +4070,80 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get profileAvatarEditorHint => '拖曳以移動，雙指縮放或捲動滑鼠滾輪以縮放。';
+
+  @override
+  String get topologyZoomIn => '放大';
+
+  @override
+  String get topologyZoomOut => '縮小';
+
+  @override
+  String get topologyGestureHint =>
+      '點按以選取。拖曳以移動；雙指縮放或 Ctrl + 滾輪縮放；滾輪移動檢視（按住 Shift 橫向移動）。';
+
+  @override
+  String get dataSetGroupBy => '分組';
+
+  @override
+  String get dataSetGroupNone => '不分組';
+
+  @override
+  String get dataSetGroupByDevice => '依裝置';
+
+  @override
+  String get dataSetGroupByStorage => '依儲存';
+
+  @override
+  String get dataSetUnlinked => '未存放在任何儲存上';
+
+  @override
+  String dataSetCopies(int count) {
+    return '$count 份副本';
+  }
+
+  @override
+  String get dataSetSingleCopy => '僅一份副本';
+
+  @override
+  String dataSetAlsoOn(String places) {
+    return '其他位置：$places';
+  }
+
+  @override
+  String dataSetStorageFallback(int number) {
+    return '儲存 $number';
+  }
+
+  @override
+  String get dataSetStoragesHint => '勾選的每個儲存都保存一份完整的副本。';
+
+  @override
+  String get dataSetTopology => '資料集拓撲';
+
+  @override
+  String get dataSetTopologyEmpty => '還沒有資料集存放在任何儲存上。';
+
+  @override
+  String get dataSetTopologySelectHint => '選取裝置、儲存或資料集，查看副本所在的位置。';
+
+  @override
+  String get dataSetTopologyShowEmpty => '顯示沒有資料集的裝置';
+
+  @override
+  String get dataSetTopologyNoDataSets => '沒有資料集';
+
+  @override
+  String get dataSetTopologyLegendDevice => '裝置';
+
+  @override
+  String get dataSetTopologyLegendStorage => '儲存';
+
+  @override
+  String get dataSetTopologyLegendDataSet => '資料集副本';
+
+  @override
+  String get dataSetTopologyLegendSync => '同一資料集的副本';
+
+  @override
+  String get dataSetTopologyCopiesTitle => '副本';
 }

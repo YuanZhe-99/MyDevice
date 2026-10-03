@@ -84,7 +84,9 @@ lib/
     datasets/
       models/dataset.dart
       services/dataset_storage.dart
-      views/
+      services/dataset_placement.dart   (副本、列表分组；1.8.0)
+      services/dataset_topology.dart    (资料集拓扑布局；1.8.0)
+      views/     (… dataset_topology_page)
     services/
       models/service.dart
       services/service_storage.dart
@@ -108,7 +110,7 @@ lib/
     utils/device_image_processing.dart (image editor + thumbnail tooling pipeline)
     views/device_map_page.dart
     views/webdav_config_page.dart
-    widgets/
+    widgets/   (… topology_canvas_viewer：共享的平移/缩放/点按画布)
   l10n/
 packages/
   myapps_data/           (共享同步/备份引擎，git 子模块)

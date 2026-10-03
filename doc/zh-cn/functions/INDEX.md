@@ -2,19 +2,21 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **1581**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1708** 个声明——比 1581 多 127——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **1656**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1783** 个声明——比 1656 多 127——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
 
 **1.7.0 重新计数。**实测 `/// Purpose:` 计数为 1550（此前 1493），各行之和为 1676（此前 1616），因此差额由 123 增至 126：本次发布新增 60 个已文档化声明（六个 `features/profile/` 文件 44 个，`data_modules.dart` 5 个，`theme.dart` 5 个，`shell_scaffold.dart` 3 个，`device_storage.dart` 2 个，`app_settings.dart` 1 个），其中三个是没有 `Purpose:` 注释的常量或字段。
 
 **1.7.1 重新计数。**实测 `/// Purpose:` 计数为 1581（此前 1550），各行之和为 1708（此前 1676），因此差额由 126 增至 127：本次发布新增 32 个声明（新增两页 `avatar_editor.dart` 13 个和 `avatar_image.dart` 7 个，`device_storage.dart` 4 个，`shell_scaffold.dart` 3 个，`app_settings.dart` 2 个，`adaptive_layout.dart` 1 个，`profile_header.dart` 1 个，`profile_store.dart` 1 个），其中 31 个带有 `Purpose:` 注释（`shell_scaffold.dart` 多出的一行是第二个私有类，它没有该注释）。
 
+**1.8.0 重新计数。**实测 `/// Purpose:` 计数为 1656（此前 1581），各行之和为 1783（此前 1708），因此差额保持 127：新增四页（`topology_canvas_viewer.dart` 22 个、`dataset_topology_page.dart` 30 个、`dataset_topology.dart` 10 个、`dataset_placement.dart` 8 个），`dataset_list_page.dart` +6，`service_topology_page.dart` +1，`service_topology_widgets.dart` −2（`fitTransform` 及其嵌套的 `offset` 移到了查看器），每一个都带有 `Purpose:` 注释。Tier 表的总计此前为 1709，与 1708 行不符，现已更正。
+
 `/// Purpose:` 的数字通过 `grep -r '/// Purpose:' lib --include=*.dart`（排除 `lib/l10n/`）对源码核验。声明总数是手工维护的，并已**按当前工作区重新核对**：每个文件行都与其自身页面的声明表一致（行数和 Tier A），「区域总计」表和下方的 Tier 表都是各文件行的精确合计。请保持如此：增删某页面行的改动，须在同一提交中更新其文件行和两张总计表。
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 926 |
-| Tier B（仅索引行） | 782 |
-| **总计** | **1709** |
+| Tier A（完整条目） | 945 |
+| Tier B（仅索引行） | 838 |
+| **总计** | **1783** |
 
 ## 根（`lib/`）
 
@@ -52,8 +54,11 @@
 |---|---|---|---|
 | `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 12 | 12 |
 | `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 9 | 9 |
+| `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 8 | 3 |
+| `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 10 | 3 |
 | `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 12 | 3 |
-| `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 18 | 8 |
+| `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 24 | 9 |
+| `lib/features/datasets/views/dataset_topology_page.dart` | [features/datasets/views/dataset_topology_page.md](features/datasets/views/dataset_topology_page.md) | 30 | 7 |
 
 ## features/devices/
 
@@ -120,8 +125,8 @@
 | `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
-| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 39 | 18 |
-| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 27 | 8 |
+| `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 40 | 18 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 25 | 7 |
 | `lib/features/services/widgets/service_avatar.dart` | [features/services/widgets/service_avatar.md](features/services/widgets/service_avatar.md) | 3 | 0 |
 | `lib/features/services/widgets/service_icon.dart` | [features/services/widgets/service_icon.md](features/services/widgets/service_icon.md) | 1 | 0 |
 
@@ -136,7 +141,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1581/1708 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1656/1783 手写声明）。
 
 ## shared/
 
@@ -166,6 +171,7 @@
 | `lib/shared/widgets/map_picker_page.dart` | [shared/widgets/map_picker_page.md](shared/widgets/map_picker_page.md) | 6 | 2 |
 | `lib/shared/widgets/shell_scaffold.dart` | [shared/widgets/shell_scaffold.md](shared/widgets/shell_scaffold.md) | 11 | 4 |
 | `lib/shared/widgets/template_icon.dart` | [shared/widgets/template_icon.md](shared/widgets/template_icon.md) | 2 | 0 |
+| `lib/shared/widgets/topology_canvas_viewer.dart` | [shared/widgets/topology_canvas_viewer.md](shared/widgets/topology_canvas_viewer.md) | 22 | 6 |
 
 ## 区域总计
 
@@ -174,11 +180,11 @@
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
-| `features/datasets/` | 4 | 51 | 32 | 19 |
+| `features/datasets/` | 7 | 105 | 46 | 59 |
 | `features/devices/` | 18 | 499 | 284 | 215 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
-| `features/services/` | 17 | 536 | 233 | 303 |
+| `features/services/` | 17 | 535 | 232 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 24 | 269 | 188 | 81 |
-| **总计** | **95** | **1708** | **926** | **782** |
+| `shared/` | 25 | 291 | 194 | 97 |
+| **总计** | **99** | **1783** | **945** | **838** |

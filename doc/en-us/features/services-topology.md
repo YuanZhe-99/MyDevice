@@ -79,14 +79,19 @@ to read at preview size. The full-screen topology (`service_topology_page.dart`)
   text (service names, hop labels and hosts, domains); a badge counts the active filters.
   Filtering rebuilds the graph from the narrowed inventory rather than hiding parts of the
   drawing, so the layout packs what remains.
-- **Legend.** A collapsible strip under the mode switch explains the lane colours and the node
+- **Legend.** A collapsible strip under the view controls explains the lane colours and the node
   roles. It sits outside the canvas and is not exported.
 - **Group by device.** On by default: each device that hosts a service becomes a container
   around its services, endpoint chips and remote entries, with the device as a header tab, so
   the device-to-service edges are not drawn. An app-bar toggle turns it off for the session
   (flat layout, device cards on the left); the choice is not saved.
-- **Move / zoom mode** with **Fit** (the whole graph in view, within the zoom limits) and
-  **Reset**, internal 90-degree rotation (without changing system orientation), and PNG
+- **One canvas for selecting and moving** (since 1.8.0; before, a Select / Move-Zoom switch
+  separated them). A tap selects, a drag pans, a pinch (touch or trackpad) zooms about the
+  fingers, the mouse wheel pans (Shift for sideways) and Ctrl + wheel zooms about the cursor —
+  the shared [`TopologyCanvasViewer`](../functions/shared/widgets/topology_canvas_viewer.md),
+  which the [data set topology](datasets.md#data-set-topology) uses too. Zoom out, zoom in,
+  **Fit** (the whole graph in view, within the zoom limits) and **Reset** are always shown as
+  icon buttons; internal 90-degree rotation (without changing system orientation), and PNG
   export/share (platform-specific mechanism — see
   [Platform Notes](../platform-notes.md#android)). The export captures the current highlight,
   so a single route can be exported on its own.
@@ -105,8 +110,8 @@ barycenter sweep reorders ranks when that removes edge crossings, and never adds
 with grouping on, devices become containers (see
 [Device containers](../algorithms/service-topology-layout.md#device-containers)). The
 full-screen topology defers expensive layout until after the first frame and caches
-layouts by graph, routes, width, rotation-derived viewport and layout options, so mode
-changes (e.g. entering move/zoom mode) don't rerun routing.
+layouts by graph, routes, width, rotation-derived viewport and layout options, so a
+selection, a pan or a zoom doesn't rerun routing.
 
 Edges are precomputed by a **fast clear-path orthogonal router with an A* fallback**,
 inflated node obstacles, turn costs, congestion costs, explicit exit/entry stubs, and

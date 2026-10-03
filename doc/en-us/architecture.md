@@ -115,7 +115,9 @@ lib/
     datasets/
       models/dataset.dart
       services/dataset_storage.dart
-      views/
+      services/dataset_placement.dart   (copies, list grouping; 1.8.0)
+      services/dataset_topology.dart    (data set topology layout; 1.8.0)
+      views/     (… dataset_topology_page)
     services/
       models/service.dart
       services/service_storage.dart
@@ -139,7 +141,7 @@ lib/
     utils/device_image_processing.dart (image editor + thumbnail tooling pipeline)
     views/device_map_page.dart
     views/webdav_config_page.dart
-    widgets/
+    widgets/   (… topology_canvas_viewer: the shared pan/zoom/tap canvas)
   l10n/
 packages/
   myapps_data/           (shared sync/backup engines, git submodule)

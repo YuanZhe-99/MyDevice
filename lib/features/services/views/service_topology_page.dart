@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/image_share_service.dart';
 import '../../../shared/utils/detail_layout.dart';
+import '../../../shared/widgets/topology_canvas_viewer.dart';
 import '../../devices/models/device.dart';
 import '../../devices/widgets/device_category_icon.dart';
 import '../models/service.dart';
@@ -14,8 +15,6 @@ import '../services/service_analysis.dart';
 import '../services/service_labels.dart';
 import '../services/service_topology_layout.dart';
 import 'service_topology_widgets.dart';
-
-enum _TopologyInteractionMode { select, move }
 
 /// One "add access path" button of the node details: its key, label, icon
 /// and the draft the guided page opens with.
@@ -26,23 +25,12 @@ typedef _NodeAction = ({
   ServiceAccessDraft draft,
 });
 
-/// Smallest zoom the move mode's viewer allows.
-const _minScale = 0.35;
-
-/// Largest zoom the move mode's viewer allows.
-const _maxScale = 2.4;
-
-/// How far, in canvas pixels, the move mode's viewer lets the canvas be
-/// panned past its edges.
-const _boundaryMargin = 180.0;
-
 class _ServiceTopologyView extends StatefulWidget {
   final ServiceTopologyGraph graph;
   final List<ServiceNode> services;
   final List<Device> devices;
   final List<ServiceRoute> routes;
   final ServiceTopologyLayoutOptions options;
-  final _TopologyInteractionMode mode;
   final int quarterTurns;
   final GlobalKey? repaintBoundaryKey;
   final ValueChanged<bool>? onLayoutReadyChanged;
@@ -54,11 +42,11 @@ class _ServiceTopologyView extends StatefulWidget {
 
   /// Purpose: Create the topology canvas.
   /// Inputs: `graph` and the `services`, `devices` and `routes` it was built
-  /// from; `options` — the layout switches; `mode`; `quarterTurns`;
+  /// from; `options` — the layout switches; `quarterTurns`;
   /// `repaintBoundaryKey` — wraps the canvas for export;
   /// `onLayoutReadyChanged`; `highlight` and `selectedNodeId` — the
-  /// selection to draw; `onNodeTap`, `onBackgroundTap` — the select-mode
-  /// taps; `transformationController` — the move-mode viewer's transform.
+  /// selection to draw; `onNodeTap`, `onBackgroundTap` — the taps;
+  /// `transformationController` — the viewer's transform.
   /// Returns: A new `_ServiceTopologyView`.
   /// Side effects: None.
   /// Notes: The state caches the expensive layout per request, so a new
@@ -70,7 +58,6 @@ class _ServiceTopologyView extends StatefulWidget {
     required this.devices,
     required this.routes,
     this.options = const ServiceTopologyLayoutOptions(),
-    this.mode = _TopologyInteractionMode.select,
     this.quarterTurns = 0,
     this.repaintBoundaryKey,
     this.onLayoutReadyChanged,
@@ -97,8 +84,8 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
   bool? _reportedLayoutReady;
   int _layoutGeneration = 0;
 
-  /// The view's size at the last build, which [fitToViewport] fits into.
-  Size? _viewport;
+  /// The viewer, which [fitToViewport] and [zoomBy] drive.
+  final _viewerKey = GlobalKey<TopologyCanvasViewerState>();
 
   /// Purpose: Build the current widget subtree for the active UI state.
   /// Inputs: `context`.
@@ -111,7 +98,6 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        _viewport = constraints.biggest;
         final turns = widget.quarterTurns % 4;
         final viewportWidth = turns.isOdd && constraints.maxHeight.isFinite
             ? constraints.maxHeight
@@ -219,34 +205,24 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
   /// Inputs: None.
   /// Returns: `void`.
   /// Side effects: Sets the transformation controller's value.
-  /// Notes: Uses `fitTransform` with the viewer's own zoom limits and pan
-  /// margin, on the canvas as rotated. Does nothing before the first layout
-  /// or without a controller.
-  void fitToViewport() {
-    final layout = _layout;
-    final viewport = _viewport;
-    final controller = widget.transformationController;
-    if (layout == null || viewport == null || controller == null) return;
-    final canvas = (widget.quarterTurns % 4).isOdd
-        ? Size(layout.size.height, layout.size.width)
-        : layout.size;
-    controller.value = fitTransform(
-      canvas,
-      viewport,
-      minScale: _minScale,
-      maxScale: _maxScale,
-      boundaryMargin: _boundaryMargin,
-    );
-  }
+  /// Notes: Delegates to the viewer, which fits the canvas as rotated.
+  /// Does nothing before the first layout.
+  void fitToViewport() => _viewerKey.currentState?.fit();
+
+  /// Purpose: Zoom the canvas about the viewport centre.
+  /// Inputs: `factor` — multiplies the scale.
+  /// Returns: `void`.
+  /// Side effects: Sets the transformation controller's value.
+  /// Notes: The zoom buttons call it; does nothing before the first layout.
+  void zoomBy(double factor) => _viewerKey.currentState?.zoomBy(factor);
 
   /// Purpose: Build the canvas — edges, node cards — in its viewer.
   /// Inputs: `context`, `layout`, `turns` — quarter turns, 0 to 3.
   /// Returns: `Widget`.
   /// Side effects: None.
-  /// Notes: Select mode scrolls the canvas and wires node taps and a tap on
-  /// the background (keyed `topology-canvas`); move mode drops the taps and
-  /// hands the canvas to an `InteractiveViewer` on the page's transform.
-  /// With a highlight, the nodes it leaves out are dimmed and the painter
+  /// Notes: One `TopologyCanvasViewer` (keyed `topology-canvas`) both
+  /// passes taps to the node cards — a tap on empty canvas clears the
+  /// selection — and pans and zooms on the page's transform. With a highlight, the nodes it leaves out are dimmed and the painter
   /// fades their edges. A device node heading a container is drawn as a
   /// header strip; the painter draws the containers under the edges. The
   /// repaint boundary wraps the rotated canvas, so an export shows the
@@ -256,7 +232,6 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
     ServiceTopologyLayout layout,
     int turns,
   ) {
-    final select = widget.mode == _TopologyInteractionMode.select;
     final highlight = widget.highlight;
     final onNodeTap = widget.onNodeTap;
     Widget canvas = SizedBox.fromSize(
@@ -289,9 +264,7 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
                   header: layout.groupRects.containsKey(node.id),
                   dimmed:
                       highlight != null && !highlight.nodeIds.contains(node.id),
-                  onTap: select && onNodeTap != null
-                      ? () => onNodeTap(node)
-                      : null,
+                  onTap: onNodeTap == null ? null : () => onNodeTap(node),
                 ),
               ),
         ],
@@ -303,24 +276,15 @@ class _ServiceTopologyViewState extends State<_ServiceTopologyView> {
     if (widget.repaintBoundaryKey != null) {
       canvas = RepaintBoundary(key: widget.repaintBoundaryKey, child: canvas);
     }
-    if (select) {
-      return GestureDetector(
-        key: const Key('topology-canvas'),
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.onBackgroundTap,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SingleChildScrollView(child: canvas),
-        ),
-      );
-    }
-    return InteractiveViewer(
-      transformationController: widget.transformationController,
-      constrained: false,
-      boundaryMargin: const EdgeInsets.all(_boundaryMargin),
-      minScale: _minScale,
-      maxScale: _maxScale,
-      child: canvas,
+    final rotated = turns.isOdd
+        ? Size(layout.size.height, layout.size.width)
+        : layout.size;
+    return TopologyCanvasViewer(
+      key: _viewerKey,
+      canvasSize: rotated,
+      controller: widget.transformationController,
+      onBackgroundTap: widget.onBackgroundTap,
+      child: KeyedSubtree(key: const Key('topology-canvas'), child: canvas),
     );
   }
 }
@@ -381,8 +345,8 @@ typedef ServiceTopologyInventory = ({
   List<ServiceRoute> routes,
 });
 
-/// The full-screen service topology: the graph with a select and a move
-/// mode, route highlighting for a selected node, filters, a legend,
+/// The full-screen service topology: the graph on one pan-and-zoom canvas
+/// whose nodes are tapped to select them, route highlighting for a selected node, filters, a legend,
 /// rotation, and PNG export.
 ///
 /// Pushed on the root navigator by the Services overview's topology card with
@@ -435,7 +399,6 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   late List<ServiceNode> _services = widget.services;
   late List<Device> _devices = widget.devices;
   late List<ServiceRoute> _routes = widget.routes;
-  _TopologyInteractionMode _mode = _TopologyInteractionMode.select;
   final _captureKey = GlobalKey();
   final _viewKey = GlobalKey<_ServiceTopologyViewState>();
   final _transform = TransformationController();
@@ -598,7 +561,7 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   /// Purpose: Apply a new filter.
   /// Inputs: `filter`.
   /// Returns: `void`.
-  /// Side effects: Updates widget state; resets the move-mode transform.
+  /// Side effects: Updates widget state; resets the canvas transform.
   /// Notes: The selection is kept; it simply is not drawn while the filter
   /// hides its node.
   void _setFilter(ServiceTopologyFilter filter) {
@@ -823,8 +786,8 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
   /// Returns: The widget tree for the current state.
   /// Side effects: None; `_visible` and `_selectionIn` only fill their caches.
   /// Notes: App bar: filters (with a badge counting the active parts), the
-  /// "Group by device" toggle (resets the move-mode transform), rotation,
-  /// export. Body: the mode row, the legend strip and the canvas;
+  /// "Group by device" toggle (resets the transform), rotation,
+  /// export. Body: the view controls, the legend strip and the canvas;
   /// on `useDetailTwoPane` windows the details pane sits to the right at
   /// `topologyDetailPaneWidth`, present even with nothing selected so a
   /// selection never changes the canvas width and forces a relayout.
@@ -837,7 +800,7 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
     final canExport = _layoutReady && !visible.graph.isEmpty;
     final topology = Column(
       children: [
-        _buildModeRow(l10n),
+        _buildControlRow(),
         _buildLegendStrip(l10n, selection?.node),
         Expanded(
           child: Padding(
@@ -853,7 +816,6 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
                     options: ServiceTopologyLayoutOptions(
                       groupByDevice: _groupByDevice,
                     ),
-                    mode: _mode,
                     quarterTurns: _quarterTurns,
                     repaintBoundaryKey: _captureKey,
                     onLayoutReadyChanged: (ready) {
@@ -933,61 +895,26 @@ class _ServiceTopologyPageState extends State<ServiceTopologyPage> {
     );
   }
 
-  /// Purpose: Build the mode row: the select / move switch, and Fit and Reset
-  /// in move mode.
-  /// Inputs: `l10n`.
+  /// Purpose: Build the view-control row: zoom out, zoom in, fit, reset.
+  /// Inputs: None.
   /// Returns: `Widget`.
   /// Side effects: None.
-  /// Notes: Fit asks the view to fit the canvas; Reset returns the viewer to
-  /// the identity transform. Both are icon buttons with tooltips, so the row
-  /// still fits a 412 dp phone; the row scrolls sideways on anything
-  /// narrower.
-  Widget _buildModeRow(AppLocalizations l10n) {
+  /// Notes: Always shown — the canvas has a single mode. Reset returns to the
+  /// identity transform. The row scrolls sideways on very narrow windows.
+  Widget _buildControlRow() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Row(
-        children: [
-          SegmentedButton<_TopologyInteractionMode>(
-            showSelectedIcon: false,
-            segments: [
-              ButtonSegment(
-                value: _TopologyInteractionMode.select,
-                icon: const Icon(Icons.touch_app),
-                label: Text(l10n.serviceTopologySelectMode),
-              ),
-              ButtonSegment(
-                value: _TopologyInteractionMode.move,
-                icon: const Icon(Icons.open_with),
-                label: Text(l10n.serviceTopologyMoveMode),
-              ),
-            ],
-            selected: {_mode},
-            onSelectionChanged: (selected) {
-              setState(() => _mode = selected.single);
-            },
-          ),
-          if (_mode == _TopologyInteractionMode.move) ...[
-            const SizedBox(width: 4),
-            IconButton(
-              key: const Key('topology-fit'),
-              tooltip: l10n.serviceTopologyFit,
-              onPressed: () => _viewKey.currentState?.fitToViewport(),
-              icon: const Icon(Icons.fit_screen),
-            ),
-            IconButton(
-              key: const Key('topology-reset'),
-              tooltip: l10n.serviceTopologyReset,
-              onPressed: () => _transform.value = Matrix4.identity(),
-              icon: const Icon(Icons.restart_alt),
-            ),
-          ],
-        ],
+      padding: const EdgeInsets.fromLTRB(4, 4, 12, 0),
+      child: TopologyViewControls(
+        onZoomOut: () => _viewKey.currentState?.zoomBy(1 / topologyZoomStep),
+        onZoomIn: () => _viewKey.currentState?.zoomBy(topologyZoomStep),
+        onFit: () => _viewKey.currentState?.fitToViewport(),
+        onReset: () => _transform.value = Matrix4.identity(),
       ),
     );
   }
 
-  /// Purpose: Build the legend strip under the mode row.
+  /// Purpose: Build the legend strip under the control row.
   /// Inputs: `l10n`; `selected` — the selected node, if any.
   /// Returns: `Widget`.
   /// Side effects: None.

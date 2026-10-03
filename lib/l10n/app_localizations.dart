@@ -1394,7 +1394,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataSetStorages.
   ///
   /// In en, this message translates to:
-  /// **'Linked Storages'**
+  /// **'Storages holding a copy'**
   String get dataSetStorages;
 
   /// No description provided for @dataSetNoDeviceStorages.
@@ -2578,18 +2578,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open Topology'**
   String get serviceOpenTopology;
-
-  /// No description provided for @serviceTopologySelectMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Select'**
-  String get serviceTopologySelectMode;
-
-  /// No description provided for @serviceTopologyMoveMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Move / Zoom'**
-  String get serviceTopologyMoveMode;
 
   /// No description provided for @serviceRotateTopology.
   ///
@@ -3892,6 +3880,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag to move. Pinch or scroll to zoom.'**
   String get profileAvatarEditorHint;
+
+  /// No description provided for @topologyZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get topologyZoomIn;
+
+  /// No description provided for @topologyZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get topologyZoomOut;
+
+  /// No description provided for @topologyGestureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select. Drag to move; pinch or Ctrl + scroll to zoom; the scroll wheel moves the view (Shift for sideways).'**
+  String get topologyGestureHint;
+
+  /// No description provided for @dataSetGroupBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get dataSetGroupBy;
+
+  /// No description provided for @dataSetGroupNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No grouping'**
+  String get dataSetGroupNone;
+
+  /// No description provided for @dataSetGroupByDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'By device'**
+  String get dataSetGroupByDevice;
+
+  /// No description provided for @dataSetGroupByStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'By storage'**
+  String get dataSetGroupByStorage;
+
+  /// No description provided for @dataSetUnlinked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on any storage'**
+  String get dataSetUnlinked;
+
+  /// No description provided for @dataSetCopies.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 copy} other{{count} copies}}'**
+  String dataSetCopies(int count);
+
+  /// No description provided for @dataSetSingleCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Only one copy'**
+  String get dataSetSingleCopy;
+
+  /// No description provided for @dataSetAlsoOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Also on: {places}'**
+  String dataSetAlsoOn(String places);
+
+  /// No description provided for @dataSetStorageFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage {number}'**
+  String dataSetStorageFallback(int number);
+
+  /// No description provided for @dataSetStoragesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Every storage you tick holds a full copy of this data set.'**
+  String get dataSetStoragesHint;
+
+  /// No description provided for @dataSetTopology.
+  ///
+  /// In en, this message translates to:
+  /// **'Data Set Topology'**
+  String get dataSetTopology;
+
+  /// No description provided for @dataSetTopologyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No data set is on any storage yet.'**
+  String get dataSetTopologyEmpty;
+
+  /// No description provided for @dataSetTopologySelectHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a device, a storage or a data set to see where its copies are.'**
+  String get dataSetTopologySelectHint;
+
+  /// No description provided for @dataSetTopologyShowEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Show devices without data sets'**
+  String get dataSetTopologyShowEmpty;
+
+  /// No description provided for @dataSetTopologyNoDataSets.
+  ///
+  /// In en, this message translates to:
+  /// **'No data sets'**
+  String get dataSetTopologyNoDataSets;
+
+  /// No description provided for @dataSetTopologyLegendDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get dataSetTopologyLegendDevice;
+
+  /// No description provided for @dataSetTopologyLegendStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get dataSetTopologyLegendStorage;
+
+  /// No description provided for @dataSetTopologyLegendDataSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Data set copy'**
+  String get dataSetTopologyLegendDataSet;
+
+  /// No description provided for @dataSetTopologyLegendSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Copies of the same data set'**
+  String get dataSetTopologyLegendSync;
+
+  /// No description provided for @dataSetTopologyCopiesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copies'**
+  String get dataSetTopologyCopiesTitle;
 }
 
 class _AppLocalizationsDelegate

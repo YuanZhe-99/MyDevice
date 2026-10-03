@@ -183,7 +183,7 @@ and 0.4 s.
 
 The full-screen topology defers the whole layout until after the first frame and caches
 the result keyed by graph identity, routes identity, viewport width (rotation-aware) and the
-layout options — so switching between select/move modes or selecting a node doesn't
+layout options — so selecting a node, panning or zooming doesn't
 re-lay out, while toggling "Group by device" re-lays out the same graph without rebuilding
 it. Layout runs on the UI isolate; moving it to `compute()` would need index- or value-keyed
 edge paths first, because `edgePaths` and `hiddenEdges` are keyed by `ServiceTopologyEdge`

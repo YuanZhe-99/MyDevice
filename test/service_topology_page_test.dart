@@ -8,6 +8,7 @@ import 'package:my_device/features/services/services/service_analysis.dart';
 import 'package:my_device/features/services/services/service_topology_layout.dart';
 import 'package:my_device/features/services/views/service_topology_page.dart';
 import 'package:my_device/features/services/views/service_topology_widgets.dart';
+import 'package:my_device/shared/widgets/topology_canvas_viewer.dart';
 
 import 'support/pump.dart';
 
@@ -162,10 +163,14 @@ void main() {
   /// Inputs: `tester`, `id`.
   /// Returns: `Finder` of the pane.
   /// Side effects: Taps the node card.
-  /// Notes: Scrolls the card into view first.
+  /// Notes: Fits the canvas first when the card is outside the viewer.
   Future<Finder> selectOnSplit(WidgetTester tester, String id) async {
     final card = find.byKey(ValueKey('topology-node-$id'));
-    await tester.ensureVisible(card);
+    final viewer = tester.getRect(find.byType(TopologyCanvasViewer));
+    if (!viewer.contains(tester.getCenter(card))) {
+      await tester.tap(find.byKey(const Key('topology-fit')));
+      await settle(tester);
+    }
     await tester.tap(card);
     await settle(tester);
     return find.byKey(const Key('topology-details-pane'));
@@ -206,26 +211,54 @@ void main() {
     expect(edited, ['media']);
   });
 
-  testWidgets('move mode trades node taps for pan and zoom, with fit', (
+  testWidgets('one canvas both selects nodes and pans and zooms', (
     tester,
   ) async {
-    await pumpTopology(tester);
-    expect(find.byType(InteractiveViewer), findsNothing);
-    expect(find.byKey(const Key('topology-fit')), findsNothing);
-
-    await tester.tap(find.byIcon(Icons.open_with));
-    await settle(tester);
-
-    expect(find.byType(InteractiveViewer), findsOneWidget);
+    await pumpTopology(tester, width: 1280, height: 800);
+    expect(find.byType(SegmentedButton<Object>), findsNothing);
+    expect(find.byType(TopologyCanvasViewer), findsOneWidget);
+    for (final key in [
+      'topology-zoom-out',
+      'topology-zoom-in',
+      'topology-fit',
+      'topology-reset',
+    ]) {
+      expect(find.byKey(Key(key)), findsOneWidget, reason: key);
+    }
     final card = tester.widget<ServiceTopologyNodeCard>(nodeCard('Jellyfin'));
-    expect(card.onTap, isNull);
+    expect(card.onTap, isNotNull);
 
     Matrix4 transform() => tester
-        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
-        .transformationController!
+        .widget<TopologyCanvasViewer>(find.byType(TopologyCanvasViewer))
+        .controller!
         .value;
     expect(transform(), Matrix4.identity());
-    await tester.ensureVisible(find.byKey(const Key('topology-reset')));
+
+    // A drag on empty canvas pans without selecting anything.
+    final canvas = find.byType(TopologyCanvasViewer);
+    await tester.dragFrom(
+      tester.getBottomRight(canvas) - const Offset(20, 20),
+      const Offset(-60, -40),
+    );
+    await settle(tester);
+    expect(transform().getTranslation().x, lessThan(0));
+    expect(find.byKey(const Key('topology-details-empty')), findsOneWidget);
+
+    // A tap on a node still selects it.
+    await tester.tap(find.byKey(const Key('topology-reset')));
+    await settle(tester);
+    expect(transform(), Matrix4.identity());
+    await tester.tap(nodeCard('Jellyfin'));
+    await settle(tester);
+    expect(find.byKey(const Key('topology-details-pane')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('topology-zoom-in')));
+    await settle(tester);
+    expect(transform().getMaxScaleOnAxis(), closeTo(topologyZoomStep, 1e-9));
+    await tester.tap(find.byKey(const Key('topology-zoom-out')));
+    await settle(tester);
+    expect(transform().getMaxScaleOnAxis(), closeTo(1, 1e-9));
+
     await tester.tap(find.byKey(const Key('topology-fit')));
     await settle(tester);
     expect(transform(), isNot(Matrix4.identity()));

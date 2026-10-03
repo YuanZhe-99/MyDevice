@@ -17,7 +17,7 @@
 | `build` | 方法（组件） | B | 围绕 `_buildBody` 构建脚手架。 |
 | `_buildBody` | 方法（组件辅助） | B | 选择布局：单个 `ListView`（emoji/名称行，然后存储清单），或——`useDetailTwoPane` 通过时——一个 `Row`：`editFormLeftPaneWidth` 宽、装着该行的固定左窗格（放在钉住窗格高度的滚动视图里作软键盘兜底）加右侧清单 `ListView`。 |
 | `_buildHeaderRow` | 方法（组件辅助） | B | emoji 块和名称字段行——从 `build` 原样抽出。 |
-| `_buildStorageChildren` | 方法（组件辅助） | B | 存储标题、空态文本和每设备复选框卡片——从 `build` 原样抽出。 |
+| `_buildStorageChildren` | 方法（组件辅助） | B | 存储标题（自 1.8.0 起为"存放副本的存储"）、说明勾选的每块存储都保存一份完整副本的提示、空态文本和每设备复选框卡片。 |
 
 行数（9）与 `grep -c 'Purpose:' dataset_edit_page.dart`（9）精确匹配。
 

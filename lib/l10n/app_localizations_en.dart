@@ -695,7 +695,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dataSetEmoji => 'Emoji';
 
   @override
-  String get dataSetStorages => 'Linked Storages';
+  String get dataSetStorages => 'Storages holding a copy';
 
   @override
   String get dataSetNoDeviceStorages => 'No devices with storage found';
@@ -1319,12 +1319,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get serviceOpenTopology => 'Open Topology';
-
-  @override
-  String get serviceTopologySelectMode => 'Select';
-
-  @override
-  String get serviceTopologyMoveMode => 'Move / Zoom';
 
   @override
   String get serviceRotateTopology => 'Rotate topology';
@@ -2056,4 +2050,88 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get profileAvatarEditorHint =>
       'Drag to move. Pinch or scroll to zoom.';
+
+  @override
+  String get topologyZoomIn => 'Zoom in';
+
+  @override
+  String get topologyZoomOut => 'Zoom out';
+
+  @override
+  String get topologyGestureHint =>
+      'Tap to select. Drag to move; pinch or Ctrl + scroll to zoom; the scroll wheel moves the view (Shift for sideways).';
+
+  @override
+  String get dataSetGroupBy => 'Group';
+
+  @override
+  String get dataSetGroupNone => 'No grouping';
+
+  @override
+  String get dataSetGroupByDevice => 'By device';
+
+  @override
+  String get dataSetGroupByStorage => 'By storage';
+
+  @override
+  String get dataSetUnlinked => 'Not on any storage';
+
+  @override
+  String dataSetCopies(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count copies',
+      one: '1 copy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dataSetSingleCopy => 'Only one copy';
+
+  @override
+  String dataSetAlsoOn(String places) {
+    return 'Also on: $places';
+  }
+
+  @override
+  String dataSetStorageFallback(int number) {
+    return 'Storage $number';
+  }
+
+  @override
+  String get dataSetStoragesHint =>
+      'Every storage you tick holds a full copy of this data set.';
+
+  @override
+  String get dataSetTopology => 'Data Set Topology';
+
+  @override
+  String get dataSetTopologyEmpty => 'No data set is on any storage yet.';
+
+  @override
+  String get dataSetTopologySelectHint =>
+      'Select a device, a storage or a data set to see where its copies are.';
+
+  @override
+  String get dataSetTopologyShowEmpty => 'Show devices without data sets';
+
+  @override
+  String get dataSetTopologyNoDataSets => 'No data sets';
+
+  @override
+  String get dataSetTopologyLegendDevice => 'Device';
+
+  @override
+  String get dataSetTopologyLegendStorage => 'Storage';
+
+  @override
+  String get dataSetTopologyLegendDataSet => 'Data set copy';
+
+  @override
+  String get dataSetTopologyLegendSync => 'Copies of the same data set';
+
+  @override
+  String get dataSetTopologyCopiesTitle => 'Copies';
 }

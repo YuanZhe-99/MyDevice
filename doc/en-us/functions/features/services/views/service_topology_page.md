@@ -7,7 +7,7 @@ which the Services overview's topology card pushes on the root navigator
 built from the current inventory, and the canvas it hosts, `_ServiceTopologyView`. The file was
 split out of `service_list_page.dart` in 1.5.6 and then gained the topology's interaction:
 
-- **Selection.** Tapping a node in select mode selects it; the routes through it
+- **Selection.** Tapping a node selects it; the routes through it
   (`relatedRoutesForNode`) light up through `serviceTopologyHighlight`, every other node is
   dimmed and every other edge faded. A tap on the empty canvas, the selection chip or the
   details pane's close button clears it.
@@ -18,10 +18,13 @@ split out of `service_list_page.dart` in 1.5.6 and then gained the topology's in
 - **Filters.** An app-bar action opens a sheet of device chips, lane chips and a search field;
   the page builds and memoizes the narrowed graph (`filterServiceTopologyInput`), and a badge
   counts the active parts.
-- **Legend.** A collapsible strip under the mode row (`ServiceTopologyLegend`), outside the
+- **Legend.** A collapsible strip under the control row (`ServiceTopologyLegend`), outside the
   exported canvas.
-- **Fit and reset.** In move mode, icon buttons fit the canvas into the viewer (`fitTransform`)
-  or reset its transform.
+- **One canvas.** Since 1.8.0 there is no select / move switch: the canvas is the shared
+  [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md), where a tap
+  selects, a drag or the wheel pans, and a pinch or Ctrl + wheel zooms. The control row's icon
+  buttons zoom out, zoom in, fit the canvas into the viewer (`fitTransform`) or reset its
+  transform.
 - **Group by device.** An app-bar toggle, on by default for the session, passes
   `groupByDevice` to the layout: devices become containers with a header tab and the
   device-to-service edges are hidden. Part of the layout request, so toggling re-lays out the
@@ -34,7 +37,7 @@ split out of `service_list_page.dart` in 1.5.6 and then gained the topology's in
   page reads the inventory again through `reload` and rebuilds its graph (`_refresh`), so an
   edit shows without reopening the topology.
 
-The page owns its copy of the inventory and graph, and the mode, rotation, export, grouping,
+The page owns its copy of the inventory and graph, and the rotation, export, grouping,
 selection and filter state; the view owns the
 deferred, cached layout (`_TopologyLayoutRequest` is its cache key). Node cards, the edge
 painter, the legend and the icon, colour and fit helpers come from
@@ -42,29 +45,28 @@ painter, the legend and the icon, colour and fit helpers come from
 from [`../services/service_analysis.md`](../services/service_analysis.md); node and edge
 placement from [`../services/service_topology_layout.md`](../services/service_topology_layout.md).
 
-**Row-count note:** `grep -c 'Purpose:' service_topology_page.dart` returns **39**, one per
-declaration below (**18 Tier A / 21 Tier B**). The local `fromHere` of `_nodeActions` has no
+**Row-count note:** `grep -c 'Purpose:' service_topology_page.dart` returns **40**, one per
+declaration below (**18 Tier A / 22 Tier B**). The local `fromHere` of `_nodeActions` has no
 comment and no row. The typedefs `ServiceTopologyInventory` (the `services`, `devices`, `routes`
 record `reload` returns) and `_NodeAction` (an action's `key`, `label`, `icon` and `draft`) are
-not listed either. `enum _TopologyInteractionMode { select, move }`
-(line 18) is a member-less enum and is not listed: select mode wires node taps and the
-background tap and scrolls the canvas; move mode drops the taps and wraps the canvas in an
-`InteractiveViewer`. The private constants `_minScale` (0.35), `_maxScale` (2.4) and
-`_boundaryMargin` (180) are that viewer's limits, shared with `fitTransform`.
+not listed either. The 1.5.6–1.7.2 `enum _TopologyInteractionMode { select, move }` and the
+private `_minScale` / `_maxScale` / `_boundaryMargin` are gone in 1.8.0: the limits are the shared
+viewer's `topologyMinScale`, `topologyMaxScale` and `topologyBoundaryMargin`.
 
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| `_ServiceTopologyView` (constructor) | constructor | B | Create the canvas widget: graph, inventory, layout options, mode, rotation, capture key, selection, taps, transform. |
+| `_ServiceTopologyView` (constructor) | constructor | B | Create the canvas widget: graph, inventory, layout options, rotation, capture key, selection, taps, transform. |
 | `createState` | method (`_ServiceTopologyView`) | B | Create the canvas's mutable state object. |
-| `build` | method (widget, `_ServiceTopologyViewState`) | B | Lay out the canvas inside a `LayoutBuilder`, requesting/showing the cached layout and remembering the viewport. |
+| `build` | method (widget, `_ServiceTopologyViewState`) | B | Lay out the canvas inside a `LayoutBuilder`, requesting/showing the cached layout. |
 | [`_ensureLayout`](#ensurelayout) | method (`_ServiceTopologyViewState`) | A | Schedule a deferred layout calculation for a request, deduplicating in-flight requests. |
 | [`_calculateLayout`](#calculatelayout) | method (`_ServiceTopologyViewState`) | A | Run the layout engine for one request and cache the result if it's still current. |
 | `_buildLoading` | method (widget helper) | B | Render the small loading spinner shown before layout is ready. |
 | `_reportLayoutReady` | method (`_ServiceTopologyViewState`) | B | Notify the parent (deferred to next frame) when layout readiness changes. |
-| [`fitToViewport`](#fittoviewport) | method (`_ServiceTopologyViewState`) | A | Fit the laid-out canvas into the view through the transformation controller. |
-| [`_buildViewer`](#buildviewer) | method (widget helper) | A | Render the edges and node cards with the selection, in a scroll view (select) or an `InteractiveViewer` (move). |
+| [`fitToViewport`](#fittoviewport) | method (`_ServiceTopologyViewState`) | A | Fit the laid-out canvas into the view through the viewer. |
+| `zoomBy` | method (`_ServiceTopologyViewState`) | B | Zoom the canvas about the viewport centre through the viewer. |
+| [`_buildViewer`](#buildviewer) | method (widget helper) | A | Render the edges and node cards with the selection in the shared `TopologyCanvasViewer`. |
 | [`_TopologyLayoutRequest` (constructor)](#topologylayoutrequest-new) | constructor | A | Create a layout cache-key value (graph, routes, viewport width, layout options). |
 | [`==`](#equals) | operator (`_TopologyLayoutRequest`) | A | Compare two requests by graph/route identity, viewport width and options. |
 | [`hashCode`](#hashcode) | getter (`_TopologyLayoutRequest`) | A | Hash a request consistently with its equality contract. |
@@ -76,15 +78,15 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 | [`_selectNode`](#selectnode) | method (`_ServiceTopologyPageState`) | A | Select a tapped node; open the details sheet where there is no pane. |
 | `_clearSelection` | method (`_ServiceTopologyPageState`) | B | Clear the selection and the focused route. |
 | `_toggleRouteFocus` | method (`_ServiceTopologyPageState`) | B | Narrow the highlight to one related route, or widen it back. |
-| `_setFilter` | method (`_ServiceTopologyPageState`) | B | Apply a filter and reset the move-mode transform. |
+| `_setFilter` | method (`_ServiceTopologyPageState`) | B | Apply a filter and reset the canvas transform. |
 | `_openFilters` | method (`_ServiceTopologyPageState`) | B | Open the filter sheet with the devices that host services. |
 | [`_showDetailsSheet`](#showdetailssheet) | method (`_ServiceTopologyPageState`) | A | Show a node's details in a bottom sheet whose actions call the editors. |
 | [`_nodeActions`](#nodeactions) | method (`_ServiceTopologyPageState`) | A | The "add access path" actions a node offers, with their drafts. |
 | `_openEditor` | method (`_ServiceTopologyPageState`) | B | Await one of the editor callbacks, then `_refresh`. |
 | [`_refresh`](#refresh) | method (`_ServiceTopologyPageState`) | A | Read the inventory through `reload` and rebuild the graph. |
 | [`_exportTopologyImage`](#exporttopologyimage) | method (`_ServiceTopologyPageState`) | A | Capture the topology canvas, highlight included, as a PNG and hand it to the platform share flow. |
-| [`build`](#pagebuild) | method (widget, `_ServiceTopologyPageState`) | A | Build the scaffold: filter/rotate/export actions, mode row, legend strip, canvas, details pane. |
-| `_buildModeRow` | method (widget helper) | B | The select / move switch, plus Fit and Reset icon buttons in move mode. |
+| [`build`](#pagebuild) | method (widget, `_ServiceTopologyPageState`) | A | Build the scaffold: filter/rotate/export actions, control row, legend strip, canvas, details pane. |
+| `_buildControlRow` | method (widget helper) | B | The always-shown `TopologyViewControls`: zoom out, zoom in, Fit, Reset (replaces 1.7's `_buildModeRow`). |
 | `_buildLegendStrip` | method (widget helper) | B | The legend toggle, the legend, and the selection chip that clears it. |
 | [`_buildDetailsPane`](#builddetailspane) | method (widget helper) | A | The split window's details pane: a hint, or the selected node's details. |
 | `_buildNoMatch` | method (widget helper) | B | The "nothing matches" message with a "Clear filters" button. |
@@ -148,25 +150,23 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
 
 ### `void fitToViewport()` <a id="fittoviewport"></a>
 - **Kind:** method of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 225).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 210).
 - **Purpose:** Fit the laid-out canvas into the view.
 - **Inputs:** None.
 - **Returns:** `void`.
 - **Side effects:** Sets `widget.transformationController.value`.
-- **Algorithm:** Take the cached layout's size, swapped for an odd number of quarter turns (the
-  viewer sees the rotated canvas), and the viewport size remembered by `build`; set the
-  controller to `fitTransform(canvas, viewport, minScale: _minScale, maxScale: _maxScale,
-  boundaryMargin: _boundaryMargin)` (see
-  [`service_topology_widgets.md`](service_topology_widgets.md#fittransform)).
+- **Algorithm:** Delegates to the viewer's `fit` through `_viewerKey`; the viewer was given the
+  layout size swapped for an odd number of quarter turns, so it fits the canvas as rotated (see
+  [`fitTransform`](../../../shared/widgets/topology_canvas_viewer.md#fittransform)).
 - **Usage:** The page's Fit button calls it through a `GlobalKey<_ServiceTopologyViewState>`:
   `onPressed: () => _viewKey.currentState?.fitToViewport()`.
-- **Notes:** Does nothing before the first layout or without a controller. The page resets the
+- **Notes:** Does nothing before the first layout. The page resets the
   controller to the identity on Reset, on rotation and on every filter change, since a fit
   computed for one canvas is wrong for the next.
 
 ### `Widget _buildViewer(BuildContext context, ServiceTopologyLayout layout, int turns)` <a id="buildviewer"></a>
 - **Kind:** method (widget helper) of `_ServiceTopologyViewState`.
-- **Source:** `lib/features/services/views/service_topology_page.dart` (line 254).
+- **Source:** `lib/features/services/views/service_topology_page.dart` (line 230).
 - **Purpose:** Build the canvas — edges and node cards — inside its viewer.
 - **Inputs:** `context`; `layout` — the cached layout; `turns` — quarter turns, 0 to 3.
 - **Returns:** `Widget`.
@@ -175,14 +175,15 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
   (given the highlight), then one `ServiceTopologyNodeCard` per laid-out node, keyed
   `topology-node-<id>`, `selected` for the selected node, `header` for a device node that heads
   a container (`layout.groupRects`), and `dimmed` when a highlight leaves it out, with `onTap`
-  only in select mode; the painter draws the containers under the edges. 2. Wrap in a `RotatedBox` for a rotation and in the
-  export `RepaintBoundary`. 3. Select mode: a `GestureDetector` keyed `topology-canvas` whose tap
-  clears the selection, around two nested scroll views. Move mode: an `InteractiveViewer` on the
-  page's `TransformationController` with `_boundaryMargin`, `_minScale` and `_maxScale`.
+  whenever the page passes one; the painter draws the containers under the edges. 2. Wrap in a
+  `RotatedBox` for a rotation and in the export `RepaintBoundary`. 3. Hand it, keyed
+  `topology-canvas`, to a [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md)
+  on the page's `TransformationController` with the rotated size, whose background tap clears
+  the selection.
 - **Usage:** `build`, once the layout for the current request is ready.
 - **Notes:** A tap on a node card wins the gesture arena over the background tap, so only taps
-  that miss every card clear the selection. Selection changes only repaint: the layout request
-  does not include the highlight.
+  that miss every card clear the selection, and a drag that starts on a card still pans. Selection
+  changes only repaint: the layout request does not include the highlight.
 
 ### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth, required this.options})` <a id="topologylayoutrequest-new"></a>
 - **Kind:** constructor.
@@ -370,7 +371,7 @@ background tap and scrolls the canvas; move mode drops the taps and wraps the ca
   filter button (key `topology-filter`, a `Badge` with `ServiceTopologyFilter.activeCount` while
   a filter is active), the "Group by device" toggle (key `topology-group-by-device`, selected while
   `_groupByDevice` is on; flipping it resets the transform), rotation (which also resets the transform) and export (enabled only with
-  a ready layout of a non-empty graph). 3. The topology column: `_buildModeRow`,
+  a ready layout of a non-empty graph). 3. The topology column: `_buildControlRow`,
   `_buildLegendStrip`, then either `_buildNoMatch` (an empty filtered graph) or the
   `_ServiceTopologyView` with `ServiceTopologyLayoutOptions(groupByDevice: _groupByDevice)`, the
   highlight, the selected id, `_selectNode`, a background tap

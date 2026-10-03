@@ -2,32 +2,33 @@
 
 [服务与拓扑](../../../../features/services-topology.md#views) 描述的全屏服务拓扑：`ServiceTopologyPage`——服务总览的拓扑卡片（[`service_list_page.md`](service_list_page.md)，`_openTopology`）带着由当前清单构建的 `ServiceTopologyGraph` 把它压入根导航器——以及它承载的画布 `_ServiceTopologyView`。本文件于 1.5.6 从 `service_list_page.dart` 拆出，随后获得了拓扑的交互：
 
-- **选择。** 在选择模式下点击节点即选中它；经过它的路由（`relatedRoutesForNode`）由 `serviceTopologyHighlight` 点亮，其余节点变暗，其余边淡化。点击空白画布、选择 chip 或详情窗格的关闭按钮会清除选择。
+- **选择。** 点击节点即选中它；经过它的路由（`relatedRoutesForNode`）由 `serviceTopologyHighlight` 点亮，其余节点变暗，其余边淡化。点击空白画布、选择 chip 或详情窗格的关闭按钮会清除选择。
 - **详情。** 在手机上，点击还会打开详情底部面板；在 `useDetailTwoPane` 窗口上，则改为在画布旁放一个宽 `topologyDetailPaneWidth` 的非模态窗格。该窗格始终存在，因此选择从不改变画布宽度。在窗格中，路由行把高亮收窄到该路由，其编辑按钮打开路由编辑器。
 - **筛选。** 应用栏操作打开一个含设备 chip、车道 chip 和搜索框的面板；页面构建并记忆化收窄后的图（`filterServiceTopologyInput`），徽章统计生效的部分。
-- **图例。** 模式行下方可折叠的图例条（`ServiceTopologyLegend`），位于导出的画布之外。
-- **适应窗口与重置。** 在移动模式下，图标按钮把画布适配进查看器（`fitTransform`），或重置其变换。
+- **图例。** 控件行下方可折叠的图例条（`ServiceTopologyLegend`），位于导出的画布之外。
+- **单一画布。** 自 1.8.0 起不再有选择 / 移动开关：画布是共享的 [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md)，点击选择，拖动或滚轮平移，捏合或 Ctrl + 滚轮缩放。控件行的图标按钮用于缩小、放大、把画布适配进查看器（`fitTransform`）或重置其变换。
 - **按设备分组。** 应用栏切换开关，在本次会话中默认打开，把 `groupByDevice` 传给布局：设备成为带标题标签页的设备分组框，设备到服务边被隐藏。它是布局请求的一部分，因此切换会重新布局同一个图。
 - **起点。** 详情提供每个节点的「添加访问路径」操作（`_nodeActions`，来自 `ServiceAccessDraft.forNode`）：从服务或端点添加访问路径、通过 VPS 上的中继公开服务、为域名添加其他服务、为设备上的服务添加访问路径。每个操作都以预填该节点的方式打开引导式页面。
 - **刷新。** 页面打开的每个编辑器——服务、路由、访问路径——都会被等待，之后页面经 `reload` 重新读取清单并重建其图（`_refresh`），因此编辑无需重新打开拓扑即可显示。
 
-页面负责它自己的清单和图副本，以及模式、旋转、导出、分组、选择和筛选状态；视图负责延迟、缓存的布局（`_TopologyLayoutRequest` 是其缓存键）。节点卡片、边画家、图例以及图标、颜色和适配辅助来自 [`service_topology_widgets.md`](service_topology_widgets.md)；筛选和高亮逻辑来自 [`../services/service_analysis.md`](../services/service_analysis.md)；节点和边的放置来自 [`../services/service_topology_layout.md`](../services/service_topology_layout.md)。
+页面负责它自己的清单和图副本，以及旋转、导出、分组、选择和筛选状态；视图负责延迟、缓存的布局（`_TopologyLayoutRequest` 是其缓存键）。节点卡片、边画家、图例以及图标、颜色和适配辅助来自 [`service_topology_widgets.md`](service_topology_widgets.md)；筛选和高亮逻辑来自 [`../services/service_analysis.md`](../services/service_analysis.md)；节点和边的放置来自 [`../services/service_topology_layout.md`](../services/service_topology_layout.md)。
 
-**行数说明：** `grep -c 'Purpose:' service_topology_page.dart` 返回 **39**，下面每个声明一块（**18 个 Tier A / 21 个 Tier B**）。`_nodeActions` 的本地函数 `fromHere` 没有注释，也不占一行。类型别名 `ServiceTopologyInventory`（`reload` 返回的 `services`、`devices`、`routes` 记录）和 `_NodeAction`（操作的 `key`、`label`、`icon` 和 `draft`）同样不列出。`enum _TopologyInteractionMode { select, move }`（第 18 行）是无成员枚举，不单列：选择模式接上节点点击和背景点击，并滚动画布；移动模式去掉点击，并把画布包进 `InteractiveViewer`。私有常量 `_minScale`（0.35）、`_maxScale`（2.4）和 `_boundaryMargin`（180）是该查看器的限制，与 `fitTransform` 共用。
+**行数说明：** `grep -c 'Purpose:' service_topology_page.dart` 返回 **40**，下面每个声明一块（**18 个 Tier A / 22 个 Tier B**）。`_nodeActions` 的本地函数 `fromHere` 没有注释，也不占一行。类型别名 `ServiceTopologyInventory`（`reload` 返回的 `services`、`devices`、`routes` 记录）和 `_NodeAction`（操作的 `key`、`label`、`icon` 和 `draft`）同样不列出。1.5.6–1.7.2 的 `enum _TopologyInteractionMode { select, move }` 以及私有的 `_minScale` / `_maxScale` / `_boundaryMargin` 在 1.8.0 中已移除：限制改为共享查看器的 `topologyMinScale`、`topologyMaxScale` 和 `topologyBoundaryMargin`。
 
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
-| `_ServiceTopologyView`（构造函数） | 构造函数 | B | 创建画布组件：图、清单、布局选项、模式、旋转、捕获键、选择、点击、变换。 |
+| `_ServiceTopologyView`（构造函数） | 构造函数 | B | 创建画布组件：图、清单、布局选项、旋转、捕获键、选择、点击、变换。 |
 | `createState` | 方法（`_ServiceTopologyView`） | B | 创建画布的可变状态对象。 |
-| `build` | 方法（组件，`_ServiceTopologyViewState`） | B | 在 `LayoutBuilder` 内布局画布，请求/显示缓存布局并记住视口。 |
+| `build` | 方法（组件，`_ServiceTopologyViewState`） | B | 在 `LayoutBuilder` 内布局画布，请求/显示缓存布局。 |
 | [`_ensureLayout`](#ensurelayout) | 方法（`_ServiceTopologyViewState`） | A | 为请求安排延迟布局计算，去重在途请求。 |
 | [`_calculateLayout`](#calculatelayout) | 方法（`_ServiceTopologyViewState`） | A | 为一个请求运行布局引擎，仍最新时缓存结果。 |
 | `_buildLoading` | 方法（组件辅助） | B | 渲染布局就绪前显示的小加载转圈。 |
 | `_reportLayoutReady` | 方法（`_ServiceTopologyViewState`） | B | 布局就绪性变化时通知父级（延迟到下一帧）。 |
-| [`fitToViewport`](#fittoviewport) | 方法（`_ServiceTopologyViewState`） | A | 经变换控制器把已布局的画布适配进视图。 |
-| [`_buildViewer`](#buildviewer) | 方法（组件辅助） | A | 带选择状态渲染边和节点卡片，置于滚动视图（选择）或 `InteractiveViewer`（移动）中。 |
+| [`fitToViewport`](#fittoviewport) | 方法（`_ServiceTopologyViewState`） | A | 经查看器把已布局的画布适配进视图。 |
+| `zoomBy` | 方法（`_ServiceTopologyViewState`） | B | 经查看器以视口中心为基点缩放画布。 |
+| [`_buildViewer`](#buildviewer) | 方法（组件辅助） | A | 在共享的 `TopologyCanvasViewer` 中带选择状态渲染边和节点卡片。 |
 | [`_TopologyLayoutRequest`（构造函数）](#topologylayoutrequest-new) | 构造函数 | A | 创建布局缓存键值（图、路由、视口宽、布局选项）。 |
 | [`==`](#equals) | 运算符（`_TopologyLayoutRequest`） | A | 按图/路由身份、视口宽和选项比较两个请求。 |
 | [`hashCode`](#hashcode) | getter（`_TopologyLayoutRequest`） | A | 与其相等契约一致的请求哈希。 |
@@ -39,15 +40,15 @@
 | [`_selectNode`](#selectnode) | 方法（`_ServiceTopologyPageState`） | A | 选中被点击的节点；没有窗格时打开详情面板。 |
 | `_clearSelection` | 方法（`_ServiceTopologyPageState`） | B | 清除选择和聚焦路由。 |
 | `_toggleRouteFocus` | 方法（`_ServiceTopologyPageState`） | B | 把高亮收窄到一条相关路由，或放宽回全部。 |
-| `_setFilter` | 方法（`_ServiceTopologyPageState`） | B | 应用筛选并重置移动模式的变换。 |
+| `_setFilter` | 方法（`_ServiceTopologyPageState`） | B | 应用筛选并重置画布变换。 |
 | `_openFilters` | 方法（`_ServiceTopologyPageState`） | B | 打开筛选面板，列出承载服务的设备。 |
 | [`_showDetailsSheet`](#showdetailssheet) | 方法（`_ServiceTopologyPageState`） | A | 在底部面板中显示节点详情，其操作调用各编辑器。 |
 | [`_nodeActions`](#nodeactions) | 方法（`_ServiceTopologyPageState`） | A | 节点提供的「添加访问路径」操作，连同各自的草稿。 |
 | `_openEditor` | 方法（`_ServiceTopologyPageState`） | B | 等待某个编辑器回调，然后 `_refresh`。 |
 | [`_refresh`](#refresh) | 方法（`_ServiceTopologyPageState`） | A | 经 `reload` 读取清单并重建图。 |
 | [`_exportTopologyImage`](#exporttopologyimage) | 方法（`_ServiceTopologyPageState`） | A | 把拓扑画布（含高亮）捕获为 PNG 并交给平台分享流程。 |
-| [`build`](#pagebuild) | 方法（组件，`_ServiceTopologyPageState`） | A | 构建脚手架：筛选/旋转/导出操作、模式行、图例条、画布、详情窗格。 |
-| `_buildModeRow` | 方法（组件辅助） | B | 选择 / 移动切换，移动模式下另加「适应窗口」和「重置」图标按钮。 |
+| [`build`](#pagebuild) | 方法（组件，`_ServiceTopologyPageState`） | A | 构建脚手架：筛选/旋转/导出操作、控件行、图例条、画布、详情窗格。 |
+| `_buildControlRow` | 方法（组件辅助） | B | 始终显示的 `TopologyViewControls`：缩小、放大、适应窗口、重置（取代 1.7 的 `_buildModeRow`）。 |
 | `_buildLegendStrip` | 方法（组件辅助） | B | 图例开关、图例，以及可清除选择的选择 chip。 |
 | [`_buildDetailsPane`](#builddetailspane) | 方法（组件辅助） | A | 分栏窗口的详情窗格：一条提示，或选中节点的详情。 |
 | `_buildNoMatch` | 方法（组件辅助） | B | 「没有符合筛选条件的内容」消息，带「清除筛选」按钮。 |
@@ -85,25 +86,25 @@
 
 ### `void fitToViewport()` <a id="fittoviewport"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 225 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 210 行）。
 - **用途：** 把已布局的画布适配进视图。
 - **输入：** 无。
 - **返回：** `void`。
 - **副作用：** 设置 `widget.transformationController.value`。
-- **算法：** 取缓存布局的尺寸（旋转四分之一圈数为奇数时交换宽高，因为查看器看到的是旋转后的画布）和 `build` 记住的视口尺寸；把控制器设为 `fitTransform(canvas, viewport, minScale: _minScale, maxScale: _maxScale, boundaryMargin: _boundaryMargin)`（见 [`service_topology_widgets.md`](service_topology_widgets.md#fittransform)）。
+- **算法：** 经 `_viewerKey` 委托给查看器的 `fit`；查看器拿到的是旋转四分之一圈数为奇数时交换宽高后的布局尺寸，因此按旋转后的画布适配（见 [`fitTransform`](../../../shared/widgets/topology_canvas_viewer.md#fittransform)）。
 - **用法：** 页面的「适应窗口」按钮经 `GlobalKey<_ServiceTopologyViewState>` 调用它：`onPressed: () => _viewKey.currentState?.fitToViewport()`。
-- **备注：** 首次布局之前或没有控制器时什么也不做。页面在「重置」、旋转和每次筛选变化时把控制器重置为单位矩阵，因为为一个画布算出的适配对下一个画布是错的。
+- **备注：** 首次布局之前什么也不做。页面在「重置」、旋转和每次筛选变化时把控制器重置为单位矩阵，因为为一个画布算出的适配对下一个画布是错的。
 
 ### `Widget _buildViewer(BuildContext context, ServiceTopologyLayout layout, int turns)` <a id="buildviewer"></a>
 - **种类：** `_ServiceTopologyViewState` 的方法（组件辅助）。
-- **来源：** `lib/features/services/views/service_topology_page.dart`（第 254 行）。
+- **来源：** `lib/features/services/views/service_topology_page.dart`（第 230 行）。
 - **用途：** 在查看器内构建画布——边和节点卡片。
 - **输入：** `context`；`layout` — 缓存的布局；`turns` — 旋转的四分之一圈数，0 到 3。
 - **返回：** `Widget`。
 - **副作用：** 无。
-- **算法：** 1. 一个尺寸为 `layout.size` 的 `Stack`：先是带 `ServiceTopologyEdgePainter`（传入高亮）的 `CustomPaint`，再为每个已布局节点放一张 `ServiceTopologyNodeCard`：键为 `topology-node-<id>`，选中节点带 `selected`，作为分组框标题的设备节点（`layout.groupRects`）带 `header`，高亮不包含它时带 `dimmed`，`onTap` 只在选择模式下设置；画家把分组框绘制在边之下。2. 有旋转时包进 `RotatedBox`，再包进导出用的 `RepaintBoundary`。3. 选择模式：一个键为 `topology-canvas` 的 `GestureDetector`，其点击清除选择，内含两层嵌套滚动视图。移动模式：一个使用页面 `TransformationController` 的 `InteractiveViewer`，带 `_boundaryMargin`、`_minScale` 和 `_maxScale`。
+- **算法：** 1. 一个尺寸为 `layout.size` 的 `Stack`：先是带 `ServiceTopologyEdgePainter`（传入高亮）的 `CustomPaint`，再为每个已布局节点放一张 `ServiceTopologyNodeCard`：键为 `topology-node-<id>`，选中节点带 `selected`，作为分组框标题的设备节点（`layout.groupRects`）带 `header`，高亮不包含它时带 `dimmed`，只要页面传入 `onTap` 就设置它；画家把分组框绘制在边之下。2. 有旋转时包进 `RotatedBox`，再包进导出用的 `RepaintBoundary`。3. 以键 `topology-canvas` 交给使用页面 `TransformationController` 和旋转后尺寸的 [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md)，其背景点击清除选择。
 - **用法：** `build`，在当前请求的布局就绪之后。
-- **备注：** 节点卡片上的点击在手势竞技场中胜过背景点击，因此只有未命中任何卡片的点击才会清除选择。选择变化只触发重绘：布局请求不包含高亮。
+- **备注：** 节点卡片上的点击在手势竞技场中胜过背景点击，因此只有未命中任何卡片的点击才会清除选择，而从卡片上开始的拖动仍会平移。选择变化只触发重绘：布局请求不包含高亮。
 
 ### `const _TopologyLayoutRequest({required this.graph, required this.routes, required this.viewportWidth, required this.options})` <a id="topologylayoutrequest-new"></a>
 - **种类：** 构造函数。
@@ -222,7 +223,7 @@
 - **输入：** `context`。
 - **返回：** 组件树。
 - **副作用：** 除填充 `_visible` 和 `_selectionIn` 的缓存外无。
-- **算法：** 1. 解析可见图和选择。2. 应用栏操作：筛选按钮（键 `topology-filter`，筛选生效时带显示 `ServiceTopologyFilter.activeCount` 的 `Badge`）、"按设备分组"切换开关（键 `topology-group-by-device`，`_groupByDevice` 打开时处于选中状态；切换它会重置变换）、旋转（同时重置变换）和导出（只在非空图的布局就绪时启用）。3. 拓扑列：`_buildModeRow`、`_buildLegendStrip`，然后是 `_buildNoMatch`（筛选后的图为空）或 `_ServiceTopologyView`——带 `ServiceTopologyLayoutOptions(groupByDevice: _groupByDevice)`、高亮、选中 id、`_selectNode`、清除选择的背景点击以及变换。4. 在 `useDetailTwoPane` 窗口上，是由该列、一条分隔线和宽 `topologyDetailPaneWidth(width)` 的 [`_buildDetailsPane`](#builddetailspane) 组成的 `Row`；否则只有该列。
+- **算法：** 1. 解析可见图和选择。2. 应用栏操作：筛选按钮（键 `topology-filter`，筛选生效时带显示 `ServiceTopologyFilter.activeCount` 的 `Badge`）、"按设备分组"切换开关（键 `topology-group-by-device`，`_groupByDevice` 打开时处于选中状态；切换它会重置变换）、旋转（同时重置变换）和导出（只在非空图的布局就绪时启用）。3. 拓扑列：`_buildControlRow`、`_buildLegendStrip`，然后是 `_buildNoMatch`（筛选后的图为空）或 `_ServiceTopologyView`——带 `ServiceTopologyLayoutOptions(groupByDevice: _groupByDevice)`、高亮、选中 id、`_selectNode`、清除选择的背景点击以及变换。4. 在 `useDetailTwoPane` 窗口上，是由该列、一条分隔线和宽 `topologyDetailPaneWidth(width)` 的 [`_buildDetailsPane`](#builddetailspane) 组成的 `Row`；否则只有该列。
 - **用法：** 由框架调用。
 - **备注：** 即使未选中任何节点，窗格也存在：布局取决于画布宽度，因此随选择出现又消失的窗格会在每次点击时重新布局——并闪出加载转圈。
 

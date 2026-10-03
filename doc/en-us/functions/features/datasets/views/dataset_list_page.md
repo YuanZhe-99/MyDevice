@@ -10,6 +10,15 @@ background sync brings in new local data — the same pattern used by
 [`device_list_page.md`](../../devices/views/device_list_page.md) and
 [`network_list_page.md`](../../network/views/network_list_page.md).
 
+Since 1.8.0 the app bar also opens the [data set topology](dataset_topology_page.md)
+(`_openTopology`, key `dataset-topology`) and a **Group** menu (key `dataset-group`, items
+`dataset-group-mode-<none|device|storage>`) whose choice is stored as `datasetGroupMode`. A
+grouped list is built by `_buildGroupedList` from
+[`groupDataSets`](../services/dataset_placement.md#groupdatasets): headers keyed
+`dataset-group-<group key>`, each followed by its tiles, whose subtitle becomes the copy count
+and "Also on: …" (`_groupedSubtitle`); *Reorder* is hidden while grouped. See
+[Datasets](../../../../features/datasets.md#grouping-the-list).
+
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |
@@ -19,7 +28,9 @@ background sync brings in new local data — the same pattern used by
 | [`initState`](#initstate) | method (widget lifecycle) | A | Register the auto-sync listener and kick off preference/dataset loading. |
 | `dispose` | method (widget lifecycle) | B | Unregister the auto-sync listener. |
 | `_handleLocalDataChanged` | method (`_DataSetListPageState`) | B | Reload datasets in response to an auto-sync notification. |
-| [`_loadSortPrefs`](#loadsortprefs) | method (`_DataSetListPageState`) | A | Load the persisted sort mode/direction from device storage config. |
+| [`_loadSortPrefs`](#loadsortprefs) | method (`_DataSetListPageState`) | A | Load the persisted sort mode/direction, grouping mode and column preference. |
+| `_setGroupMode` | method (`_DataSetListPageState`) | B | Set the grouping and persist it as `datasetGroupMode` (removed for none). |
+| `_openTopology` | method (`_DataSetListPageState`) | B | Push the data set topology with an editor and a `reload`; reload the list after it closes. |
 | [`_saveSortPrefs`](#savesortprefs) | method (`_DataSetListPageState`) | A | Persist the current sort mode/direction to device storage config. |
 | [`_sortedDatasets`](#sorteddatasets) | getter (`_DataSetListPageState`) | A | Sort `_datasets` per the current sort mode/direction. |
 | [`_load`](#load) | method (`_DataSetListPageState`) | A | Reload both the dataset list and the device list from storage. |
@@ -29,11 +40,15 @@ background sync brings in new local data — the same pattern used by
 | [`_deleteDataSet`](#deletedataset) | method (`_DataSetListPageState`) | A | Confirm and, if accepted, delete a dataset and notify the sync layer. |
 | [`_onReorder`](#onreorder) | method (`_DataSetListPageState`) | A | Move a dataset within the custom order and persist the new order. |
 | `_setColumnsPref` | method (`_DataSetListPageState`) | B | Store a new column preference (`DeviceStorage.setDataSetListColumns`) and re-render. |
-| `_buildDataSetTile` | method (widget helper) | B | Render one dataset's list tile (emoji, name, storage-summary subtitle); `reorderHandle` disables tap-to-edit. |
+| `_buildDataSetTile` | method (widget helper) | B | Render one dataset's list tile (emoji, name, storage-summary subtitle, or the given `subtitle`); `reorderHandle` disables tap-to-edit. |
 | `_buildMenuTile` | method (widget helper) | B | The multi-column tile: `_buildDataSetTile` with a trailing delete `PopupMenuButton` in place of the swipe. |
-| `build` | method (widget) | B | Build the scaffold: app bar, column control (hidden at capacity 1 and while reordering), sort menu, dataset list — swipe tiles at one column, `adaptiveTileRow`s of menu tiles above — or reorder view, add FAB. Column count from `listColumnCount` at `shellContentWidth − 16` and `dataSetTileMinWidth`. |
+| `build` | method (widget) | B | Build the scaffold: app bar (topology, column control hidden at capacity 1 and while reordering, group menu, sort menu), dataset list — grouped, swipe tiles at one column, `adaptiveTileRow`s of menu tiles above — or reorder view, add FAB. Column count from `listColumnCount` at `shellContentWidth − 16` and `dataSetTileMinWidth`. |
+| `_buildSwipeTile` | method (widget helper) | B | The one-column swipe-to-delete tile; grouped lists key it by group and data set. |
+| `_groupTitle` | method (`_DataSetListPageState`) | B | A group header: device name, "device · storage", or "Not on any storage". |
+| [`_groupedSubtitle`](#groupedsubtitle) | method (`_DataSetListPageState`) | A | A grouped tile's copy count and where else the data set is. |
+| `_buildGroupedList` | method (widget helper) | B | The grouped `ListView`: header then tiles per group, swipe tiles at one column, menu-tile rows above. |
 
-Row count (16) matches `grep -c 'Purpose:' dataset_list_page.dart` (16) exactly.
+Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly. (Before 1.8.0 this line said 16 while the table and the source both had 18.)
 
 ## Documentation
 
@@ -141,6 +156,21 @@ Row count (16) matches `grep -c 'Purpose:' dataset_list_page.dart` (16) exactly.
   range here (rather than causing a crash) is exactly the "stale/dangling" failure mode that
   [`remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) exists to
   prevent by keeping indices in sync whenever a device's storage list changes.
+
+### `Widget? _groupedSubtitle(DataSet ds, DataSetGroup group, AppLocalizations l10n)` <a id="groupedsubtitle"></a>
+- **Kind:** method of `_DataSetListPageState`.
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 583).
+- **Purpose:** Build a tile's subtitle inside a group.
+- **Inputs:** `ds`, `group`, `l10n`.
+- **Returns:** `Text` of up to three lines — the copy count, then "Also on: …" — or null in the
+  unlinked group.
+- **Side effects:** None.
+- **Algorithm:** Resolve the copies
+  ([`resolveReplicas`](../services/dataset_placement.md#resolvereplicas)). In a device group
+  list the other devices' names; in a storage group the other "device – storage" places. One
+  copy ⇒ *Only one copy* in the error colour; otherwise "n copies".
+- **Usage:** `_buildGroupedList`, for both swipe and menu tiles.
+- **Notes:** The red single-copy line is the list's way of flagging a data set with no backup.
 
 ### `Future<void> _deleteDataSet(DataSet ds)` <a id="deletedataset"></a>
 - **Kind:** method of `_DataSetListPageState`.

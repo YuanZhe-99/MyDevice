@@ -685,7 +685,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dataSetEmoji => '絵文字';
 
   @override
-  String get dataSetStorages => 'リンクされたストレージ';
+  String get dataSetStorages => 'コピーを置くストレージ';
 
   @override
   String get dataSetNoDeviceStorages => 'ストレージを持つデバイスが見つかりません';
@@ -1302,12 +1302,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get serviceOpenTopology => 'トポロジーを開く';
-
-  @override
-  String get serviceTopologySelectMode => '選択';
-
-  @override
-  String get serviceTopologyMoveMode => '移動 / ズーム';
 
   @override
   String get serviceRotateTopology => 'トポロジーを回転';
@@ -2013,4 +2007,81 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get profileAvatarEditorHint => 'ドラッグで移動、ピンチまたはスクロールで拡大縮小します。';
+
+  @override
+  String get topologyZoomIn => '拡大';
+
+  @override
+  String get topologyZoomOut => '縮小';
+
+  @override
+  String get topologyGestureHint =>
+      'タップで選択。ドラッグで移動、ピンチまたは Ctrl + スクロールでズーム、スクロールホイールで表示を移動（Shift で横方向）。';
+
+  @override
+  String get dataSetGroupBy => 'グループ';
+
+  @override
+  String get dataSetGroupNone => 'グループなし';
+
+  @override
+  String get dataSetGroupByDevice => 'デバイス別';
+
+  @override
+  String get dataSetGroupByStorage => 'ストレージ別';
+
+  @override
+  String get dataSetUnlinked => 'どのストレージにもない';
+
+  @override
+  String dataSetCopies(int count) {
+    return 'コピー $count 件';
+  }
+
+  @override
+  String get dataSetSingleCopy => 'コピーが 1 件のみ';
+
+  @override
+  String dataSetAlsoOn(String places) {
+    return 'ほかの場所：$places';
+  }
+
+  @override
+  String dataSetStorageFallback(int number) {
+    return 'ストレージ $number';
+  }
+
+  @override
+  String get dataSetStoragesHint => 'チェックした各ストレージにこのデータセットの完全なコピーがあります。';
+
+  @override
+  String get dataSetTopology => 'データセットトポロジー';
+
+  @override
+  String get dataSetTopologyEmpty => 'ストレージにあるデータセットはまだありません。';
+
+  @override
+  String get dataSetTopologySelectHint =>
+      'デバイス、ストレージ、データセットを選択すると、コピーの場所が表示されます。';
+
+  @override
+  String get dataSetTopologyShowEmpty => 'データセットのないデバイスも表示';
+
+  @override
+  String get dataSetTopologyNoDataSets => 'データセットなし';
+
+  @override
+  String get dataSetTopologyLegendDevice => 'デバイス';
+
+  @override
+  String get dataSetTopologyLegendStorage => 'ストレージ';
+
+  @override
+  String get dataSetTopologyLegendDataSet => 'データセットのコピー';
+
+  @override
+  String get dataSetTopologyLegendSync => '同じデータセットのコピー';
+
+  @override
+  String get dataSetTopologyCopiesTitle => 'コピー';
 }

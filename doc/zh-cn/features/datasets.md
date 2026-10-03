@@ -7,7 +7,36 @@
 - **`DataSet`：** `id`、`name`、`emoji`（默认 `'📁'`）、`storageLinks`（`List<DataSetStorageLink>`）、`modifiedAt`、`extraJson`。
 - **`DataSetStorageLink`：** `deviceId` 加 `storageIndices`（`List<int>`）——该设备 `storage: List<StorageInfo>` 列表中此数据集跨度的位置。
 
-单个 `DataSet` 可跨多台设备的存储槽（多个 `DataSetStorageLink` 条目），也可跨同一设备多个槽（一个链接 `storageIndices` 的多个索引）。
+单个 `DataSet` 可以位于多台设备的存储槽上（多个 `DataSetStorageLink` 条目），也可以位于同一设备的多个槽上（一个链接 `storageIndices` 的多个索引）。
+
+## 副本 <a id="copies"></a>
+
+**每个被链接的存储槽都保存该数据集一份完整、对等的副本。** 数据集从不拆分到多块存储上，也没有哪个副本是"原件"：各副本是保持同步的对等体。因此数据集解析到的槽数就是它的**副本数**，只有一份副本的数据集没有备份。模型没有角色字段，也不需要；1.8.0 在 UI 中明确了这一含义（编辑页的"存放副本的存储"及其说明），而没有改动文件。
+
+`lib/features/datasets/services/dataset_placement.dart` 中的 `resolveReplicas` 对照当前设备列表把数据集的链接转成它的副本，跳过指向已删除设备的链接、越界索引和重复列出的槽。所有计数副本的地方——分组列表和拓扑——都经过它，因此结果总是一致。见 [`dataset_placement.md`](../functions/features/datasets/services/dataset_placement.md)。
+
+## 列表分组 <a id="grouping-the-list"></a>
+
+自 1.8.0 起，数据集列表的应用栏有一个**分组**菜单：*不分组*（默认）、*按设备* 或 *按存储*。该选择以 `datasetGroupMode` 本地保存在 `storage_config.json` 中（见 [数据格式](../data-formats.md#storage_configjson-key-datasetgroupmode)）。
+
+- **按设备：** 每台至少保存一份副本的设备一组，按设备列表顺序。在多台设备上有副本的数据集出现在每台设备下；在同一设备两个槽上有副本的数据集在该设备下只出现一次。
+- **按存储：** 每个存储槽一组，标题为"设备 · 存储"。槽由 `storageSlotLabel` 命名：槽的摘要（如"8 TB HDD"），空槽为"存储 n"，同一设备两个槽读起来相同时加 `#n` 后缀。
+- **未存放在任何存储上：** 最后一组，收纳解析不到任何副本的数据集（没有链接，或只有悬空链接）。
+
+在分组中，列表块的副标题显示副本数以及数据集的其他位置（"其他位置：…"）；只有一份副本的数据集以错误色显示*仅一份副本*。分组保持每组内的排序顺序，一列时保留滑动删除、多列时保留菜单块，并隐藏*调整顺序*，因为一个数据集可能位于多个组中。
+
+## 资料集拓扑 <a id="data-set-topology"></a>
+
+数据集列表应用栏中的账户树操作打开一个全屏拓扑（`dataset_topology_page.dart`，由 `dataset_topology.dart` 中纯函数式的 `DataSetTopologyLayout` 布局）：
+
+- **嵌套框。** 每台设备是一个带图标和名称的大框；它的存储槽是堆叠在其中的中框；槽上的每份数据集副本是槽内的小框，每行两个，带 `×n` 副本数徽章。没有存储槽的设备从不绘制；有存储但没有副本的设备只在*显示没有资料集的设备*打开时绘制。
+- **同步连线。** 同一数据集的各副本由柔和曲线相连——按绘制顺序穿过各副本的一条链，而不是每对之间一条线，因此四份副本是三条线。一个数据集的副本和连线保持同一种颜色（其 id 的稳定哈希）；只有一份副本的数据集改用错误色绘制。
+- **排布。** 设备从左到右排入画布宽度能容纳的列数。顺序是贪心的：先放保存数据集最多的设备，然后每次放与已放置设备共享数据集最多的设备，因此互相同步的设备并排。
+- **选择。** 点按一份副本会点亮该数据集的所有副本、它们的存储和设备，以及它们之间的连线；点按存储或设备的标题会点亮其上的每个数据集及其在别处的所有副本。其余一切变暗。点按空白画布或选择 chip 清除选择。
+- **详情。** 手机上是底部面板，分栏窗口上是画布旁的窗格：先是被点按的对象，然后其上每个数据集一张卡片，以"设备 – 存储"列出每份副本（位于所选框上的副本打勾），并带编辑按钮。编辑器关闭后拓扑重新加载。
+- **视图。** 与服务拓扑相同的单一画布：点按选择，拖动平移，捏合或 Ctrl + 滚轮缩放，滚轮平移；缩放、适应窗口和重置按钮；设备筛选；图例；带高亮的画布 PNG 导出。
+
+筛选缩小的是绘制的内容，而不是计数的内容：副本的 `×n` 仍计入隐藏设备上的副本，通往隐藏副本的连线只是不绘制。
 
 ## 存储槽索引链接 <a id="storage-slot-index-linking"></a>
 
@@ -37,6 +66,8 @@ static Future<void> remapDeviceStorageLinks({
 设备编辑器在用户编辑/重排/移除存储条目时跟踪每个存储行的**原始槽索引**，保存时带结果的旧→新索引映射调用 `remapDeviceStorageLinks()`。这正是 `AGENTS.md` 直接点名"任何重排或移除设备存储槽的新代码路径必须同样做"的原因——容易添加忘记此步骤并静默损坏数据集链接的新存储编辑 UI 路径。
 
 ## 相关
+
+- [`dataset_topology.md`](../functions/features/datasets/services/dataset_topology.md) 和 [`dataset_topology_page.md`](../functions/features/datasets/views/dataset_topology_page.md) 了解拓扑的布局和页面。
 
 - [设备](devices.md) 了解这些链接索引进的 `storage: List<StorageInfo>` 字段。
 - [数据格式 — 交叉引用规则](../data-formats.md#cross-reference-rules) — 删除数据集删除其包含的存储链接；删除设备也必须清理其数据集链接。

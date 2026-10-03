@@ -78,7 +78,9 @@ source: its constructor takes only `networkId`, `deviceId`, `addressMode`, `ipAd
 - **`DataSet`:** `id`, `name`, `emoji` (defaults to `'📁'` on parse if absent),
   `storageLinks` (`List<DataSetStorageLink>`), `modifiedAt`, `extraJson`.
 - **`DataSetStorageLink`:** `deviceId` plus `storageIndices` (`List<int>`) — the storage
-  slot *indices* on that device's `storage` list that belong to this dataset. See
+  slot *indices* on that device's `storage` list that belong to this dataset. Every listed slot
+  holds a full, equal copy of the data set — a data set is never split across storages — so the
+  number of resolvable slots is its copy count. See
   [Datasets](features/datasets.md) for how these indices are kept valid when a device's
   storage list changes.
 
@@ -274,7 +276,7 @@ is the sole model with no `modifiedAt` at all, by design (see above).
 | Services and service routes | `service_data.json` | Yes | Per-record services/routes by `id` and `modifiedAt` |
 | Profile (display name and avatar) | `profile.json` | Yes | Per-field last writer wins by `displayNameUpdatedAt` / `avatarUpdatedAt` (since 1.7.0); never conflicts |
 | Images and avatar | `images/` | Yes | Referenced-only filename comparison; includes the profile avatar |
-| Theme, interface style (`uiStyle`), navigation position (`navPlacement`, `navRailRight`), locale, backup settings, sort preferences, home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
+| Theme, interface style (`uiStyle`), navigation position (`navPlacement`, `navRailRight`), locale, backup settings, sort preferences, data set grouping (`datasetGroupMode`), home status filter, list column preferences, default currency, exchange-rate settings, on-device AI switches, custom storage path | `storage_config.json` (default folder) | No | Local preference |
 | WebDAV credentials | `webdav_config.json` | No | Local secret/config only |
 | Sync base snapshots | `.sync_base/*.json` | No | Local merge tracking |
 | Backups | `backups/backup_*.json` | No | Local recovery; v2 bundles reference deduplicated image blobs |
@@ -291,7 +293,8 @@ it left behind (see [`storage_config.json`](#storage_configjson),
 
 - **`storage_config.json`** — one file in the platform default folder (see
   [below](#storage_configjson)) holding the local, unsynced preferences (theme, locale, backup
-  settings, sort preferences, the home list's last status filter `deviceStatusFilter` (absent
+  settings, sort preferences, the data set list's grouping `datasetGroupMode` (absent when not
+  grouped; see [below](#storage_configjson-key-datasetgroupmode)), the home list's last status filter `deviceStatusFilter` (absent
   when "All"), default currency, exchange-rate settings, custom storage
   path, tray/minimize/close-to-tray flags, local API port/credentials, and the four list
   column preferences `deviceListColumns`, `networkListColumns`, `dataSetListColumns` and
@@ -380,6 +383,14 @@ Since 1.7.1 `storage_config.json` may hold two optional keys that place the navi
 |---|---|---|---|
 | `navPlacement` | `"sideOnWide"`, `"side"` | Absent = bottom bar on every window (default). `"sideOnWide"` = side rail on wide windows, bar on narrow ones. `"side"` = side rail everywhere, phones included (not recommended). Unknown values read as the default. | Both styles |
 | `navRailRight` | `true` | The side rail sits on the right instead of the left. | Both styles, whenever a rail shows |
+
+### `storage_config.json` key `datasetGroupMode` <a id="storage_configjson-key-datasetgroupmode"></a>
+
+Since 1.8.0 `storage_config.json` may hold `"datasetGroupMode"`: `"device"` or `"storage"` — how
+the data set list groups its tiles. Written only when grouping is on and removed for *No
+grouping*, so a default install's config has no such key; an unknown value reads as no grouping.
+Local preference, never synced. The data set file itself is unchanged: a data set's copy count is
+derived from its existing `storageLinks`.
 
 ## `ai_insights.json`
 

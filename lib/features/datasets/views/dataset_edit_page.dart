@@ -287,8 +287,9 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
     );
   }
 
-  /// Purpose: Build the storage selection: its heading, the empty-state
-  /// text, and one card of checkboxes per device.
+  /// Purpose: Build the storage selection: its heading, the note that every
+  /// ticked storage holds a full copy, the empty-state text, and one card of
+  /// checkboxes per device.
   /// Inputs: `context`, `l10n`.
   /// Returns: `List<Widget>` ready to spread into a `ListView`.
   /// Side effects: None beyond building widgets.
@@ -304,6 +305,13 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
         l10n.dataSetStorages,
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
           color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        l10n.dataSetStoragesHint,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
       const SizedBox(height: 8),

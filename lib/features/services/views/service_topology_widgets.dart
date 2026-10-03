@@ -11,6 +11,7 @@ import '../services/service_labels.dart';
 import '../services/service_topology_layout.dart';
 import '../widgets/service_icon.dart';
 
+export '../../../shared/widgets/topology_canvas_viewer.dart' show fitTransform;
 export '../widgets/service_icon.dart';
 
 /// Opacity of a node card a selection leaves out: low enough that the lit
@@ -39,8 +40,8 @@ class ServiceTopologyNodeCard extends StatelessWidget {
   final bool header;
 
   /// Purpose: Create a topology node card.
-  /// Inputs: `node`; `icon` — from `iconForTopologyNode`; `onTap` — null in move
-  /// mode, so the card does not take the pan gesture; `selected`; `dimmed`;
+  /// Inputs: `node`; `icon` — from `iconForTopologyNode`; `onTap` — selects
+  /// the node; null leaves the card inert; `selected`; `dimmed`;
   /// `header` — for a device node the layout made a container header.
   /// Returns: A new `ServiceTopologyNodeCard`.
   /// Side effects: None.
@@ -62,7 +63,7 @@ class ServiceTopologyNodeCard extends StatelessWidget {
   /// Side effects: None.
   /// Notes: Screen readers hear one label — the node's label, its localized
   /// role and, when it has one, its lane — plus its selected state and a tap
-  /// action in select mode.
+  /// action when it has a tap handler.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -772,53 +773,5 @@ class ServiceTopologyLegend extends StatelessWidget {
       const SizedBox(width: 6),
       Text(label, style: Theme.of(context).textTheme.bodySmall),
     ],
-  );
-}
-
-/// Purpose: Compute the transform that fits a canvas into a viewer.
-/// Inputs: `canvas` — the child as the viewer lays it out (turned when the
-/// canvas is rotated); `viewport` — the viewer's size; `minScale`,
-/// `maxScale` — the viewer's zoom limits; `boundaryMargin` — the viewer's
-/// margin around the child.
-/// Returns: `Matrix4` — a uniform scale (on all three axes, as the viewer's
-/// own zoom writes it, so `getMaxScaleOnAxis` reads it back) and a
-/// translation for the viewer's `TransformationController`; the identity for
-/// an empty canvas or viewport.
-/// Side effects: None.
-/// Notes: The scale is the smaller of the two axis ratios clamped to the
-/// limits, so the whole graph shows whenever the limits allow. On an axis the
-/// scaled canvas leaves room on, it is centred if that keeps the viewport
-/// inside the child plus `boundaryMargin`, and placed at the start otherwise
-/// — an `InteractiveViewer` snaps an out-of-bounds offset back to the start
-/// on the next pan, so centring there would only make the graph jump.
-Matrix4 fitTransform(
-  Size canvas,
-  Size viewport, {
-  required double minScale,
-  required double maxScale,
-  double boundaryMargin = 0,
-}) {
-  if (canvas.isEmpty || viewport.isEmpty) return Matrix4.identity();
-  final scale = math
-      .min(viewport.width / canvas.width, viewport.height / canvas.height)
-      .clamp(minScale, maxScale)
-      .toDouble();
-
-  /// Purpose: Return the offset of the scaled canvas on one axis.
-  /// Inputs: `view` — the viewport's extent; `child` — the canvas's extent.
-  /// Returns: `double`.
-  /// Side effects: None.
-  /// Notes: Local helper of [fitTransform].
-  double offset(double view, double child) {
-    final free = view - child * scale;
-    if (free <= 0) return 0;
-    final centred = free / 2;
-    return centred <= boundaryMargin * scale ? centred : 0;
-  }
-
-  return Matrix4.diagonal3Values(scale, scale, scale)..setTranslationRaw(
-    offset(viewport.width, canvas.width),
-    offset(viewport.height, canvas.height),
-    0,
   );
 }

@@ -6,16 +6,18 @@ small port chip for compact nodes, or the header tab of a device container — s
 heavier border, dimmed when a selection leaves it out, and announced to screen readers by label,
 role and lane), `ServiceTopologyEdgePainter` (the device containers, then the routed edges with
 arrow heads, coloured by access lane, the selection's edges emphasized), `ServiceTopologyLegend` (the key to the lane and role colours),
-`fitTransform` (the move mode's Fit), and the icon and colour helpers behind them.
+and the icon and colour helpers behind them. `fitTransform` moved to the shared
+[`topology_canvas_viewer.md`](../../../shared/widgets/topology_canvas_viewer.md#fittransform) in
+1.8.0; this file re-exports it so existing imports keep working.
 `serviceAccessLaneColor` — which moved here from the guided access-path page — is the one lane
 colour rule for the painter, the legend and that page's preview. `iconForService` remains here
 for topology callers and delegates Material icon lookup to
 [`service_icon.md`](../widgets/service_icon.md), which is also used by `ServiceAvatar`.
 
-**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **27**, one per
-declaration below (**8 Tier A / 19 Tier B**; the nested `offset` of `fitTransform` counts). The
+**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **25**, one per
+declaration below (**7 Tier A / 18 Tier B**). The
 public constants `topologyDimmedNodeOpacity` (0.35) and `topologyDimmedEdgeAlpha` (0.18) are
-documented in source and not listed. The English-only `topologyLaneLabel` and
+documented in source and not listed; the data set topology uses them too. The English-only `topologyLaneLabel` and
 `topologyRoleLabel` of the extraction are gone: cards and details use the localized
 `serviceAccessLaneLabel` and `serviceTopologyRoleLabel` from
 [`../services/service_labels.md`](../services/service_labels.md), and `_nodeFill` / `_nodeBorder`
@@ -50,8 +52,6 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 | `ServiceTopologyLegend` (constructor) | constructor | B | Create the legend. |
 | `build` | method (widget, `ServiceTopologyLegend`) | B | A wrap of the three lane line samples and six role swatches with their localized labels. |
 | `_entry` | method (widget helper, `ServiceTopologyLegend`) | B | One legend entry: a swatch and its label. |
-| [`fitTransform`](#fittransform) | top-level function | A | The transform that fits a canvas into a viewer within its zoom limits and pan margin. |
-| `offset` | nested function (`fitTransform`) | B | The scaled canvas's offset on one axis: centred when it keeps the viewer in bounds, else 0. |
 
 ## Documentation
 
@@ -194,25 +194,3 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
   `_ServiceTopologyViewState._buildViewer` and the node details'
   [`build`](service_topology_page.md#detailsbuild).
 - **Notes:** None.
-
-### `Matrix4 fitTransform(Size canvas, Size viewport, {required double minScale, required double maxScale, double boundaryMargin = 0})` <a id="fittransform"></a>
-- **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 843).
-- **Purpose:** Compute the transform that fits a canvas into an `InteractiveViewer`.
-- **Inputs:** `canvas` — the child as the viewer lays it out (turned when the canvas is rotated);
-  `viewport` — the viewer's size; `minScale`, `maxScale` — the viewer's zoom limits;
-  `boundaryMargin` — the viewer's margin around the child.
-- **Returns:** `Matrix4` — a uniform scale on all three axes and a translation; the identity for
-  an empty canvas or viewport.
-- **Side effects:** None.
-- **Algorithm:** 1. `scale = min(viewport.width / canvas.width, viewport.height /
-  canvas.height)`, clamped to the limits. 2. Per axis (`offset`): no room ⇒ 0; room ⇒ centred
-  when half the room is at most `boundaryMargin × scale`, else 0. 3.
-  `Matrix4.diagonal3Values(scale, scale, scale)` with that translation.
-- **Usage:** The page view's `fitToViewport`, with the move mode's 0.35 / 2.4 limits and 180
-  margin.
-- **Notes:** The scale goes on the z axis too because `InteractiveViewer` reads its zoom back with
-  `getMaxScaleOnAxis`; a z of 1 would read as 100 % whenever the fit zooms out. Centring beyond the
-  margin is skipped because the viewer snaps an out-of-bounds offset back to 0 on the next pan,
-  so it would only make the graph jump. `test/service_topology_page_test.dart` pins the tighter
-  axis, both limits, the margin rule and the empty cases.

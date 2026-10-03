@@ -1,8 +1,8 @@
 # lib/features/services/views/service_topology_widgets.dart
 
-全屏拓扑（[`service_topology_page.md`](service_topology_page.md)）用来绘制的部件，于 1.5.6 从 `service_list_page.dart` 拆出：`ServiceTopologyNodeCard`（完整卡片，或紧凑节点的小端口 chip，或设备分组框的标题标签页——选中时边框更粗，选择不包含它时变暗，并按标签、角色和车道向屏幕阅读器播报）、`ServiceTopologyEdgePainter`（先绘制设备分组框，再绘制带箭头、按访问车道着色的已路由边，选择所涉及的边会被强调）、`ServiceTopologyLegend`（说明车道和角色颜色的图例）、`fitTransform`（移动模式的「适应窗口」），以及其背后的图标和颜色辅助。`serviceAccessLaneColor` 从引导式访问路径页移到这里，是边画家、图例和该页预览共用的唯一车道颜色规则。拓扑保留 `iconForService` 作为节点的 Material 图标入口；共享的图标键解析函数位于 [`service_icon.md`](../widgets/service_icon.md)，也供 `ServiceAvatar` 使用。
+全屏拓扑（[`service_topology_page.md`](service_topology_page.md)）用来绘制的部件，于 1.5.6 从 `service_list_page.dart` 拆出：`ServiceTopologyNodeCard`（完整卡片，或紧凑节点的小端口 chip，或设备分组框的标题标签页——选中时边框更粗，选择不包含它时变暗，并按标签、角色和车道向屏幕阅读器播报）、`ServiceTopologyEdgePainter`（先绘制设备分组框，再绘制带箭头、按访问车道着色的已路由边，选择所涉及的边会被强调）、`ServiceTopologyLegend`（说明车道和角色颜色的图例），以及其背后的图标和颜色辅助。`fitTransform` 已于 1.8.0 移到共享的 [`topology_canvas_viewer.md`](../../../shared/widgets/topology_canvas_viewer.md#fittransform)；本文件重新导出它，使现有的导入继续可用。`serviceAccessLaneColor` 从引导式访问路径页移到这里，是边画家、图例和该页预览共用的唯一车道颜色规则。拓扑保留 `iconForService` 作为节点的 Material 图标入口；共享的图标键解析函数位于 [`service_icon.md`](../widgets/service_icon.md)，也供 `ServiceAvatar` 使用。
 
-**行数说明：** `grep -c 'Purpose:' service_topology_widgets.dart` 返回 **27**，下面每个声明一块（**8 个 Tier A / 19 个 Tier B**；`fitTransform` 的嵌套函数 `offset` 也计入）。公共常量 `topologyDimmedNodeOpacity`（0.35）和 `topologyDimmedEdgeAlpha`（0.18）在源码中有文档，不单列。拆分时只输出英文的 `topologyLaneLabel` 和 `topologyRoleLabel` 已移除：卡片和详情改用 [`../services/service_labels.md`](../services/service_labels.md) 中本地化的 `serviceAccessLaneLabel` 和 `serviceTopologyRoleLabel`；`_nodeFill` / `_nodeBorder` 则变为以角色为键的 `_roleFill` / `_roleBorder`，以便图例使用。
+**行数说明：** `grep -c 'Purpose:' service_topology_widgets.dart` 返回 **25**，下面每个声明一块（**7 个 Tier A / 18 个 Tier B**）。公共常量 `topologyDimmedNodeOpacity`（0.35）和 `topologyDimmedEdgeAlpha`（0.18）在源码中有文档，不单列；资料集拓扑也使用它们。拆分时只输出英文的 `topologyLaneLabel` 和 `topologyRoleLabel` 已移除：卡片和详情改用 [`../services/service_labels.md`](../services/service_labels.md) 中本地化的 `serviceAccessLaneLabel` 和 `serviceTopologyRoleLabel`；`_nodeFill` / `_nodeBorder` 则变为以角色为键的 `_roleFill` / `_roleBorder`，以便图例使用。
 
 ## 声明
 
@@ -33,8 +33,6 @@
 | `ServiceTopologyLegend`（构造函数） | 构造函数 | B | 创建图例。 |
 | `build` | 方法（组件，`ServiceTopologyLegend`） | B | 把三种车道的线条样本和六种角色的色块连同本地化标签自动换行排列。 |
 | `_entry` | 方法（组件辅助，`ServiceTopologyLegend`） | B | 一个图例条目：色块及其标签。 |
-| [`fitTransform`](#fittransform) | 顶层函数 | A | 在缩放限制和平移边距之内，把画布适配进查看器的变换。 |
-| `offset` | 嵌套函数（`fitTransform`） | B | 缩放后画布在单个轴上的偏移：能让查看器保持在边界内时居中，否则为 0。 |
 
 ## 文档
 
@@ -114,14 +112,3 @@
 - **算法：** `device` kind → 解析设备类别图标（`deviceCategoryIcon`），无法解析时泛型设备图标。`service` kind → 解析服务图标（`iconForService`），无法解析时泛型 `dns` 图标。`endpoint` kind → 固定 ethernet-settings 图标。`remoteEntry` → 公共图标。`domain` → 语言图标。其他任何 → `iconForRouteMethod(node.method)`。
 - **用法：** `_ServiceTopologyViewState._buildViewer` 和节点详情的 [`build`](service_topology_page.md#detailsbuild) 中的 `iconForTopologyNode(node, widget.services, widget.devices)`。
 - **备注：** 无。
-
-### `Matrix4 fitTransform(Size canvas, Size viewport, {required double minScale, required double maxScale, double boundaryMargin = 0})` <a id="fittransform"></a>
-- **种类：** 顶层函数。
-- **来源：** `lib/features/services/views/service_topology_widgets.dart`（第 843 行）。
-- **用途：** 计算把画布适配进 `InteractiveViewer` 的变换。
-- **输入：** `canvas` — 查看器所布局的子组件（画布旋转时为转过后的尺寸）；`viewport` — 查看器的尺寸；`minScale`、`maxScale` — 查看器的缩放限制；`boundaryMargin` — 查看器在子组件周围的边距。
-- **返回：** `Matrix4` — 三个轴上一致的缩放加一个平移；画布或视口为空时为单位矩阵。
-- **副作用：** 无。
-- **算法：** 1. `scale = min(viewport.width / canvas.width, viewport.height / canvas.height)`，钳制到限制范围内。2. 逐轴计算（`offset`）：没有余量 ⇒ 0；有余量 ⇒ 余量的一半不超过 `boundaryMargin × scale` 时居中，否则为 0。3. 带该平移的 `Matrix4.diagonal3Values(scale, scale, scale)`。
-- **用法：** 页面视图的 `fitToViewport`，使用移动模式的 0.35 / 2.4 限制和 180 边距。
-- **备注：** 缩放也作用在 z 轴上，因为 `InteractiveViewer` 用 `getMaxScaleOnAxis` 读回其缩放；若 z 为 1，只要适配是在缩小，缩放就会被读成 100 %。超出边距时不居中，因为查看器会在下一次平移时把越界偏移弹回 0，居中只会让图跳动。`test/service_topology_page_test.dart` 钉住了较紧的那个轴、两个限制、边距规则和空尺寸的情形。

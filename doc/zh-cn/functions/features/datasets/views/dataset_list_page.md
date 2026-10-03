@@ -2,6 +2,8 @@
 
 数据集首页（见 [数据集](../../../../features/datasets.md)）。拥有数据集列表的加载/排序/重排状态，对照活设备列表交叉引用 [`DataSetStorageLink`](../models/dataset.md#datasetstoragelink-new) 索引构建每个块存储摘要副标题，并驱动由 [`DataSetStorage`](../services/dataset_storage.md) 支撑的增/改/删流程。注册到 `AutoSyncService`（`../../../../shared/services/auto_sync_service.md`），使后台同步带入新本地数据时列表自我刷新——与 [`device_list_page.md`](../../devices/views/device_list_page.md) 和 [`network_list_page.md`](../../network/views/network_list_page.md) 使用的相同模式。
 
+自 1.8.0 起，应用栏还会打开[资料集拓扑](dataset_topology_page.md)（`_openTopology`，键 `dataset-topology`）和一个**分组**菜单（键 `dataset-group`，菜单项 `dataset-group-mode-<none|device|storage>`），其选择保存为 `datasetGroupMode`。分组列表由 `_buildGroupedList` 依据 [`groupDataSets`](../services/dataset_placement.md#groupdatasets) 构建：标题键为 `dataset-group-<group key>`，其后跟着该组的列表块，块的副标题变为副本数和"其他位置：…"（`_groupedSubtitle`）；分组时隐藏*调整顺序*。见 [数据集](../../../../features/datasets.md#grouping-the-list)。
+
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
@@ -11,7 +13,9 @@
 | [`initState`](#initstate) | 方法（组件生命周期） | A | 注册自动同步监听器并启动偏好/数据集加载。 |
 | `dispose` | 方法（组件生命周期） | B | 注销自动同步监听器。 |
 | `_handleLocalDataChanged` | 方法（`_DataSetListPageState`） | B | 响应自动同步通知重载数据集。 |
-| [`_loadSortPrefs`](#loadsortprefs) | 方法（`_DataSetListPageState`） | A | 从设备存储配置加载持久化排序模式/方向。 |
+| [`_loadSortPrefs`](#loadsortprefs) | 方法（`_DataSetListPageState`） | A | 加载持久化的排序模式/方向、分组模式和列数偏好。 |
+| `_setGroupMode` | 方法（`_DataSetListPageState`） | B | 设置分组并持久化为 `datasetGroupMode`（不分组时移除）。 |
+| `_openTopology` | 方法（`_DataSetListPageState`） | B | 带编辑器和 `reload` 压入资料集拓扑；关闭后重载列表。 |
 | [`_saveSortPrefs`](#savesortprefs) | 方法（`_DataSetListPageState`） | A | 把当前排序模式/方向持久化到设备存储配置。 |
 | [`_sortedDatasets`](#sorteddatasets) | getter（`_DataSetListPageState`） | A | 按当前排序模式/方向排序 `_datasets`。 |
 | [`_load`](#load) | 方法（`_DataSetListPageState`） | A | 从存储重载数据集列表和设备列表两者。 |
@@ -21,11 +25,15 @@
 | [`_deleteDataSet`](#deletedataset) | 方法（`_DataSetListPageState`） | A | 确认并接受时删除数据集并通知同步层。 |
 | [`_onReorder`](#onreorder) | 方法（`_DataSetListPageState`） | A | 在自定义顺序内移动数据集并持久化新顺序。 |
 | `_setColumnsPref` | 方法（`_DataSetListPageState`） | B | 存储新的列数偏好（`DeviceStorage.setDataSetListColumns`）并重新渲染。 |
-| `_buildDataSetTile` | 方法（组件辅助） | B | 渲染一个数据集列表块（emoji、名称、存储摘要副标题）；`reorderHandle` 禁用点按编辑。 |
+| `_buildDataSetTile` | 方法（组件辅助） | B | 渲染一个数据集列表块（emoji、名称、存储摘要副标题，或给定的 `subtitle`）；`reorderHandle` 禁用点按编辑。 |
 | `_buildMenuTile` | 方法（组件辅助） | B | 多列 tile：`_buildDataSetTile` 加尾部删除 `PopupMenuButton`，取代滑动。 |
-| `build` | 方法（组件） | B | 构建脚手架：应用栏、列数控件（容量为 1 及重排时隐藏）、排序菜单、数据集列表——一列时是滑动 tile，多列时是菜单 tile 的 `adaptiveTileRow`——或重排视图、添加 FAB。列数由 `listColumnCount` 以 `shellContentWidth − 16` 和 `dataSetTileMinWidth` 得出。 |
+| `build` | 方法（组件） | B | 构建脚手架：应用栏（拓扑、容量为 1 及重排时隐藏的列数控件、分组菜单、排序菜单）、数据集列表——分组列表，一列时是滑动 tile，多列时是菜单 tile 的 `adaptiveTileRow`——或重排视图、添加 FAB。列数由 `listColumnCount` 以 `shellContentWidth − 16` 和 `dataSetTileMinWidth` 得出。 |
+| `_buildSwipeTile` | 方法（组件辅助） | B | 一列时的滑动删除 tile；分组列表按组和数据集为其设键。 |
+| `_groupTitle` | 方法（`_DataSetListPageState`） | B | 组标题：设备名、"设备 · 存储"或"未存放在任何存储上"。 |
+| [`_groupedSubtitle`](#groupedsubtitle) | 方法（`_DataSetListPageState`） | A | 分组 tile 的副本数和数据集的其他位置。 |
+| `_buildGroupedList` | 方法（组件辅助） | B | 分组 `ListView`：每组先标题后 tile，一列时是滑动 tile，多列时是菜单 tile 行。 |
 
-行数（16）与 `grep -c 'Purpose:' dataset_list_page.dart`（16）精确匹配。
+行数（24）与 `grep -c 'Purpose:' dataset_list_page.dart`（24）精确匹配。（1.8.0 之前此行写的是 16，而表格和源码都是 18。）
 
 ## 文档
 
@@ -94,6 +102,17 @@
 - **算法：** 对 `ds.storageLinks` 中每个 `DataSetStorageLink`：1. 在 `_devices` 按 `link.deviceId` 查找设备；未找到完全跳过此链接（`continue`）。2. 对 `link.storageIndices` 中仍在 `device.storage.length` 范围内的每个索引，收集该槽的 [`StorageInfo.displayString`](../../devices/models/device.md#storageinfo-displaystring)。越界索引（存储列表收缩后未重映射的过期，或真实损坏数据）静默跳过而非显示为错误。3. 无存储部分解析（空列表但设备本身存在）时行只是设备名；否则 `"{device.name} – {parts.join(', ')}"`。
 - **用法：** `_buildDataSetTile` 中的 `_storageLines(ds)`（本文件，第 233 行），用 `'\n'` 连接为块副标题（最多 4 行，省略号）。
 - **备注：** 此方法是 [数据集 — 存储槽索引链接](../../../../features/datasets.md#storage-slot-index-linking) 描述位置索引契约的读侧——这里越界索引（而非导致崩溃）正是 [`remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) 存在、通过设备存储列表变化时保持索引同步来预防的"过期/悬空"失败模式。
+
+### `Widget? _groupedSubtitle(DataSet ds, DataSetGroup group, AppLocalizations l10n)` <a id="groupedsubtitle"></a>
+- **种类：** `_DataSetListPageState` 的方法。
+- **来源：** `lib/features/datasets/views/dataset_list_page.dart`（第 583 行）。
+- **用途：** 构建组内列表块的副标题。
+- **输入：** `ds`、`group`、`l10n`。
+- **返回：** 至多三行的 `Text`——副本数，然后是"其他位置：…"——在未存放分组中为 null。
+- **副作用：** 无。
+- **算法：** 解析副本（[`resolveReplicas`](../services/dataset_placement.md#resolvereplicas)）。在设备组中列出其他设备的名称；在存储组中列出其他"设备 – 存储"位置。只有一份副本 ⇒ 以错误色显示*仅一份副本*；否则为"n 份副本"。
+- **用法：** `_buildGroupedList`，用于滑动 tile 和菜单 tile。
+- **备注：** 红色的单副本行是列表标记没有备份的数据集的方式。
 
 ### `Future<void> _deleteDataSet(DataSet ds)` <a id="deletedataset"></a>
 - **种类：** `_DataSetListPageState` 的方法。

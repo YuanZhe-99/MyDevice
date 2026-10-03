@@ -153,6 +153,10 @@
 | quoted term | 引用词 | 在文字系统检查前移除、因此可以保持拉丁字母的词语 |
 | fallback facts | 回退事实 | 模型拒绝第一组事实时发送的更朴素的第二次尝试 |
 | regenerate | 重新生成 | 卡片的刷新操作 |
+| copy (of a data set) | 副本 | 数据集在一个存储槽上的一份完整、对等的副本；此义下绝不译作 备份 |
+| copy count | 副本数 | 保存某数据集的存储槽数量 |
+| data set topology | 资料集拓扑 | 全屏的设备 → 存储 → 数据集视图（中文 UI 中 data set 译作 资料集） |
+| sync line | 同步连线 | 拓扑中连接同一数据集两份副本的连线 |
 | weak linking | 弱链接 | 链接 FoundationModels 的方式，使应用在没有该框架的系统上仍能启动 |
 | hand-picked thumbnail | 手选缩略图 | 用户为设备选定的内置缩略图（`templateImage`） |
 | thumbnail candidate | 候选缩略图 | 排序后的选择网格中的一项 |

@@ -177,6 +177,10 @@ Not copied to the other repos — no other app has these.
 | quoted term | 引用词 | a word removed before the script check so it may stay in Latin letters |
 | fallback facts | 回退事实 | the plainer second try sent when the model declines the first facts |
 | regenerate | 重新生成 | the card's refresh action |
+| copy (of a data set) | 副本 | one full, equal copy of a data set on one storage slot; never 备份 in this sense |
+| copy count | 副本数 | how many storage slots hold a data set |
+| data set topology | 资料集拓扑 | the full-screen device → storage → data set view (zh UI uses 资料集 for data set) |
+| sync line | 同步连线 | the topology line joining two copies of the same data set |
 | weak linking | 弱链接 | linking FoundationModels so the app still launches where it does not exist |
 | hand-picked thumbnail | 手选缩略图 | a bundled thumbnail the user chose for a device (`templateImage`) |
 | thumbnail candidate | 候选缩略图 | an entry of the ranked chooser grid |

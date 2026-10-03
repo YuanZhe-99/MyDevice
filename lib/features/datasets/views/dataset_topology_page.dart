@@ -88,6 +88,10 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
   final _captureKey = GlobalKey();
   Set<String> _deviceFilter = const {};
   bool _showEmpty = false;
+
+  /// Whether the sync lines are drawn; off by default so the boxes read
+  /// cleanly, and only a repaint when toggled.
+  bool _showLinks = false;
   bool _legendOpen = false;
   bool _exporting = false;
   String? _selectedId;
@@ -98,7 +102,6 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
     List<Device> devices,
     Set<String> filter,
     bool showEmpty,
-    int width,
     DataSetTopologyLayout layout,
   })?
   _cache;
@@ -114,27 +117,25 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
     super.dispose();
   }
 
-  /// Purpose: Return the layout for a viewport width, reusing the last one.
-  /// Inputs: `width` — the canvas viewport's width.
+  /// Purpose: Return the layout, reusing the last one.
+  /// Inputs: None.
   /// Returns: `DataSetTopologyLayout`.
   /// Side effects: Caches the layout in `_cache`.
-  /// Notes: Keyed by data identity, the filter, the empty-device switch and
-  /// the rounded width, so a selection only repaints.
-  DataSetTopologyLayout _layoutFor(double width) {
-    final w = width.round();
+  /// Notes: Keyed by data identity, the filter and the empty-device switch,
+  /// so a selection, the line switch or a window resize only repaints — the
+  /// layout aims at a square-to-16:10 canvas, not the window width.
+  DataSetTopologyLayout _layout() {
     final c = _cache;
     if (c != null &&
         identical(c.dataSets, _dataSets) &&
         identical(c.devices, _devices) &&
         identical(c.filter, _deviceFilter) &&
-        c.showEmpty == _showEmpty &&
-        c.width == w) {
+        c.showEmpty == _showEmpty) {
       return c.layout;
     }
     final layout = DataSetTopologyLayout.build(
       devices: _devices,
       dataSets: _dataSets,
-      viewportWidth: w.toDouble(),
       deviceIds: _deviceFilter,
       showEmptyDevices: _showEmpty,
     );
@@ -143,7 +144,6 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
       devices: _devices,
       filter: _deviceFilter,
       showEmpty: _showEmpty,
-      width: w,
       layout: layout,
     );
     return layout;
@@ -331,7 +331,8 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
   /// Inputs: `context`.
   /// Returns: The widget tree.
   /// Side effects: Fills the layout cache.
-  /// Notes: App bar: filter (badge with the device count), the "show
+  /// Notes: App bar: filter (badge with the device count), the sync-line toggle
+  /// (off by default), the "show
   /// devices without data sets" toggle, export. Body: view controls, legend
   /// strip, canvas; the details pane on split windows, always present so a
   /// selection never changes the canvas width.
@@ -340,9 +341,9 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
     final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.sizeOf(context);
     final twoPane = useDetailTwoPane(size.width, size.height);
-    final canvas = LayoutBuilder(
-      builder: (context, constraints) {
-        final layout = _layoutFor(constraints.maxWidth);
+    final canvas = Builder(
+      builder: (context) {
+        final layout = _layout();
         if (layout.isEmpty) {
           return Center(
             key: const Key('dataset-topology-empty'),
@@ -375,6 +376,7 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
                 child: _DataSetTopologyCanvas(
                   layout: layout,
                   highlight: highlight,
+                  showLinks: _showLinks,
                   onTap: _select,
                 ),
               ),
@@ -418,6 +420,14 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
               label: Text('${_deviceFilter.length}'),
               child: const Icon(Icons.filter_list),
             ),
+          ),
+          IconButton(
+            key: const Key('dataset-topology-links'),
+            tooltip: l10n.dataSetTopologyShowLinks,
+            isSelected: _showLinks,
+            onPressed: () => setState(() => _showLinks = !_showLinks),
+            icon: const Icon(Icons.timeline_outlined),
+            selectedIcon: const Icon(Icons.timeline),
           ),
           IconButton(
             key: const Key('dataset-topology-show-empty'),
@@ -573,10 +583,11 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
                     box(cs.primaryContainer, cs.primary, 8),
                     l10n.dataSetTopologyLegendDataSet,
                   ),
-                  entry(
-                    Container(width: 22, height: 3, color: cs.primary),
-                    l10n.dataSetTopologyLegendSync,
-                  ),
+                  if (_showLinks)
+                    entry(
+                      Container(width: 22, height: 3, color: cs.primary),
+                      l10n.dataSetTopologyLegendSync,
+                    ),
                   entry(
                     box(cs.errorContainer, cs.error, 8),
                     l10n.dataSetSingleCopy,
@@ -612,16 +623,19 @@ String _nodeLabel(DataSetTopologyNode node, AppLocalizations l10n) =>
 class _DataSetTopologyCanvas extends StatelessWidget {
   final DataSetTopologyLayout layout;
   final DataSetTopologyHighlight? highlight;
+  final bool showLinks;
   final ValueChanged<DataSetTopologyNode> onTap;
 
   /// Purpose: Create the canvas.
-  /// Inputs: `layout`; `highlight` — dims what it leaves out; `onTap`.
+  /// Inputs: `layout`; `highlight` — dims what it leaves out; `showLinks` —
+  /// draw the sync lines; `onTap`.
   /// Returns: A new `_DataSetTopologyCanvas`.
   /// Side effects: None.
   /// Notes: None.
   const _DataSetTopologyCanvas({
     required this.layout,
     required this.highlight,
+    required this.showLinks,
     required this.onTap,
   });
 
@@ -631,7 +645,8 @@ class _DataSetTopologyCanvas extends StatelessWidget {
   /// Returns: The widget tree, sized to `layout.size`.
   /// Side effects: None.
   /// Notes: Device and storage boxes are drawn first, then the lines, then
-  /// the copy boxes, so a line never hides a copy. Every box is keyed
+  /// the copy boxes, so a line never hides a copy. Without `showLinks` the
+  /// painter layer is left out. Every box is keyed
   /// `dataset-topology-node-<id>`.
   @override
   Widget build(BuildContext context) {
@@ -661,17 +676,19 @@ class _DataSetTopologyCanvas extends StatelessWidget {
         children: [
           for (final node in layout.nodes)
             if (node.kind != DataSetTopologyNodeKind.copy) place(node),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: CustomPaint(
-                painter: _DataSetLinkPainter(
-                  layout: layout,
-                  highlight: lit,
-                  colorScheme: cs,
+          if (showLinks)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  key: const Key('dataset-topology-links-layer'),
+                  painter: _DataSetLinkPainter(
+                    layout: layout,
+                    highlight: lit,
+                    colorScheme: cs,
+                  ),
                 ),
               ),
             ),
-          ),
           for (final node in layout.nodes)
             if (node.kind == DataSetTopologyNodeKind.copy) place(node),
         ],

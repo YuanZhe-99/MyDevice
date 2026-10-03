@@ -2115,6 +2115,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select a device, a storage or a data set to see where its copies are.';
 
   @override
+  String get dataSetTopologyShowLinks => 'Show sync lines';
+
+  @override
   String get dataSetTopologyShowEmpty => 'Show devices without data sets';
 
   @override

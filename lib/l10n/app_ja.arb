@@ -713,6 +713,7 @@
   "dataSetTopology": "データセットトポロジー",
   "dataSetTopologyEmpty": "ストレージにあるデータセットはまだありません。",
   "dataSetTopologySelectHint": "デバイス、ストレージ、データセットを選択すると、コピーの場所が表示されます。",
+  "dataSetTopologyShowLinks": "同期ラインを表示",
   "dataSetTopologyShowEmpty": "データセットのないデバイスも表示",
   "dataSetTopologyNoDataSets": "データセットなし",
   "dataSetTopologyLegendDevice": "デバイス",

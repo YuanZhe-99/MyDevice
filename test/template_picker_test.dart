@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_device/app/app.dart';
+
+import 'support/fake_storage.dart';
 
 /// Purpose: Open the "add from template" bottom sheet from the device list.
 /// Inputs: `tester`.
@@ -78,6 +82,14 @@ Future<void> search(WidgetTester tester, String query) async {
 }
 
 void main() {
+  // The app reads its settings and device list on start; without a fake
+  // path_provider those reads throw MissingPluginException, which fails the
+  // test whenever it surfaces before the test body ends (timing-dependent
+  // under the parallel full-suite run).
+  late Directory tempDir;
+  setUp(() async => tempDir = await seedAppDir('mydevice_template_picker'));
+  tearDown(() => deleteSeededDir(tempDir));
+
   testWidgets('the picker sheet opens above the shell, not behind the bar', (
     tester,
   ) async {

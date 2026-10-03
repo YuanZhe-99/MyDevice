@@ -83,7 +83,7 @@ class DataSetTopologyHighlight {
 }
 
 /// The pure, deterministic layout of the data set topology: devices as
-/// large boxes flowed into rows, their storage slots stacked inside, each
+/// large boxes packed into columns of a square-to-16:10 canvas, their storage slots stacked inside, each
 /// slot's data set copies wrapped inside the slot, and one chain of sync
 /// lines per data set with more than one copy.
 class DataSetTopologyLayout {
@@ -119,6 +119,11 @@ class DataSetTopologyLayout {
   static const copiesPerRow = 2;
   static const emptyStorageBody = 24.0;
 
+  /// The canvas aspect ratios (width / height) the device columns aim for:
+  /// square up to 16:10.
+  static const targetMinAspect = 1.0;
+  static const targetMaxAspect = 1.6;
+
   /// Width of a storage box: two copy boxes and their margins.
   static const storageWidth =
       2 * storagePadding +
@@ -144,20 +149,22 @@ class DataSetTopologyLayout {
 
   /// Purpose: Lay the topology out.
   /// Inputs: `devices` — the device list, whose order breaks ties;
-  /// `dataSets` — in display order; `viewportWidth` — how wide a row of
-  /// devices may get; `deviceIds` — when non-empty, only these devices are
-  /// drawn; `showEmptyDevices` — also draw devices with storage but no copy.
+  /// `dataSets` — in display order; `deviceIds` — when non-empty, only these
+  /// devices are drawn; `showEmptyDevices` — also draw devices with storage
+  /// but no copy.
   /// Returns: The layout.
   /// Side effects: None.
   /// Notes: Devices with no storage slot are never drawn. Device order:
   /// the device with the most copies first, then repeatedly the device that
   /// shares the most data sets with those already placed, so devices that
-  /// sync sit side by side; ties keep the device-list order. Copy count
+  /// sync sit side by side; ties keep the device-list order. Devices are
+  /// packed into columns (each into the currently shortest one), with the
+  /// column count chosen by [_columnCount] so the canvas is as close as
+  /// possible to square-to-16:10; the window size plays no part. Copy count
   /// counts every copy, drawn or not.
   static DataSetTopologyLayout build({
     required List<Device> devices,
     required List<DataSet> dataSets,
-    required double viewportWidth,
     Set<String> deviceIds = const {},
     bool showEmptyDevices = false,
   }) {
@@ -180,93 +187,103 @@ class DataSetTopologyLayout {
           device,
     ];
     final ordered = _orderByAffinity(candidates, dataSetsOnDevice);
+    if (ordered.isEmpty) {
+      return DataSetTopologyLayout(size: Size.zero, nodes: [], links: []);
+    }
 
-    final perRow = math.max(
-      1,
-      ((viewportWidth - 2 * padding + deviceGap) / (deviceWidth + deviceGap))
-          .floor(),
-    );
+    /// Purpose: Return the height of one storage box.
+    /// Inputs: `copies` — how many copies the slot holds.
+    /// Returns: `double`.
+    /// Side effects: None.
+    /// Notes: Local helper of [build].
+    double storageHeight(int copies) {
+      final rows = (copies / copiesPerRow).ceil();
+      final body = copies == 0
+          ? emptyStorageBody
+          : rows * copyHeight + (rows - 1) * copyGap;
+      return storageHeader + body + storagePadding;
+    }
+
+    final heights = [
+      for (final device in ordered)
+        deviceHeader +
+            devicePadding +
+            [
+              for (var i = 0; i < device.storage.length; i++)
+                storageHeight(onSlot['${device.id}:$i']?.length ?? 0),
+            ].reduce((a, b) => a + b) +
+            (device.storage.length - 1) * storageGap,
+    ];
+    final columns = _columnCount(heights);
+    final tops = _packColumns(heights, columns);
+
     final deviceNodes = <DataSetTopologyNode>[];
     final storageNodes = <DataSetTopologyNode>[];
     final copyNodes = <DataSetTopologyNode>[];
-    var y = padding;
     var maxRight = padding;
-    for (var start = 0; start < ordered.length; start += perRow) {
-      final row = ordered.skip(start).take(perRow).toList();
-      var rowHeight = 0.0;
-      for (var column = 0; column < row.length; column++) {
-        final device = row[column];
-        final left = padding + column * (deviceWidth + deviceGap);
-        var sy = y + deviceHeader;
-        for (var i = 0; i < device.storage.length; i++) {
-          final copies = onSlot['${device.id}:$i'] ?? const [];
-          final rows = (copies.length / copiesPerRow).ceil();
-          final body = copies.isEmpty
-              ? emptyStorageBody
-              : rows * copyHeight + (rows - 1) * copyGap;
-          final storageRect = Rect.fromLTWH(
-            left + devicePadding,
-            sy,
-            storageWidth,
-            storageHeader + body + storagePadding,
-          );
-          storageNodes.add(
-            DataSetTopologyNode(
-              id: 'storage:${device.id}:$i',
-              kind: DataSetTopologyNodeKind.storage,
-              rect: storageRect,
-              device: device,
-              storageIndex: i,
-            ),
-          );
-          for (var c = 0; c < copies.length; c++) {
-            final r = copies[c];
-            copyNodes.add(
-              DataSetTopologyNode(
-                id: copyNodeId(r.dataSet.id, device.id, i),
-                kind: DataSetTopologyNodeKind.copy,
-                rect: Rect.fromLTWH(
-                  storageRect.left +
-                      storagePadding +
-                      (c % copiesPerRow) * (copyWidth + copyGap),
-                  storageRect.top +
-                      storageHeader +
-                      (c ~/ copiesPerRow) * (copyHeight + copyGap),
-                  copyWidth,
-                  copyHeight,
-                ),
-                device: device,
-                storageIndex: i,
-                dataSet: r.dataSet,
-                copyCount: replicasByDataSet[r.dataSet.id]!.length,
-              ),
-            );
-          }
-          sy = storageRect.bottom + storageGap;
-        }
-        final deviceRect = Rect.fromLTRB(
-          left,
-          y,
-          left + deviceWidth,
-          sy - storageGap + devicePadding,
+    var maxBottom = padding;
+    for (var d = 0; d < ordered.length; d++) {
+      final device = ordered[d];
+      final left = padding + tops[d].column * (deviceWidth + deviceGap);
+      final y = tops[d].top;
+      var sy = y + deviceHeader;
+      for (var i = 0; i < device.storage.length; i++) {
+        final copies = onSlot['${device.id}:$i'] ?? const [];
+        final storageRect = Rect.fromLTWH(
+          left + devicePadding,
+          sy,
+          storageWidth,
+          storageHeight(copies.length),
         );
-        deviceNodes.add(
+        storageNodes.add(
           DataSetTopologyNode(
-            id: 'device:${device.id}',
-            kind: DataSetTopologyNodeKind.device,
-            rect: deviceRect,
+            id: 'storage:${device.id}:$i',
+            kind: DataSetTopologyNodeKind.storage,
+            rect: storageRect,
             device: device,
+            storageIndex: i,
           ),
         );
-        rowHeight = math.max(rowHeight, deviceRect.height);
-        maxRight = math.max(maxRight, deviceRect.right);
+        for (var c = 0; c < copies.length; c++) {
+          final r = copies[c];
+          copyNodes.add(
+            DataSetTopologyNode(
+              id: copyNodeId(r.dataSet.id, device.id, i),
+              kind: DataSetTopologyNodeKind.copy,
+              rect: Rect.fromLTWH(
+                storageRect.left +
+                    storagePadding +
+                    (c % copiesPerRow) * (copyWidth + copyGap),
+                storageRect.top +
+                    storageHeader +
+                    (c ~/ copiesPerRow) * (copyHeight + copyGap),
+                copyWidth,
+                copyHeight,
+              ),
+              device: device,
+              storageIndex: i,
+              dataSet: r.dataSet,
+              copyCount: replicasByDataSet[r.dataSet.id]!.length,
+            ),
+          );
+        }
+        sy = storageRect.bottom + storageGap;
       }
-      y += rowHeight + deviceGap;
+      final deviceRect = Rect.fromLTWH(left, y, deviceWidth, heights[d]);
+      deviceNodes.add(
+        DataSetTopologyNode(
+          id: 'device:${device.id}',
+          kind: DataSetTopologyNodeKind.device,
+          rect: deviceRect,
+          device: device,
+        ),
+      );
+      maxRight = math.max(maxRight, deviceRect.right);
+      maxBottom = math.max(maxBottom, deviceRect.bottom);
     }
-    final height = ordered.isEmpty ? 0.0 : y - deviceGap + padding;
 
-    // Copy boxes were placed row by row, device by device, so this order
-    // chains each data set's copies along the canvas.
+    // Copy boxes were placed device by device in affinity order, slot by
+    // slot, so this order chains each data set's copies along the canvas.
     final copiesOf = <String, List<DataSetTopologyNode>>{};
     for (final node in copyNodes) {
       copiesOf.putIfAbsent(node.dataSet!.id, () => []).add(node);
@@ -286,10 +303,74 @@ class DataSetTopologyLayout {
     }
 
     return DataSetTopologyLayout(
-      size: ordered.isEmpty ? Size.zero : Size(maxRight + padding, height),
+      size: Size(maxRight + padding, maxBottom + padding),
       nodes: [...deviceNodes, ...storageNodes, ...copyNodes],
       links: links,
     );
+  }
+
+  /// Purpose: Place device boxes into columns, each into the shortest.
+  /// Inputs: `heights` — device heights in placement order; `columns`.
+  /// Returns: Per device, its column and top edge.
+  /// Side effects: None.
+  /// Notes: Ties go to the leftmost column, so the result is deterministic;
+  /// a tall device simply makes its column longer while the next devices
+  /// fill the others.
+  static List<({int column, double top})> _packColumns(
+    List<double> heights,
+    int columns,
+  ) {
+    final bottoms = List<double>.filled(columns, padding);
+    final placed = <({int column, double top})>[];
+    for (final h in heights) {
+      var best = 0;
+      for (var c = 1; c < columns; c++) {
+        if (bottoms[c] < bottoms[best]) best = c;
+      }
+      placed.add((column: best, top: bottoms[best]));
+      bottoms[best] += h + deviceGap;
+    }
+    return placed;
+  }
+
+  /// Purpose: Choose how many device columns make the canvas closest to
+  /// square-to-16:10.
+  /// Inputs: `heights` — device heights in placement order.
+  /// Returns: A column count between 1 and the number of devices.
+  /// Side effects: None.
+  /// Notes: Each count is packed with [_packColumns]; its aspect ratio
+  /// (width / height) scores by how far, on a log scale, it falls outside
+  /// [targetMinAspect, targetMaxAspect]. Ties — several counts inside the
+  /// range — go to the smaller canvas area, then to fewer columns.
+  static int _columnCount(List<double> heights) {
+    var best = 1;
+    var bestScore = double.infinity;
+    var bestArea = double.infinity;
+    for (var k = 1; k <= heights.length; k++) {
+      final placed = _packColumns(heights, k);
+      var bottom = 0.0;
+      var used = 0;
+      for (var d = 0; d < heights.length; d++) {
+        bottom = math.max(bottom, placed[d].top + heights[d]);
+        used = math.max(used, placed[d].column + 1);
+      }
+      final w = 2 * padding + used * deviceWidth + (used - 1) * deviceGap;
+      final h = bottom + padding;
+      final aspect = w / h;
+      final score = aspect < targetMinAspect
+          ? math.log(targetMinAspect / aspect)
+          : aspect > targetMaxAspect
+          ? math.log(aspect / targetMaxAspect)
+          : 0.0;
+      final area = w * h;
+      if (score < bestScore - 1e-9 ||
+          ((score - bestScore).abs() <= 1e-9 && area < bestArea - 1e-6)) {
+        best = k;
+        bestScore = score;
+        bestArea = area;
+      }
+    }
+    return best;
   }
 
   /// Purpose: Build the id of a copy box.

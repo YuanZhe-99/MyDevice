@@ -60,12 +60,16 @@ The account-tree action in the data set list's app bar opens a full-screen topol
   medium boxes stacked inside it; each data set copy on a slot is a small box inside the slot,
   two per row, with an `×n` copy-count badge. Devices with no storage slot are never drawn;
   devices with storage but no copy only when *Show devices without data sets* is on.
-- **Sync lines.** The copies of one data set are joined by soft curves — one chain through the
+- **Sync lines.** Off by default since 1.8.1 (the timeline action in the app bar turns them
+  on; the choice is not saved). When on, the copies of one data set are joined by soft curves — one chain through the
   copies in drawing order, not a line between every pair, so four copies make three lines. A
   data set keeps one colour for its copies and lines (a stable hash of its id); a data set with a
   single copy is drawn in the error colours instead.
-- **Placement.** Devices flow left to right into as many columns as the canvas width holds. The
-  order is greedy: the device holding the most data sets first, then each time the device that
+- **Placement.** Since 1.8.1 devices are packed into columns, each device into the currently
+  shortest column, so a tall device (many storages) simply makes its column longer while the next
+  devices fill the others. The column count is the one whose canvas comes closest to square up to
+  16:10 (width / height between 1 and 1.6; ties go to the smaller canvas), independent of the
+  window size — pan and zoom take care of the rest. The device order is greedy: the device holding the most data sets first, then each time the device that
   shares the most data sets with those already placed, so devices that sync sit side by side.
 - **Selection.** Tapping a copy lights every copy of that data set, their storages and devices,
   and the lines between them; tapping a storage's or a device's header lights every data set on

@@ -715,6 +715,7 @@
   "dataSetTopology": "资料集拓扑",
   "dataSetTopologyEmpty": "还没有资料集存放在任何存储上。",
   "dataSetTopologySelectHint": "选择设备、存储或资料集，查看副本所在的位置。",
+  "dataSetTopologyShowLinks": "显示同步连线",
   "dataSetTopologyShowEmpty": "显示没有资料集的设备",
   "dataSetTopologyNoDataSets": "没有资料集",
   "dataSetTopologyLegendDevice": "设备",

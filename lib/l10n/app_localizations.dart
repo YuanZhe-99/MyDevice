@@ -3977,6 +3977,12 @@ abstract class AppLocalizations {
   /// **'Select a device, a storage or a data set to see where its copies are.'**
   String get dataSetTopologySelectHint;
 
+  /// No description provided for @dataSetTopologyShowLinks.
+  ///
+  /// In en, this message translates to:
+  /// **'Show sync lines'**
+  String get dataSetTopologyShowLinks;
+
   /// No description provided for @dataSetTopologyShowEmpty.
   ///
   /// In en, this message translates to:

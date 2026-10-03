@@ -2065,6 +2065,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'デバイス、ストレージ、データセットを選択すると、コピーの場所が表示されます。';
 
   @override
+  String get dataSetTopologyShowLinks => '同期ラインを表示';
+
+  @override
   String get dataSetTopologyShowEmpty => 'データセットのないデバイスも表示';
 
   @override

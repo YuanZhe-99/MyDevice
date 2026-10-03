@@ -156,13 +156,11 @@ void main() {
 
   group('DataSetTopologyLayout', () {
     DataSetTopologyLayout build({
-      double width = 2000,
       Set<String> ids = const {},
       bool showEmpty = false,
     }) => DataSetTopologyLayout.build(
       devices: f.devices,
       dataSets: f.dataSets,
-      viewportWidth: width,
       deviceIds: ids,
       showEmptyDevices: showEmpty,
     );
@@ -205,19 +203,103 @@ void main() {
       expect(order[1], 'pc');
     });
 
-    test('rows wrap at the viewport width', () {
-      final narrow = build(width: 300);
-      final xs = {
-        for (final n in narrow.nodes)
+    test('devices pack into a square-to-16:10 canvas', () {
+      // Twelve one-slot devices with one data set each.
+      final devices = [
+        for (var i = 0; i < 12; i++)
+          Device(
+            id: 'd$i',
+            name: 'D$i',
+            category: DeviceCategory.other,
+            storage: const [StorageInfo(capacity: '1 TB')],
+          ),
+      ];
+      final dataSets = [
+        for (var i = 0; i < 12; i++)
+          DataSet(
+            id: 's$i',
+            name: 'S$i',
+            emoji: '📁',
+            storageLinks: [
+              DataSetStorageLink(deviceId: 'd$i', storageIndices: const [0]),
+            ],
+          ),
+      ];
+      final layout = DataSetTopologyLayout.build(
+        devices: devices,
+        dataSets: dataSets,
+      );
+      final aspect = layout.size.width / layout.size.height;
+      expect(aspect, inInclusiveRange(0.8, 1.9));
+      final columns = {
+        for (final n in layout.nodes)
           if (n.kind == DataSetTopologyNodeKind.device) n.rect.left,
       };
-      expect(xs.length, 1, reason: 'one device per row');
-      final wide = build();
-      final ys = {
-        for (final n in wide.nodes)
-          if (n.kind == DataSetTopologyNodeKind.device) n.rect.top,
-      };
-      expect(ys.length, 1, reason: 'one row');
+      expect(columns.length, greaterThan(1));
+    });
+
+    test('a tall device keeps its column while others fill the rest', () {
+      final tall = Device(
+        id: 'tall',
+        name: 'Tall',
+        category: DeviceCategory.other,
+        storage: List.filled(6, const StorageInfo(capacity: '1 TB')),
+      );
+      final small = [
+        for (var i = 0; i < 3; i++)
+          Device(
+            id: 'small$i',
+            name: 'Small $i',
+            category: DeviceCategory.other,
+            storage: const [StorageInfo(capacity: '1 TB')],
+          ),
+      ];
+      final dataSets = [
+        DataSet(
+          id: 'big',
+          name: 'Big',
+          emoji: '📁',
+          storageLinks: const [
+            DataSetStorageLink(
+              deviceId: 'tall',
+              storageIndices: [0, 1, 2, 3, 4, 5],
+            ),
+          ],
+        ),
+        for (var i = 0; i < 3; i++)
+          DataSet(
+            id: 'x$i',
+            name: 'X$i',
+            emoji: '📁',
+            storageLinks: [
+              DataSetStorageLink(
+                deviceId: 'small$i',
+                storageIndices: const [0],
+              ),
+            ],
+          ),
+      ];
+      final layout = DataSetTopologyLayout.build(
+        devices: [tall, ...small],
+        dataSets: dataSets,
+      );
+      final t = layout.node('device:tall')!.rect;
+      final others = [
+        for (var i = 0; i < 3; i++) layout.node('device:small$i')!.rect,
+      ];
+      // The small devices stack beside the tall one, not below it.
+      for (final r in others) {
+        expect(r.left, isNot(t.left));
+        expect(r.top, lessThan(t.bottom));
+      }
+      expect({for (final r in others) r.left}.length, 1);
+      // No two device boxes overlap.
+      final all = [t, ...others];
+      for (var a = 0; a < all.length; a++) {
+        for (var b = a + 1; b < all.length; b++) {
+          expect(all[a].overlaps(all[b]), isFalse);
+        }
+      }
     });
 
     test('a device filter hides other devices and their links', () {
@@ -243,7 +325,6 @@ void main() {
       DataSetTopologyLayout at(bool show) => DataSetTopologyLayout.build(
         devices: [...f.devices, empty],
         dataSets: f.dataSets,
-        viewportWidth: 2000,
         showEmptyDevices: show,
       );
       expect(at(false).node('device:usb'), isNull);
@@ -254,7 +335,6 @@ void main() {
       final layout = DataSetTopologyLayout.build(
         devices: f.devices,
         dataSets: [ds('orphan')],
-        viewportWidth: 1000,
       );
       expect(layout.isEmpty, isTrue);
       expect(layout.size, Size.zero);

@@ -725,6 +725,7 @@
   "dataSetTopology": "資料集拓撲",
   "dataSetTopologyEmpty": "還沒有資料集存放在任何儲存上。",
   "dataSetTopologySelectHint": "選取裝置、儲存或資料集，查看副本所在的位置。",
+  "dataSetTopologyShowLinks": "顯示同步連線",
   "dataSetTopologyShowEmpty": "顯示沒有資料集的裝置",
   "dataSetTopologyNoDataSets": "沒有資料集",
   "dataSetTopologyLegendDevice": "裝置",

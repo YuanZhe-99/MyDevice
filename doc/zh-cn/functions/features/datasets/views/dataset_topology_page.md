@@ -2,7 +2,7 @@
 
 全屏资料集拓扑（自 1.8.0 起），从数据集列表的应用栏（[`dataset_list_page.md`](dataset_list_page.md)，`_openTopology`）压入根导航器。设备是大框，其存储槽是其中的中框，每份数据集副本是其槽内的小框；同一数据集的各副本由同步连线相连。布局来自 [`../services/dataset_topology.md`](../services/dataset_topology.md)；画布是共享的 [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md)——点按选择，拖动或滚轮平移，捏合或 Ctrl + 滚轮缩放。见 [数据集](../../../../features/datasets.md#data-set-topology)。
 
-类型别名 `DataSetTopologyInventory`（`reload` 返回的 `dataSets`、`devices` 记录）不单列。键：框 `dataset-topology-node-<id>`；应用栏 `dataset-topology-filter`、`dataset-topology-show-empty`、`dataset-topology-export`；`dataset-topology-legend-toggle`、`dataset-topology-legend`、`dataset-topology-selection-chip`、`dataset-topology-empty`；详情 `dataset-topology-details-sheet`、`dataset-topology-details-pane`、`dataset-topology-details-empty`、`dataset-topology-details-close`、`dataset-topology-card-<id>`、`dataset-topology-edit-<id>`；筛选 chip `dataset-topology-filter-all`、`dataset-topology-filter-device-<id>`。
+类型别名 `DataSetTopologyInventory`（`reload` 返回的 `dataSets`、`devices` 记录）不单列。键：框 `dataset-topology-node-<id>`；应用栏 `dataset-topology-filter`、`dataset-topology-links`（同步连线，默认关闭；显示时画家图层的键为 `dataset-topology-links-layer`）、`dataset-topology-show-empty`、`dataset-topology-export`；`dataset-topology-legend-toggle`、`dataset-topology-legend`、`dataset-topology-selection-chip`、`dataset-topology-empty`；详情 `dataset-topology-details-sheet`、`dataset-topology-details-pane`、`dataset-topology-details-empty`、`dataset-topology-details-close`、`dataset-topology-card-<id>`、`dataset-topology-edit-<id>`；筛选 chip `dataset-topology-filter-all`、`dataset-topology-filter-device-<id>`。
 
 ## 声明
 
@@ -12,7 +12,7 @@
 | `DataSetTopologyPage`（构造函数） | 构造函数 | B | 创建页面：数据集、设备、编辑器回调、可选的 `reload`。 |
 | `createState` | 方法（`DataSetTopologyPage`） | B | 创建页面的状态。 |
 | `dispose` | 方法（`_DataSetTopologyPageState`） | B | 释放变换控制器。 |
-| [`_layoutFor`](#layoutfor) | 方法（`_DataSetTopologyPageState`） | A | 某宽度下的布局，带缓存。 |
+| [`_layout`](#layoutfor) | 方法（`_DataSetTopologyPageState`） | A | 布局，带缓存。 |
 | `_select` | 方法（`_DataSetTopologyPageState`） | B | 选中被点按的框；在手机上打开详情面板。 |
 | `_clearSelection` | 方法（`_DataSetTopologyPageState`） | B | 清除选择。 |
 | `_edit` | 方法（`_DataSetTopologyPageState`） | B | 等待编辑器，然后 `reload` 并替换数据。 |
@@ -25,8 +25,8 @@
 | `entry` | 嵌套函数（`_buildLegendStrip`） | B | 一个图例条目。 |
 | `box` | 嵌套函数（`_buildLegendStrip`） | B | 一个框样例。 |
 | `_nodeLabel` | 顶层函数 | B | 设备名、存储标签或"emoji 名称"。 |
-| `_DataSetTopologyCanvas`（构造函数） | 构造函数 | B | 由布局、高亮和点按回调创建画布。 |
-| [`build`](#canvasbuild) | 方法（组件，`_DataSetTopologyCanvas`） | A | 设备和存储框、连线画家，然后是副本框。 |
+| `_DataSetTopologyCanvas`（构造函数） | 构造函数 | B | 由布局、高亮、同步连线开关和点按回调创建画布。 |
+| [`build`](#canvasbuild) | 方法（组件，`_DataSetTopologyCanvas`） | A | 设备和存储框、连线画家（打开时），然后是副本框。 |
 | `place` | 嵌套函数（`_DataSetTopologyCanvas.build`） | B | 把一个框放到其矩形处。 |
 | `_DataSetTopologyBox`（构造函数） | 构造函数 | B | 创建一个框：节点、标签、选中、变暗、点按。 |
 | [`build`](#boxbuild) | 方法（组件，`_DataSetTopologyBox`） | A | 带边框的设备/存储框或填充的副本 chip，带语义和变暗。 |
@@ -54,42 +54,42 @@
 - **用法：** 副本框和 `_DataSetLinkPainter`。
 - **备注：** 跨启动和跨设备稳定（不同于 `String.hashCode`）。错误色不在调色板中；它标记只有一份副本的数据集。
 
-### `DataSetTopologyLayout _layoutFor(double width)` <a id="layoutfor"></a>
+### `DataSetTopologyLayout _layout()` <a id="layoutfor"></a>
 - **种类：** `_DataSetTopologyPageState` 的方法。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 123 行）。
-- **用途：** 返回画布宽度下的布局。
-- **输入：** `width`。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 127 行）。
+- **用途：** 返回布局。
+- **输入：** 无。
 - **返回：** `DataSetTopologyLayout`。
 - **副作用：** 缓存到 `_cache`。
-- **算法：** 当数据列表和筛选集合身份相同、空设备开关相等且取整后的宽度一致时复用缓存；否则调用 [`DataSetTopologyLayout.build`](../services/dataset_topology.md#build)。
-- **用法：** `build` 中画布的 `LayoutBuilder`。
-- **备注：** 布局开销很小（没有路由），因此同步运行；缓存只是让选择、平移或缩放不会重建它。
+- **算法：** 当数据列表和筛选集合身份相同且空设备开关相等时复用缓存；否则调用 [`DataSetTopologyLayout.build`](../services/dataset_topology.md#build)。
+- **用法：** `build` 中画布的 `Builder`。
+- **备注：** 自 1.8.1 起布局以正方形到 16:10 的画布为目标，而不是窗口宽度（此前为 `_layoutFor(double width)`），因此调整窗口大小、选择、同步连线开关、平移或缩放都不会重建它。
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyPageState`） <a id="build"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 339 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 340 行）。
 - **用途：** 构建页面。
 - **输入：** `context`。
 - **返回：** 组件树。
 - **副作用：** 填充布局缓存。
-- **算法：** 1. 应用栏：带统计所选设备数徽章的设备筛选、"显示没有资料集的设备"切换（会重置变换）、导出（导出中或没有绘制内容时禁用）。2. 由 `TopologyViewControls`、图例条和画布组成的列：布局为空时显示空消息，否则是一个带 `onBackgroundTap: _clearSelection` 的 `TopologyCanvasViewer`，包着一个 `RepaintBoundary`（导出用）和画布。3. 在 `useDetailTwoPane` 窗口上，右侧是宽 `topologyDetailPaneWidth` 的窗格：一条提示，或所选框的详情及关闭按钮。
+- **算法：** 1. 应用栏：带统计所选设备数徽章的设备筛选、同步连线切换（默认关闭，不保存）、"显示没有资料集的设备"切换（会重置变换）、导出（导出中或没有绘制内容时禁用）。2. 由 `TopologyViewControls`、图例条和画布组成的列：布局为空时显示空消息，否则是一个带 `onBackgroundTap: _clearSelection` 的 `TopologyCanvasViewer`，包着一个 `RepaintBoundary`（导出用）和画布。3. 在 `useDetailTwoPane` 窗口上，右侧是宽 `topologyDetailPaneWidth` 的窗格：一条提示，或所选框的详情及关闭按钮。
 - **用法：** 框架。
 - **备注：** 窗格始终存在，因此选择从不改变画布宽度。
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyCanvas`） <a id="canvasbuild"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 637 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 652 行）。
 - **用途：** 构建框和连线。
 - **输入：** `context`。
 - **返回：** 尺寸为 `layout.size` 的 `Stack`。
 - **副作用：** 无。
-- **算法：** 先是设备和存储框，再是带连线画家的 `IgnorePointer` `CustomPaint`，然后是副本框——因此连线从不遮住副本。高亮不包含某个框时它变暗，它是高亮所选的框时处于选中状态。
+- **算法：** 先是设备和存储框，再是——仅当 `showLinks` 时——带连线画家的 `IgnorePointer` `CustomPaint`，然后是副本框——因此连线从不遮住副本。高亮不包含某个框时它变暗，它是高亮所选的框时处于选中状态。
 - **用法：** 在 [`build`](#build) 的查看器内。
 - **备注：** 无。
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyBox`） <a id="boxbuild"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 715 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 732 行）。
 - **用途：** 渲染一个框。
 - **输入：** `context`。
 - **返回：** 组件树。
@@ -100,7 +100,7 @@
 
 ### `void paint(Canvas canvas, Size size)`（`_DataSetLinkPainter`） <a id="paint"></a>
 - **种类：** `_DataSetLinkPainter` 的方法。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 885 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 902 行）。
 - **用途：** 绘制同步连线。
 - **输入：** `canvas`、`size`。
 - **返回：** 无。
@@ -111,7 +111,7 @@
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyDetails`） <a id="detailsbuild"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 984 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 1001 行）。
 - **用途：** 渲染所选框的详情。
 - **输入：** `context`。
 - **返回：** 一个 `ListView`。

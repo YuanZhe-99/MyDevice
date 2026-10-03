@@ -2055,6 +2055,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataSetTopologySelectHint => '选择设备、存储或资料集，查看副本所在的位置。';
 
   @override
+  String get dataSetTopologyShowLinks => '显示同步连线';
+
+  @override
   String get dataSetTopologyShowEmpty => '显示没有资料集的设备';
 
   @override
@@ -4125,6 +4128,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get dataSetTopologySelectHint => '選取裝置、儲存或資料集，查看副本所在的位置。';
+
+  @override
+  String get dataSetTopologyShowLinks => '顯示同步連線';
 
   @override
   String get dataSetTopologyShowEmpty => '顯示沒有資料集的裝置';

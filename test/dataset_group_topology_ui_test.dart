@@ -198,6 +198,20 @@ void main() {
       expect(dimmed(tester, musicOnNas), isFalse);
     });
 
+    testWidgets('sync lines are off by default and can be turned on', (
+      tester,
+    ) async {
+      await pumpTopology(tester);
+      final layer = find.byKey(const Key('dataset-topology-links-layer'));
+      expect(layer, findsNothing);
+      await tester.tap(find.byKey(const Key('dataset-topology-links')));
+      await settle(tester);
+      expect(layer, findsOneWidget);
+      await tester.tap(find.byKey(const Key('dataset-topology-links')));
+      await settle(tester);
+      expect(layer, findsNothing);
+    });
+
     testWidgets('a storage header selects the storage', (tester) async {
       await pumpTopology(tester);
       await tester.tapAt(

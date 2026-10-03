@@ -11,7 +11,8 @@ or wheel to pan, pinch or Ctrl + wheel to zoom. See
 
 The typedef `DataSetTopologyInventory` (the `dataSets`, `devices` record `reload` returns) is not
 listed. Keys: boxes `dataset-topology-node-<id>`; app bar `dataset-topology-filter`,
-`dataset-topology-show-empty`, `dataset-topology-export`; `dataset-topology-legend-toggle`,
+`dataset-topology-links` (sync lines, off by default; the painter layer is keyed
+`dataset-topology-links-layer` while shown), `dataset-topology-show-empty`, `dataset-topology-export`; `dataset-topology-legend-toggle`,
 `dataset-topology-legend`, `dataset-topology-selection-chip`, `dataset-topology-empty`; details
 `dataset-topology-details-sheet`, `dataset-topology-details-pane`,
 `dataset-topology-details-empty`, `dataset-topology-details-close`,
@@ -26,7 +27,7 @@ listed. Keys: boxes `dataset-topology-node-<id>`; app bar `dataset-topology-filt
 | `DataSetTopologyPage` (constructor) | constructor | B | Create the page: data sets, devices, editor callback, optional `reload`. |
 | `createState` | method (`DataSetTopologyPage`) | B | Create the page's state. |
 | `dispose` | method (`_DataSetTopologyPageState`) | B | Dispose the transformation controller. |
-| [`_layoutFor`](#layoutfor) | method (`_DataSetTopologyPageState`) | A | The layout for a width, cached. |
+| [`_layout`](#layoutfor) | method (`_DataSetTopologyPageState`) | A | The layout, cached. |
 | `_select` | method (`_DataSetTopologyPageState`) | B | Select a tapped box; on phones open the details sheet. |
 | `_clearSelection` | method (`_DataSetTopologyPageState`) | B | Clear the selection. |
 | `_edit` | method (`_DataSetTopologyPageState`) | B | Await the editor, then `reload` and replace the data. |
@@ -39,8 +40,8 @@ listed. Keys: boxes `dataset-topology-node-<id>`; app bar `dataset-topology-filt
 | `entry` | nested function (`_buildLegendStrip`) | B | One legend entry. |
 | `box` | nested function (`_buildLegendStrip`) | B | One box swatch. |
 | `_nodeLabel` | top-level function | B | Device name, storage label or "emoji name". |
-| `_DataSetTopologyCanvas` (constructor) | constructor | B | Create the canvas from a layout, a highlight and a tap callback. |
-| [`build`](#canvasbuild) | method (widget, `_DataSetTopologyCanvas`) | A | Device and storage boxes, the line painter, then copy boxes. |
+| `_DataSetTopologyCanvas` (constructor) | constructor | B | Create the canvas from a layout, a highlight, the sync-line switch and a tap callback. |
+| [`build`](#canvasbuild) | method (widget, `_DataSetTopologyCanvas`) | A | Device and storage boxes, the line painter (when on), then copy boxes. |
 | `place` | nested function (`_DataSetTopologyCanvas.build`) | B | Position one box at its rect. |
 | `_DataSetTopologyBox` (constructor) | constructor | B | Create one box: node, label, selected, dimmed, tap. |
 | [`build`](#boxbuild) | method (widget, `_DataSetTopologyBox`) | A | A framed device/storage box or a filled copy chip, with semantics and dimming. |
@@ -70,29 +71,30 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 - **Notes:** Stable across launches and devices (unlike `String.hashCode`). The error colour is
   not in the palette; it marks single-copy data sets.
 
-### `DataSetTopologyLayout _layoutFor(double width)` <a id="layoutfor"></a>
+### `DataSetTopologyLayout _layout()` <a id="layoutfor"></a>
 - **Kind:** method of `_DataSetTopologyPageState`.
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 123).
-- **Purpose:** Return the layout for the canvas width.
-- **Inputs:** `width`.
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 127).
+- **Purpose:** Return the layout.
+- **Inputs:** None.
 - **Returns:** `DataSetTopologyLayout`.
 - **Side effects:** Caches it in `_cache`.
-- **Algorithm:** Reuse the cache when the data lists and the filter set are identical, the
-  empty-device switch is equal and the rounded width matches; otherwise
+- **Algorithm:** Reuse the cache when the data lists and the filter set are identical and the
+  empty-device switch is equal; otherwise
   [`DataSetTopologyLayout.build`](../services/dataset_topology.md#build).
-- **Usage:** The canvas `LayoutBuilder` in `build`.
-- **Notes:** The layout is cheap (no routing), so it runs synchronously; the cache only keeps a
-  selection, pan or zoom from rebuilding it.
+- **Usage:** The canvas `Builder` in `build`.
+- **Notes:** Since 1.8.1 the layout aims at a square-to-16:10 canvas rather than the window
+  width (it was `_layoutFor(double width)` before), so resizing the window, a selection, the
+  sync-line switch, a pan or a zoom never rebuild it.
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyPageState`) <a id="build"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 339).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 340).
 - **Purpose:** Build the page.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
 - **Side effects:** Fills the layout cache.
-- **Algorithm:** 1. App bar: the device filter with a badge counting chosen devices, the "Show
-  devices without data sets" toggle (resets the transform), export (disabled while exporting or
+- **Algorithm:** 1. App bar: the device filter with a badge counting chosen devices, the
+  sync-line toggle (off by default, not persisted), the "Show devices without data sets" toggle (resets the transform), export (disabled while exporting or
   with nothing drawn). 2. A column of `TopologyViewControls`, the legend strip and the canvas: the
   empty message when the layout is empty, else a `TopologyCanvasViewer` with
   `onBackgroundTap: _clearSelection` around a `RepaintBoundary` (export) and the canvas. 3. On
@@ -103,20 +105,20 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyCanvas`) <a id="canvasbuild"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 637).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 652).
 - **Purpose:** Build the boxes and lines.
 - **Inputs:** `context`.
 - **Returns:** A `Stack` at `layout.size`.
 - **Side effects:** None.
-- **Algorithm:** Device and storage boxes, then an `IgnorePointer` `CustomPaint` with the link
-  painter, then copy boxes — so a line never covers a copy. Each box is dimmed when a highlight
+- **Algorithm:** Device and storage boxes, then — only when `showLinks` — an `IgnorePointer`
+  `CustomPaint` with the link painter, then copy boxes — so a line never covers a copy. Each box is dimmed when a highlight
   leaves it out and selected when it is the highlight's box.
 - **Usage:** Inside the viewer in [`build`](#build).
 - **Notes:** None.
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyBox`) <a id="boxbuild"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 715).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 732).
 - **Purpose:** Render one box.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
@@ -132,7 +134,7 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `void paint(Canvas canvas, Size size)` (`_DataSetLinkPainter`) <a id="paint"></a>
 - **Kind:** method of `_DataSetLinkPainter`.
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 885).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 902).
 - **Purpose:** Paint the sync lines.
 - **Inputs:** `canvas`, `size`.
 - **Returns:** None.
@@ -146,7 +148,7 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyDetails`) <a id="detailsbuild"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 984).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 1001).
 - **Purpose:** Render the selected box's details.
 - **Inputs:** `context`.
 - **Returns:** A `ListView`.

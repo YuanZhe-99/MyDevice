@@ -6,6 +6,17 @@
 
 ## 设备（`lib/features/devices/models/device.dart`） <a id="device-libfeaturesdevicesmodelsdevicedart"></a>
 
+### 多 GPU 和显示器（1.9.0）
+
+`gpus` 和 `displays` 是具有稳定条目 ID 的有序列表。GPU 条目包含
+`model`、`architecture`、`kind`（integrated/discrete/external/unspecified）和 `notes`。
+显示器条目包含 `name`、`role`（builtIn/inner/outer/external/unspecified）、
+`screenSize`、`screenResolutionW`、`screenResolutionH`、`refreshRate` 和 `notes`。
+两者保留未知字段。列表优先，即使列表显式为空；缺少列表时将旧 GPU/屏幕字段读为
+一个条目。第一项投影至旧字段供旧版读取。旧版保留列表，但无法编辑列表。
+保存空列表时省略列表及其旧字段，防止删除的规格重新出现。
+每块屏幕独立计算 PPI。模板资源接受相同列表。
+
 `Device` 字段：
 
 - **身份：** `id`（UUID v4，省略时生成）、`name`。
@@ -27,6 +38,15 @@
 `MoneyValue`（`purchasePrice`、`soldPrice` 和每个循环成本 `price` 使用的货币转换包装）：`amount`、`currency`、`defaultCurrency`、`convertedAmount`、`exchangeRate`、`autoRate`、`rateUpdatedAt`，加 `extraJson`。
 
 ## 网络 / NetworkDevice（`lib/features/network/models/network.dart`） <a id="network--networkdevice-libfeaturesnetworkmodelsnetworkdart"></a>
+
+### 配置与 Tailscale CSV（1.9.0）
+
+网络分配可包含 `configFormat`（yaml/toml）、`configText`（EasyTier 配置原文）、
+`ipAddresses`（全部叠加网络地址）和 `tailscale`（原始 CSV 列名及字符串值映射，
+包括未知列）。`ipAddress` 保留主要 IPv4 地址，无 IPv4 时使用 IPv6。
+导入目标为当前网络，先预览设备匹配，先按 Device ID 匹配已有节点，再建议精确
+主机名/设备名匹配。空字段表示未提供；快照不代表在线状态。导入不会删除缺失设备，
+也不会覆盖已有设备规格。
 
 - **`Network`：** `id`、`name`、`type`（`NetworkType`：`lan`、`tailscale`、`zerotier`、`easytier`、`wireguard`、`other`）、`subnet`、`gateway`、`dnsServers`（`List<String>`）、`notes`、`modifiedAt`、`extraJson`。
 - **`NetworkDevice`：** 网络与设备之间的赋值——`networkId`、`deviceId`、`addressMode`（`AddressMode`：`dhcp`、`static_`——序列化为 `"dhcp"` / `"static"`）、`ipAddress`、`hostname`、`isExitNode`、`extraJson`。
@@ -103,7 +123,9 @@ Map<String, dynamic> mergeUnknownJsonFields({
 | `brand` | string | No | |
 | `model` | string | No | |
 | `cpu` | string **或** object | No | 两种形态见下。 |
-| `gpu` | string | No | 只读取字符串形态。 |
+| `gpu` | string or object | No | 旧第一块 GPU，缺少 `gpus` 时使用。 |
+| `gpus` | array | No | GPU 字符串或对象，含型号、架构、类型和备注。 |
+| `displays` | array | No | 独立屏幕对象，含角色、尺寸、分辨率和刷新率。 |
 | `ram` | string | No | 例如 `"12 GB"`。 |
 | `storage` | array | No | 一个或多个容量；每项为字符串，或带 `capacity` 的对象。 |
 | `screenSize` | string | No | 例如 `"16.2\""`。 |

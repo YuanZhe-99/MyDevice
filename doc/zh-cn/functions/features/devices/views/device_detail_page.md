@@ -1,5 +1,10 @@
 # lib/features/devices/views/device_detail_page.dart
 
+## 多项规格（1.9.0）
+
+`_buildSpecSections` 独立渲染每块 GPU/屏幕、本地化类型/角色、备注、每屏 PPI 和
+刷新率；调用方仍可使用旧字段投影。
+
 单个 `Device` 的只读、单 `StatelessWidget` 详情视图（模型来源 `lib/features/devices/models/device.dart`，见 [设备](../../../../features/devices.md)）。它渲染英雄页头、生命周期/财务摘要、CPU/GPU/内存/存储/显示/其他规格卡片、可选静态位置地图（`flutter_map`）和备注——尽可能对设备文本字段与捆绑 `assets/logos/*.svg` 集合模糊匹配时拉入品牌/型号/存储/操作系统 logo。自 1.8.2 起，存储卡片还会在硬盘故障或离线时显示其状态（`device-storage-status-<i>`，带状态备注）、槽所属的阵列，以及每个 RAID 阵列一行（`_arrayRow`）。编辑完全委托给从应用栏编辑操作打开的 `device_edit_page.dart`。
 
 ## 声明

@@ -1,5 +1,28 @@
 # 设备
 
+## 多 GPU 和显示器（1.9.0）
+
+编辑页支持有序 GPU/屏幕卡片，可添加、删除、上移、独立选择 GPU 预设或搜索，并填写
+类型、角色和备注。每块屏幕独立计算 PPI，可记录刷新率。旧规格读为一张卡片，稳定
+ID 保证排序后未知字段跟随正确条目。搜索更新第一项并保留其余条目，除非提供列表。
+七个 Fold/Flip 模板包含内外屏及有来源的尺寸。Razer Blade 14（2025）包含
+Radeon 880M 核显和 RTX 5070 Laptop 独显。模板更新不会自动覆盖已保存设备。
+
+外屏参数于 2026-10-04 核对（宽 × 高，竖屏方向）：
+
+| 模板 | 对角线 | 分辨率 | 来源 |
+|---|---|---|---|
+| Pixel 10 Pro Fold | 6.4 英寸 | 1080 × 2364 | [Google 规格](https://store.google.com/product/pixel_10_pro_fold_specs?hl=en-GB) |
+| Galaxy Z Fold 6 | 6.3 英寸 | 968 × 2376 | [维基百科](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_6) |
+| Galaxy Z Fold7 | 6.5 英寸 | 1080 × 2520 | [维基百科](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_7) |
+| Galaxy Z Fold8 | 5.5 英寸 | 1248 × 1972 | [维基百科](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_8) |
+| Galaxy Z Fold8 Ultra | 6.5 英寸 | 1080 × 2520 | [维基百科](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_8) |
+| Galaxy Z Flip 6 | 3.4 英寸 | 720 × 748 | [维基百科](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Flip_6) |
+| Galaxy Z Flip7 | 4.1 英寸 | 948 × 1048 | [维基百科](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Flip_7) |
+
+三星英国页面返回导航外壳，美国 Fold7 确认尺寸但跳转营销内容。三星分辨率采用
+链接的二手来源。
+
 设备清单是应用的主要功能。模型来源：`lib/features/devices/models/device.dart`。穷举字段列表见 [数据格式 — 设备](../data-formats.md#device-libfeaturesdevicesmodelsdevicedart)；本页聚焦行为。
 
 ## 设备模型

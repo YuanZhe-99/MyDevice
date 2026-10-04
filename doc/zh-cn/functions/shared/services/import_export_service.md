@@ -1,5 +1,10 @@
 # lib/shared/services/import_export_service.dart
 
+## 多项硬件规格（1.9.0）
+
+`buildMarkdown` 输出全部 GPU/屏幕、类型/角色、刷新率和备注。ZIP 继续携带已注册
+JSON 文件，不修改服务门面的签名。
+
 **部分门面。** ZIP 半边（`exportZip` / `importZip`）委托给 `myapps_data` 包（`lib/src/data/zip_transfer.dart`）。Markdown 导出及其许多标签格式化器深度领域特定，留在这里。
 
 ## 声明

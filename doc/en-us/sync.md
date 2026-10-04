@@ -1,5 +1,11 @@
 # WebDAV Sync
 
+## Additive hardware and membership fields (1.9.0)
+
+GPU/display unknown fields merge by stable ID. Membership additions use the
+existing composite-key content merge, including its both-changed local choice.
+Remote layout, locks and conflict policy remain unchanged.
+
 WebDAV sync in MyDevice is **per-record three-way merge, not whole-file replacement**.
 The engine lives in `lib/shared/services/webdav_service.dart` (`WebDAVService`) and
 `lib/shared/services/sync_merge.dart` (the merge algorithms — see

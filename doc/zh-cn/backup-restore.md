@@ -1,5 +1,10 @@
 # 备份、恢复与导出
 
+## 硬件与网络扩展（1.9.0）
+
+列表和网络分配配置/CSV 元数据通过已有 JSON 模块参与备份恢复及 ZIP 导入导出。
+Markdown 包含全部 GPU/屏幕、类型/角色、刷新率和备注；EasyTier 原文仅保存在 JSON。
+
 本页覆盖 `lib/shared/services/backup_service.dart`（本地备份/恢复）和 `lib/shared/services/import_export_service.dart`（ZIP 和 Markdown 导出/导入）。用于验证恢复数据的模型 `fromJson` 解析器见 [数据格式](data-formats.md)，恢复为何与自动同步交互见 [WebDAV 同步](sync.md)。
 
 ## 备份格式 v2

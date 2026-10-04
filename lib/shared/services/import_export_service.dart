@@ -194,12 +194,14 @@ class ImportExportService {
         }
 
         // GPU
-        if (!d.gpu.isEmpty) {
+        for (final gpu in d.gpus) {
           final parts = <String>[];
-          if (d.gpu.model != null) parts.add(d.gpu.model!);
-          if (d.gpu.architecture != null) {
-            parts.add('(${d.gpu.architecture})');
+          if (gpu.model != null) parts.add(gpu.model!);
+          if (gpu.architecture != null) {
+            parts.add('(${gpu.architecture})');
           }
+          if (gpu.kind != 'unspecified') parts.add(gpu.kind);
+          if (gpu.notes != null) parts.add(gpu.notes!);
           buf.writeln('- **GPU:** ${parts.join(' ')}');
         }
 
@@ -226,13 +228,22 @@ class ImportExportService {
         }
 
         // Screen
-        if (d.screenSize != null || d.screenResolutionW != null) {
+        for (final display in d.displays) {
           final parts = <String>[];
-          if (d.screenSize != null) parts.add(d.screenSize!);
-          if (d.screenResolutionW != null && d.screenResolutionH != null) {
-            parts.add('${d.screenResolutionW}×${d.screenResolutionH}');
-            if (d.ppi != null) parts.add('${d.ppi!.round()} PPI');
+          if (display.name != null) parts.add(display.name!);
+          if (display.role != 'unspecified') parts.add(display.role);
+          if (display.screenSize != null) parts.add(display.screenSize!);
+          if (display.screenResolutionW != null &&
+              display.screenResolutionH != null) {
+            parts.add(
+              '${display.screenResolutionW}×${display.screenResolutionH}',
+            );
+            if (display.ppi != null) parts.add('${display.ppi!.round()} PPI');
           }
+          if (display.refreshRate != null) {
+            parts.add('${display.refreshRate} Hz');
+          }
+          if (display.notes != null) parts.add(display.notes!);
           buf.writeln('- **Screen:** ${parts.join(', ')}');
         }
 

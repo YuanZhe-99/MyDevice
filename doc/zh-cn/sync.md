@@ -1,5 +1,10 @@
 # WebDAV 同步
 
+## 硬件与网络分配新增字段（1.9.0）
+
+GPU/屏幕未知字段按稳定 ID 合并。网络分配新增字段使用现有复合键内容合并，包括
+双方修改时保留本地的规则。远端布局、锁及冲突策略保持不变。
+
 MyDevice 的 WebDAV 同步是**逐记录三方合并，非整文件替换**。引擎住在 `lib/shared/services/webdav_service.dart`（`WebDAVService`）和 `lib/shared/services/sync_merge.dart`（合并算法——见 [三方合并](algorithms/three-way-merge.md)）。本页描述流程、重试/心跳策略、图像同步，以及本应用流程与姊妹 MyAnime 应用不同的一个地方。完整示例见 [同步演练](examples/sync-walkthrough.md)。
 
 ## 9 步流程 <a id="the-9-step-flow"></a>

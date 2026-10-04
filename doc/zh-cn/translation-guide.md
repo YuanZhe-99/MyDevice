@@ -47,6 +47,8 @@
 
 | English | 中文 | Notes |
 |---|---|---|
+| inner screen / outer screen | 内屏 / 外屏 | 折叠设备独立记录的屏幕角色 |
+| integrated GPU / discrete GPU | 集成显卡 / 独立显卡 | 独立 GPU 条目，external GPU 使用「外接显卡」 |
 | sync / synchronization | 同步 | |
 | three-way merge | 三方合并 | base/local/remote 三方 |
 | base snapshot | 基线快照 | the `.sync_base` copy used for merge comparison |

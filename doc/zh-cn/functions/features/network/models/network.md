@@ -1,5 +1,11 @@
 # lib/features/network/models/network.dart
 
+## 网络分配新增字段（1.9.0）
+
+`NetworkDevice` 构造、复制、序列化、解析增加 `ipAddresses`、`configFormat`、
+`configText`、`tailscale`；`clearConfig` 清除两个配置字段。空列表/映射省略，身份及
+内容合并规则不变。
+
 [网络](../../../../features/networks.md) 的模型来源。定义 `NetworkType`/`AddressMode`（两个序列化枚举）、`Network`（局域网/VPN 叠加网络定义）、`NetworkDevice`（设备在网络中的成员/赋值）和由 [`../services/network_storage.md`](../services/network_storage.md) 持久化的顶层 `NetworkData` 容器。这里每个模型都遵循应用标准形态——普通/const 构造函数、`toJson`/`fromJson` 和构建在泛型 [`json_preservation.md`](../../../shared/utils/json_preservation.md) 辅助上的 `mergeUnknownFieldsFrom`——带一个刻意例外：`NetworkDevice` 完全**无 `id` 和 `modifiedAt`**。原因见 [网络 — 复合键身份及其原因](../../../../features/networks.md#composite-key-identity--and-why)（`(networkId, deviceId)` 对已是唯一键，缺失时间戳正是迫使 `sync_merge.dart` 的 `mergeAssignments` 做[内容比较合并](../../../../algorithms/three-way-merge.md#mergeassignments-composite-key-content-comparison-merge)而非每个其他模型使用的时间戳基础 `mergeRecords<T>` 的东西）。穷举持久化字段参考见 [数据格式 — 网络 / NetworkDevice](../../../../data-formats.md#network--networkdevice-libfeaturesnetworkmodelsnetworkdart)。
 
 ## 声明

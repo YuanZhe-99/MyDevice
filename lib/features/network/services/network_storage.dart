@@ -136,6 +136,118 @@ class NetworkStorage {
         );
       });
 
+  /// Purpose: Apply a CSV batch against fresh network data in one queued write.
+  /// Inputs: Updated assignments.
+  /// Returns: Completion.
+  /// Side effects: Atomic network write and save notification only if changed.
+  /// Notes: Unrelated records survive; deleted target networks reject the batch.
+  static Future<void> setAssignments(
+    List<NetworkDevice> updates, {
+    List<NetworkDevice>? expectedAssignments,
+  }) => _serialised(() async {
+    final data = await load();
+    if (updates.any((a) => !data.networks.any((n) => n.id == a.networkId))) {
+      throw StateError('Target network no longer exists');
+    }
+    final assignments = List<NetworkDevice>.of(data.assignments);
+    for (final update in updates) {
+      if (expectedAssignments != null) {
+        final before = expectedAssignments
+            .where(
+              (a) =>
+                  a.networkId == update.networkId &&
+                  a.deviceId == update.deviceId,
+            )
+            .firstOrNull;
+        final current = data.assignments
+            .where(
+              (a) =>
+                  a.networkId == update.networkId &&
+                  a.deviceId == update.deviceId,
+            )
+            .firstOrNull;
+        if (jsonEncode(before?.toJson()) != jsonEncode(current?.toJson())) {
+          throw StateError(
+            'Membership changed since preview; reopen the import',
+          );
+        }
+      }
+      final nodeId = update.tailscale['Device ID'];
+      if (expectedAssignments != null && nodeId != null) {
+        final previous = data.assignments
+            .where(
+              (a) =>
+                  a.networkId == update.networkId &&
+                  a.deviceId != update.deviceId &&
+                  a.tailscale['Device ID'] == nodeId,
+            )
+            .toList();
+        for (final old in previous) {
+          final expected = expectedAssignments
+              .where(
+                (a) =>
+                    a.networkId == old.networkId && a.deviceId == old.deviceId,
+              )
+              .firstOrNull;
+          if (jsonEncode(expected?.toJson()) != jsonEncode(old.toJson())) {
+            throw StateError(
+              'Node association changed since preview; reopen the import',
+            );
+          }
+          assignments.removeWhere(
+            (a) => a.networkId == old.networkId && a.deviceId == old.deviceId,
+          );
+        }
+      }
+      final index = assignments.indexWhere(
+        (a) => a.networkId == update.networkId && a.deviceId == update.deviceId,
+      );
+      if (index < 0) {
+        assignments.add(update);
+      } else {
+        assignments[index] = update;
+      }
+    }
+    if (jsonEncode(assignments.map((a) => a.toJson()).toList()) ==
+        jsonEncode(data.assignments.map((a) => a.toJson()).toList())) {
+      return;
+    }
+    await _write(
+      NetworkData(
+        networks: data.networks,
+        assignments: assignments,
+        extraJson: data.extraJson,
+      ),
+    );
+  });
+
+  /// Purpose: Save raw configuration against the latest existing membership.
+  /// Inputs: Membership draft containing format/text.
+  /// Returns: Completion.
+  /// Side effects: Queued atomic network write.
+  /// Notes: Preserves current address/CSV fields; rejects removed memberships.
+  static Future<void> setConfiguration(NetworkDevice draft) =>
+      _serialised(() async {
+        final data = await load();
+        final index = data.assignments.indexWhere(
+          (a) => a.networkId == draft.networkId && a.deviceId == draft.deviceId,
+        );
+        if (index < 0) throw StateError('Network membership no longer exists');
+        final assignments = List<NetworkDevice>.of(data.assignments);
+        assignments[index] = assignments[index].copyWith(
+          configFormat: draft.configFormat,
+          configText: draft.configText,
+          clearConfig: draft.configText == null,
+        );
+        await _write(
+          NetworkData(
+            networks: data.networks,
+            assignments: assignments,
+            extraJson: data.extraJson,
+          ),
+        );
+      });
+
   /// Purpose: Implement the remove assignment behavior for this file.
   /// Inputs: `networkId`, `deviceId`.
   /// Returns: `Future<void>`.

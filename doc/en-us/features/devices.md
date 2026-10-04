@@ -6,6 +6,31 @@ for the exhaustive field list; this page focuses on behavior.
 
 ## Device model
 
+### Multiple GPUs and displays (1.9.0)
+
+The editor supports ordered GPU/display cards with add, remove, move-up,
+independent GPU preset/search, type/role, notes and per-display PPI/refresh rate.
+Legacy specs read as one card; stable IDs preserve unknown fields through reorder.
+Search updates the first item and retains additional items unless a list is supplied.
+Seven Fold/Flip templates now carry inner/outer screens with sourced dimensions.
+Razer Blade 14 (2025) includes Radeon 880M and RTX 5070 Laptop GPUs.
+Updated templates do not automatically overwrite saved devices.
+
+Outer-screen values checked on 2026-10-04 (width × height, portrait orientation):
+
+| Template | Diagonal | Resolution | Source |
+|---|---|---|---|
+| Pixel 10 Pro Fold | 6.4 inches | 1080 × 2364 | [Google specs](https://store.google.com/product/pixel_10_pro_fold_specs?hl=en-GB) |
+| Galaxy Z Fold 6 | 6.3 inches | 968 × 2376 | [Wikipedia](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_6) |
+| Galaxy Z Fold7 | 6.5 inches | 1080 × 2520 | [Wikipedia](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_7) |
+| Galaxy Z Fold8 | 5.5 inches | 1248 × 1972 | [Wikipedia](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_8) |
+| Galaxy Z Fold8 Ultra | 6.5 inches | 1080 × 2520 | [Wikipedia](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Fold_8) |
+| Galaxy Z Flip 6 | 3.4 inches | 720 × 748 | [Wikipedia](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Flip_6) |
+| Galaxy Z Flip7 | 4.1 inches | 948 × 1048 | [Wikipedia](https://en.wikipedia.org/wiki/Samsung_Galaxy_Z_Flip_7) |
+
+Samsung UK pages returned navigation shells; US Fold7 confirmed the diagonal but
+redirected to marketing content. Samsung resolutions use the linked secondary sources.
+
 `Device` tracks identity, category, emoji/image, brand/model/serial number, CPU, GPU,
 RAM, storage, display, battery, OS, location, purchase/release dates, lifecycle status,
 retirement/sale state, purchase price, sold price, recurring costs, notes, `modifiedAt`,

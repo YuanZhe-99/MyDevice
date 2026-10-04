@@ -20,8 +20,27 @@ Declarations table for how its row count compares to the file's `/// Purpose:` d
 
 ## Declarations
 
+### Multiple hardware values (1.9.0)
+
+`GpuInfo` adds optional `id`, `kind`, and `notes`; serialization and unknown-key
+parsing cover all five fields. `DisplayInfo` adds constructor, `ppi`, `toJson`,
+`fromJson`, and `mergeUnknownFieldsFrom`. `Device` constructor/fromJson/copyWith
+support `gpus` and `displays`; getters `gpu`, `screenSize`, `screenResolutionW`,
+`screenResolutionH` project the first item. Explicit lists win over legacy inputs.
+Missing persisted IDs use deterministic device/index IDs. `toJson` omits empty
+lists and their legacy fields; merge matches unknown fields by item ID.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| `DisplayInfo` | constructor | A | Create an independent screen with stable ID. |
+| `DisplayInfo.ppi` | getter | A | Compute per-screen pixel density. |
+| `DisplayInfo.toJson` | method | A | Serialize screen and unknown fields. |
+| `DisplayInfo.fromJson` | factory | A | Parse screen fields. |
+| `DisplayInfo.mergeUnknownFieldsFrom` | method | A | Merge unknown fields for a matching ID. |
+| `Device.gpu` | getter | B | Project first GPU for legacy callers. |
+| `Device.screenSize` | getter | B | Project first display diagonal. |
+| `Device.screenResolutionW` | getter | B | Project first display width. |
+| `Device.screenResolutionH` | getter | B | Project first display height. |
 | `jsonValue` | getter (`DeviceCategory`) | B | Return the serialized enum name. |
 | [`DeviceCategory.fromJson`](#devicecategory-fromjson) | static method | A | Parse a `DeviceCategory`, defaulting to `other` on no match. |
 | `jsonValue` | getter (`DeviceAcquisitionType`) | B | Return the serialized enum name. |

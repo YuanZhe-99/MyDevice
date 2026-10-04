@@ -1,5 +1,11 @@
 # lib/shared/services/local_api_server.dart
 
+## Hardware and network fields (1.9.0)
+
+`_handleAdd` accepts optional GPU/display lists. `deviceToJson` includes all items
+and per-display PPI alongside old first-item fields. Network serialization includes
+all addresses, raw CSV metadata and recorded config format/text.
+
 `LocalApiServer` is the desktop-only local HTTP API described in
 [../../../platform-notes.md](../../../platform-notes.md): a `shelf`-based, disabled-by-default
 server exposing read-only inventory endpoints for devices/networks/datasets/services plus one

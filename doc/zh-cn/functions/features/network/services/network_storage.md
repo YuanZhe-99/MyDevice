@@ -1,11 +1,24 @@
 # lib/features/network/services/network_storage.dart
 
+## 批量网络分配（1.9.0）
+
+`setConfiguration(NetworkDevice)` 在队列内仅更新最新网络分配的配置，保留并发的
+地址/CSV 修改；编辑期间已删除的网络分配拒绝保存。
+
+`setAssignments(List<NetworkDevice>)` 在每文件队列内读取最新数据，拒绝已删除目标
+网络，按复合键增改，保留其他记录和未知字段。仅序列化内容变化时一次写入。
+
+可选 `expectedAssignments` 在队列内核对预览快照。明确改选节点对应设备时，同一次
+原子写入移除旧网络分配；设备清单不变。并发的关联变更会拒绝批次。
+
 `NetworkStorage` 与应用其他功能存储一起持久化 `network_data.json` 文件（`Network` 定义和 `NetworkDevice` 赋值两者）。它经 `DeviceStorage.getAppDir()`（`../../../devices/services/device_storage.md`，应用数据目录单一真相源）解析文件位置，并在每次写入后通知 [`AutoSyncService`](../../../shared/services/auto_sync_service.md)，使后台同步拾取变更。本文件读/写的模型形态见 [网络](../../../../features/networks.md)，精确持久化 JSON 形态见 [数据格式 — 网络 / NetworkDevice](../../../../data-formats.md#network--networkdevice-libfeaturesnetworkmodelsnetworkdart)。
 
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| `setAssignments` | 静态方法 | A | 一次排队批量应用变更。 |
+| `setConfiguration` | 静态方法 | A | 仅更新最新分配的原文配置。 |
 | [`_getFile`](#getfile) | 静态方法（私有） | A | 解析应用目录内 `network_data.json` 文件。 |
 | [`_serialised`](#serialised) | 静态方法（私有） | A | 在 `network_data.json` 更早的写入之后运行读-改-写（按路径的写队列）。 |
 | [`_write`](#write) | 静态方法（私有） | A | 原子地写 `network_data.json` 并通知自动同步（不入队的原语）。 |

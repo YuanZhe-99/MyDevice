@@ -12,8 +12,24 @@ for the exact persisted JSON shape.
 
 ## Declarations
 
+### Batch assignments (1.9.0)
+
+`setConfiguration(NetworkDevice)` updates only configuration on the latest
+membership inside the queue, retaining concurrent address/CSV changes and rejecting
+memberships removed while editing.
+
+`setAssignments(List<NetworkDevice>)` reads fresh data inside the per-file queue,
+rejects deleted target networks, upserts composite keys, preserves unrelated and
+unknown fields, and writes once only if serialized assignments changed.
+
+Optional `expectedAssignments` validates preview snapshots inside the queue.
+Explicit node reassignment removes the old membership in the same atomic write;
+inventory devices stay intact. Concurrent association changes reject the batch.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| `setAssignments` | static method | A | Apply changed memberships in one queued batch. |
+| `setConfiguration` | static method | A | Update only raw config on a fresh membership. |
 | [`_getFile`](#getfile) | static method (private) | A | Resolve the `network_data.json` file inside the app directory. |
 | [`_serialised`](#serialised) | static method (private) | A | Run a read-modify-write behind earlier writes of `network_data.json` (per-path write queue). |
 | [`_write`](#write) | static method (private) | A | Write `network_data.json` atomically and notify auto-sync (the unqueued primitive). |

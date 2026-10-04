@@ -10,6 +10,12 @@ for the bundled-preset concept overview this page verifies against source.
 
 ## Declarations
 
+### Hardware lists (1.9.0)
+
+`DeviceTemplate` adds optional `gpus`/`displays`. `fromJson` accepts GPU strings or
+objects and display objects. `toDevice` carries all items with fresh IDs and exact
+GPU preset enrichment, while preserving authored types/roles and legacy defaults.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `PresetService._` | private constructor | B | Prevent instantiation; `PresetService` is static-only. |

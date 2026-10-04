@@ -1,5 +1,11 @@
 # lib/features/devices/views/device_edit_page.dart
 
+## 硬件草稿（1.9.0）
+
+初始化填入独立 GPU/屏幕列表，保存持久化稳定 ID。字段构建委托重复卡片至
+`HardwareEntriesEditor`。GPU 预设替换第一项并保留其他 GPU，搜索结果更新第一项
+或接受完整列表，不压平多项数据。
+
 单个 `Device` 的增/改表单（模型来源 `lib/features/devices/models/device.dart`；完整字段列表见 [数据格式 — 设备](../../../../data-formats.md#device-libfeaturesdevicesmodelsdevicedart)）。`DeviceEditPage`/`_DeviceEditPageState` 拥有每个可编辑属性的一个 `TextEditingController`（或普通字段）——包括每个存储行和每个循环成本草稿各一套控制器——并在保存时把全部组装进新 `Device`。它集成 `PresetService`（捆绑 CPU/GPU/品牌预设，经私有 `_CpuPresetPicker`/`_GpuPresetPicker` 底部面板浏览）、`chip_search_dialog.dart`/`device_search_dialog.dart` 的在线搜索对话框（设备搜索门控于 `AppFlavor.deviceSearchExposed`，芯片搜索门控于 `AppFlavor.isFull`——见 [在线搜索与预设](../../../../features/online-search-and-presets.md)）和 `DeviceExchangeRateService`（购买/出售价格和每个循环成本的货币转换）。保存也是应用中保持 [数据集](../../../../features/datasets.md) 存储链接有效的唯一地方：本文件跨添加/移除跟踪每个存储行的原始槽索引，并在保存时把结果旧→新映射——以及自 1.8.2 起保留的 RAID 阵列 id 和每个槽所属的阵列——传给 `DataSetStorage.remapDeviceStorageLinks()`——见 [`_save`](#_save) 和 [数据集 — remapDeviceStorageLinks()](../../../../features/datasets.md#remapdevicestoragelinks)。此表单编辑的更广功能和生命周期/财务模型也见 [设备](../../../../features/devices.md)。图标区编辑三种互斥的图标来源——emoji、存储的照片（`_imagePath`，经 [device_image_editor_page.md](device_image_editor_page.md) 中的图片编辑器挑选并编辑）和手选缩略图（`_templateImage`，经 [template_image_picker.md](../widgets/template_image_picker.md) 选定）；选定其一即清除另外两者。
 
 自 1.8.2 起，每个存储行还有一个健康状况下拉框（`_buildStorageStatusRow`，硬盘故障或离线时附带备注字段），存储行下方的 RAID 阵列区域（`_buildStorageArrays`）经 `_StorageArrayDraft` 编辑 `Device.storageArrays`。阵列成员按每行的令牌（`_storageTokens`）而非索引跟踪，因此添加或移除行时每个阵列仍指向相同的硬盘；`_saveImpl` 把令牌转换为保存的槽索引。

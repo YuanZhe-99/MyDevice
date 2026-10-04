@@ -462,6 +462,10 @@
   },
   {
     "name": "Google Pixel 10 Pro Fold",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "8.0\"", "screenResolutionW": 2076, "screenResolutionH": 2152},
+      {"id": "outer", "role": "outer", "screenSize": "6.4\"", "screenResolutionW": 1080, "screenResolutionH": 2364}
+    ],
     "image": "assets/device_images/pixel-10-pro-fold-front-moonstone.png",
     "category": "phone",
     "brand": "Google",
@@ -1907,6 +1911,10 @@
   },
   {
     "name": "Razer Blade 14 (2025)",
+    "gpus": [
+      {"model": "AMD Radeon 880M", "kind": "integrated"},
+      {"model": "NVIDIA RTX 5070 (Laptop)", "kind": "discrete"}
+    ],
     "image": "assets/device_images/razer-blade-14-2025.png",
     "category": "laptop",
     "brand": "Razer",
@@ -2265,6 +2273,10 @@
   },
   {
     "name": "Samsung Galaxy Z Flip 6",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "6.7\"", "screenResolutionW": 1080, "screenResolutionH": 2640},
+      {"id": "outer", "role": "outer", "screenSize": "3.4\"", "screenResolutionW": 720, "screenResolutionH": 748}
+    ],
     "image": "assets/device_images/samsung-galaxy-z-flip6-unfolded.png",
     "category": "phone",
     "brand": "Samsung",
@@ -2284,6 +2296,10 @@
   },
   {
     "name": "Samsung Galaxy Z Flip7",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "6.9\"", "screenResolutionW": 1080, "screenResolutionH": 2520},
+      {"id": "outer", "role": "outer", "screenSize": "4.1\"", "screenResolutionW": 948, "screenResolutionH": 1048}
+    ],
     "image": "assets/device_images/samsung-galaxy-z-flip7-unfolded.png",
     "category": "phone",
     "brand": "Samsung",
@@ -2303,6 +2319,10 @@
   },
   {
     "name": "Samsung Galaxy Z Fold 6",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "7.6\"", "screenResolutionW": 1856, "screenResolutionH": 2160},
+      {"id": "outer", "role": "outer", "screenSize": "6.3\"", "screenResolutionW": 968, "screenResolutionH": 2376}
+    ],
     "image": "assets/device_images/samsung-galaxy-z-fold6-pink.png",
     "category": "phone",
     "brand": "Samsung",
@@ -2323,6 +2343,10 @@
   },
   {
     "name": "Samsung Galaxy Z Fold7",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "8.0\"", "screenResolutionW": 1968, "screenResolutionH": 2184},
+      {"id": "outer", "role": "outer", "screenSize": "6.5\"", "screenResolutionW": 1080, "screenResolutionH": 2520}
+    ],
     "image": "assets/device_images/samsung-galaxy-fold7-main-screen-cropped.png",
     "category": "phone",
     "brand": "Samsung",
@@ -2343,6 +2367,10 @@
   },
   {
     "name": "Samsung Galaxy Z Fold8",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "7.6\"", "screenResolutionW": 1848, "screenResolutionH": 2448},
+      {"id": "outer", "role": "outer", "screenSize": "5.5\"", "screenResolutionW": 1248, "screenResolutionH": 1972}
+    ],
     "image": "assets/device_images/samsung-galaxy-z-fold8-white.png",
     "category": "phone",
     "brand": "Samsung",
@@ -2362,6 +2390,10 @@
   },
   {
     "name": "Samsung Galaxy Z Fold8 Ultra",
+    "displays": [
+      {"id": "inner", "role": "inner", "screenSize": "8.0\"", "screenResolutionW": 2256, "screenResolutionH": 2504},
+      {"id": "outer", "role": "outer", "screenSize": "6.5\"", "screenResolutionW": 1080, "screenResolutionH": 2520}
+    ],
     "category": "phone",
     "brand": "Samsung",
     "model": "Galaxy Z Fold8 Ultra",

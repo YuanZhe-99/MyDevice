@@ -5,6 +5,8 @@ changing it — several entries record deliberate safety fixes that look like qu
 
 ## Releases
 
+- `v1.9.0`: EasyTier configuration text per membership with TOML/YAML labels, file read/export and copy; Tailscale admin CSV import with ID/name matching, editable device targets, per-column old/new preview and selection, node reassignment and concurrent-change protection; ordered GPU/display lists with legacy first-item compatibility, stable IDs, independent editing and PPI, API/Markdown output, and seven inner/outer-screen Fold/Flip templates with sourced external dimensions. Legacy-disk UI tests verify adding further hardware without losing original specs. Versions unified to `1.9.0+58` / MSIX `1.9.0.0` / installer `1.9.0`.
+
 - `v0.1.0`: Initial device inventory, networks, datasets, map, online search, presets, original WebDAV sync, backup, ZIP import/export, four-language localization, custom storage path.
 - `v0.1.1`: Store/full flavors, CI/CD, platform naming/icons, macOS network client entitlement, privacy/README updates.
 - `v0.1.2`: Per-record three-way WebDAV merge with base snapshots and conflict dialogs.

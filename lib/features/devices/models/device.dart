@@ -15,7 +15,7 @@ const _cpuInfoJsonKeys = {
   'cores',
 };
 
-const _gpuInfoJsonKeys = {'model', 'architecture'};
+const _gpuInfoJsonKeys = {'id', 'model', 'architecture', 'kind', 'notes'};
 
 const _storageInfoJsonKeys = {
   'capacity',
@@ -53,6 +53,8 @@ const _deviceJsonKeys = {
   'serialNumber',
   'cpu',
   'gpu',
+  'gpus',
+  'displays',
   'ram',
   'ramType',
   'storage',
@@ -279,8 +281,11 @@ class CpuInfo {
 
 /// GPU information for a device.
 class GpuInfo {
+  final String? id;
   final String? model;
   final String? architecture;
+  final String kind;
+  final String? notes;
   final Map<String, dynamic> extraJson;
 
   /// Purpose: Create a gpu info instance.
@@ -288,7 +293,14 @@ class GpuInfo {
   /// Returns: A new `GpuInfo` instance.
   /// Side effects: None.
   /// Notes: None.
-  const GpuInfo({this.model, this.architecture, this.extraJson = const {}});
+  const GpuInfo({
+    this.id,
+    this.model,
+    this.architecture,
+    this.kind = 'unspecified',
+    this.notes,
+    this.extraJson = const {},
+  });
 
   /// Purpose: Return whether empty is true.
   /// Inputs: None.
@@ -296,7 +308,11 @@ class GpuInfo {
   /// Side effects: None.
   /// Notes: None.
   bool get isEmpty =>
-      model == null && architecture == null && extraJson.isEmpty;
+      model == null &&
+      architecture == null &&
+      notes == null &&
+      kind == 'unspecified' &&
+      extraJson.isEmpty;
 
   /// Purpose: Serialize this value into a JSON-compatible map.
   /// Inputs: None.
@@ -305,8 +321,11 @@ class GpuInfo {
   /// Notes: Keep the output aligned with the persisted file and sync format.
   Map<String, dynamic> toJson() => {
     ...extraJson,
+    if (id != null) 'id': id,
     if (model != null) 'model': model,
     if (architecture != null) 'architecture': architecture,
+    if (kind != 'unspecified') 'kind': kind,
+    if (notes != null) 'notes': notes,
   };
 
   /// Purpose: Create an instance from a JSON-compatible map.
@@ -315,8 +334,11 @@ class GpuInfo {
   /// Side effects: None.
   /// Notes: Use this path when preserving forward-compatible persisted fields matters.
   factory GpuInfo.fromJson(Map<String, dynamic> json) => GpuInfo(
+    id: json['id'] as String?,
     model: json['model'] as String?,
     architecture: json['architecture'] as String?,
+    kind: json['kind'] as String? ?? 'unspecified',
+    notes: json['notes'] as String?,
     extraJson: unknownJsonFields(json, _gpuInfoJsonKeys),
   );
 
@@ -335,6 +357,114 @@ class GpuInfo {
       ),
     });
   }
+}
+
+/// One independently described physical screen.
+class DisplayInfo {
+  final String id;
+  final String? name;
+  final String role;
+  final String? screenSize;
+  final int? screenResolutionW;
+  final int? screenResolutionH;
+  final double? refreshRate;
+  final String? notes;
+  final Map<String, dynamic> extraJson;
+
+  /// Purpose: Store screen specifications and stable identity.
+  /// Inputs: Optional specs; id defaults to a UUID for new entries.
+  /// Returns: A display.
+  /// Side effects: None.
+  /// Notes: Legacy readers use the first display's compatibility fields.
+  DisplayInfo({
+    String? id,
+    this.name,
+    this.role = 'unspecified',
+    this.screenSize,
+    this.screenResolutionW,
+    this.screenResolutionH,
+    this.refreshRate,
+    this.notes,
+    this.extraJson = const {},
+  }) : id = id ?? const Uuid().v4();
+
+  /// Purpose: Compute this screen's pixel density.
+  /// Inputs: None.
+  /// Returns: PPI or null for incomplete/invalid dimensions.
+  /// Side effects: None.
+  /// Notes: Dimensions must be positive.
+  double? get ppi {
+    final diagonal = Device._parseScreenDiagonal(screenSize);
+    final w = screenResolutionW;
+    final h = screenResolutionH;
+    if (diagonal == null ||
+        diagonal <= 0 ||
+        w == null ||
+        h == null ||
+        w <= 0 ||
+        h <= 0) {
+      return null;
+    }
+    return sqrt(w.toDouble() * w + h.toDouble() * h) / diagonal;
+  }
+
+  /// Purpose: Serialize the display without losing future fields.
+  /// Inputs: None.
+  /// Returns: JSON map.
+  /// Side effects: None.
+  /// Notes: Unset fields are omitted.
+  Map<String, dynamic> toJson() => {
+    ...extraJson,
+    'id': id,
+    if (name != null) 'name': name,
+    if (role != 'unspecified') 'role': role,
+    if (screenSize != null) 'screenSize': screenSize,
+    if (screenResolutionW != null) 'screenResolutionW': screenResolutionW,
+    if (screenResolutionH != null) 'screenResolutionH': screenResolutionH,
+    if (refreshRate != null) 'refreshRate': refreshRate,
+    if (notes != null) 'notes': notes,
+  };
+
+  /// Purpose: Parse display fields and preserve unknown keys.
+  /// Inputs: JSON map; callers provide deterministic missing legacy IDs.
+  /// Returns: Display.
+  /// Side effects: None.
+  /// Notes: None.
+  factory DisplayInfo.fromJson(Map<String, dynamic> json) => DisplayInfo(
+    id: json['id'] as String?,
+    name: json['name'] as String?,
+    role: json['role'] as String? ?? 'unspecified',
+    screenSize: json['screenSize'] as String?,
+    screenResolutionW: json['screenResolutionW'] as int?,
+    screenResolutionH: json['screenResolutionH'] as int?,
+    refreshRate: (json['refreshRate'] as num?)?.toDouble(),
+    notes: json['notes'] as String?,
+    extraJson: unknownJsonFields(json, {
+      'id',
+      'name',
+      'role',
+      'screenSize',
+      'screenResolutionW',
+      'screenResolutionH',
+      'refreshRate',
+      'notes',
+    }),
+  );
+
+  /// Purpose: Merge unknown fields belonging to the same screen.
+  /// Inputs: Other display and optional base.
+  /// Returns: Display retaining this screen's known fields.
+  /// Side effects: None.
+  /// Notes: Callers match by stable ID.
+  DisplayInfo mergeUnknownFieldsFrom(DisplayInfo other, {DisplayInfo? base}) =>
+      DisplayInfo.fromJson({
+        ...toJson(),
+        ...mergeUnknownJsonFields(
+          primary: extraJson,
+          secondary: other.extraJson,
+          base: base?.extraJson,
+        ),
+      });
 }
 
 /// Type of storage media.
@@ -949,16 +1079,14 @@ class Device {
   final String? model;
   final String? serialNumber;
   final CpuInfo cpu;
-  final GpuInfo gpu;
+  final List<GpuInfo> gpus;
+  final List<DisplayInfo> displays;
   final String? ram;
   final RamType? ramType;
   final List<StorageInfo> storage;
 
   /// RAID arrays built from slots of `storage`.
   final List<StorageArray> storageArrays;
-  final String? screenSize;
-  final int? screenResolutionW;
-  final int? screenResolutionH;
   final String? battery;
   final String? os;
   final String? locationName;
@@ -981,8 +1109,9 @@ class Device {
   /// Inputs: `name`, `category` required; every other field optional.
   /// Returns: A new `Device` instance.
   /// Side effects: None.
-  /// Notes: A fresh UUID `id` and UTC `modifiedAt` are generated when not
-  /// supplied, so every save through this constructor bumps the sync timestamp.
+  /// Notes: Explicit hardware lists take precedence over legacy specs, including
+  /// empty lists. Missing entry IDs are deterministic for legacy records.
+  /// A fresh device UUID and UTC modifiedAt are generated when omitted.
   Device({
     String? id,
     required this.name,
@@ -994,14 +1123,16 @@ class Device {
     this.model,
     this.serialNumber,
     this.cpu = const CpuInfo(),
-    this.gpu = const GpuInfo(),
+    GpuInfo gpu = const GpuInfo(),
+    List<GpuInfo>? gpus,
+    List<DisplayInfo>? displays,
     this.ram,
     this.ramType,
     this.storage = const [],
     this.storageArrays = const [],
-    this.screenSize,
-    this.screenResolutionW,
-    this.screenResolutionH,
+    String? screenSize,
+    int? screenResolutionW,
+    int? screenResolutionH,
     this.battery,
     this.os,
     this.locationName,
@@ -1020,7 +1151,66 @@ class Device {
     DateTime? modifiedAt,
     this.extraJson = const {},
   }) : id = id ?? const Uuid().v4(),
+       gpus =
+           gpus?.indexed
+               .map(
+                 (e) => GpuInfo.fromJson({
+                   'id': '${id ?? 'device'}-gpu-${e.$1}',
+                   ...e.$2.toJson(),
+                 }),
+               )
+               .toList() ??
+           (gpu.isEmpty
+               ? const []
+               : [
+                   GpuInfo.fromJson({
+                     ...gpu.toJson(),
+                     'id': gpu.id ?? '${id ?? 'device'}-gpu-0',
+                   }),
+                 ]),
+       displays =
+           displays ??
+           (screenSize == null &&
+                   screenResolutionW == null &&
+                   screenResolutionH == null
+               ? const []
+               : [
+                   DisplayInfo(
+                     id: '${id ?? 'device'}-display-0',
+                     screenSize: screenSize,
+                     screenResolutionW: screenResolutionW,
+                     screenResolutionH: screenResolutionH,
+                   ),
+                 ]),
        modifiedAt = modifiedAt ?? DateTime.now().toUtc();
+
+  /// Purpose: Expose the first GPU for legacy callers.
+  /// Inputs: None.
+  /// Returns: First GPU or an empty value.
+  /// Side effects: None.
+  /// Notes: Full inventory is in gpus.
+  GpuInfo get gpu => gpus.firstOrNull ?? const GpuInfo();
+
+  /// Purpose: Expose the first screen's diagonal for legacy callers.
+  /// Inputs: None.
+  /// Returns: Diagonal or null.
+  /// Side effects: None.
+  /// Notes: Full inventory is in displays.
+  String? get screenSize => displays.firstOrNull?.screenSize;
+
+  /// Purpose: Expose the first screen's width for legacy callers.
+  /// Inputs: None.
+  /// Returns: Pixel width or null.
+  /// Side effects: None.
+  /// Notes: None.
+  int? get screenResolutionW => displays.firstOrNull?.screenResolutionW;
+
+  /// Purpose: Expose the first screen's height for legacy callers.
+  /// Inputs: None.
+  /// Returns: Pixel height or null.
+  /// Side effects: None.
+  /// Notes: None.
+  int? get screenResolutionH => displays.firstOrNull?.screenResolutionH;
 
   /// Purpose: Derive the lifecycle bucket from the sold/retired flags.
   /// Inputs: None.
@@ -1150,6 +1340,8 @@ class Device {
     String? serialNumber,
     CpuInfo? cpu,
     GpuInfo? gpu,
+    List<GpuInfo>? gpus,
+    List<DisplayInfo>? displays,
     String? ram,
     RamType? ramType,
     List<StorageInfo>? storage,
@@ -1213,6 +1405,36 @@ class Device {
           : (serialNumber ?? this.serialNumber),
       cpu: cpu ?? this.cpu,
       gpu: gpu ?? this.gpu,
+      gpus: gpus ?? (gpu == null ? this.gpus : [gpu, ...this.gpus.skip(1)]),
+      displays:
+          displays ??
+          ((screenSize != null ||
+                  screenResolutionW != null ||
+                  screenResolutionH != null ||
+                  clearScreenSize ||
+                  clearScreenResolutionW ||
+                  clearScreenResolutionH)
+              ? [
+                  DisplayInfo(
+                    id: this.displays.firstOrNull?.id ?? '$id-display-0',
+                    name: this.displays.firstOrNull?.name,
+                    role: this.displays.firstOrNull?.role ?? 'unspecified',
+                    screenSize: clearScreenSize
+                        ? null
+                        : screenSize ?? this.screenSize,
+                    screenResolutionW: clearScreenResolutionW
+                        ? null
+                        : screenResolutionW ?? this.screenResolutionW,
+                    screenResolutionH: clearScreenResolutionH
+                        ? null
+                        : screenResolutionH ?? this.screenResolutionH,
+                    refreshRate: this.displays.firstOrNull?.refreshRate,
+                    notes: this.displays.firstOrNull?.notes,
+                    extraJson: this.displays.firstOrNull?.extraJson ?? const {},
+                  ),
+                  ...this.displays.skip(1),
+                ]
+              : this.displays),
       ram: clearRam ? null : (ram ?? this.ram),
       ramType: clearRamType ? null : (ramType ?? this.ramType),
       storage: storage ?? this.storage,
@@ -1257,7 +1479,8 @@ class Device {
   /// Returns: A JSON-compatible map; unset and default-false fields are
   /// omitted.
   /// Side effects: None.
-  /// Notes: Keep the output aligned with the persisted file and sync format.
+  /// Notes: Hardware lists and first-item legacy projections are written together;
+  /// empty lists omit both shapes so cleared specs cannot revive.
   Map<String, dynamic> toJson() => {
     ...extraJson,
     'id': id,
@@ -1271,6 +1494,9 @@ class Device {
     if (serialNumber != null) 'serialNumber': serialNumber,
     if (!cpu.isEmpty) 'cpu': cpu.toJson(),
     if (!gpu.isEmpty) 'gpu': gpu.toJson(),
+    if (gpus.isNotEmpty) 'gpus': gpus.map((g) => g.toJson()).toList(),
+    if (displays.isNotEmpty)
+      'displays': displays.map((d) => d.toJson()).toList(),
     if (ram != null) 'ram': ram,
     if (ramType != null) 'ramType': ramType!.jsonValue,
     if (storage.isNotEmpty) 'storage': storage.map((s) => s.toJson()).toList(),
@@ -1320,6 +1546,22 @@ class Device {
     gpu: json['gpu'] != null
         ? GpuInfo.fromJson(json['gpu'] as Map<String, dynamic>)
         : const GpuInfo(),
+    gpus: (json['gpus'] as List<dynamic>?)?.indexed
+        .map(
+          (e) => GpuInfo.fromJson({
+            'id': '${json['id']}-gpu-${e.$1}',
+            ...e.$2 as Map<String, dynamic>,
+          }),
+        )
+        .toList(),
+    displays: (json['displays'] as List<dynamic>?)?.indexed
+        .map(
+          (e) => DisplayInfo.fromJson({
+            'id': '${json['id']}-display-${e.$1}',
+            ...e.$2 as Map<String, dynamic>,
+          }),
+        )
+        .toList(),
     ram: json['ram'] as String?,
     ramType: RamType.fromJson(json['ramType'] as String?),
     storage: json['storage'] != null
@@ -1378,7 +1620,7 @@ class Device {
   /// Inputs: `other`; optional `base` for the three-way merge.
   /// Returns: `Device`.
   /// Side effects: None.
-  /// Notes: Recurses into `cpu`, `gpu`, `storage`, `storageArrays` (by id),
+  /// Notes: Recurses into hardware lists by stable id, `cpu`, `gpu`, `storage`, `storageArrays` (by id),
   /// both prices and `recurringCosts` so no nested unknown field is lost.
   Device mergeUnknownFieldsFrom(Device other, {Device? base}) {
     final json = toJson();
@@ -1403,6 +1645,30 @@ class Device {
     } else {
       json['gpu'] = mergedGpu.toJson();
     }
+
+    json['gpus'] = [
+      for (final g in gpus)
+        (other.gpus.where((o) => o.id == g.id).firstOrNull == null
+                ? g
+                : g.mergeUnknownFieldsFrom(
+                    other.gpus.firstWhere((o) => o.id == g.id),
+                    base: base?.gpus.where((o) => o.id == g.id).firstOrNull,
+                  ))
+            .toJson(),
+    ];
+    json['displays'] = [
+      for (final d in displays)
+        (other.displays.where((o) => o.id == d.id).firstOrNull == null
+                ? d
+                : d.mergeUnknownFieldsFrom(
+                    other.displays.firstWhere((o) => o.id == d.id),
+                    base: base?.displays.where((o) => o.id == d.id).firstOrNull,
+                  ))
+            .toJson(),
+    ];
+
+    if (gpus.isEmpty) json.remove('gpus');
+    if (displays.isEmpty) json.remove('displays');
 
     if (storage.isNotEmpty) {
       json['storage'] = [

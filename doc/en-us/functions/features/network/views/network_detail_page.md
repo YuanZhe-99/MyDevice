@@ -12,8 +12,18 @@ existing assignment (by the `(networkId, deviceId)` pair, not an id).
 
 ## Declarations
 
+### Import and configuration (1.9.0)
+
+`_importCsv` reads UTF-8 picked bytes/path, parses before preview, and reloads after
+returning; errors show a snackbar. `_editConfig` opens a raw editor and saves only
+accepted drafts. The app bar exposes import only for Tailscale; membership menus
+expose EasyTier config and imported raw details. `_showAssignmentDialog` preserves
+configuration, address lists and imported metadata when editing basic fields.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
+| `_importCsv` | method | A | Parse picked CSV and open matching preview. |
+| `_editConfig` | method | A | Edit and persist per-membership raw config. |
 | `NetworkDetailPage` (constructor) | constructor | B | Create the page widget (required `networkId`). |
 | `createState` | method (`NetworkDetailPage`) | B | Create the page's mutable state object. |
 | [`initState`](#initstate) | method (widget lifecycle) | A | Kick off loading sort preferences, then the network/device/assignment data. |

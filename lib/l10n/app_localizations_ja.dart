@@ -9,6 +9,134 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
+  String get networkImportReassign => 'このノードは選択したデバイスに移動します。以前のデバイスは一覧に保持されます。';
+
+  @override
+  String get networkImportTarget => '対応するデバイス';
+
+  @override
+  String get networkImportDeviceName => 'デバイス名';
+
+  @override
+  String get networkImportCategory => 'デバイスのカテゴリ';
+
+  @override
+  String get networkImportChanges => '適用する変更を選択';
+
+  @override
+  String get networkImportKeepHint =>
+      '未選択の項目は既存の値を保持します。Device ID はノードを識別します。保存前に自動一致を確認してください。';
+
+  @override
+  String get networkImportEmpty => '空の値';
+
+  @override
+  String get networkImportSkipAll => 'すべてスキップ';
+
+  @override
+  String get networkImportAutoMatch => '自動一致を復元';
+
+  @override
+  String get networkImportMatchId => 'ノード ID で一致';
+
+  @override
+  String get networkImportMatchName => '名前の完全一致';
+
+  @override
+  String get networkImportMatchNormalized => '区切り文字を除いて名前が一致';
+
+  @override
+  String get networkImportNoMatch => '一致なし — デバイスを選択または作成';
+
+  @override
+  String get networkImportAmbiguous => '候補が複数あります — デバイスを選択';
+
+  @override
+  String get networkImportDuplicate => '複数行が同じデバイスを選択しています';
+
+  @override
+  String get hardwareIntegrated => '内蔵 GPU';
+
+  @override
+  String get hardwareDiscrete => '専用 GPU';
+
+  @override
+  String get hardwareExternal => '外付け';
+
+  @override
+  String get hardwareBuiltIn => '内蔵';
+
+  @override
+  String get hardwareInner => '内側画面';
+
+  @override
+  String get hardwareOuter => '外側画面';
+
+  @override
+  String get hardwareUnspecified => '未指定';
+
+  @override
+  String get hardwareDisplays => 'ディスプレイ';
+
+  @override
+  String get hardwareMoveUp => '上へ移動';
+
+  @override
+  String get hardwareKind => 'GPU の種類';
+
+  @override
+  String get hardwareRole => '画面の役割';
+
+  @override
+  String get hardwareDisplayName => '画面名';
+
+  @override
+  String get hardwareRefreshRate => 'リフレッシュレート（Hz）';
+
+  @override
+  String get hardwareAdd => '追加';
+
+  @override
+  String get hardwareNotes => 'メモ';
+
+  @override
+  String get networkImportCsv => 'Tailscale CSV をインポート';
+
+  @override
+  String get networkImportPreview =>
+      '各行で既存デバイスへの関連付け、新規作成、またはスキップを選択します。既存の仕様は保持されます。保存が一部失敗した場合は、この画面で再試行すると同じデバイス ID を再利用できます。';
+
+  @override
+  String get networkImportFailed => '操作に失敗しました';
+
+  @override
+  String get networkImportSkip => 'スキップ';
+
+  @override
+  String get networkImportNew => 'デバイスを作成';
+
+  @override
+  String get networkImportUpdate => '更新';
+
+  @override
+  String get networkImportDetails => 'インポート情報';
+
+  @override
+  String get networkConfigRead => 'ファイルを読み込む';
+
+  @override
+  String get networkConfigExport => 'ファイルを書き出す';
+
+  @override
+  String get networkConfigCopy => 'コピー';
+
+  @override
+  String get networkConfigText => '設定テキスト';
+
+  @override
+  String get networkConfigRecorded => '設定を記録済み';
+
+  @override
   String get appTitle => 'MyDevice!!!!!';
 
   @override
@@ -816,9 +944,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get storageArrayNoMembers => '先に上でストレージを追加してください。';
-
-  @override
-  String get storageArrayUnsaved => '保存するとこのドライブを選べます';
 
   @override
   String get storageArrayDegraded => 'デグレード';

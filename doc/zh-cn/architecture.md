@@ -1,5 +1,10 @@
 # 架构
 
+## 硬件与网络扩展（1.9.0）
+
+GPU/屏幕规格使用稳定 ID 的有序值列表，第一项投影至旧字段。配置和 CSV 元数据
+保存在已有网络模块内。
+
 本页覆盖 MyDevice!!!!! 的应用壳、导航、状态管理、主题、本地化和整体仓库布局。数据级细节见 [数据格式](data-formats.md)；同步引擎见 [WebDAV 同步](sync.md)。
 
 ## 入口点：`lib/main.dart` <a id="entry-point-libmaindart"></a>

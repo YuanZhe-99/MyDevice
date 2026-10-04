@@ -12,6 +12,11 @@ the app bar's edit action.
 
 ## Declarations
 
+### Repeated specs (1.9.0)
+
+`_buildSpecSections` renders each GPU/display separately, with localized kind/role,
+notes, per-display PPI and refresh rate; legacy projections remain available to callers.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `DeviceDetailPage` (constructor) | constructor | B | Store the `device` and `onDeviceChanged` callback for the page widget. |

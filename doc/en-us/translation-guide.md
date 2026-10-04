@@ -71,6 +71,8 @@ which one it belongs in — see the rule in Section 1.
 
 | English | 中文 | Notes |
 |---|---|---|
+| inner screen / outer screen | 内屏 / 外屏 | roles of a foldable's independently recorded displays |
+| integrated GPU / discrete GPU | 集成显卡 / 独立显卡 | independent GPU entries; external GPU uses 外接显卡 |
 | sync / synchronization | 同步 | |
 | three-way merge | 三方合并 | base/local/remote 三方 |
 | base snapshot | 基线快照 | the `.sync_base` copy used for merge comparison |

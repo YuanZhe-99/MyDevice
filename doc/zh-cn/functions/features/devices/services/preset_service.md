@@ -1,5 +1,11 @@
 # lib/features/devices/services/preset_service.dart
 
+## 硬件列表（1.9.0）
+
+`DeviceTemplate` 增加可选 `gpus`/`displays`。解析接受 GPU 字符串或对象及屏幕对象。
+转换设备时携带全部条目并生成新 ID，精确 GPU 预设补充参数，保留模板类型/角色及
+旧字段默认值。
+
 `PresetService` 从 `assets/presets/*.json` 经 `rootBundle.loadString()` 加载应用捆绑预设数据——CPU、GPU、品牌和完整设备模板——首次使用时惰性解析并缓存每个文件。它依赖 [`device.md`](../models/device.md) 的 `CpuInfo`/`GpuInfo`/`StorageInfo`/`Device` 作为其解析进的形态，其 `BrandEntry`/`DeviceTemplate` 模型类自己定义在本文件。本页对照源码验证的捆绑预设概念总览见 [在线搜索与预设 — 捆绑预设](../../../../features/online-search-and-presets.md#bundled-presets---presetservicedart)。
 
 ## 声明

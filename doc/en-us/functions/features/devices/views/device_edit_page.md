@@ -31,6 +31,13 @@ each array pointing at the same drives; `_saveImpl` converts the tokens to saved
 
 ## Declarations
 
+### Hardware drafts (1.9.0)
+
+`initState` seeds independent GPU/display lists; `_saveImpl` persists lists with
+their stable IDs. `_buildFields` delegates repeated cards to `HardwareEntriesEditor`.
+`_applyGpuPreset` replaces the first draft and retains additional GPUs;
+`_applySearchResult` updates first specs or accepts explicit lists without flattening.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | [`_mirrorController`](#_mirrorcontroller) | method (`_DeviceEditPageState`) | A | Mirror an Autocomplete's internal controller into a form controller, once per controller. |

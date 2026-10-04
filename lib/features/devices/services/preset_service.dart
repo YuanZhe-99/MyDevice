@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/device.dart';
 
@@ -267,6 +268,8 @@ class DeviceTemplate {
   /// a bare model string. Null for the plain-string form.
   final CpuInfo? cpuDetail;
   final String? gpu;
+  final List<GpuInfo>? gpus;
+  final List<DisplayInfo>? displays;
   final String? ram;
 
   /// Every capacity the template lists, in authored order. A template may
@@ -299,6 +302,8 @@ class DeviceTemplate {
     this.cpu,
     this.cpuDetail,
     this.gpu,
+    this.gpus,
+    this.displays,
     this.ram,
     this.storage = const [],
     this.screenSize,
@@ -343,7 +348,8 @@ class DeviceTemplate {
   /// Inputs: `json`.
   /// Returns: A new `DeviceTemplate`.
   /// Side effects: None.
-  /// Notes: `cpu`/`gpu` accept the string or object form; `image` is optional.
+  /// Notes: CPU/GPU accept string or object forms; ordered gpus/displays override
+  /// legacy values when supplied. Image is optional.
   factory DeviceTemplate.fromJson(Map<String, dynamic> json) => DeviceTemplate(
     name: json['name'] as String,
     category: DeviceCategory.fromJson(json['category'] as String),
@@ -352,6 +358,16 @@ class DeviceTemplate {
     cpu: _asString(json['cpu']),
     cpuDetail: _asCpuInfo(json['cpu']),
     gpu: _asString(json['gpu']),
+    gpus: (json['gpus'] as List<dynamic>?)
+        ?.map(
+          (e) => e is String
+              ? GpuInfo(model: e)
+              : GpuInfo.fromJson(e as Map<String, dynamic>),
+        )
+        .toList(),
+    displays: (json['displays'] as List<dynamic>?)
+        ?.map((e) => DisplayInfo.fromJson(e as Map<String, dynamic>))
+        .toList(),
     ram: json['ram'] as String?,
     storage:
         (json['storage'] as List<dynamic>?)
@@ -421,6 +437,24 @@ class DeviceTemplate {
       model: model,
       cpu: cpuInfo,
       gpu: gpuInfo,
+      gpus: gpus
+          ?.map(
+            (g) => GpuInfo.fromJson({
+              ...?gpuPresets
+                  ?.where((p) => p.model == g.model)
+                  .firstOrNull
+                  ?.toJson(),
+              ...g.toJson(),
+              'id': const Uuid().v4(),
+            }),
+          )
+          .toList(),
+      displays: displays
+          ?.map(
+            (d) =>
+                DisplayInfo.fromJson({...d.toJson(), 'id': const Uuid().v4()}),
+          )
+          .toList(),
       ram: ram,
       storage: storage.isEmpty
           ? []

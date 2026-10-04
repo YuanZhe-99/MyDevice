@@ -302,6 +302,12 @@ class LocalApiServer {
       serialNumber: body['serialNumber'] as String?,
       cpu: cpu,
       gpu: gpu,
+      gpus: (body['gpus'] as List<dynamic>?)
+          ?.map((g) => GpuInfo.fromJson(g as Map<String, dynamic>))
+          .toList(),
+      displays: (body['displays'] as List<dynamic>?)
+          ?.map((d) => DisplayInfo.fromJson(d as Map<String, dynamic>))
+          .toList(),
       ram: body['ram'] as String?,
       ramType: RamType.fromJson(body['ramType'] as String?),
       storage: storageList,
@@ -635,6 +641,10 @@ class LocalApiServer {
       'cache': device.cpu.cache,
     },
     'gpu': {'model': device.gpu.model, 'architecture': device.gpu.architecture},
+    'gpus': device.gpus.map((g) => g.toJson()).toList(),
+    'displays': device.displays
+        .map((d) => {...d.toJson(), 'ppi': d.ppi})
+        .toList(),
     'ram': device.ram,
     'ramType': device.ramType?.name,
     'storage': device.storage.map(storageToJson).toList(),
@@ -776,6 +786,10 @@ class LocalApiServer {
             'deviceName': deviceNames[assignment.deviceId],
             'addressMode': assignment.addressMode.jsonValue,
             'ipAddress': assignment.ipAddress,
+            'ipAddresses': assignment.ipAddresses,
+            'tailscale': assignment.tailscale,
+            'configFormat': assignment.configFormat,
+            'configText': assignment.configText,
             'hostname': assignment.hostname,
             'isExitNode': assignment.isExitNode,
           },

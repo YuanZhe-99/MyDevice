@@ -1,11 +1,20 @@
 # lib/features/network/views/network_detail_page.dart
 
+## 导入与配置（1.9.0）
+
+`_importCsv` 读取选择的 UTF-8 字节/路径，先解析再预览，返回后重载，错误显示提示。
+`_editConfig` 打开原文编辑器，仅保存接受的草稿。工具栏仅在 Tailscale 显示导入；
+网络分配菜单提供 EasyTier 配置及导入原始详情。基础字段对话框保留配置、地址列表
+及导入元数据。
+
 单个 [`Network`](../models/network.md#network-new) 的详情屏：其信息卡片、可排序/分组的已分配设备列表（[`NetworkDevice`](../models/network.md#networkdevice-new)）、那些设备的地图视图（经 [`DeviceMapPage`](../../../shared/views/device_map_page.md)），和由 [`NetworkStorage`](../services/network_storage.md) 支撑的赋值增/改/移除流程。编辑/配置对话框直接构造 `NetworkDevice` 值而非经 `copyWith`。见 [网络](../../../../features/networks.md)，了解 `NetworkDevice` 为何无 `id`/`modifiedAt`，以及这对 [`setAssignment`](../services/network_storage.md#setassignment) 如何匹配既有赋值（按 `(networkId, deviceId)` 对，非 id）意味着什么。
 
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| `_importCsv` | 方法 | A | 解析选择的 CSV 并打开匹配预览。 |
+| `_editConfig` | 方法 | A | 编辑并保存每项网络分配配置。 |
 | `NetworkDetailPage`（构造函数） | 构造函数 | B | 创建页面组件（必填 `networkId`）。 |
 | `createState` | 方法（`NetworkDetailPage`） | B | 创建页面可变状态对象。 |
 | [`initState`](#initstate) | 方法（组件生命周期） | A | 启动加载排序偏好，然后网络/设备/赋值数据。 |

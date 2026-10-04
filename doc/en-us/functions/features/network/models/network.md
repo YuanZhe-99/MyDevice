@@ -18,6 +18,12 @@ for the exhaustive persisted-field reference.
 
 ## Declarations
 
+### Membership additions (1.9.0)
+
+`NetworkDevice` constructor/copyWith/toJson/fromJson add `ipAddresses`,
+`configFormat`, `configText`, `tailscale`; `clearConfig` clears both config fields.
+Optional maps/lists omit empty values. The identity and content-merge rules are unchanged.
+
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | `jsonValue` | getter (`NetworkType`) | B | Return the serialized enum name. |

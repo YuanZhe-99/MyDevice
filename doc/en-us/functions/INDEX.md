@@ -89,9 +89,19 @@ its per-file row and both total tables in the same commit.
 
 ## features/devices/
 
+1.9.0 updates device model/editor/detail/presets, network model/storage/detail,
+API and Markdown serializers. New pages:
+
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
-| `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 70 | 55 |
+| `lib/features/devices/widgets/hardware_entries_editor.dart` | [features/devices/widgets/hardware_entries_editor.md](features/devices/widgets/hardware_entries_editor.md) | 12 | 5 |
+| `lib/features/network/services/tailscale_csv.dart` | [features/network/services/tailscale_csv.md](features/network/services/tailscale_csv.md) | 4 | 4 |
+| `lib/features/network/views/network_config_page.dart` | [features/network/views/network_config_page.md](features/network/views/network_config_page.md) | 6 | 2 |
+| `lib/features/network/views/tailscale_import_page.dart` | [features/network/views/tailscale_import_page.md](features/network/views/tailscale_import_page.md) | 7 | 4 |
+
+| Source file | Page | Declarations | Tier A |
+|---|---|---|---|
+| `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 79 | 60 |
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 40 | 37 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 39 | 27 |
@@ -116,8 +126,8 @@ its per-file row and both total tables in the same commit.
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
 | `lib/features/network/models/network.dart` | [features/network/models/network.md](features/network/models/network.md) | 17 | 16 |
-| `lib/features/network/services/network_storage.dart` | [features/network/services/network_storage.md](features/network/services/network_storage.md) | 9 | 9 |
-| `lib/features/network/views/network_detail_page.dart` | [features/network/views/network_detail_page.md](features/network/views/network_detail_page.md) | 26 | 11 |
+| `lib/features/network/services/network_storage.dart` | [features/network/services/network_storage.md](features/network/services/network_storage.md) | 11 | 11 |
+| `lib/features/network/views/network_detail_page.dart` | [features/network/views/network_detail_page.md](features/network/views/network_detail_page.md) | 28 | 13 |
 | `lib/features/network/views/network_edit_page.dart` | [features/network/views/network_edit_page.md](features/network/views/network_edit_page.md) | 9 | 1 |
 | `lib/features/network/views/network_list_page.dart` | [features/network/views/network_list_page.md](features/network/views/network_list_page.md) | 16 | 6 |
 

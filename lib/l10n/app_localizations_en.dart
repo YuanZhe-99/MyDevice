@@ -9,6 +9,137 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get networkImportReassign =>
+      'This node will move from its previous device to the selected device. The previous device stays in inventory.';
+
+  @override
+  String get networkImportTarget => 'Corresponding device';
+
+  @override
+  String get networkImportDeviceName => 'Device name';
+
+  @override
+  String get networkImportCategory => 'Device category';
+
+  @override
+  String get networkImportChanges => 'Choose changes to apply';
+
+  @override
+  String get networkImportKeepHint =>
+      'Unchecked fields keep existing values. Device ID identifies the node. Review automatic matches before saving.';
+
+  @override
+  String get networkImportEmpty => 'Empty';
+
+  @override
+  String get networkImportSkipAll => 'Skip all';
+
+  @override
+  String get networkImportAutoMatch => 'Restore automatic matches';
+
+  @override
+  String get networkImportMatchId => 'Matched by node ID';
+
+  @override
+  String get networkImportMatchName => 'Matched by exact name';
+
+  @override
+  String get networkImportMatchNormalized =>
+      'Matched by name ignoring separators';
+
+  @override
+  String get networkImportNoMatch => 'No match — choose a device or create one';
+
+  @override
+  String get networkImportAmbiguous => 'Multiple candidates — choose a device';
+
+  @override
+  String get networkImportDuplicate =>
+      'Multiple rows target this device; adjust the selection';
+
+  @override
+  String get hardwareIntegrated => 'Integrated';
+
+  @override
+  String get hardwareDiscrete => 'Discrete';
+
+  @override
+  String get hardwareExternal => 'External';
+
+  @override
+  String get hardwareBuiltIn => 'Built-in';
+
+  @override
+  String get hardwareInner => 'Inner screen';
+
+  @override
+  String get hardwareOuter => 'Outer screen';
+
+  @override
+  String get hardwareUnspecified => 'Unspecified';
+
+  @override
+  String get hardwareDisplays => 'Displays';
+
+  @override
+  String get hardwareMoveUp => 'Move up';
+
+  @override
+  String get hardwareKind => 'GPU type';
+
+  @override
+  String get hardwareRole => 'Display role';
+
+  @override
+  String get hardwareDisplayName => 'Display name';
+
+  @override
+  String get hardwareRefreshRate => 'Refresh rate (Hz)';
+
+  @override
+  String get hardwareAdd => 'Add';
+
+  @override
+  String get hardwareNotes => 'Notes';
+
+  @override
+  String get networkImportCsv => 'Import Tailscale CSV';
+
+  @override
+  String get networkImportPreview =>
+      'Review each row and choose an existing device, create a device, or skip. Existing device specifications are preserved. If saving partially fails, retry here to reuse the same device IDs.';
+
+  @override
+  String get networkImportFailed => 'Operation failed';
+
+  @override
+  String get networkImportSkip => 'Skip';
+
+  @override
+  String get networkImportNew => 'Create device';
+
+  @override
+  String get networkImportUpdate => 'Update';
+
+  @override
+  String get networkImportDetails => 'Imported details';
+
+  @override
+  String get networkConfigRead => 'Read file';
+
+  @override
+  String get networkConfigExport => 'Export file';
+
+  @override
+  String get networkConfigCopy => 'Copy';
+
+  @override
+  String get networkConfigText => 'Configuration text';
+
+  @override
+  String get networkConfigRecorded => 'Configuration recorded';
+
+  @override
   String get appTitle => 'MyDevice!!!!!';
 
   @override
@@ -830,9 +961,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get storageArrayNoMembers => 'Add storage entries above first.';
-
-  @override
-  String get storageArrayUnsaved => 'Save to pick this drive';
 
   @override
   String get storageArrayDegraded => 'Degraded';

@@ -1,5 +1,11 @@
 # Backup, Restore, and Export
 
+## Hardware and network additions (1.9.0)
+
+Lists and membership configuration/CSV metadata travel in existing JSON modules
+through backup/restore and ZIP. Markdown includes every GPU/display, type/role,
+refresh rate and notes. Raw EasyTier configuration remains in JSON only.
+
 This page covers `lib/shared/services/backup_service.dart` (local backup/restore) and
 `lib/shared/services/import_export_service.dart` (ZIP and Markdown export/import). See
 [Data Formats](data-formats.md) for the model `fromJson` parsers used to validate

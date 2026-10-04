@@ -1,5 +1,10 @@
 # lib/shared/services/import_export_service.dart
 
+## Multiple hardware specs (1.9.0)
+
+`buildMarkdown` renders every GPU/display, retaining kind/role, refresh rate and
+notes. ZIP continues to carry registered JSON files; no facade signature changes.
+
 **Partly a facade.** The ZIP half (`exportZip` / `importZip`) delegates to the `myapps_data` package
 (`lib/src/data/zip_transfer.dart`). The Markdown export and its many label formatters are deeply
 domain-specific and stay here.

@@ -179,6 +179,11 @@ committed. Fresh clones need `git clone --recurse-submodules` or `git submodule 
 
 ## Core architecture rules
 
+### Hardware and network additions (1.9.0)
+
+GPU/display specs use ordered values with stable IDs and legacy first-item
+projections. Configuration and CSV metadata remain in the existing network module.
+
 - Navigation uses `go_router` with a `ShellRoute` for the five tabs listed above.
 - The visual system is native Material 3 (`ColorScheme.fromSeed`, Android dynamic color) with a user-selectable interface style: Material 3 or Expressive (default; with the compact floating navigation bar), stored locally as `uiStyle` in `storage_config.json`; navigation position (bottom everywhere by default, side rail on wide windows, or side rail everywhere; rail left or right) is stored as `navPlacement` and `navRailRight`. Hard-coded colors are limited to the finance chart's categorical palette and theme-independent overlays.
 - Every width or height decision — whether a layout may split, where navigation lives, how many

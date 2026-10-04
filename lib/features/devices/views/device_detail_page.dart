@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/detail_layout.dart';
 import '../models/device.dart';
+import '../widgets/hardware_entries_editor.dart';
 import '../services/exchange_rate_service.dart';
 import '../../datasets/services/dataset_placement.dart';
 import '../widgets/device_avatar.dart';
@@ -438,17 +439,22 @@ class DeviceDetailPage extends StatelessWidget {
       ],
 
       // ── GPU ──
-      if (device.gpu.model != null) ...[
+      for (final gpu in device.gpus) ...[
         _sectionTitle(
           theme,
           cs,
           l10n.gpuInfo,
           Icons.graphic_eq,
-          logoPath: _detectModelLogo(device.gpu.model),
+          logoPath: _detectModelLogo(gpu.model),
         ),
         _specCard(theme, [
-          _specRow(l10n.gpuModel, device.gpu.model),
-          _specRow(l10n.gpuArchitecture, device.gpu.architecture),
+          _specRow(l10n.gpuModel, gpu.model),
+          _specRow(l10n.gpuArchitecture, gpu.architecture),
+          _specRow(
+            l10n.hardwareKind,
+            HardwareEntriesEditor.label(l10n, gpu.kind),
+          ),
+          _specRow(l10n.hardwareNotes, gpu.notes),
         ]),
         const SizedBox(height: 16),
       ],
@@ -506,18 +512,25 @@ class DeviceDetailPage extends StatelessWidget {
       ],
 
       // ── Display ──
-      if (device.screenSize != null || device.screenResolutionW != null) ...[
+      for (final display in device.displays) ...[
         _sectionTitle(theme, cs, l10n.screenSize, Icons.monitor),
         _specCard(theme, [
-          _specRow(l10n.screenSize, device.screenSize),
-          if (device.screenResolutionW != null &&
-              device.screenResolutionH != null)
+          _specRow(l10n.hardwareDisplayName, display.name),
+          _specRow(
+            l10n.hardwareRole,
+            HardwareEntriesEditor.label(l10n, display.role),
+          ),
+          _specRow(l10n.screenSize, display.screenSize),
+          if (display.screenResolutionW != null &&
+              display.screenResolutionH != null)
             _specRow(
               l10n.screenResolution,
-              '${device.screenResolutionW} × ${device.screenResolutionH}',
+              '${display.screenResolutionW} × ${display.screenResolutionH}',
             ),
-          if (device.ppi != null)
-            _specRow(l10n.ppi, device.ppi!.toStringAsFixed(0)),
+          if (display.ppi != null)
+            _specRow(l10n.ppi, display.ppi!.toStringAsFixed(0)),
+          _specRow(l10n.hardwareRefreshRate, display.refreshRate?.toString()),
+          _specRow(l10n.hardwareNotes, display.notes),
         ]),
         const SizedBox(height: 16),
       ],

@@ -20,6 +20,8 @@ import '../widgets/device_avatar.dart';
 import '../widgets/template_image_picker.dart';
 import '../widgets/device_category_icon.dart';
 import '../widgets/storage_health_label.dart';
+import '../widgets/hardware_entries_editor.dart';
+import 'package:uuid/uuid.dart';
 import 'chip_search_dialog.dart';
 import 'device_image_editor_page.dart';
 import 'device_search_dialog.dart';
@@ -72,6 +74,8 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   late final TextEditingController _cpuCacheCtrl;
 
   // GPU
+  List<GpuInfo> _gpus = [];
+  List<DisplayInfo> _displays = [];
   late final TextEditingController _gpuModelCtrl;
   late final TextEditingController _gpuArchCtrl;
 
@@ -221,6 +225,8 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     _cpuCacheCtrl = TextEditingController(text: d?.cpu.cache ?? '');
 
     _gpuModelCtrl = TextEditingController(text: d?.gpu.model ?? '');
+    _gpus = List.of(d?.gpus ?? []);
+    _displays = List.of(d?.displays ?? []);
     _gpuArchCtrl = TextEditingController(text: d?.gpu.architecture ?? '');
 
     _screenResWCtrl = TextEditingController(
@@ -689,6 +695,8 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         architecture: _nonEmpty(_gpuArchCtrl.text),
         extraJson: widget.device?.gpu.extraJson ?? const {},
       ),
+      gpus: _gpus,
+      displays: _displays,
       ram: _combineValueUnit(_ramCtrl.text, _ramUnit),
       ramType: _ramType,
       storage: storageList,
@@ -1038,13 +1046,22 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     });
   }
 
-  /// Purpose: Provide the internal apply gpu preset helper for this file.
+  /// Purpose: Replace the first GPU draft from a preset while retaining other GPUs.
   /// Inputs: `gpu`.
   /// Returns: `void`.
   /// Side effects: Updates widget state and triggers a rebuild.
   /// Notes: Internal helper used within this file only.
   void _applyGpuPreset(GpuInfo gpu) {
     setState(() {
+      final first = _gpus.firstOrNull;
+      _gpus = [
+        GpuInfo.fromJson({
+          ...?first?.toJson(),
+          ...gpu.toJson(),
+          'id': first?.id ?? const Uuid().v4(),
+        }),
+        ..._gpus.skip(1),
+      ];
       _gpuModelCtrl.text = gpu.model ?? '';
       _gpuArchCtrl.text = gpu.architecture ?? '';
       _gpuAutoKey++;
@@ -1124,15 +1141,15 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       currentBrand: _nonEmpty(_brandCtrl.text),
       currentModel: _nonEmpty(_modelCtrl.text),
       currentChipset: _nonEmpty(_cpuModelCtrl.text),
-      currentGpu: _nonEmpty(_gpuModelCtrl.text),
+      currentGpu: _gpus.firstOrNull?.model,
       currentRam: _combineValueUnit(_ramCtrl.text, _ramUnit),
       currentStorage:
           _storageEntries.isNotEmpty && _storageEntries.first.trim().isNotEmpty
           ? '${_storageEntries.first.trim()} ${_storageUnits.first}'
           : null,
-      currentScreenSize: _nonEmpty(_screenSizeCtrl.text),
-      currentScreenResW: _parseInt(_screenResWCtrl.text),
-      currentScreenResH: _parseInt(_screenResHCtrl.text),
+      currentScreenSize: _displays.firstOrNull?.screenSize,
+      currentScreenResW: _displays.firstOrNull?.screenResolutionW,
+      currentScreenResH: _displays.firstOrNull?.screenResolutionH,
       currentBattery: _nonEmpty(_batteryCtrl.text),
       currentOs: _nonEmpty(_osCtrl.text),
       currentReleaseDate: _releaseDate,
@@ -1187,6 +1204,15 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
           _applyGpuPreset(gpuMatch);
         } else {
           _gpuModelCtrl.text = gpuName;
+          final first = _gpus.firstOrNull;
+          _gpus = [
+            GpuInfo.fromJson({
+              ...?first?.toJson(),
+              'model': gpuName,
+              'id': first?.id ?? const Uuid().v4(),
+            }),
+            ..._gpus.skip(1),
+          ];
           _gpuAutoKey++;
         }
       }
@@ -1215,6 +1241,43 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       }
       if (result['screenResolutionH'] is int) {
         _screenResHCtrl.text = result['screenResolutionH'].toString();
+      }
+      if (result.containsKey('screenSize') ||
+          result.containsKey('screenResolutionW') ||
+          result.containsKey('screenResolutionH')) {
+        _displays = [
+          DisplayInfo.fromJson({
+            ...?_displays.firstOrNull?.toJson(),
+            'id': _displays.firstOrNull?.id ?? const Uuid().v4(),
+            if (result['screenSize'] is String)
+              'screenSize': result['screenSize'],
+            if (result['screenResolutionW'] is int)
+              'screenResolutionW': result['screenResolutionW'],
+            if (result['screenResolutionH'] is int)
+              'screenResolutionH': result['screenResolutionH'],
+          }),
+          ..._displays.skip(1),
+        ];
+      }
+      if (result['gpus'] is List) {
+        _gpus = (result['gpus'] as List)
+            .map(
+              (g) => GpuInfo.fromJson({
+                'id': const Uuid().v4(),
+                ...g as Map<String, dynamic>,
+              }),
+            )
+            .toList();
+      }
+      if (result['displays'] is List) {
+        _displays = (result['displays'] as List)
+            .map(
+              (d) => DisplayInfo.fromJson({
+                'id': const Uuid().v4(),
+                ...d as Map<String, dynamic>,
+              }),
+            )
+            .toList();
       }
       if (result['battery'] is String) {
         _batteryCtrl.text = result['battery'];
@@ -2316,61 +2379,21 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       // ── GPU section ──
       Row(
         children: [
-          _brandLogoWidget(_detectLogoForModel(_gpuModelCtrl.text)),
-          Expanded(
-            child: Text(
-              l10n.gpuInfo,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
+          TextButton(onPressed: _pickGpuPreset, child: Text(l10n.gpuInfo)),
           if (AppFlavor.isFull)
             IconButton(
-              icon: const Icon(Icons.travel_explore, size: 20),
-              tooltip: l10n.fetchFromInternet,
               onPressed: _searchGpuOnline,
+              icon: const Icon(Icons.travel_explore),
+              tooltip: l10n.fetchFromInternet,
             ),
-          TextButton.icon(
-            icon: const Icon(Icons.list, size: 18),
-            label: Text(l10n.gpuInfo),
-            onPressed: _gpuPresets.isNotEmpty ? _pickGpuPreset : null,
-          ),
         ],
       ),
-      const SizedBox(height: 8),
-      Autocomplete<GpuInfo>(
-        key: ValueKey('gpu_auto_$_gpuAutoKey'),
-        initialValue: _gpuModelCtrl.value,
-        optionsBuilder: (textEditingValue) {
-          if (textEditingValue.text.isEmpty) return const [];
-          final query = textEditingValue.text.toLowerCase();
-          return _gpuPresets.where(
-            (g) => (g.model ?? '').toLowerCase().contains(query),
-          );
-        },
-        displayStringForOption: (g) => g.model ?? '',
-        fieldViewBuilder: (context, ctrl, focusNode, onSubmit) {
-          _mirrorController(ctrl, _gpuModelCtrl);
-          return TextFormField(
-            controller: ctrl,
-            focusNode: focusNode,
-            decoration: InputDecoration(labelText: l10n.gpuModel),
-          );
-        },
-        onSelected: (gpu) => _applyGpuPreset(gpu),
+      HardwareEntriesEditor(
+        key: ValueKey('gpu-$_gpuAutoKey'),
+        gpus: _gpus,
+        presets: _gpuPresets,
+        onGpusChanged: (v) => setState(() => _gpus = v),
       ),
-      const SizedBox(height: 12),
-      TextFormField(
-        controller: _gpuArchCtrl,
-        decoration: InputDecoration(
-          labelText: l10n.gpuArchitecture,
-          hintText: l10n.gpuArchHint,
-        ),
-      ),
-
-      const Divider(height: 32),
-
       // ── Other specs ──
       Row(
         children: [
@@ -2583,71 +2606,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         ),
       ..._buildStorageArrays(theme, l10n),
 
-      const SizedBox(height: 12),
-      TextFormField(
-        controller: _screenSizeCtrl,
-        decoration: InputDecoration(
-          labelText: l10n.screenSize,
-          hintText: l10n.screenSizeHint,
-        ),
+      HardwareEntriesEditor(
+        displays: _displays,
+        onDisplaysChanged: (v) => setState(() => _displays = v),
       ),
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          Expanded(
-            child: TextFormField(
-              controller: _screenResWCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.screenResolution,
-                hintText: 'W',
-              ),
-              keyboardType: TextInputType.number,
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: Text('×'),
-          ),
-          Expanded(
-            child: TextFormField(
-              controller: _screenResHCtrl,
-              decoration: InputDecoration(
-                labelText: l10n.screenResolution,
-                hintText: 'H',
-              ),
-              keyboardType: TextInputType.number,
-              onChanged: (_) => setState(() {}),
-            ),
-          ),
-        ],
-      ),
-      Builder(
-        builder: (context) {
-          final w = int.tryParse(_screenResWCtrl.text.trim());
-          final h = int.tryParse(_screenResHCtrl.text.trim());
-          if (w == null || h == null) return const SizedBox.shrink();
-          final tempDevice = Device(
-            name: '',
-            category: _category,
-            screenSize: _nonEmpty(_screenSizeCtrl.text),
-            screenResolutionW: w,
-            screenResolutionH: h,
-          );
-          final ppi = tempDevice.ppi;
-          if (ppi == null) return const SizedBox.shrink();
-          return Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              '${l10n.ppi}: ${ppi.toStringAsFixed(0)}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.secondary,
-              ),
-            ),
-          );
-        },
-      ),
-      const SizedBox(height: 12),
       TextFormField(
         controller: _batteryCtrl,
         decoration: InputDecoration(

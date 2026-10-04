@@ -1,5 +1,13 @@
 # lib/features/devices/models/device.dart
 
+## 多项硬件值（1.9.0）
+
+`GpuInfo` 增加可选 `id`、`kind`、`notes`；序列化和未知键解析覆盖全部五个字段。
+`DisplayInfo` 增加构造函数、`ppi`、`toJson`、`fromJson`、`mergeUnknownFieldsFrom`。
+`Device` 构造、解析、复制支持 `gpus`、`displays`；旧 getter 投影至第一项。显式列表
+优先于旧输入。缺失持久化 ID 使用确定的设备/索引 ID。空列表及其旧字段在保存时
+省略，未知字段按条目 ID 合并。
+
 核心设备模型：`Device` 本身加构成它的每个值类型（`CpuInfo`、`GpuInfo`、`StorageInfo`、`StorageArray`、`MoneyValue`、`DeviceRecurringCost`）及其支撑枚举（`DeviceCategory`、`DeviceAcquisitionType`、`DeviceLifecycleStatus`、`RecurringCostKind`、`BillingCycle`、`StorageType`、`RamType`、`StorageInterface`、`StorageHealth`、`RaidLevel`），加由 [`../services/device_storage.md`](../services/device_storage.md) 持久化的顶层 `DeviceData` 容器。这里每个模型都遵循应用标准形态：`const`/普通构造函数、`toJson`/`fromJson` 和参与三方同步合并的 `mergeUnknownFieldsFrom`（泛型 `unknownJsonFields`/`mergeUnknownJsonFields` 辅助见 [三方合并](../../../../algorithms/three-way-merge.md) 和 [`json_preservation.md`](../../../shared/utils/json_preservation.md)，这里每个 `fromJson`/`mergeUnknownFieldsFrom` 都调用它们）。本页对照真实源码文档化的生命周期/财务行为见 [设备](../../../../features/devices.md)，穷举持久化字段参考见 [数据格式 — 设备](../../../../data-formats.md#device-libfeaturesdevicesmodelsdevicedart)。
 
 本文件很大（17 个枚举/类中 70 个声明）；其行数与文件 `/// Purpose:` 文档注释计数如何比较见声明表末尾的说明。
@@ -8,6 +16,15 @@
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
+| `DisplayInfo` | 构造函数 | A | 创建稳定 ID 的独立屏幕。 |
+| `DisplayInfo.ppi` | getter | A | 计算每屏像素密度。 |
+| `DisplayInfo.toJson` | 方法 | A | 序列化屏幕及未知字段。 |
+| `DisplayInfo.fromJson` | 工厂 | A | 解析屏幕字段。 |
+| `DisplayInfo.mergeUnknownFieldsFrom` | 方法 | A | 合并同 ID 屏幕未知字段。 |
+| `Device.gpu` | getter | B | 第一 GPU 的旧字段投影。 |
+| `Device.screenSize` | getter | B | 第一屏幕对角线投影。 |
+| `Device.screenResolutionW` | getter | B | 第一屏幕宽度投影。 |
+| `Device.screenResolutionH` | getter | B | 第一屏幕高度投影。 |
 | `jsonValue` | getter（`DeviceCategory`） | B | 返回序列化枚举名。 |
 | [`DeviceCategory.fromJson`](#devicecategory-fromjson) | 静态方法 | A | 解析 `DeviceCategory`，无匹配默认 `other`。 |
 | `jsonValue` | getter（`DeviceAcquisitionType`） | B | 返回序列化枚举名。 |

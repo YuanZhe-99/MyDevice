@@ -9,6 +9,133 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get networkImportReassign => '此节点将从原设备移至所选设备；原设备仍保留在设备清单中。';
+
+  @override
+  String get networkImportTarget => '对应设备';
+
+  @override
+  String get networkImportDeviceName => '设备名称';
+
+  @override
+  String get networkImportCategory => '设备分类';
+
+  @override
+  String get networkImportChanges => '选择要应用的修改';
+
+  @override
+  String get networkImportKeepHint => '未勾选字段保留已有值。Device ID 标识节点。保存前请核对自动匹配。';
+
+  @override
+  String get networkImportEmpty => '空值';
+
+  @override
+  String get networkImportSkipAll => '全部跳过';
+
+  @override
+  String get networkImportAutoMatch => '恢复自动匹配';
+
+  @override
+  String get networkImportMatchId => '按节点 ID 匹配';
+
+  @override
+  String get networkImportMatchName => '按名称精确匹配';
+
+  @override
+  String get networkImportMatchNormalized => '忽略分隔符按名称匹配';
+
+  @override
+  String get networkImportNoMatch => '未匹配，请选择已有设备或新建';
+
+  @override
+  String get networkImportAmbiguous => '多个候选，请选择对应设备';
+
+  @override
+  String get networkImportDuplicate => '多行关联此设备，请调整选择';
+
+  @override
+  String get hardwareIntegrated => '集成显卡';
+
+  @override
+  String get hardwareDiscrete => '独立显卡';
+
+  @override
+  String get hardwareExternal => '外接';
+
+  @override
+  String get hardwareBuiltIn => '内置';
+
+  @override
+  String get hardwareInner => '内屏';
+
+  @override
+  String get hardwareOuter => '外屏';
+
+  @override
+  String get hardwareUnspecified => '未指定';
+
+  @override
+  String get hardwareDisplays => '显示器';
+
+  @override
+  String get hardwareMoveUp => '上移';
+
+  @override
+  String get hardwareKind => 'GPU 类型';
+
+  @override
+  String get hardwareRole => '屏幕角色';
+
+  @override
+  String get hardwareDisplayName => '屏幕名称';
+
+  @override
+  String get hardwareRefreshRate => '刷新率（Hz）';
+
+  @override
+  String get hardwareAdd => '添加';
+
+  @override
+  String get hardwareNotes => '备注';
+
+  @override
+  String get networkImportCsv => '导入 Tailscale CSV';
+
+  @override
+  String get networkImportPreview =>
+      '逐行选择关联已有设备、新建设备或跳过。保留已有设备规格。若保存部分失败，请在此重试以复用相同设备 ID。';
+
+  @override
+  String get networkImportFailed => '操作失败';
+
+  @override
+  String get networkImportSkip => '跳过';
+
+  @override
+  String get networkImportNew => '新建设备';
+
+  @override
+  String get networkImportUpdate => '更新';
+
+  @override
+  String get networkImportDetails => '导入详情';
+
+  @override
+  String get networkConfigRead => '读取文件';
+
+  @override
+  String get networkConfigExport => '导出文件';
+
+  @override
+  String get networkConfigCopy => '复制';
+
+  @override
+  String get networkConfigText => '配置原文';
+
+  @override
+  String get networkConfigRecorded => '已记录配置';
+
+  @override
   String get appTitle => 'MyDevice!!!!!';
 
   @override
@@ -813,9 +940,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get storageArrayNoMembers => '请先在上方添加存储。';
-
-  @override
-  String get storageArrayUnsaved => '保存后才能选择这块硬盘';
 
   @override
   String get storageArrayDegraded => '降级';
@@ -2159,6 +2283,133 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   AppLocalizationsZhTw() : super('zh_TW');
 
   @override
+  String get networkImportReassign => '此節點將從原裝置移至所選裝置；原裝置仍保留在裝置清單中。';
+
+  @override
+  String get networkImportTarget => '對應裝置';
+
+  @override
+  String get networkImportDeviceName => '裝置名稱';
+
+  @override
+  String get networkImportCategory => '裝置分類';
+
+  @override
+  String get networkImportChanges => '選擇要套用的修改';
+
+  @override
+  String get networkImportKeepHint => '未勾選欄位保留既有值。Device ID 識別節點。儲存前請核對自動配對。';
+
+  @override
+  String get networkImportEmpty => '空值';
+
+  @override
+  String get networkImportSkipAll => '全部略過';
+
+  @override
+  String get networkImportAutoMatch => '恢復自動配對';
+
+  @override
+  String get networkImportMatchId => '依節點 ID 配對';
+
+  @override
+  String get networkImportMatchName => '依名稱精確配對';
+
+  @override
+  String get networkImportMatchNormalized => '忽略分隔符依名稱配對';
+
+  @override
+  String get networkImportNoMatch => '未配對，請選擇既有裝置或新增';
+
+  @override
+  String get networkImportAmbiguous => '多個候選，請選擇對應裝置';
+
+  @override
+  String get networkImportDuplicate => '多列關聯此裝置，請調整選擇';
+
+  @override
+  String get hardwareIntegrated => '整合式顯示卡';
+
+  @override
+  String get hardwareDiscrete => '獨立顯示卡';
+
+  @override
+  String get hardwareExternal => '外接';
+
+  @override
+  String get hardwareBuiltIn => '內建';
+
+  @override
+  String get hardwareInner => '內螢幕';
+
+  @override
+  String get hardwareOuter => '外螢幕';
+
+  @override
+  String get hardwareUnspecified => '未指定';
+
+  @override
+  String get hardwareDisplays => '顯示器';
+
+  @override
+  String get hardwareMoveUp => '上移';
+
+  @override
+  String get hardwareKind => 'GPU 類型';
+
+  @override
+  String get hardwareRole => '螢幕角色';
+
+  @override
+  String get hardwareDisplayName => '螢幕名稱';
+
+  @override
+  String get hardwareRefreshRate => '更新率（Hz）';
+
+  @override
+  String get hardwareAdd => '新增';
+
+  @override
+  String get hardwareNotes => '備註';
+
+  @override
+  String get networkImportCsv => '匯入 Tailscale CSV';
+
+  @override
+  String get networkImportPreview =>
+      '逐列選擇關聯既有裝置、新增裝置或略過。保留既有裝置規格。若儲存部分失敗，請在此重試以沿用相同裝置 ID。';
+
+  @override
+  String get networkImportFailed => '操作失敗';
+
+  @override
+  String get networkImportSkip => '略過';
+
+  @override
+  String get networkImportNew => '新增裝置';
+
+  @override
+  String get networkImportUpdate => '更新';
+
+  @override
+  String get networkImportDetails => '匯入詳細資訊';
+
+  @override
+  String get networkConfigRead => '讀取檔案';
+
+  @override
+  String get networkConfigExport => '匯出檔案';
+
+  @override
+  String get networkConfigCopy => '複製';
+
+  @override
+  String get networkConfigText => '設定原文';
+
+  @override
+  String get networkConfigRecorded => '已記錄設定';
+
+  @override
   String get appTitle => 'MyDevice!!!!!';
 
   @override
@@ -2963,9 +3214,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get storageArrayNoMembers => '請先在上方新增儲存。';
-
-  @override
-  String get storageArrayUnsaved => '儲存後才能選擇這顆硬碟';
 
   @override
   String get storageArrayDegraded => '降級';

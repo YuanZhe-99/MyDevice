@@ -14,6 +14,25 @@ for the exact field list.
 
 ## NetworkDevice
 
+### Configuration and CSV import (1.9.0)
+
+Automatic matching uses node ID, exact case-insensitive names, then names ignoring
+spaces/hyphens/underscores/dots. Preview shows reasons and ambiguous candidates.
+Every target can be corrected; new devices have editable name/category/OS. Per-column
+old/new values and checkboxes retain unchecked values. Moving a known node shows a
+warning and preserves its old inventory device. Concurrent membership changes reject save.
+
+EasyTier menus open a raw TOML/YAML editor with file read, copy, export and save.
+Each membership has independent text; changing the label never converts or executes it.
+Tailscale CSV import previews existing/new/skip choices, matching node IDs first and
+suggesting only unambiguous exact names. Every original column and address survives.
+Details open from the membership menu. Missing nodes are not removed and inventory
+specs are not overwritten. Retired/sold devices cannot be selected. Multiple rows
+cannot target one device. Devices save before one queued network batch; failures
+keep the preview and generated IDs for retry. This is not a cross-file transaction:
+new inventory records may remain if the network batch fails. Identical imports skip
+the network write.
+
 `NetworkDevice` is a device's membership/assignment in a network: `networkId`,
 `deviceId`, `addressMode` (`AddressMode`: `dhcp` or `static_`, serialized as `"dhcp"` /
 `"static"`), `ipAddress`, `hostname`, `isExitNode`, `extraJson`.

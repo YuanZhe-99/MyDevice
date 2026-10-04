@@ -20,6 +20,10 @@ const _networkDeviceJsonKeys = {
   'ipAddress',
   'hostname',
   'isExitNode',
+  'ipAddresses',
+  'configFormat',
+  'configText',
+  'tailscale',
 };
 
 const _networkDataJsonKeys = {'networks', 'assignments'};
@@ -198,10 +202,14 @@ class NetworkDevice {
   final String? ipAddress;
   final String? hostname;
   final bool isExitNode;
+  final List<String> ipAddresses;
+  final String? configFormat;
+  final String? configText;
+  final Map<String, dynamic> tailscale;
   final Map<String, dynamic> extraJson;
 
   /// Purpose: Create a network device instance.
-  /// Inputs: `addressMode`.
+  /// Inputs: Membership identity, address fields, optional config and CSV metadata.
   /// Returns: A new `NetworkDevice` instance.
   /// Side effects: None.
   /// Notes: None.
@@ -212,19 +220,28 @@ class NetworkDevice {
     this.ipAddress,
     this.hostname,
     this.isExitNode = false,
+    this.ipAddresses = const [],
+    this.configFormat,
+    this.configText,
+    this.tailscale = const {},
     this.extraJson = const {},
   });
 
   /// Purpose: Create a copy with selected fields replaced.
-  /// Inputs: `clearIpAddress`.
+  /// Inputs: Address/config/CSV overrides and explicit clear flags.
   /// Returns: `NetworkDevice`.
   /// Side effects: None.
-  /// Notes: None.
+  /// Notes: clearConfig removes both format and text; preserved fields survive edits.
   NetworkDevice copyWith({
     AddressMode? addressMode,
     String? ipAddress,
     String? hostname,
     bool? isExitNode,
+    List<String>? ipAddresses,
+    String? configFormat,
+    String? configText,
+    Map<String, dynamic>? tailscale,
+    bool clearConfig = false,
     bool clearIpAddress = false,
     bool clearHostname = false,
   }) {
@@ -235,6 +252,10 @@ class NetworkDevice {
       ipAddress: clearIpAddress ? null : (ipAddress ?? this.ipAddress),
       hostname: clearHostname ? null : (hostname ?? this.hostname),
       isExitNode: isExitNode ?? this.isExitNode,
+      ipAddresses: ipAddresses ?? this.ipAddresses,
+      configFormat: clearConfig ? null : configFormat ?? this.configFormat,
+      configText: clearConfig ? null : configText ?? this.configText,
+      tailscale: tailscale ?? this.tailscale,
       extraJson: extraJson,
     );
   }
@@ -252,6 +273,10 @@ class NetworkDevice {
     if (ipAddress != null) 'ipAddress': ipAddress,
     if (hostname != null) 'hostname': hostname,
     if (isExitNode) 'isExitNode': true,
+    if (ipAddresses.isNotEmpty) 'ipAddresses': ipAddresses,
+    if (configFormat != null) 'configFormat': configFormat,
+    if (configText != null) 'configText': configText,
+    if (tailscale.isNotEmpty) 'tailscale': tailscale,
   };
 
   /// Purpose: Create an instance from a JSON-compatible map.
@@ -266,6 +291,11 @@ class NetworkDevice {
     ipAddress: json['ipAddress'] as String?,
     hostname: json['hostname'] as String?,
     isExitNode: json['isExitNode'] as bool? ?? false,
+    ipAddresses:
+        (json['ipAddresses'] as List<dynamic>?)?.cast<String>() ?? const [],
+    configFormat: json['configFormat'] as String?,
+    configText: json['configText'] as String?,
+    tailscale: json['tailscale'] as Map<String, dynamic>? ?? const {},
     extraJson: unknownJsonFields(json, _networkDeviceJsonKeys),
   );
 

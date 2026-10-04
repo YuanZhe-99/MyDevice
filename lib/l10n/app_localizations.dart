@@ -101,6 +101,258 @@ abstract class AppLocalizations {
     Locale('zh', 'TW'),
   ];
 
+  /// No description provided for @networkImportReassign.
+  ///
+  /// In en, this message translates to:
+  /// **'This node will move from its previous device to the selected device. The previous device stays in inventory.'**
+  String get networkImportReassign;
+
+  /// No description provided for @networkImportTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Corresponding device'**
+  String get networkImportTarget;
+
+  /// No description provided for @networkImportDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get networkImportDeviceName;
+
+  /// No description provided for @networkImportCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Device category'**
+  String get networkImportCategory;
+
+  /// No description provided for @networkImportChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose changes to apply'**
+  String get networkImportChanges;
+
+  /// No description provided for @networkImportKeepHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Unchecked fields keep existing values. Device ID identifies the node. Review automatic matches before saving.'**
+  String get networkImportKeepHint;
+
+  /// No description provided for @networkImportEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get networkImportEmpty;
+
+  /// No description provided for @networkImportSkipAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip all'**
+  String get networkImportSkipAll;
+
+  /// No description provided for @networkImportAutoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore automatic matches'**
+  String get networkImportAutoMatch;
+
+  /// No description provided for @networkImportMatchId.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched by node ID'**
+  String get networkImportMatchId;
+
+  /// No description provided for @networkImportMatchName.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched by exact name'**
+  String get networkImportMatchName;
+
+  /// No description provided for @networkImportMatchNormalized.
+  ///
+  /// In en, this message translates to:
+  /// **'Matched by name ignoring separators'**
+  String get networkImportMatchNormalized;
+
+  /// No description provided for @networkImportNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No match — choose a device or create one'**
+  String get networkImportNoMatch;
+
+  /// No description provided for @networkImportAmbiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple candidates — choose a device'**
+  String get networkImportAmbiguous;
+
+  /// No description provided for @networkImportDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiple rows target this device; adjust the selection'**
+  String get networkImportDuplicate;
+
+  /// No description provided for @hardwareIntegrated.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrated'**
+  String get hardwareIntegrated;
+
+  /// No description provided for @hardwareDiscrete.
+  ///
+  /// In en, this message translates to:
+  /// **'Discrete'**
+  String get hardwareDiscrete;
+
+  /// No description provided for @hardwareExternal.
+  ///
+  /// In en, this message translates to:
+  /// **'External'**
+  String get hardwareExternal;
+
+  /// No description provided for @hardwareBuiltIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in'**
+  String get hardwareBuiltIn;
+
+  /// No description provided for @hardwareInner.
+  ///
+  /// In en, this message translates to:
+  /// **'Inner screen'**
+  String get hardwareInner;
+
+  /// No description provided for @hardwareOuter.
+  ///
+  /// In en, this message translates to:
+  /// **'Outer screen'**
+  String get hardwareOuter;
+
+  /// No description provided for @hardwareUnspecified.
+  ///
+  /// In en, this message translates to:
+  /// **'Unspecified'**
+  String get hardwareUnspecified;
+
+  /// No description provided for @hardwareDisplays.
+  ///
+  /// In en, this message translates to:
+  /// **'Displays'**
+  String get hardwareDisplays;
+
+  /// No description provided for @hardwareMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get hardwareMoveUp;
+
+  /// No description provided for @hardwareKind.
+  ///
+  /// In en, this message translates to:
+  /// **'GPU type'**
+  String get hardwareKind;
+
+  /// No description provided for @hardwareRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Display role'**
+  String get hardwareRole;
+
+  /// No description provided for @hardwareDisplayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get hardwareDisplayName;
+
+  /// No description provided for @hardwareRefreshRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh rate (Hz)'**
+  String get hardwareRefreshRate;
+
+  /// No description provided for @hardwareAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get hardwareAdd;
+
+  /// No description provided for @hardwareNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get hardwareNotes;
+
+  /// No description provided for @networkImportCsv.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Tailscale CSV'**
+  String get networkImportCsv;
+
+  /// No description provided for @networkImportPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review each row and choose an existing device, create a device, or skip. Existing device specifications are preserved. If saving partially fails, retry here to reuse the same device IDs.'**
+  String get networkImportPreview;
+
+  /// No description provided for @networkImportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation failed'**
+  String get networkImportFailed;
+
+  /// No description provided for @networkImportSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get networkImportSkip;
+
+  /// No description provided for @networkImportNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create device'**
+  String get networkImportNew;
+
+  /// No description provided for @networkImportUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get networkImportUpdate;
+
+  /// No description provided for @networkImportDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported details'**
+  String get networkImportDetails;
+
+  /// No description provided for @networkConfigRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read file'**
+  String get networkConfigRead;
+
+  /// No description provided for @networkConfigExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export file'**
+  String get networkConfigExport;
+
+  /// No description provided for @networkConfigCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get networkConfigCopy;
+
+  /// No description provided for @networkConfigText.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration text'**
+  String get networkConfigText;
+
+  /// No description provided for @networkConfigRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration recorded'**
+  String get networkConfigRecorded;
+
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
@@ -1654,12 +1906,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add storage entries above first.'**
   String get storageArrayNoMembers;
-
-  /// No description provided for @storageArrayUnsaved.
-  ///
-  /// In en, this message translates to:
-  /// **'Save to pick this drive'**
-  String get storageArrayUnsaved;
 
   /// No description provided for @storageArrayDegraded.
   ///

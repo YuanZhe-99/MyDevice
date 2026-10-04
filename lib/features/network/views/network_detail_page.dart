@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../services/tailscale_csv.dart';
+import 'tailscale_import_page.dart';
+import 'network_config_page.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -426,6 +432,10 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
                     ipAddress: ip.isEmpty ? null : ip,
                     hostname: hostname.isEmpty ? null : hostname,
                     isExitNode: isExit,
+                    ipAddresses: initial.ipAddresses,
+                    configFormat: initial.configFormat,
+                    configText: initial.configText,
+                    tailscale: initial.tailscale,
                     extraJson: initial.extraJson,
                   ),
                 );
@@ -461,6 +471,12 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
       appBar: AppBar(
         title: Text(net.name),
         actions: [
+          if (net.type == NetworkType.tailscale)
+            IconButton(
+              icon: const Icon(Icons.upload_file),
+              tooltip: l10n.networkImportCsv,
+              onPressed: _importCsv,
+            ),
           IconButton(
             icon: const Icon(Icons.map_outlined),
             tooltip: l10n.mapViewNetworkDevices,
@@ -728,9 +744,14 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
     final dev = _findDevice(a.deviceId);
     final subtitle = [
       _addressModeLabel(l10n, a.addressMode),
-      if (a.ipAddress != null) a.ipAddress!,
+      if (a.ipAddresses.isNotEmpty)
+        a.ipAddresses.join(', ')
+      else if (a.ipAddress != null)
+        a.ipAddress!,
       if (a.hostname != null) a.hostname!,
       if (a.isExitNode) l10n.networkExitNode,
+      if (a.configText != null)
+        '${l10n.networkConfigRecorded} · ${a.configFormat?.toUpperCase()}',
     ].join(' · ');
 
     return Card(
@@ -742,14 +763,116 @@ class _NetworkDetailPageState extends State<NetworkDetailPage> {
           onSelected: (v) {
             if (v == 'edit') _editAssignment(a);
             if (v == 'remove') _removeAssignment(a);
+            if (v == 'config') _editConfig(a);
+            if (v == 'details') {
+              showDialog<void>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text(l10n.networkImportDetails),
+                  content: SingleChildScrollView(
+                    child: SelectableText(
+                      const JsonEncoder.withIndent('  ').convert(a.tailscale),
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(l10n.cancel),
+                    ),
+                  ],
+                ),
+              );
+            }
           },
           itemBuilder: (_) => [
             PopupMenuItem(value: 'edit', child: Text(l10n.editNetwork)),
             PopupMenuItem(value: 'remove', child: Text(l10n.removeDevice)),
+            if (_network?.type == NetworkType.easytier)
+              PopupMenuItem(
+                value: 'config',
+                child: Text(l10n.networkDeviceConfig),
+              ),
+            if (a.tailscale.isNotEmpty)
+              PopupMenuItem(
+                value: 'details',
+                child: Text(l10n.networkImportDetails),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  /// Purpose: Import an admin CSV into the current Tailscale network after preview.
+  /// Inputs: None.
+  /// Returns: Completion.
+  /// Side effects: Reads a chosen file and opens preview; reloads after save.
+  /// Notes: Parsing and cancellation never write inventory data.
+  Future<void> _importCsv() async {
+    final l = AppLocalizations.of(context)!;
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+        withData: true,
+      );
+      if (result == null) return;
+      final file = result.files.single;
+      final rows = TailscaleCsv.parse(
+        utf8.decode(file.bytes ?? await File(file.path!).readAsBytes()),
+      );
+      final devices = await DeviceStorage.load();
+      final networks = await NetworkStorage.load();
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TailscaleImportPage(
+            networkId: widget.networkId,
+            rows: rows,
+            devices: devices,
+            assignments: networks.assignments
+                .where((a) => a.networkId == widget.networkId)
+                .toList(),
+          ),
+        ),
+      );
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${l.networkImportFailed}: $e')));
+      }
+    }
+  }
+
+  /// Purpose: Edit EasyTier raw text for one membership.
+  /// Inputs: Assignment.
+  /// Returns: Completion.
+  /// Side effects: Opens editor and persists accepted draft.
+  /// Notes: Cancellation leaves stored configuration intact.
+  Future<void> _editConfig(NetworkDevice assignment) async {
+    final edited = await Navigator.of(context).push<NetworkDevice>(
+      MaterialPageRoute(
+        builder: (_) => NetworkConfigPage(assignment: assignment),
+      ),
+    );
+    if (edited != null) {
+      try {
+        await NetworkStorage.setConfiguration(edited);
+        await _load();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${AppLocalizations.of(context)!.networkImportFailed}: $e',
+              ),
+            ),
+          );
+        }
+      }
+    }
   }
 
   /// Purpose: Provide the internal info row helper for this file.

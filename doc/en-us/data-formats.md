@@ -10,6 +10,18 @@ current source in `lib/features/*/models/*.dart`, not a general Flutter data-mod
 
 ## Device (`lib/features/devices/models/device.dart`)
 
+### Multiple GPUs and displays (1.9.0)
+
+`gpus` and `displays` are ordered lists with stable entry IDs. GPU entries carry
+`model`, `architecture`, `kind` (integrated/discrete/external/unspecified), and `notes`.
+Display entries carry `name`, `role` (builtIn/inner/outer/external/unspecified),
+`screenSize`, `screenResolutionW`, `screenResolutionH`, `refreshRate`, and `notes`.
+Both preserve unknown fields. Lists take precedence even when explicitly empty;
+absent lists read legacy GPU/screen fields as one entry. The first entry is projected
+to the old fields for older readers. Older builds preserve lists but cannot edit them.
+Empty lists are omitted on save together with their legacy fields, preventing revival.
+PPI is calculated independently for each display. Template assets accept the same lists.
+
 `Device` fields:
 
 - **Identity:** `id` (UUID v4, generated if omitted), `name`.
@@ -63,6 +75,17 @@ recurring cost's `price`): `amount`, `currency`, `defaultCurrency`, `convertedAm
 `exchangeRate`, `autoRate`, `rateUpdatedAt`, plus `extraJson`.
 
 ## Network / NetworkDevice (`lib/features/network/models/network.dart`)
+
+### Configuration and Tailscale CSV (1.9.0)
+
+Assignments optionally carry `configFormat` (yaml/toml), `configText` (unaltered
+EasyTier configuration), `ipAddresses` (all overlay addresses), and `tailscale`
+(a map of original CSV column names and string values, including unknown columns).
+`ipAddress` remains the primary IPv4 address, or IPv6 when no IPv4 exists.
+Tailscale import targets the selected network, previews device matching, and matches
+existing nodes by Device ID before suggesting exact hostname/device-name matches.
+Blank CSV fields mean unspecified; snapshots do not imply online status. Import
+never removes missing devices or overwrites existing inventory specifications.
 
 - **`Network`:** `id`, `name`, `type` (`NetworkType`: `lan`, `tailscale`, `zerotier`,
   `easytier`, `wireguard`, `other`), `subnet`, `gateway`, `dnsServers` (`List<String>`),
@@ -213,7 +236,9 @@ an object (`{"cpus": [...]}`), while this file is a **bare array**.
 | `brand` | string | No | |
 | `model` | string | No | |
 | `cpu` | string **or** object | No | See both forms below. |
-| `gpu` | string | No | Only the string form is read. |
+| `gpu` | string or object | No | Legacy first GPU; used when `gpus` is absent. |
+| `gpus` | array | No | GPU strings or objects with model, architecture, kind and notes. |
+| `displays` | array | No | Independent display objects with role, size, resolution and refresh rate. |
 | `ram` | string | No | e.g. `"12 GB"`. |
 | `storage` | array | No | One or more capacities; each a string or an object with `capacity`. |
 | `screenSize` | string | No | e.g. `"16.2\""`. |

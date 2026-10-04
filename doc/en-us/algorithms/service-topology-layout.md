@@ -44,6 +44,12 @@ static const _routingMargin = 72.0;
 static const _routingClearance = 14.0;
 static const _routingEscape = 18.0;
 static const _routingTrackGap = 22.0;
+static const _sidePenalty = 120.0;  // 1.8.3
+static const _alignSnap = 12.0;     // 1.8.3
+static const _trackSpacing = 8.0;   // 1.8.3
+static const _minStub = 18.0;       // 1.8.3
+static const _alignPasses = 9;      // 1.8.3
+const _nearLine = 4.0;              // 1.8.3, top level
 ```
 
 `portChipSize` being much smaller than `nodeWidth`/`nodeHeight` reflects the
@@ -66,10 +72,14 @@ from primary device/service/domain node cards. `containerPadding` stays below ha
 3. **Desired rows** — `_desiredRows` derives each node's preferred row from its routes
    (median), then from its neighbours, then a stable fallback.
 4. **Ranks** — see [Semantic ranks](#semantic-ranks).
-5. **Placement** — see [Rows, order and y positions](#rows-order-and-y-positions).
-6. **Containers** — see [Device containers](#device-containers).
+5. **Placement** — see [Rows, order and y positions](#rows-order-and-y-positions) and
+   [Aligning connected nodes](#aligning-connected-nodes).
+6. **Containers** — see [Device containers](#device-containers); then the nodes outside every
+   container are aligned again and the drawing is lifted back to the top.
 7. **Edge routing** over the drawn (not hidden) edges — see
    [Edge routing](#edge-routing-fast-clear-path-first-a-fallback).
+8. **Tracks** — vertical runs that share a gap are spread onto parallel tracks, widening the gap
+   when needed — see [Spreading edges onto tracks](#spreading-edges-onto-tracks).
 
 ## Semantic ranks
 
@@ -117,6 +127,41 @@ actual edge graph and then compressed so unused ranks don't stretch the canvas:
   chips only 88, and fractional gaps from compaction keep their proportion.
 - Within a rank, a node never starts less than `verticalGap` below the one above it; x is
   centred in the rank's column.
+- These row positions are only where alignment starts (1.8.3).
+
+## Aligning connected nodes
+
+Row compaction is rank-local, so the same desired row can land at different heights in two
+neighbouring ranks. In 1.8.2 a service without a port chip (say, one reached straight through
+Tailscale) moved every chip below it a row away from its own service, and each short
+service-to-chip edge became a staircase. Since 1.8.3, `_alignRanks` assigns the y coordinates the
+way the coordinate-assignment step of a layered (Sugiyama / Brandes–Köpf) drawing does: it keeps
+every rank's order, so `crossings` does not change, and moves nodes towards what they connect to.
+
+- **What each node asks for** (`_desiredCenter`):
+  - A *port chip* — a compact endpoint of its own service, or a remote entry a service leads to
+    (`_portOwners`) — asks for its service's centre.
+  - Any other node asks for the median centre of its neighbours on other ranks.
+  - A service looks past its own chips to what they connect to, so a service and its chips move
+    as one block.
+- **How a rank is placed** (`_pava`, the pool-adjacent-violators algorithm): the closest
+  positions to those wishes that keep the order and keep consecutive nodes `rowGap` apart (cards
+  112, chips 88, as before). It is exact and O(n).
+- **Chip spacing** (`_alignGap`): two chips of different services keep at least the distance
+  their services need. A service without a chip leaves no chip between its neighbours' chips,
+  and without this rule the chip column would pack tighter than the service column.
+- **Passes:** `_alignPasses` (9) alternating down and up passes; the last goes down, so chips end
+  beside their services' final positions.
+- **Settling:** each service settles on the middle of its chips in the next column, while nodes
+  without such chips give way (weight 0.01). Then the drawing starts at `padding`.
+
+After the containers are placed, `_alignFreeNodes` repeats this for the nodes outside every
+container. `_placeContainers` adds its running shift to every node after a container, even in
+ranks no container covers, so in 1.8.2 a domain could end up far below its source. Now each free
+node asks for the same centre, and every container covering its rank is a fixed, heavy item in
+`_pava`, so a free node keeps its side of every container and never meets one. Domains therefore
+sit beside the Tailscale card or the public 443 chip they hang off. Free nodes that move down can
+leave the top empty, so the whole drawing is lifted back to `padding`.
 
 ## Device containers
 
@@ -155,18 +200,26 @@ routing-grid base (`_RoutingGridBase.fromObstacles`, reused by every search), an
 edge — longest first — calls **`_routeEdge`**, which:
 
 1. Computes candidate anchor pairs (which side of each node to leave and enter), with
-   per-edge offsets from `_portOffsets` so edges sharing a side fan out.
-2. For each candidate, adds explicit **exit/entry stubs** — short perpendicular segments
-   (`_routingEscape`) so paths leave and enter cards perpendicularly; a blocked stub
-   (`_stubBlocked`) drops the candidate.
+   per-edge offsets from `_portOffsets` so edges sharing a side fan out. The offsets are spread
+   evenly, 9 px apart or closer on a short side, and never clamped onto each other. Then
+   `_levelAnchors` makes an edge whose two anchors are within `_alignSnap` exactly level, so
+   aligned nodes get a straight line.
+2. For each candidate, adds explicit **exit/entry stubs** (`_stubEnd`) — perpendicular
+   segments `_routingEscape` long, so paths leave and enter cards perpendicularly. A node
+   narrower than its column (a chip among cards) gets a stub that reaches past the column's edge.
+   A blocked stub (`_stubBlocked`) drops the candidate.
 3. Tries **`_fastRouteBetween`** first: straight, L, Z and around-the-box shapes checked
    against every obstacle. Most edges end here.
-4. Falls back to **`_routeBetween`**, an A* search over the grid of obstacle-derived and
-   segment-derived tracks. Its cost adds Manhattan length, a **turn cost** and a
-   **congestion cost** (reusing a routed segment's line costs 180, running parallel within
-   0.85 × the track gap 58, crossing one 28), so edges sharing a corridor spread onto
-   parallel tracks.
-5. Scores the candidates (`_pathScore`: length, turns, congestion) and keeps the best.
+4. Also runs **`_routeBetween`**, an A* search over the grid of obstacle-derived and
+   segment-derived tracks, when no fast shape is clear or the best one runs along a routed
+   horizontal line; the cheaper result wins. The search cost adds:
+   - Manhattan length;
+   - a **turn cost**;
+   - a **congestion cost**: a horizontal run on a routed horizontal line costs 180, one within
+     `_nearLine` (4 px) of it 58; a vertical run on a routed vertical line costs only 6, since
+     nudging separates those; crossing a segment costs 28.
+5. Scores the candidates (`_pathScore`: length, turns, congestion), adds `_sidePenalty` for
+   each end on the side facing away from the other end, and keeps the best.
 
 Routed segments are kept in **`_RoutedSegments`**, indexed by axis coordinate, so the
 congestion cost of a candidate step only visits the segments in its band (binary search)
@@ -176,8 +229,60 @@ reached from both ends and in several directions), and the search's arrays are t
 (`Float64List`, `Int32List`). All costs are multiples of 0.5, so none of this changes a
 single path; it only removes repeated work. On a developer machine a 43-node, 64-edge graph
 that took over 20 seconds before 1.5.6 now lays out in about a second without grouping and
-about 0.2 s with it; the 61-node, 91-edge graph of the performance test takes about 3.4 s
-and 0.4 s.
+about 0.2 s with it. The 61-node, 91-edge graph of the performance test took about 4.6 s and
+0.6 s in 1.8.2 on the Linux development machine. In 1.8.3 it takes about 1.0 s and 0.3 s, because
+vertical sharing no longer pays congestion that sent edges into long A* detours. Alignment and
+nudging cost a few milliseconds.
+
+## Spreading edges onto tracks
+
+Ranks are only `rankGap` (38 px) apart, and node rects are inflated by `_routingClearance` (14),
+which leaves a 10 px corridor. In 1.8.2 every turn between two neighbouring columns therefore
+landed on one shared vertical line: you could not tell which service went to which chip, or which
+chip fed Caddy. `_nudgeSegments` fixes this after routing. It combines the *nudging* step of
+orthogonal connector routing (libavoid) with the *slot assignment* of layered routers (ELK
+Layered):
+
+1. **Cells.** Cut the canvas into cells: each column, the gap after it, and a margin after the
+   last column. Small S-jogs inside a gap are straightened first (`_mergeJogs`).
+2. **Units.** Each interior vertical run becomes a unit, together with the same path's next runs
+   in that cell. Runs that all head the same way merge into one straight run. A unit may not
+   come within `_minStub` of the anchors its end runs reach, nor within `_routingClearance` of a
+   node beside it.
+3. **Order.** In each cell, units whose y-ranges come within two track spacings conflict. Each
+   unit is inserted where it crosses the fewest end runs of the units it conflicts with
+   (`_crossingsIfLeft`), so a fan-in becomes a comb without crossings.
+4. **Tracks.** Each unit takes the track after the highest track of the earlier units it
+   conflicts with, and each group of conflicting units is centred `_trackSpacing` (8 px) apart.
+5. **Widening.** A gap that is too narrow for its tracks is widened by one monotone stretch of
+   every x on the canvas. Nodes and headers move rigidly, containers stretch, and path points in
+   the gap scale with it. Since no two x values change order, every path still avoids every node
+   it avoided. Only gaps that need it grow, typically by a few tens of pixels.
+6. **Horizontal runs.** A horizontal run left lying on another edge's run is moved half a track
+   or more up or down (`_separateHorizontals`); a run at an anchor slides its anchor along the
+   node's side.
+7. **Safety check.** A path that would end up touching a node keeps its unmoved, stretched
+   version.
+
+The painter then rounds every bend (`topologyEdgePath` in `service_topology_widgets.dart`,
+radius up to 6 px).
+
+## Visual check
+
+`test/service_topology_preview_test.dart` renders the real topology page for the shared fixtures
+in `test/support/topology_fixtures.dart` — a replica of a 1.8.2 homelab that drew badly, the
+FRP walkthrough, a shared VPS, and the 61-node synthetic graph — grouped and flat. It loads
+Roboto and the Material icon font from the Flutter SDK, so text and icons render as in the app.
+It writes PNGs and a `metrics.json` (crossings, bends, length, shared-line length, smallest
+parallel gap, canvas size, layout ms). The test is skipped unless an output folder is given:
+
+```bash
+TOPOLOGY_PREVIEW=build/topology-preview flutter test test/service_topology_preview_test.dart
+```
+
+Run it before and after a layout change and compare the images. On the homelab replica, 1.8.3
+cut crossings from 22 to 3 and shared-line length from 82 px to 0 grouped, and from 599 px to 0
+flat.
 
 ## Performance notes
 

@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1699** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1719** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1826** declarations — 127 more than
-1699 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1862** declarations — 143 more than
+1719 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the
 constants, enums, typedefs and private regular expressions of the 1.6.0 on-device AI files under
 `features/ai/` and the two insight fact builders, and the classes, enum, constants and typedefs of
@@ -22,6 +22,8 @@ toward the gap.
 **1.7.0 recount.** The measured `/// Purpose:` count is 1550 (1493 before) and the rows sum to 1676 (1616 before), so the gap grows from 123 to 126: the release added 60 documented declarations (the six `features/profile/` files with 44, five in `data_modules.dart`, five in `theme.dart`, three in `shell_scaffold.dart`, two in `device_storage.dart`, one in `app_settings.dart`), three of them constants or fields without a `Purpose:` comment.
 
 **1.7.1 recount.** The measured `/// Purpose:` count is 1581 (1550 before) and the rows sum to 1708 (1676 before), so the gap grows from 126 to 127: the release added 32 declarations (`avatar_editor.dart` 13 and `avatar_image.dart` 7 as two new pages, `device_storage.dart` 4, `shell_scaffold.dart` 3, `app_settings.dart` 2, `adaptive_layout.dart` 1, `profile_header.dart` 1, `profile_store.dart` 1), 31 of them with a `Purpose:` comment (the extra `shell_scaffold.dart` row is the second private class, which has none).
+
+**1.8.3 recount.** The measured `/// Purpose:` count is 1719 (1699 before) and the rows sum to 1862 (1826 before), so the gap grows from 127 to 143. `service_topology_layout.dart` gained 19 commented declarations (16 Tier A helpers for alignment, nudging and anchor levelling, plus the `_TrackSegment` constructor, `overlaps` and `contains`) and 16 without a comment (the `_TrackSegment` class and its 9 fields, 5 new `static const` and the top-level `_nearLine`), 115 → 150 rows. `service_topology_widgets.dart` gained `topologyEdgePath` (Tier A), 25 → 26 rows.
 
 **1.8.2 recount.** The measured `/// Purpose:` count is 1699 (1659 before) and the rows sum to 1826 (1786 before), so the gap stays 127: RAID arrays and drive health added 40 declarations, every one with a `Purpose:` comment — two new pages (`dataset_copy_summary.dart` 2, `storage_health_label.dart` 1), `device.dart` +12, `dataset_placement.dart` +14, `device_edit_page.dart` +5, `device_detail_page.dart` +2, and `dataset.dart`, `dataset_storage.dart`, `dataset_topology.dart` and `dataset_edit_page.dart` +1 each. `dataset_edit_page.md`'s row-count line, which read 9 against 12 rows and 12 comments, is corrected.
 
@@ -38,9 +40,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 966 |
-| Tier B (index row only) | 860 |
-| **Total** | **1826** |
+| Tier A (full entry) | 983 |
+| Tier B (index row only) | 879 |
+| **Total** | **1862** |
 
 ## Root (`lib/`)
 
@@ -146,14 +148,14 @@ The synced profile (1.7.0): display name and avatar. See [../features/profile.md
 | `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 11 | 5 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 11 | 11 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
-| `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 115 | 45 |
+| `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 150 | 61 |
 | `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 54 | 13 |
 | `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
 | `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
 | `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 40 | 18 |
-| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 25 | 7 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 26 | 8 |
 | `lib/features/services/widgets/service_avatar.dart` | [features/services/widgets/service_avatar.md](features/services/widgets/service_avatar.md) | 3 | 0 |
 | `lib/features/services/widgets/service_icon.dart` | [features/services/widgets/service_icon.md](features/services/widgets/service_icon.md) | 1 | 0 |
 
@@ -169,7 +171,7 @@ The synced profile (1.7.0): display name and avatar. See [../features/profile.md
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1699/1826 hand-documented declarations above).
+the 1719/1862 hand-documented declarations above).
 
 ## shared/
 
@@ -212,7 +214,7 @@ the 1699/1826 hand-documented declarations above).
 | `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
-| `features/services/` | 17 | 535 | 232 | 303 |
+| `features/services/` | 17 | 571 | 249 | 322 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 25 | 291 | 194 | 97 |
-| **Total** | **101** | **1826** | **966** | **860** |
+| **Total** | **101** | **1862** | **983** | **879** |

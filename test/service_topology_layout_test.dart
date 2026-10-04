@@ -2,10 +2,11 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:my_device/features/devices/models/device.dart';
-import 'package:my_device/features/services/models/service.dart';
 import 'package:my_device/features/services/services/service_analysis.dart';
 import 'package:my_device/features/services/services/service_topology_layout.dart';
+import 'package:my_device/features/services/views/service_topology_widgets.dart';
+
+import 'support/topology_fixtures.dart';
 
 /// Purpose: Register the test cases defined in this file.
 /// Inputs: None.
@@ -14,7 +15,7 @@ import 'package:my_device/features/services/services/service_topology_layout.dar
 /// Notes: This serves as the test entry point for the file.
 void main() {
   test('topology layout renders port nodes as square chips', () {
-    final graph = _buildSampleGraph();
+    final graph = buildSampleGraph();
     final layout = ServiceTopologyLayout.build(graph.graph, graph.routes, 480);
 
     final endpointRect = layout.nodeRects['endpoint:jellyfin:web']!;
@@ -31,7 +32,7 @@ void main() {
   test(
     'topology layout compresses ranks instead of using fixed role columns',
     () {
-      final graph = _buildSampleGraph();
+      final graph = buildSampleGraph();
       final layout = ServiceTopologyLayout.build(
         graph.graph,
         graph.routes,
@@ -46,7 +47,7 @@ void main() {
   );
 
   test('topology layout compacts sparse route rows within each rank', () {
-    final graph = _buildSparseRouteGraph();
+    final graph = buildSparseRouteGraph();
     final layout = ServiceTopologyLayout.build(graph.graph, graph.routes, 640);
 
     final appA = layout.nodeRects['service:app-a']!;
@@ -56,7 +57,7 @@ void main() {
   });
 
   test('topology router keeps edge paths out of unrelated node rectangles', () {
-    final graph = _buildSampleGraph();
+    final graph = buildSampleGraph();
     final layout = ServiceTopologyLayout.build(graph.graph, graph.routes, 480);
 
     for (final edge in graph.graph.edges) {
@@ -82,7 +83,7 @@ void main() {
   });
 
   test('FRP topology keeps ingress and public ports as sibling FRP ports', () {
-    final data = _frpTopologyData();
+    final data = frpTopologyData();
     final graph = buildServiceTopology(
       services: data.services,
       routes: data.routes,
@@ -105,7 +106,7 @@ void main() {
   });
 
   test('topology routing avoids nodes and enters cards perpendicularly', () {
-    final data = _frpTopologyData();
+    final data = frpTopologyData();
     final graph = buildServiceTopology(
       services: data.services,
       routes: data.routes,
@@ -150,7 +151,7 @@ void main() {
   });
 
   test('a row of port chips is shorter than a row of cards', () {
-    final data = _chipRowsData();
+    final data = chipRowsData();
     final graph = buildServiceTopology(
       services: data.services,
       routes: data.routes,
@@ -163,21 +164,20 @@ void main() {
       layout.nodeRects['endpoint:app:b']!,
       layout.nodeRects['endpoint:app:c']!,
     ]..sort((a, b) => a.top.compareTo(b.top));
-    final stride = chips[2].top - chips[1].top;
+    const stride =
+        ServiceTopologyLayout.portChipSize + ServiceTopologyLayout.rowGap;
     expect(stride, lessThan(ServiceTopologyLayout.nodeHeight + 44));
+    expect(chips[1].top - chips[0].top, closeTo(stride, 0.01));
+    expect(chips[2].top - chips[1].top, closeTo(stride, 0.01));
     expect(
-      stride,
-      ServiceTopologyLayout.portChipSize + ServiceTopologyLayout.rowGap,
-    );
-    expect(
-      chips[1].top - chips[0].top,
-      ServiceTopologyLayout.nodeHeight + ServiceTopologyLayout.rowGap,
-      reason: 'the first row also holds the service card',
+      layout.nodeRects['service:app']!.center.dy,
+      closeTo(chips[1].center.dy, 0.01),
+      reason: 'the service is centred on its chips',
     );
   });
 
   test('domain sinks share the last rank and paths stay clean', () {
-    for (final sample in [_buildSampleGraph(), _frpSample()]) {
+    for (final sample in [buildSampleGraph(), frpSample()]) {
       final layout = ServiceTopologyLayout.build(
         sample.graph,
         sample.routes,
@@ -194,7 +194,7 @@ void main() {
       _expectCleanPaths(sample.graph, layout);
     }
 
-    final sample = _buildSampleGraph();
+    final sample = buildSampleGraph();
     final unaligned = ServiceTopologyLayout.build(
       sample.graph,
       sample.routes,
@@ -240,7 +240,7 @@ void main() {
   });
 
   test('the barycenter sweep removes crossings and never adds any', () {
-    final shared = _sharedVpsSample();
+    final shared = sharedVpsSample();
     for (final group in [false, true]) {
       final unswept = ServiceTopologyLayout.build(
         shared.graph,
@@ -262,9 +262,9 @@ void main() {
     }
 
     for (final sample in [
-      _buildSampleGraph(),
-      _buildSparseRouteGraph(),
-      _frpSample(),
+      buildSampleGraph(),
+      buildSparseRouteGraph(),
+      frpSample(),
     ]) {
       for (final group in [false, true]) {
         final unswept = ServiceTopologyLayout.build(
@@ -288,11 +288,7 @@ void main() {
   });
 
   test('device containers hold their members and nothing else', () {
-    for (final sample in [
-      _buildSampleGraph(),
-      _frpSample(),
-      _sharedVpsSample(),
-    ]) {
+    for (final sample in [buildSampleGraph(), frpSample(), sharedVpsSample()]) {
       final graph = sample.graph;
       final layout = ServiceTopologyLayout.build(
         graph,
@@ -378,7 +374,7 @@ void main() {
   });
 
   test('the walkthrough graph groups home and VPS with the domain last', () {
-    final sample = _frpSample();
+    final sample = frpSample();
     final layout = ServiceTopologyLayout.build(
       sample.graph,
       sample.routes,
@@ -397,8 +393,137 @@ void main() {
     );
   });
 
+  test('no two edges share a line and parallel tracks keep their spacing', () {
+    for (final sample in [
+      homelabSample(),
+      buildSampleGraph(),
+      frpSample(),
+      sharedVpsSample(),
+      syntheticSample(),
+    ]) {
+      for (final group in [false, true]) {
+        final layout = ServiceTopologyLayout.build(
+          sample.graph,
+          sample.routes,
+          900,
+          options: ServiceTopologyLayoutOptions(groupByDevice: group),
+        );
+        _expectCleanPaths(sample.graph, layout);
+        _expectSeparateLines(layout, reason: 'grouped: $group');
+      }
+    }
+  });
+
+  test('a port chip sits beside its service', () {
+    for (final sample in [homelabSample(), frpSample(), sharedVpsSample()]) {
+      for (final group in [false, true]) {
+        final layout = ServiceTopologyLayout.build(
+          sample.graph,
+          sample.routes,
+          900,
+          options: ServiceTopologyLayoutOptions(groupByDevice: group),
+        );
+        final chipsOf = <String, List<String>>{};
+        for (final edge in sample.graph.edges) {
+          final from = _node(sample.graph, edge.from);
+          final to = _node(sample.graph, edge.to);
+          if (from.kind == ServiceTopologyNodeKind.service &&
+              to.compact &&
+              (to.kind == ServiceTopologyNodeKind.remoteEntry ||
+                  to.serviceId == from.serviceId)) {
+            chipsOf.putIfAbsent(edge.from, () => []).add(edge.to);
+          }
+        }
+        for (final entry in chipsOf.entries) {
+          if (entry.value.length != 1) continue;
+          expect(
+            layout.nodeRects[entry.value.single]!.center.dy,
+            closeTo(layout.nodeRects[entry.key]!.center.dy, 1),
+            reason: '${entry.value.single} beside ${entry.key} ($group)',
+          );
+        }
+      }
+    }
+
+    final homelab = homelabSample();
+    final layout = ServiceTopologyLayout.build(
+      homelab.graph,
+      homelab.routes,
+      900,
+      options: const ServiceTopologyLayoutOptions(groupByDevice: true),
+    );
+    for (final service in [
+      'jellyfin',
+      'nextcloud',
+      'vaultwarden',
+      'wordpress',
+    ]) {
+      final edge = homelab.graph.edges.singleWhere(
+        (edge) =>
+            edge.from == 'service:$service' &&
+            edge.to == 'endpoint:$service:web',
+      );
+      expect(layout.edgePaths[edge], hasLength(2), reason: service);
+    }
+  });
+
+  test('domains sit beside what leads to them, not below the containers', () {
+    final homelab = homelabSample();
+    final layout = ServiceTopologyLayout.build(
+      homelab.graph,
+      homelab.routes,
+      900,
+      options: const ServiceTopologyLayoutOptions(groupByDevice: true),
+    );
+    double centre(String id) => layout.nodeRects[id]!.center.dy;
+    const stride =
+        ServiceTopologyLayout.nodeHeight + ServiceTopologyLayout.rowGap;
+    for (final domain in [
+      'domain:mac-mini.tail1234.ts.net',
+      'domain:mac-mini.et.example.net',
+    ]) {
+      expect(
+        (centre(domain) - centre('service:tailscale')).abs(),
+        lessThanOrEqualTo(stride / 2 + 0.01),
+        reason: domain,
+      );
+    }
+    final entry = layout.nodeRects.keys.singleWhere(
+      (id) => id.startsWith('remote:'),
+    );
+    for (final domain in ['domain:example.com', 'domain:cloud.example.com']) {
+      expect(
+        (centre(domain) - centre(entry)).abs(),
+        lessThanOrEqualTo(stride / 2 + 0.01),
+        reason: domain,
+      );
+    }
+  });
+
+  test('the edge painter rounds bends and keeps both ends', () {
+    final path = topologyEdgePath(const [
+      Offset(0, 0),
+      Offset(100, 0),
+      Offset(100, 100),
+    ]);
+    final metric = path.computeMetrics().single;
+    expect(metric.length, closeTo(200 - 12 + math.pi * 3, 0.5));
+    expect(metric.getTangentForOffset(0)!.position, Offset.zero);
+    expect(
+      metric.getTangentForOffset(metric.length)!.position,
+      const Offset(100, 100),
+    );
+    final jog = topologyEdgePath(const [
+      Offset(0, 0),
+      Offset(50, 0),
+      Offset(50, 4),
+      Offset(100, 4),
+    ]).computeMetrics().single;
+    expect(jog.length, lessThan(104), reason: 'a 4 px jog keeps a 2 px radius');
+  });
+
   test('a 60-node, 80-edge graph lays out', () {
-    final sample = _syntheticSample();
+    final sample = syntheticSample();
     expect(sample.graph.nodes.length, greaterThanOrEqualTo(60));
     expect(sample.graph.edges.length, greaterThanOrEqualTo(80));
     for (final group in [false, true]) {
@@ -458,6 +583,49 @@ void _expectCleanPaths(
   }
 }
 
+/// Purpose: Check that no two drawn edges run along one line and that
+/// parallel vertical segments of different edges keep the track spacing.
+/// Inputs: `layout`, `reason`.
+/// Returns: None.
+/// Side effects: Records test expectations.
+/// Notes: Vertical segments are what `_nudgeSegments` spreads apart; a
+/// horizontal pair is only required not to coincide.
+void _expectSeparateLines(ServiceTopologyLayout layout, {String reason = ''}) {
+  final segments = <({int edge, Offset a, Offset b})>[];
+  for (final (index, path) in layout.edgePaths.values.indexed) {
+    for (var i = 1; i < path.length; i++) {
+      segments.add((edge: index, a: path[i - 1], b: path[i]));
+    }
+  }
+  for (var i = 0; i < segments.length; i++) {
+    for (var j = i + 1; j < segments.length; j++) {
+      final s = segments[i];
+      final t = segments[j];
+      if (s.edge == t.edge) continue;
+      final sv = _vertical(s.a, s.b) && !_horizontal(s.a, s.b);
+      final tv = _vertical(t.a, t.b) && !_horizontal(t.a, t.b);
+      final sh = _horizontal(s.a, s.b) && !_vertical(s.a, s.b);
+      final th = _horizontal(t.a, t.b) && !_vertical(t.a, t.b);
+      if (sv && tv && _rangesOverlap(s.a.dy, s.b.dy, t.a.dy, t.b.dy)) {
+        final gap = (s.a.dx - t.a.dx).abs();
+        expect(
+          gap < 0.01 || gap >= 4,
+          isTrue,
+          reason: '$reason: verticals ${s.a}-${s.b} and ${t.a}-${t.b}',
+        );
+        expect(gap, greaterThan(0.01), reason: '$reason: shared vertical');
+      }
+      if (sh && th && _rangesOverlap(s.a.dx, s.b.dx, t.a.dx, t.b.dx)) {
+        expect(
+          (s.a.dy - t.a.dy).abs(),
+          greaterThan(0.01),
+          reason: '$reason: shared horizontal ${s.a}-${s.b}, ${t.a}-${t.b}',
+        );
+      }
+    }
+  }
+}
+
 /// Purpose: Report whether one rect lies inside another.
 /// Inputs: `inner`, `outer`.
 /// Returns: `bool`.
@@ -469,440 +637,6 @@ bool _inside(Rect inner, Rect outer) {
       slack.top <= inner.top &&
       slack.right >= inner.right &&
       slack.bottom >= inner.bottom;
-}
-
-/// Purpose: Build the FRP walkthrough data as a sample graph.
-/// Inputs: None.
-/// Returns: `_SampleGraph`.
-/// Side effects: None.
-/// Notes: Caddy on a Mac publishes `example.com` through FRP on a VPS.
-_SampleGraph _frpSample() {
-  final data = _frpTopologyData();
-  return _SampleGraph(
-    buildServiceTopology(
-      services: data.services,
-      routes: data.routes,
-      devices: data.devices,
-    ),
-    data.routes,
-  );
-}
-
-/// Purpose: Build one service whose three endpoints are each a route's source.
-/// Inputs: None.
-/// Returns: `_FrpTopologyData` — devices, services and routes.
-/// Side effects: None.
-/// Notes: The routes have no hops and no targets, so the endpoint chips are
-/// alone on their rows except the first, which the service card shares.
-_FrpTopologyData _chipRowsData() {
-  final device = Device(
-    id: 'box',
-    name: 'Box',
-    category: DeviceCategory.desktop,
-  );
-  final service = ServiceNode(
-    id: 'app',
-    deviceId: device.id,
-    name: 'App',
-    endpoints: [
-      ServiceEndpoint(id: 'a', port: 8001),
-      ServiceEndpoint(id: 'b', port: 8002),
-      ServiceEndpoint(id: 'c', port: 8003),
-    ],
-  );
-  return _FrpTopologyData(
-    devices: [device],
-    services: [service],
-    routes: [
-      for (final endpoint in ['a', 'b', 'c'])
-        ServiceRoute(
-          id: 'route-$endpoint',
-          name: 'Route $endpoint',
-          sourceServiceId: service.id,
-          sourceEndpointId: endpoint,
-        ),
-    ],
-  );
-}
-
-/// Purpose: Build two home devices publishing through one shared VPS.
-/// Inputs: None.
-/// Returns: `_SampleGraph`.
-/// Side effects: None.
-/// Notes: Two services on each home device go out through one FRP server;
-/// one domain is shared by a service of each device. Service names are
-/// chosen so the label order interleaves the devices, which the row order
-/// alone leaves crossed.
-_SampleGraph _sharedVpsSample() {
-  final devices = [
-    Device(id: 'home-a', name: 'Alpha box', category: DeviceCategory.desktop),
-    Device(id: 'home-b', name: 'Beta NAS', category: DeviceCategory.desktop),
-    Device(id: 'vps', name: 'VPS', category: DeviceCategory.vps),
-  ];
-  ServiceNode service(String id, String device, String name, int port) =>
-      ServiceNode(
-        id: id,
-        deviceId: device,
-        name: name,
-        endpoints: [ServiceEndpoint(id: '$id-ep', port: port, isPrimary: true)],
-      );
-  final services = [
-    service('zapp', 'home-a', 'Zeta app', 8080),
-    service('aapp', 'home-a', 'Alpha app', 8081),
-    service('bapp', 'home-b', 'Beta app', 9000),
-    service('capp', 'home-b', 'Aardvark', 9001),
-    ServiceNode(
-      id: 'frp',
-      deviceId: 'vps',
-      name: 'FRP',
-      kind: ServiceKind.tunnel,
-      endpoints: [ServiceEndpoint(id: 'frp-ep', port: 7000, isPrimary: true)],
-    ),
-  ];
-  ServiceRoute frp(String id, String source, int port, String target) =>
-      ServiceRoute(
-        id: id,
-        name: id,
-        sourceServiceId: source,
-        sourceEndpointId: '$source-ep',
-        accessLevel: ServiceAccessLevel.public,
-        finalUrl: target,
-        hops: [
-          ServiceRouteHop(
-            type: ServiceRouteHopType.portForward,
-            method: ServiceRouteMethod.frp,
-            serviceId: 'frp',
-            deviceId: 'vps',
-            port: port,
-          ),
-        ],
-      );
-  final routes = [
-    frp('r1', 'zapp', 443, 'shared.example.com'),
-    frp('r2', 'bapp', 8443, 'shared.example.com'),
-    frp('r3', 'aapp', 444, 'a.example.com'),
-    frp('r4', 'capp', 445, 'c.example.com'),
-    ServiceRoute(
-      id: 'r5',
-      name: 'r5',
-      sourceServiceId: 'zapp',
-      sourceEndpointId: 'zapp-ep',
-      finalUrl: 'http://z.lan',
-      hops: [
-        ServiceRouteHop(
-          type: ServiceRouteHopType.manual,
-          method: ServiceRouteMethod.direct,
-        ),
-      ],
-    ),
-  ];
-  return _SampleGraph(
-    buildServiceTopology(services: services, routes: routes, devices: devices),
-    routes,
-  );
-}
-
-/// Purpose: Build a synthetic inventory of at least 60 nodes and 80 edges.
-/// Inputs: None.
-/// Returns: `_SampleGraph`.
-/// Side effects: None.
-/// Notes: Three home devices with a Caddy and three services each; every
-/// service is published through one of two VPS FRP servers, two of them
-/// through their device's Caddy first, and reached on the LAN as well.
-_SampleGraph _syntheticSample() {
-  final devices = <Device>[];
-  final services = <ServiceNode>[];
-  final routes = <ServiceRoute>[];
-  for (var v = 0; v < 2; v++) {
-    devices.add(
-      Device(id: 'vps$v', name: 'VPS $v', category: DeviceCategory.vps),
-    );
-    services.add(
-      ServiceNode(
-        id: 'frp$v',
-        deviceId: 'vps$v',
-        name: 'FRP $v',
-        kind: ServiceKind.tunnel,
-        endpoints: [ServiceEndpoint(id: 'bind', port: 7000, isPrimary: true)],
-      ),
-    );
-  }
-  for (var d = 0; d < 3; d++) {
-    devices.add(
-      Device(id: 'home$d', name: 'Home $d', category: DeviceCategory.desktop),
-    );
-    services.add(
-      ServiceNode(
-        id: 'caddy$d',
-        deviceId: 'home$d',
-        name: 'Caddy $d',
-        kind: ServiceKind.reverseProxy,
-        endpoints: [ServiceEndpoint(id: 'https', port: 443, isPrimary: true)],
-      ),
-    );
-    for (var s = 0; s < 3; s++) {
-      final id = 'app$d-$s';
-      services.add(
-        ServiceNode(
-          id: id,
-          deviceId: 'home$d',
-          name: 'App $d.$s',
-          endpoints: [
-            ServiceEndpoint(id: 'web', port: 8000 + s, isPrimary: true),
-          ],
-        ),
-      );
-      routes.add(
-        ServiceRoute(
-          id: '$id-public',
-          name: '$id public',
-          sourceServiceId: id,
-          sourceEndpointId: 'web',
-          accessLevel: ServiceAccessLevel.public,
-          finalUrl: 'https://$id.example.com',
-          hops: [
-            if (s != 1)
-              ServiceRouteHop(
-                type: ServiceRouteHopType.reverseProxy,
-                method: ServiceRouteMethod.caddy,
-                serviceId: 'caddy$d',
-                endpointId: 'https',
-              ),
-            ServiceRouteHop(
-              type: ServiceRouteHopType.portForward,
-              method: ServiceRouteMethod.frp,
-              serviceId: 'frp${(d + s) % 2}',
-              deviceId: 'vps${(d + s) % 2}',
-              port: 10000 + d * 10 + s,
-            ),
-          ],
-        ),
-      );
-      routes.add(
-        ServiceRoute(
-          id: '$id-lan',
-          name: '$id lan',
-          sourceServiceId: id,
-          sourceEndpointId: 'web',
-          finalUrl: 'http://home$d.lan:${8000 + s}',
-          hops: [
-            ServiceRouteHop(
-              type: ServiceRouteHopType.manual,
-              method: ServiceRouteMethod.direct,
-            ),
-          ],
-        ),
-      );
-    }
-  }
-  return _SampleGraph(
-    buildServiceTopology(services: services, routes: routes, devices: devices),
-    routes,
-  );
-}
-
-/// Purpose: Build and return sample graph for the current context.
-/// Inputs: None.
-/// Returns: `_SampleGraph`.
-/// Side effects: None.
-/// Notes: Internal helper used within this file only.
-_SampleGraph _buildSampleGraph() {
-  final devices = [
-    Device(id: 'mac-mini', name: 'Mac mini', category: DeviceCategory.desktop),
-  ];
-  final jellyfin = ServiceNode(
-    id: 'jellyfin',
-    deviceId: 'mac-mini',
-    name: 'Jellyfin',
-    endpoints: [ServiceEndpoint(id: 'web', port: 8096)],
-  );
-  final vaultwarden = ServiceNode(
-    id: 'vaultwarden',
-    deviceId: 'mac-mini',
-    name: 'Vaultwarden',
-    endpoints: [ServiceEndpoint(id: 'web', port: 59880)],
-  );
-  final caddy = ServiceNode(
-    id: 'caddy',
-    deviceId: 'mac-mini',
-    name: 'Caddy',
-    kind: ServiceKind.reverseProxy,
-    endpoints: [ServiceEndpoint(id: 'https', port: 443)],
-  );
-  final routes = [
-    ServiceRoute(
-      id: 'jellyfin-public',
-      name: 'Jellyfin via Caddy',
-      sourceServiceId: jellyfin.id,
-      sourceEndpointId: 'web',
-      accessLevel: ServiceAccessLevel.public,
-      hops: [
-        ServiceRouteHop(
-          type: ServiceRouteHopType.reverseProxy,
-          method: ServiceRouteMethod.caddy,
-          serviceId: caddy.id,
-          endpointId: 'https',
-        ),
-      ],
-      finalUrl: 'https://jellyfin.example.com',
-    ),
-    ServiceRoute(
-      id: 'vaultwarden-public',
-      name: 'Vaultwarden via Caddy',
-      sourceServiceId: vaultwarden.id,
-      sourceEndpointId: 'web',
-      accessLevel: ServiceAccessLevel.public,
-      hops: [
-        ServiceRouteHop(
-          type: ServiceRouteHopType.reverseProxy,
-          method: ServiceRouteMethod.caddy,
-          serviceId: caddy.id,
-          endpointId: 'https',
-        ),
-      ],
-      finalUrl: 'https://vault.example.com',
-    ),
-    ServiceRoute(
-      id: 'caddy-frp',
-      name: 'Caddy FRP',
-      sourceServiceId: caddy.id,
-      sourceEndpointId: 'https',
-      accessLevel: ServiceAccessLevel.public,
-      hops: [
-        ServiceRouteHop(
-          type: ServiceRouteHopType.portForward,
-          method: ServiceRouteMethod.frp,
-          host: '203.0.113.10',
-          port: 443,
-        ),
-      ],
-      finalUrl: 'https://cloud.example.com',
-    ),
-  ];
-  final graph = buildServiceTopology(
-    services: [jellyfin, vaultwarden, caddy],
-    routes: routes,
-    devices: devices,
-  );
-  return _SampleGraph(graph, routes);
-}
-
-/// Purpose: Build a graph whose route rows would be sparse without rank-local compaction.
-/// Inputs: None.
-/// Returns: `_SampleGraph`.
-/// Side effects: None.
-/// Notes: Internal helper used within this file only.
-_SampleGraph _buildSparseRouteGraph() {
-  final device = Device(
-    id: 'device-1',
-    name: 'Mac mini',
-    category: DeviceCategory.desktop,
-  );
-  final appA = ServiceNode(
-    id: 'app-a',
-    deviceId: device.id,
-    name: 'App A',
-    endpoints: [ServiceEndpoint(id: 'endpoint-a', port: 8000)],
-  );
-  final appB = ServiceNode(
-    id: 'app-b',
-    deviceId: device.id,
-    name: 'App B',
-    endpoints: [ServiceEndpoint(id: 'endpoint-b', port: 9000)],
-  );
-  final routes = [
-    for (var i = 0; i < 6; i++)
-      ServiceRoute(
-        id: 'app-a-route-$i',
-        name: 'App A Public $i',
-        sourceServiceId: appA.id,
-        sourceEndpointId: 'endpoint-a',
-        accessLevel: ServiceAccessLevel.public,
-        hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
-        finalUrl: 'https://a$i.example.com',
-      ),
-    ServiceRoute(
-      id: 'app-b-route',
-      name: 'App B Public',
-      sourceServiceId: appB.id,
-      sourceEndpointId: 'endpoint-b',
-      accessLevel: ServiceAccessLevel.public,
-      hops: [ServiceRouteHop(type: ServiceRouteHopType.tunnel)],
-      finalUrl: 'https://b.example.com',
-    ),
-  ];
-  final graph = buildServiceTopology(
-    services: [appA, appB],
-    routes: routes,
-    devices: [device],
-  );
-  return _SampleGraph(graph, routes);
-}
-
-/// Purpose: Provide the internal frp topology data helper for this file.
-/// Inputs: None.
-/// Returns: `_FrpTopologyData`.
-/// Side effects: None.
-/// Notes: Internal helper used within this file only.
-_FrpTopologyData _frpTopologyData() {
-  final devices = [
-    Device(id: 'mac', name: 'Mac mini', category: DeviceCategory.desktop),
-    Device(id: 'cloud', name: 'Cloudcone VPS', category: DeviceCategory.vps),
-  ];
-  final services = [
-    ServiceNode(
-      id: 'caddy',
-      deviceId: 'mac',
-      name: 'Caddy',
-      kind: ServiceKind.reverseProxy,
-      endpoints: [
-        ServiceEndpoint(
-          id: 'caddy443',
-          label: 'HTTPS',
-          protocol: ServiceProtocol.https,
-          port: 443,
-          isPrimary: true,
-        ),
-      ],
-    ),
-    ServiceNode(
-      id: 'frp',
-      deviceId: 'cloud',
-      name: 'FRP',
-      kind: ServiceKind.tunnel,
-      endpoints: [
-        ServiceEndpoint(
-          id: 'frp57000',
-          label: 'Default',
-          protocol: ServiceProtocol.http,
-          transport: ServiceTransport.tcpUdp,
-          port: 57000,
-          scope: ServiceScope.public,
-          isPrimary: true,
-        ),
-      ],
-    ),
-  ];
-  final routes = [
-    ServiceRoute(
-      id: 'route',
-      name: 'FRP public route',
-      sourceServiceId: 'caddy',
-      sourceEndpointId: 'caddy443',
-      accessLevel: ServiceAccessLevel.public,
-      finalUrl: 'example.com',
-      hops: [
-        ServiceRouteHop(
-          type: ServiceRouteHopType.portForward,
-          method: ServiceRouteMethod.frp,
-          serviceId: 'frp',
-          deviceId: 'cloud',
-          port: 443,
-        ),
-      ],
-    ),
-  ];
-  return _FrpTopologyData(devices: devices, services: services, routes: routes);
 }
 
 /// Purpose: Provide the internal node helper for this file.
@@ -1001,33 +735,4 @@ bool _rangesOverlap(double a1, double a2, double b1, double b2) {
   final bMin = math.min(b1, b2);
   final bMax = math.max(b1, b2);
   return math.max(aMin, bMin) < math.min(aMax, bMax);
-}
-
-class _FrpTopologyData {
-  final List<Device> devices;
-  final List<ServiceNode> services;
-  final List<ServiceRoute> routes;
-
-  /// Purpose: Create a frp topology data instance.
-  /// Inputs: None.
-  /// Returns: A new `_FrpTopologyData` instance.
-  /// Side effects: None.
-  /// Notes: None.
-  const _FrpTopologyData({
-    required this.devices,
-    required this.services,
-    required this.routes,
-  });
-}
-
-class _SampleGraph {
-  final ServiceTopologyGraph graph;
-  final List<ServiceRoute> routes;
-
-  /// Purpose: Create a sample graph instance.
-  /// Inputs: `graph`, `routes`.
-  /// Returns: A new `_SampleGraph` instance.
-  /// Side effects: Implementation-dependent.
-  /// Notes: Implementations should preserve this contract.
-  const _SampleGraph(this.graph, this.routes);
 }

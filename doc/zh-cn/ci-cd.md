@@ -44,7 +44,7 @@ iscc installer.iss
 iscc /DARM64 installer.iss
 ```
 
-用最窄相关命令集验证。模型或同步变更时包含针对性测试，如 `flutter test test/sync_unknown_fields_test.dart` 或 `flutter test test/device_finance_test.dart`。端侧 AI 变更时运行 `flutter test test/on_device_ai_test.dart test/insight_facts_test.dart test/insight_service_test.dart test/ai_insights_cache_test.dart test/ai_insight_card_ui_test.dart test/ai_settings_tiles_ui_test.dart`。
+用最窄相关命令集验证。模型或同步变更时包含针对性测试，如 `flutter test test/sync_unknown_fields_test.dart` 或 `flutter test test/device_finance_test.dart`。端侧 AI 变更时运行 `flutter test test/on_device_ai_test.dart test/insight_facts_test.dart test/insight_service_test.dart test/ai_insights_cache_test.dart test/ai_insight_card_ui_test.dart test/ai_settings_tiles_ui_test.dart`。服务拓扑布局变更时运行 `flutter test test/service_topology_layout_test.dart test/service_topology_page_test.dart`。若要肉眼检查结果，再渲染按需运行的预览：它只在设置了变量时运行，所以 CI 中跳过，在任何桌面系统上都能无界面运行。`TOPOLOGY_PREVIEW=build/topology-preview flutter test test/service_topology_preview_test.dart` 会为每个样例分别输出分组与不分组的 PNG，以及 `metrics.json`。见 [服务拓扑布局](algorithms/service-topology-layout.md#visual-check)。
 
 ## 全新克隆
 

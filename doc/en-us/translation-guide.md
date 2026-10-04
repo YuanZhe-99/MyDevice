@@ -162,6 +162,11 @@ Not copied to the other repos — no other app has these.
 | container header | 分组框标题 | the device's tab on the top-left of its device container |
 | crossing sweep | 交叉消减扫描 | the layout pass that reorders ranks to remove edge crossings |
 | domain sink | 终点域名 | a domain node with no outgoing edges, aligned to the last rank |
+| alignment (topology) | 对齐 | the layout pass that lines connected nodes up across ranks; a port chip level with its service |
+| gap (between columns) | 列间通道 | the space between two rank columns where edges turn; widening it = 加宽通道 |
+| track | 轨道 | one x position in a gap that one edge's vertical run takes |
+| nudging | 错开 | spreading vertical runs that share a gap onto their own parallel tracks |
+| rounded bend | 圆角拐弯 | an edge's corner drawn as a quarter circle |
 | network assignment | 网络分配 | one `NetworkDevice`: a device's membership in a network; older pages used 网络赋值 |
 | proxy-like service | 类代理服务 | a service the guided flow offers as a reverse-proxy candidate |
 | overlay network | 叠加网络 | a VPN network layered over other networks (Tailscale, ZeroTier, EasyTier, WireGuard) |

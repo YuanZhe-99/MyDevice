@@ -37,16 +37,28 @@
 | `_routingClearance` | 静态 const（`ServiceTopologyLayout`） | B | 路由期间应用到节点矩形的障碍膨胀（14.0）。 |
 | `_routingEscape` | 静态 const（`ServiceTopologyLayout`） | B | 每个节点垂直退出/进入桩长度（18.0）。 |
 | `_routingTrackGap` | 静态 const（`ServiceTopologyLayout`） | B | 平行路由轨道/车道间间距（22.0）。 |
+| `_sidePenalty` | 静态 const（`ServiceTopologyLayout`） | B | 从背对另一端的一侧离开或进入节点时加到评分上的值（120.0）。 |
+| `_alignSnap` | 静态 const（`ServiceTopologyLayout`） | B | `_levelAnchors` 拉平的两锚点最大 y 差（12.0）。 |
+| `_trackSpacing` | 静态 const（`ServiceTopologyLayout`） | B | `_nudgeSegments` 错开的平行竖段间距（8.0）。 |
+| `_minStub` | 静态 const（`ServiceTopologyLayout`） | B | 锚点或列与被移动竖段之间至少保留的水平长度（18.0）。 |
+| `_alignPasses` | 静态 const（`ServiceTopologyLayout`） | B | `_alignRanks` 与 `_alignFreeNodes` 交替上下扫描次数（9，奇数，最后一次向下）。 |
 | [`build`](#build) | 静态方法（`ServiceTopologyLayout`） | A | 为拓扑图计算节点位置、设备分组框和预路由边路径。 |
 | [`_deviceGroups`](#_devicegroups) | 静态方法（`ServiceTopologyLayout`） | A | 找出画作设备分组框的设备及其成员节点 id。 |
 | [`_headerRanks`](#_headerranks) | 静态方法（`ServiceTopologyLayout`） | A | 分组设备节点离开列后重新稠密化等级。 |
 | [`_placeNodes`](#_placenodes) | 静态方法（`ServiceTopologyLayout`） | A | 把节点放入等级列、减少交叉，并把行变为 y 位置。 |
 | [`_keepGroupsTogether`](#_keepgroupstogether) | 静态方法（`ServiceTopologyLayout`） | A | 重排一个等级，使每个设备分组框的成员连续。 |
 | [`_rowPositions`](#_rowpositions) | 静态方法（`ServiceTopologyLayout`） | A | 把紧凑行值变为按内容定尺寸的 y 位置。 |
+| [`_alignRanks`](#_alignranks) | 静态方法（`ServiceTopologyLayout`） | A | 在不改变各层顺序的前提下让相连节点跨层对齐。 |
+| [`_alignGap`](#_aligngap) | 静态方法（`ServiceTopologyLayout`） | A | 对齐时同层相邻两中心的最小距离。 |
+| [`_rankNeighbors`](#_rankneighbors) | 静态方法（`ServiceTopologyLayout`） | A | 每个节点在其他层上的邻居。 |
+| [`_portOwners`](#_portowners) | 静态方法（`ServiceTopologyLayout`） | A | 端口芯片 → 它所属的服务节点。 |
+| [`_desiredCenter`](#_desiredcenter) | 静态方法（`ServiceTopologyLayout`） | A | 对齐时一个节点想要的中心。 |
+| [`_pava`](#_pava) | 静态方法（`ServiceTopologyLayout`） | A | 在最小间距允许下让一列有序项尽量接近期望位置（相邻违例合并算法）。 |
 | [`_sweepCrossings`](#_sweepcrossings) | 静态方法（`ServiceTopologyLayout`） | A | 用交替重心扫描减少边交叉。 |
 | [`_orderPositions`](#_orderpositions) | 静态方法（`ServiceTopologyLayout`） | A | 给每个已放置节点一个在其等级内严格有序的位置。 |
 | [`countCrossings`](#countcrossings) | 静态方法（`ServiceTopologyLayout`） | A | 统计跨等级线的边对顺序交换（为测试公开）。 |
 | [`_placeContainers`](#_placecontainers) | 静态方法（`ServiceTopologyLayout`） | A | 围绕成员绘制设备分组框并放置标题标签页。 |
+| [`_alignFreeNodes`](#_alignfreenodes) | 静态方法（`ServiceTopologyLayout`） | A | 把所有分组框之外的节点移到与它相连的节点旁。 |
 | [`_compactRankRows`](#_compactrankrows) | 静态方法（`ServiceTopologyLayout`） | A | 把行变为 y 位置前在一个等级内压实期望行。 |
 | [`_compactDesiredRows`](#_compactdesiredrows) | 静态方法（`ServiceTopologyLayout`） | A | 移除只被无可见节点路由保留的行间隙。 |
 | [`_compactRowValueMap`](#_compactrowvaluemap) | 静态方法（`ServiceTopologyLayout`） | A | 从稀疏期望行值构建紧凑值映射。 |
@@ -58,8 +70,16 @@
 | [`_routeRows`](#_routerows) | 静态方法（`ServiceTopologyLayout`） | A | 沿虚拟行轴给每条路由分配首选行。 |
 | [`_desiredRows`](#_desiredrows) | 静态方法（`ServiceTopologyLayout`） | A | 从路由/邻居派生每个节点首选行。 |
 | [`_routeEdges`](#_routeedges) | 静态方法（`ServiceTopologyLayout`） | A | 入口点：把每条绘制边路由为正交折线。 |
-| [`_portOffsets`](#_portoffsets) | 静态方法（`ServiceTopologyLayout`） | A | 把共享节点侧的边扇出为不同垂直偏移。 |
+| [`_columnBounds`](#_columnbounds) | 静态方法（`ServiceTopologyLayout`） | A | 层 → 该列节点共有的 x 范围。 |
+| [`_nudgeSegments`](#_nudgesegments) | 静态方法（`ServiceTopologyLayout`） | A | 让共用一个单元的竖段各占轨道，通道太窄时加宽。 |
+| [`_unitRange`](#_unitrange) | 静态方法（`ServiceTopologyLayout`） | A | 一组轨道单元共有的 x 范围。 |
+| [`_separateHorizontals`](#_separatehorizontals) | 静态方法（`ServiceTopologyLayout`） | A | 把与另一条边重合的水平段移开。 |
+| [`_mergeJogs`](#_mergejogs) | 静态方法（`ServiceTopologyLayout`） | A | 拉直路径在同一通道内的小 S 形折返。 |
+| [`_crossingsIfLeft`](#_crossingsifleft) | 静态方法（`ServiceTopologyLayout`） | A | 一个单元占另一个左侧轨道时两者的交叉数。 |
+| [`_portOffsets`](#_portoffsets) | 静态方法（`ServiceTopologyLayout`） | A | 把共享节点的边均匀分布在其侧边上，锚点不会重合。 |
+| [`_levelAnchors`](#_levelanchors) | 静态方法（`ServiceTopologyLayout`） | A | 把几乎水平的边的两个锚点完全拉平。 |
 | [`_routeEdge`](#_routeedge) | 静态方法（`ServiceTopologyLayout`） | A | 路由一条边，按偏好顺序试锚侧候选。 |
+| [`_stubEnd`](#_stubend) | 静态方法（`ServiceTopologyLayout`） | A | 边的垂直出入短段终点：可行时越过列边缘。 |
 | [`_fastRouteBetween`](#_fastroutebetween) | 静态方法（`ServiceTopologyLayout`） | A | A* 前试廉价直接/L/Z/绕框候选。 |
 | [`_routeBetween`](#_routebetween) | 静态方法（`ServiceTopologyLayout`） | A | 避障正交 A* 风格网格搜索（回退路由器）。 |
 | [`_pathScore`](#_pathscore) | 静态方法（`ServiceTopologyLayout`） | A | 按长度、转弯和拥塞评分路由路径。 |
@@ -88,6 +108,7 @@
 | `_TopologySide` | 枚举 | B | `left` / `right` — 边从节点哪侧退出/进入。 |
 | `_epsilon` | 顶层 const | B | 几何比较共享浮点容忍（0.01）。 |
 | `_rowEpsilon` | 顶层 const | B | 行值匹配浮点容忍（0.0001）。 |
+| `_nearLine` | 顶层 const | B | 两条平行水平段相距多近时路由开始计代价（4.0）。 |
 | `_RoutingGridBase` | 类 | B | 可复用共享 x/y 路由轨道坐标集合。 |
 | `xs` | 字段（`_RoutingGridBase`） | B | 共享垂直网格线（x 坐标）。 |
 | `ys` | 字段（`_RoutingGridBase`） | B | 共享水平网格线（y 坐标）。 |
@@ -99,6 +120,7 @@
 | `_vertical` | 字段（`_RoutedSegments`） | B | 垂直段，按 x 排序。 |
 | [`addAll`](#addall) | 方法（`_RoutedSegments`） | A | 把段追加到 `all` 并插入有序轴索引。 |
 | [`cost`](#cost) | 方法（`_RoutedSegments`） | A | 候选段的拥塞代价，只访问附近的段。 |
+| [`sharesHorizontalLine`](#shareshorizontalline) | 方法（`_RoutedSegments`） | A | 路径是否沿一条已路由的水平线走。 |
 | [`_lowerBound`](#_lowerbound) | 静态方法（`_RoutedSegments`） | A | 二分查找键不小于某值的第一个索引。 |
 | `_Segment` | 类 | B | 正交（水平或垂直）线段 `a`→`b`。 |
 | `a` | 字段（`_Segment`） | B | 段起点。 |
@@ -111,6 +133,19 @@
 | [`crosses`](#crosses) | 方法（`_Segment`） | A | 水平和垂直段是否实际相交。 |
 | [`_rangesOverlap`](#_rangesoverlap) | 静态方法（`_Segment`） | A | 两个 1-D 范围是否重叠超过 `_epsilon`。 |
 | [`_between`](#_between) | 静态方法（`_Segment`） | A | 带 `_epsilon` 松量的包含范围测试。 |
+| `_TrackSegment` | 类 | B | 同一路径在同一单元中的一条或多条竖段，由 `_nudgeSegments` 一起移动。 |
+| `edge` | 字段（`_TrackSegment`） | B | 竖段所属的边。 |
+| `members` | 字段（`_TrackSegment`） | B | 每条竖段首点在路径中的下标 → 放置后相对第一条竖段的 x 偏移。 |
+| `cell` | 字段（`_TrackSegment`） | B | 所在单元的下标。 |
+| `top` | 字段（`_TrackSegment`） | B | 竖段覆盖的 y 范围顶部。 |
+| `bottom` | 字段（`_TrackSegment`） | B | 该范围底部。 |
+| `ends` | 字段（`_TrackSegment`） | B | 两端水平段：y 与方向（−1 向左，1 向右）。 |
+| `x` | 字段（`_TrackSegment`） | B | 路由器放置第一条竖段的位置。 |
+| `limits` | 字段（`_TrackSegment`） | B | 限制移动的锚点与节点，各带竖段偏移、需保留距离及方向。 |
+| `track` | 字段（`_TrackSegment`） | B | 分到的轨道，最左为 0。 |
+| `_TrackSegment.new` | 构造函数（`_TrackSegment`） | B | 创建单元；`track` 初始为 0。 |
+| `overlaps` | 方法（`_TrackSegment`） | B | 两单元的 y 范围是否重叠或相距不足两个轨道间距。 |
+| `contains` | 方法（`_TrackSegment`） | B | y 是否严格位于单元范围内（留 ½ px 余量）。 |
 | `_RouteState` | 类 | B | 搜索堆条目：网格状态 `index` 和累积 `cost`。 |
 | `index` | 字段（`_RouteState`） | B | 编码 `(point, direction)` 状态索引。 |
 | `cost` | 字段（`_RouteState`） | B | 排序堆的优先级（g + 启发式）。 |
@@ -124,7 +159,9 @@
 | [`_bubbleDown`](#_bubbledown) | 方法（`_RouteHeap`） | A | 下滤：较小子胜过当前节点时与其交换。 |
 | `_swap` | 方法（`_RouteHeap`） | B | 按索引交换两个后备数组槽。 |
 
-**行数说明：** `grep -c '/// Purpose:' service_topology_layout.dart` 返回 **71**。其中一个是在 `_routeRows` 内声明的本地 `deviceKey` 辅助（在该条目中描述，不占表格行），因此 **70** 个表格行带 `/// Purpose:` 注释。上面声明表有 **115** 行，因为它还列出 45 个不带该注释的声明：8 个类/枚举声明本身（`ServiceTopologyLayoutOptions`、`ServiceTopologyLayout`、`_TopologySide`、`_RoutingGridBase`、`_RoutedSegments`、`_Segment`、`_RouteState`、`_RouteHeap`）、20 个数据字段（`ServiceTopologyLayoutOptions` 上 3 个、`ServiceTopologyLayout` 上 7 个、`_RoutingGridBase` 上 2 个、`_RoutedSegments` 上 3 个、`_Segment` 上 2 个、`_RouteState` 上 2 个、`_RouteHeap` 上 1 个）、15 个常量（`ServiceTopologyLayout` 上 13 个 `static const` + 顶层 `_epsilon`/`_rowEpsilon`），以及 2 个单行 getter `_Segment.horizontal`/`.vertical`。70 + 45 = 115。Tier A：45 行。
+**行数说明：** `grep -c '/// Purpose:' service_topology_layout.dart` 返回 **90**。其中一个是在 `_routeRows` 内声明的本地 `deviceKey` 辅助（在该条目中描述，不占表格行），因此 **89** 个表格行带 `/// Purpose:` 注释。上面声明表有 **150** 行，因为它还列出 61 个不带该注释的声明：9 个类/枚举声明本身（`ServiceTopologyLayoutOptions`、`ServiceTopologyLayout`、`_TopologySide`、`_RoutingGridBase`、`_RoutedSegments`、`_Segment`、`_TrackSegment`、`_RouteState`、`_RouteHeap`）、29 个数据字段（`ServiceTopologyLayoutOptions` 上 3 个、`ServiceTopologyLayout` 上 7 个、`_RoutingGridBase` 上 2 个、`_RoutedSegments` 上 3 个、`_Segment` 上 2 个、`_TrackSegment` 上 9 个、`_RouteState` 上 2 个、`_RouteHeap` 上 1 个）、21 个常量（`ServiceTopologyLayout` 上 18 个 `static const` + 顶层 `_epsilon`/`_rowEpsilon`/`_nearLine`），以及 2 个单行 getter `_Segment.horizontal`/`.vertical`。89 + 61 = 150。Tier A：61 行。
+
+**1.8.3：** 新增 35 行。其中 16 个 Tier A 辅助：`_alignRanks`、`_alignGap`、`_rankNeighbors`、`_portOwners`、`_desiredCenter`、`_pava`、`_alignFreeNodes`、`_columnBounds`、`_nudgeSegments`、`_unitRange`、`_separateHorizontals`、`_mergeJogs`、`_crossingsIfLeft`、`_levelAnchors`、`_stubEnd`、`sharesHorizontalLine`。另有 `_TrackSegment` 类及其 9 个字段、构造函数、`overlaps` 与 `contains`，以及 6 个常量：`_sidePenalty`、`_alignSnap`、`_trackSpacing`、`_minStub`、`_alignPasses`、`_nearLine`。
 
 ## 文档
 
@@ -156,6 +193,7 @@
   ```
   （`lib/features/services/views/service_topology_page.dart`，`_calculateLayout`，第 163–168 行，在 `await Future<void>.delayed(Duration.zero)` 之后，因此不在当前帧内运行。）
 - **备注：** 等级纯来自边图（含隐藏边），行来自路由/邻居；两者在 `_placeNodes` 中汇合。分组时，分组设备节点离开等级列、成为分组框标题；隐藏边在 `edgePaths` 中没有条目。
+- **1.8.3：** 分组时，`_placeContainers` 之后先用 [`_alignFreeNodes`](#_alignfreenodes) 对齐自由节点，再整体上移，使顶部回到 `padding`。路由时传入 [`_columnBounds`](#_columnbounds) 的列范围，之后由 [`_nudgeSegments`](#_nudgesegments) 错开竖段，必要时加宽通道。返回的矩形、分组框、路径和尺寸都取自它。
 
 ### `static Map<String, List<String>> _deviceGroups(ServiceTopologyGraph graph)` <a id="_devicegroups"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
@@ -219,6 +257,7 @@
   ```
   （`build`，第 193–203 行。）
 - **备注：** 不再有固定行步长：每行高度等于其最高节点加 `rowGap`（卡片行 112 px，chip 行 88 px）。`verticalGap` 只在压实会让一个等级内两个节点碰撞时作为下限生效。`targets` 让 `_placeContainers` 把成员重新放回它们自己的行。
+- **1.8.3：** 按行放置的结果只是对齐的起点。随后 [`_alignRanks`](#_alignranks) 保持各层顺序，把节点移向邻居，对齐后的顶边作为 `targets`。逐层压缩因此不会再让端口芯片与其服务错开一行。
 
 ### `static List<String> _keepGroupsTogether(List<String> ids, Map<String, String> memberGroup)` <a id="_keepgroupstogether"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
@@ -254,6 +293,72 @@
   ```
   （`_placeNodes`，第 390 行；在第 401 行应用。）
 - **备注：** 压实产生的小数间隙保持其比例，端口 chip 行比卡片行矮。这取代了旧的固定 `nodeHeight + 44` 步长。
+
+### `static Map<String, Rect> _alignRanks(Map<int, List<String>> order, Map<String, Rect> rects, Map<String, ServiceTopologyNode> nodeMap, List<ServiceTopologyEdge> edges, Map<String, int> ranks)` <a id="_alignranks"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 496 行）。
+- **用途：** 在不改变任何一层顺序的前提下，让相连节点跨层对齐；这是分层（Sugiyama）绘图中的坐标分配步骤。
+- **输入：** `order`（层 → 自上而下的 id）、`rects`（按行放置的结果）、`nodeMap`、`edges`（已放置节点间的绘制边）、`ranks`。
+- **返回：** 纵向移动后的同一组矩形，最上方的从 `padding` 开始。
+- **副作用：** 无。
+- **算法：** 1. 先收集三样东西：其他层上的邻居（[`_rankNeighbors`](#_rankneighbors)）、端口归属（[`_portOwners`](#_portowners)），以及每个节点距本层顶部的最小距离（`reach`，即半高加 `rowGap` 的累计和）。2. 交替做 `_alignPasses` 次扫描，次数为奇数，所以最后一次向下。每层中每个节点按 [`_desiredCenter`](#_desiredcenter) 给出期望中心，再用 [`_pava`](#_pava) 放置，间距由 [`_alignGap`](#_aligngap) 给出。3. 收尾：若某层的服务在下一列有芯片，这些服务取其芯片的中点（权重 1），其余节点取自身中心（权重 0.01），再用 `_pava` 放置一次。4. 整体平移，使最上方节点从 `padding` 开始。
+- **用法：** `final rects = _alignRanks(order, rowRects, nodeMap, [...], nodeRanks);`（`_placeNodes`）。
+- **备注：** 芯片取所属服务的中心；服务则越过自己的芯片，看芯片连到的节点。因此服务和它的芯片作为一个整体向图的其余部分移动。若没有第 3 步，芯片列较挤时（芯片间距 88 px，卡片 112 px），某个芯片可能与服务错开几个像素。
+
+### `static double _alignGap(String upper, String lower, Map<String, Rect> rects, Map<String, String> owners, Map<String, double> reach)` <a id="_aligngap"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 599 行）。
+- **用途：** 返回对齐时同层相邻两个中心之间的最小距离。
+- **输入：** `upper`、`lower`（相邻 id，上方在前）、`rects`、`owners`（芯片 → 服务）、`reach`。
+- **返回：** 两者半高之和加 `rowGap`；若是不同服务的两个芯片，至少为两服务之间的距离 `reach[lowerOwner] − reach[upperOwner]`。
+- **副作用：** 无。
+- **算法：** 先算普通间距；若两者属于不同服务，取它与服务间距中的较大者。
+- **用法：** `_alignRanks` 传给 `_pava` 的间距。
+- **备注：** 芯片比卡片矮。另外，没有芯片的服务（homelab 样例中的 Termix）在两个邻居的芯片之间不留芯片。按服务间距排开后，芯片列与服务列一样松，每个芯片都能与自己的服务齐平。
+
+### `static Map<String, List<String>> _rankNeighbors(List<ServiceTopologyEdge> edges, Map<String, int> ranks, bool Function(String id) placed)` <a id="_rankneighbors"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 620 行）。
+- **用途：** 列出每个节点在其他层上的邻居。
+- **输入：** `edges`、`ranks`、`placed`（某 id 是否已有位置）。
+- **返回：** 节点 id → 邻居 id，双向，仅含已放置的节点。
+- **副作用：** 无。
+- **算法：** 遍历一次 `edges`，跳过一端未放置或两端在同一层的边。
+- **用法：** `_alignRanks`、`_alignFreeNodes`。
+- **备注：** 同层的边对节点相对下一列的位置不提供信息。
+
+### `static Map<String, String> _portOwners(List<ServiceTopologyEdge> edges, Map<String, ServiceTopologyNode> nodeMap, bool Function(String id) placed)` <a id="_portowners"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 642 行）。
+- **用途：** 找出每个端口芯片所属的服务。
+- **输入：** `edges`、`nodeMap`、`placed`。
+- **返回：** 芯片 id → 它所挂的服务节点 id。
+- **副作用：** 无。
+- **算法：** 对每条从 `service` 节点指向 `compact` 节点的边，下列情况下目标是该服务的芯片：目标是 `serviceId` 相同的 `endpoint`，或是 `remoteEntry`（FRP 服务器的公网端口）。以第一条这样的边为准。
+- **用法：** `_alignRanks`、`_alignFreeNodes`。
+- **备注：** 无。
+
+### `static double _desiredCenter(String id, Map<String, String> owners, Map<String, List<String>> neighbors, Map<String, double> centers)` <a id="_desiredcenter"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 673 行）。
+- **用途：** 返回对齐时一个节点想要的中心。
+- **输入：** `id`、`owners`、`neighbors`、`centers`（当前中心）。
+- **返回：** 芯片返回所属服务的中心；否则返回外部邻居中心的中位数；都没有时返回自身中心。
+- **副作用：** 无。
+- **算法：** 非芯片节点的每个邻居都计入；但若邻居是本节点自己的芯片，则改为计入该芯片的其他邻居。
+- **用法：** `_alignRanks`、`_alignFreeNodes`。
+- **备注：** 越过自己的芯片看出去，只与自己芯片相连的服务也能向图的其余部分移动。否则它会停在最初按行放置的位置，在本列留下空洞。
+
+### `static List<double> _pava(List<double> desired, List<double> separations, [List<double>? weights])` <a id="_pava"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 708 行）。
+- **用途：** 在最小间距允许的范围内，让一列有序项尽量接近各自的期望位置（相邻违例合并算法，PAVA）。
+- **输入：** `desired`（自上而下的期望中心）、`separations`（第 i 项与第 i+1 项的最小距离）、`weights`（默认各为 1）。
+- **返回：** 同顺序的中心列表。
+- **副作用：** 无。
+- **算法：** 先从每个期望值中减去累计间距，问题就变成保序回归。扫描一遍：当最后一个块的加权均值大于新项的值时，把两者合并。最后加回累计间距。
+- **用法：** `_alignRanks`、`_alignFreeNodes`。
+- **备注：** 在保持顺序和间距的约束下，精确地使到期望位置的加权平方距离最小，复杂度 O(n)。极重的项（1e9）相当于固定障碍。
 
 ### `static int _sweepCrossings(Map<int, List<String>> order, Map<String, double> rows, Map<String, int> ranks, List<ServiceTopologyEdge> edges, Map<String, String> memberGroup, int sweeps)` <a id="_sweepcrossings"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
@@ -347,6 +452,17 @@
   ```
   （`build`，第 207–212 行。）
 - **备注：** 成员回到它们的行目标，因此不会保留另一台设备的节点在它们上方留下的间隙；运行中的 shift 让下方的行在各等级间保持对齐。按构造，每个成员都位于其设备分组框内，没有自由节点与设备分组框相交，设备分组框之间也从不重叠，因此不需要回退。标题较窄，因此边仍可从上方进入设备分组框。设备分组框矩形不是路由障碍；标题标签页是。
+
+### `static Map<String, Rect> _alignFreeNodes(Map<String, Rect> rects, Map<String, Rect> containers, Map<String, List<String>> groups, Map<String, ServiceTopologyNode> nodeMap, List<ServiceTopologyEdge> edges, Map<String, int> ranks)` <a id="_alignfreenodes"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 1129 行）。
+- **用途：** 分组框放好之后，把所有分组框之外的节点移到与它相连的节点旁边。
+- **输入：** `rects`（`_placeContainers` 之后）、`containers`、`groups`、`nodeMap`、`edges`（绘制边）、`ranks`。
+- **返回：** 移动了自由节点的矩形；成员与标题不动。
+- **副作用：** 无。
+- **算法：** 在含自由节点的各层上交替扫描 `_alignPasses` 次。每层的项依次为：画布顶部的固定伪项；成员层覆盖该层的每个分组框（固定，权重 1e9，位于自身中心）；该层的自由节点（期望位置取 [`_desiredCenter`](#_desiredcenter)）。各项按当前中心排序后由 `_pava` 放置：自由节点之间间隔 `rowGap`，与分组框或顶部之间间隔 `verticalGap`。
+- **用法：** `nodeRects = _alignFreeNodes(contained.rects, contained.groups, groups, nodeMap, drawnEdges, nodeRanks);`（`build`，分组时）。
+- **备注：** `_placeContainers` 会把累积的下移量加到每个分组框之后的节点上，即使该层没有分组框，所以域名可能被推到远低于其来源的位置。现在每个自由节点都保持在各分组框的同一侧，不会与之相交。
 
 ### `static Map<String, double> _compactRankRows(List<ServiceTopologyNode> nodes, Map<String, double> desiredRows)` <a id="_compactrankrows"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
@@ -502,7 +618,7 @@
   （`build`，第 179–185 行。）
 - **备注：** 邻居传播 10 迭代上限（步骤 3）意味着非常长的其他未路由节点链在 10 遍内传播未达时仍可落入步骤 4 回退——实践中受典型拓扑直径限制。
 
-### `static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(List<ServiceTopologyEdge> validEdges, Map<String, Rect> rects, Map<String, int> ranks, Size size)` <a id="_routeedges"></a>
+### `static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(List<ServiceTopologyEdge> validEdges, Map<String, Rect> rects, Map<String, int> ranks, Size size, {Map<int, ({double left, double right})> columns = const {}, Set<String> headers = const {}})` <a id="_routeedges"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
 - **来源：** `lib/features/services/services/service_topology_layout.dart`（第 1133 行）。
 - **用途：** 边路由入口点：一次构建共享障碍/网格状态，然后对照它路由每条边，累积已路由段使较后边避开较早边。
@@ -520,6 +636,73 @@
   ```
   （`build`，第 227 行。）
 - **备注：** `routedSegments` 在整个调用单调累积——拥塞代价因此顺序依赖：较早路由（更长）边先挑净空走廊，较后边付绕行代价。设备分组框矩形不是障碍。
+- **1.8.3：** 新增 `columns`（层 → 列的 x 范围，来自 `_columnBounds`）与 `headers`（分组框标题 id，它们没有列）；计算端口偏移后用 [`_levelAnchors`](#_levelanchors) 拉平几乎水平的边。竖段在此仍可能共线，之后由 `_nudgeSegments` 错开。
+
+### `static Map<int, ({double left, double right})> _columnBounds(Map<String, Rect> rects, Map<String, int> ranks, Set<String> headers)` <a id="_columnbounds"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 1629 行）。
+- **用途：** 找出每一层的列，即该层节点共有的 x 范围。
+- **输入：** `rects`、`ranks`、`headers`（不计入，标题位于分组框角上）。
+- **返回：** 层 → 该层节点的最左左边与最右右边。
+- **副作用：** 无。
+- **算法：** 遍历一次 `rects`，逐层扩展范围。
+- **用法：** `final columns = _columnBounds(nodeRects, nodeRanks, groups.keys.toSet());`（`build`）。
+- **备注：** 列之间的通道就是边拐弯的地方。
+
+### `static ({Map<ServiceTopologyEdge, List<Offset>> paths, Map<String, Rect> rects, Map<String, Rect> groups, Size size}) _nudgeSegments(Map<ServiceTopologyEdge, List<Offset>> routed, Map<String, Rect> rects, Map<String, Rect> groups, List<({double left, double right})> columns, Size size)` <a id="_nudgesegments"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 1671 行）。
+- **用途：** 让共用一个单元的竖段各占一条平行轨道，通道不够宽时加宽。这结合了正交连线路由（libavoid）的“错开”步骤，以及分层路由器（ELK Layered）的槽位分配。
+- **输入：** `routed`（已路由的路径）、`rects`、`groups`（分组框）、`columns`（自左向右）、`size`。
+- **返回：** 竖段已移动的路径，以及加宽后的矩形、分组框和画布尺寸。
+- **副作用：** 无。
+- **算法：** 1. 自左向右划分单元：每一列，以及它之后的通道（最后一列之后是 `_routingMargin` 宽的边距）；只有通道和该边距可以加宽。2. 对每条路径做 [`_mergeJogs`](#_mergejogs)。3. 收集“单元”：一条内部竖段，加上同一路径中经水平段相连、位于同一单元的后续竖段。方向一致的竖段偏移为 0，合成一条直段；否则保留路由时的相对偏移。单元的限制有两种：端点段到达的锚点（保留 `_minStub`），以及竖段旁的每个节点（保留 `_routingClearance`）。4. 在每个单元内：y 范围相距不足 `2 × _trackSpacing` 的单元互相冲突。逐个把单元插到与冲突单元交叉最少的位置（[`_crossingsIfLeft`](#_crossingsifleft)），再取早先冲突单元最高轨道的下一条轨道，冲突单元合为一组（并查集）。若 `width × _trackSpacing` 超过某组的共同范围（[`_unitRange`](#_unitrange)），超出部分就是该通道要加宽的量。5. 用一个单调的 x 映射拉伸：加宽的单元变宽，其右侧整体右移。节点与标题按左边缘映射整体平移，分组框拉伸，路径点逐点映射。6. 在拉伸后的共同范围内放置每组：间距为 `_trackSpacing`，范围不够时缩小（列单元不加宽）。通道内的组居中；列内的组保持在原 x 附近。7. 执行 [`_separateHorizontals`](#_separatehorizontals) 并化简路径；若某条边会碰到两端以外的节点，保留其拉伸后未移动的路径。8. 画布宽度加上加宽总量。
+- **用法：** `final nudged = _nudgeSegments(routed, nodeRects, groupRects, columns..., size);`（`build`）。
+- **备注：** 拉伸不改变任意两个 x 的先后顺序，所以每条路径仍避开原先避开的节点，并保持正交。1.8.3 之前层间只有 38 px，扣除余量后通道只剩 10 px，两相邻列之间的拐弯全挤在同一条竖线上。
+
+### `static ({double lo, double hi}) _unitRange(List<_TrackSegment> units, ({double left, double right, bool gap}) cell, double Function(double) map)` <a id="_unitrange"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 1972 行）。
+- **用途：** 返回一组轨道单元共同可用的 x 范围。
+- **输入：** `units`、`cell`、`map`（拉伸映射，拉伸前为恒等）。
+- **返回：** 该组第一条竖段可取的最小与最大 x。
+- **副作用：** 无。
+- **算法：** 从单元出发（通道两侧各减去 `_minStub`），再按每个单元的限制收窄；每条限制按其所属竖段的偏移平移。
+- **用法：** `_nudgeSegments` 中用于估算加宽量和放置。
+- **备注：** 无。
+
+### `static void _separateHorizontals(Map<ServiceTopologyEdge, List<Offset>> paths, Map<String, Rect> rects)` <a id="_separatehorizontals"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 2002 行）。
+- **用途：** 把落在另一条边水平线上的水平段移开。
+- **输入：** `paths`（原地修改）、`rects`。
+- **返回：** 无。
+- **副作用：** 修改 `paths` 中的点。
+- **算法：** 对与另一条边水平段重合（同一 y、x 有重叠）的水平段，依次尝试 `y ± 0.5、1、1.5、2 × _trackSpacing`。取第一个满足条件的 y：该线上没有其他边，且该段连同被拉长或缩短的相邻竖段不碰到两端以外的任何节点。两个拐点之间的段可自由移动；锚点段则让锚点沿节点侧边滑动，离角至少 12 px。
+- **用法：** `_nudgeSegments` 第 7 步。
+- **备注：** 错开只移动竖段，这里处理剩下的少数水平重合。例如某条边从芯片的另一侧进入，正好落在另一条边离开的锚点上。
+
+### `static List<Offset> _mergeJogs(List<Offset> path, int Function(double) cellOf)` <a id="_mergejogs"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 2084 行）。
+- **用途：** 拉直路径在同一通道内的小 S 形折返。
+- **输入：** `path`、`cellOf`（x 所在单元下标，否则 −1）。
+- **返回：** 处理后的路径：同一单元内由短于 `2 × _trackSpacing` 的水平段相连的两条竖段，合并到第一条竖段的 x，并已化简。
+- **副作用：** 无。
+- **算法：** 反复查找这样一对不接触锚点的竖段，把第二条移到第一条上并化简，直到没有变化。
+- **用法：** `_nudgeSegments` 第 2 步。
+- **备注：** 若不处理，折返的两条竖段会互相卡住，都无法移动。
+
+### `static int _crossingsIfLeft(_TrackSegment left, _TrackSegment right)` <a id="_crossingsifleft"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 2120 行）。
+- **用途：** 统计两个重叠单元在 `left` 占 `right` 左侧轨道时产生的交叉数。
+- **输入：** `left`、`right`。
+- **返回：** 两者端点段穿过对方的次数。
+- **副作用：** 无。
+- **算法：** `right` 中向左的端点段，若其 y 位于 `left` 的范围内，就与 `left` 交叉；`left` 中向右的端点段同理。
+- **用法：** `_nudgeSegments` 中决定插入顺序。
+- **备注：** 比较两种顺序即可知道哪种更干净；两者相等说明这个交叉无法避免。在扇入中，这会把离目标最近的来源的竖段放在内侧，形成没有交叉的梳状。
 
 ### `static Map<ServiceTopologyEdge, double> _portOffsets(List<ServiceTopologyEdge> edges, Map<String, Rect> rects, Map<String, int> ranks, {required bool outgoing})` <a id="_portoffsets"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
@@ -539,8 +722,20 @@
   ```
   （`_routeEdges`，第 1139–1150 行。）
 - **备注：** 每次布局调用两次（每方向一次），因为边在其 `from` 节点退出扇出独立于其 `to` 节点进入扇出。标题标签页只有 40 px 高，因此其 `maxOffset` 为 8。
+- **1.8.3：** 偏移改为均匀分布：`(i - midpoint) * step`，其中 `step = min(9, 2 * maxOffset / (n - 1))`，不再截断。此前一个芯片侧边超过 5 条边时，锚点会重合。
 
-### `static List<Offset> _routeEdge({required Rect from, required Rect to, required double fromOffset, required double toOffset, required List<Rect> obstacles, required _RoutingGridBase gridBase, required _RoutedSegments routedSegments, required Size size})` <a id="_routeedge"></a>
+### `static void _levelAnchors(List<ServiceTopologyEdge> edges, Map<String, Rect> rects, Map<ServiceTopologyEdge, double> outgoing, Map<ServiceTopologyEdge, double> incoming)` <a id="_levelanchors"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 2311 行）。
+- **用途：** 把几乎水平的边的两个锚点完全拉平。
+- **输入：** `edges`、`rects`、`outgoing`/`incoming`（锚点偏移，原地修改）。
+- **返回：** 无。
+- **副作用：** 修改 `outgoing` 与 `incoming` 中的条目。
+- **算法：** 若一条边两锚点的 y 差不超过 `_alignSnap`，就把入口锚点拉到与出口齐平；不行时改为把出口拉到与入口齐平。前提是移动后的锚点仍在可用侧边上（离角 12 px），且与该节点其他锚点至少相距 6 px。
+- **用法：** `_routeEdges`，紧接 `_portOffsets` 之后。
+- **备注：** 锚点扇出后，对齐的节点之间会差几个像素；若不处理，会画成一个小折角。
+
+### `static List<Offset> _routeEdge({required Rect from, required Rect to, required double fromOffset, required double toOffset, ({double left, double right})? fromColumn, ({double left, double right})? toColumn, required List<Rect> obstacles, required _RoutingGridBase gridBase, required _RoutedSegments routedSegments, required Size size})` <a id="_routeedge"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
 - **来源：** `lib/features/services/services/service_topology_layout.dart`（第 1235 行）。
 - **用途：** 路由两个放置节点矩形间一条边，试多个锚侧候选并保留产生最低分有效路径的那个。
@@ -569,6 +764,18 @@
   ```
   （`_routeEdges`，第 1170–1179 行。）
 - **备注：** 所有候选锚对（至多 5 个）无条件试（首个成功不提前退出）——这是固定、小组合搜索而非贪婪首匹配，用有界额外工作量换更干净挑选路由。
+- **1.8.3：** 新增 `fromColumn`/`toColumn`（列的 x 范围，标题为 null）。出入短段由 [`_stubEnd`](#_stubend) 给出，比所在列窄的节点的短段会越过列边缘。若快速候选为 `null`，或沿已路由的水平线走（[`sharesHorizontalLine`](#shareshorizontalline)），也运行 A*，取代价较低者。评分另外按每个位于背向另一端一侧的端点加 `_sidePenalty`。
+
+### `static Offset _stubEnd(Offset anchor, _TopologySide side, ({double left, double right})? column, Size size, List<Rect> obstacles, Rect own)` <a id="_stubend"></a>
+- **类型：** `ServiceTopologyLayout` 的静态方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 2359 行）。
+- **用途：** 返回边的垂直出入短段的终点。
+- **输入：** `anchor`、`side`、`column`（可为 null）、`size`、`obstacles`、`own`（节点自身的膨胀矩形）。
+- **返回：** 短段终点，已吸附并限制在画布内。
+- **副作用：** 无。
+- **算法：** 节点比所在列窄且更长的短段畅通时，终点在列边缘外 `_routingEscape` 处；否则在节点外 `_routingEscape` 处。
+- **用法：** `_routeEdge`，每个候选的两端都用。
+- **备注：** 卡片列中的芯片因此和邻居一样在列间通道里拐弯，`_nudgeSegments` 才能给它分轨道。
 
 ### `static List<Offset>? _fastRouteBetween({required Offset start, required Offset goal, required List<Rect> obstacles, required _RoutedSegments routedSegments, required Size size})` <a id="_fastroutebetween"></a>
 - **种类：** `ServiceTopologyLayout` 的静态方法。
@@ -824,6 +1031,18 @@
   ```
   （`_congestionCost`，第 1603 行。）
 - **备注：** 应用与逐一对照每个段相同的三项测试，但只访问候选带内的段——平行段在其线的近距离内，垂直段其线位于其跨度内——因此产生相同的和。代价都是整数，因此求和顺序不会改变结果。
+- **1.8.3：** 水平候选在同一线上且跨度重叠的已路由水平段，每条 180；相距不足 `_nearLine`（4 px，原为 0.85 × 轨道间距）的，每条 58。竖直候选只对同一线上的已路由竖段各计 6，因为错开会把它们分开。另外每个垂直交叉计 28。4 px 的阈值小于 9 px 的锚点间距，扇入到同一节点各锚点的水平段不再受罚；旧阈值曾把一条边逼到 Caddy 的另一侧。
+
+### `bool sharesHorizontalLine(List<Offset> path)` <a id="shareshorizontalline"></a>
+- **类型：** `_RoutedSegments` 的方法（1.8.3）。
+- **源码：** `lib/features/services/services/service_topology_layout.dart`（第 3050 行）。
+- **用途：** 判断路径是否沿一条已路由的水平线走。
+- **输入：** `path`。
+- **返回：** 有水平段与已路由水平段同线且跨度重叠时为 `true`。
+- **副作用：** 无。
+- **算法：** 对每条水平段，在 `_horizontal` 中二分查找其 y，并做 [`sameAxisOverlap`](#sameaxisoverlap) 判断。
+- **用法：** `_routeEdge`，决定是否同时运行 A*。
+- **备注：** 竖段共线没关系，错开会把它们分开。
 
 ### `static int _lowerBound(List<_Segment> sorted, double value, double Function(_Segment) key)` <a id="_lowerbound"></a>
 - **种类：** `_RoutedSegments` 的静态方法。

@@ -416,14 +416,11 @@ class ServiceTopologyEdgePainter extends CustomPainter {
   /// Inputs: `canvas`, `paint`, `points` — at least two.
   /// Returns: `void`.
   /// Side effects: Draws on the canvas.
-  /// Notes: The arrow follows the last segment longer than half a pixel, so a
-  /// zero-length stub at the end cannot turn it.
+  /// Notes: Bends are rounded (`topologyEdgePath`). The arrow follows the
+  /// last segment longer than half a pixel, so a zero-length stub at the
+  /// end cannot turn it.
   void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points) {
-    final path = Path()..moveTo(points.first.dx, points.first.dy);
-    for (final point in points.skip(1)) {
-      path.lineTo(point.dx, point.dy);
-    }
-    canvas.drawPath(path, paint);
+    canvas.drawPath(topologyEdgePath(points), paint);
 
     final end = points.last;
     var previous = points[points.length - 2];
@@ -474,6 +471,46 @@ class ServiceTopologyEdgePainter extends CustomPainter {
       oldDelegate.layout != layout ||
       oldDelegate.colorScheme != colorScheme ||
       oldDelegate.highlight != highlight;
+}
+
+/// Purpose: Build the drawn shape of a routed edge, with rounded bends.
+/// Inputs: `points` — the routed polyline, at least two points; `radius` —
+/// the largest corner radius, 6 by default.
+/// Returns: A `Path` from the first point to the last.
+/// Side effects: None.
+/// Notes: Each bend becomes a quarter circle whose radius is `radius` or
+/// half the shorter of its two segments, whichever is less, so two close
+/// bends never overlap and a short jog stays a jog. Straight runs and both
+/// ends keep their exact positions, so the arrow head still sits on the
+/// node's side.
+Path topologyEdgePath(List<Offset> points, {double radius = 6}) {
+  final path = Path()..moveTo(points.first.dx, points.first.dy);
+  for (var i = 1; i < points.length - 1; i++) {
+    final previous = points[i - 1];
+    final corner = points[i];
+    final next = points[i + 1];
+    final r = math.min(
+      radius,
+      math.min((corner - previous).distance, (next - corner).distance) / 2,
+    );
+    if (r < 0.5) {
+      path.lineTo(corner.dx, corner.dy);
+      continue;
+    }
+    final into = corner - previous;
+    final out = next - corner;
+    final entry = corner - into / into.distance * r;
+    final exit = corner + out / out.distance * r;
+    path
+      ..lineTo(entry.dx, entry.dy)
+      ..arcToPoint(
+        exit,
+        radius: Radius.circular(r),
+        clockwise: into.dx * out.dy - into.dy * out.dx > 0,
+      );
+  }
+  path.lineTo(points.last.dx, points.last.dy);
+  return path;
 }
 
 /// Purpose: Return the colour the topology uses for an access lane.

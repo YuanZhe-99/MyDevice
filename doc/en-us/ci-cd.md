@@ -63,6 +63,12 @@ Use the narrowest relevant command set for verification. For model or sync chang
 tests such as `flutter test test/sync_unknown_fields_test.dart` or
 `flutter test test/device_finance_test.dart`. For on-device AI changes run
 `flutter test test/on_device_ai_test.dart test/insight_facts_test.dart test/insight_service_test.dart test/ai_insights_cache_test.dart test/ai_insight_card_ui_test.dart test/ai_settings_tiles_ui_test.dart`.
+For service topology layout changes, run `flutter test test/service_topology_layout_test.dart
+test/service_topology_page_test.dart`. To check the result by eye, also render the opt-in preview
+(skipped in CI, because it only runs with the variable set). It works headless on any desktop OS:
+`TOPOLOGY_PREVIEW=build/topology-preview flutter test test/service_topology_preview_test.dart`
+writes a PNG per fixture, grouped and flat, plus `metrics.json`. See
+[Service Topology Layout](algorithms/service-topology-layout.md#visual-check).
 
 ## Fresh clone
 

@@ -2,11 +2,13 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **1699**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1826** 个声明——比 1699 多 127——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **1719**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1862** 个声明——比 1719 多 143——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
 
 **1.7.0 重新计数。**实测 `/// Purpose:` 计数为 1550（此前 1493），各行之和为 1676（此前 1616），因此差额由 123 增至 126：本次发布新增 60 个已文档化声明（六个 `features/profile/` 文件 44 个，`data_modules.dart` 5 个，`theme.dart` 5 个，`shell_scaffold.dart` 3 个，`device_storage.dart` 2 个，`app_settings.dart` 1 个），其中三个是没有 `Purpose:` 注释的常量或字段。
 
 **1.7.1 重新计数。**实测 `/// Purpose:` 计数为 1581（此前 1550），各行之和为 1708（此前 1676），因此差额由 126 增至 127：本次发布新增 32 个声明（新增两页 `avatar_editor.dart` 13 个和 `avatar_image.dart` 7 个，`device_storage.dart` 4 个，`shell_scaffold.dart` 3 个，`app_settings.dart` 2 个，`adaptive_layout.dart` 1 个，`profile_header.dart` 1 个，`profile_store.dart` 1 个），其中 31 个带有 `Purpose:` 注释（`shell_scaffold.dart` 多出的一行是第二个私有类，它没有该注释）。
+
+**1.8.3 重新计数。**实测 `/// Purpose:` 计数为 1719（此前 1699），各行之和为 1862（此前 1826），因此差额从 127 增至 143。`service_topology_layout.dart` 新增 19 个带注释的声明：16 个用于对齐、错开与锚点拉平的 Tier A 辅助，以及 `_TrackSegment` 的构造函数、`overlaps` 和 `contains`。另有 16 个不带注释的声明：`_TrackSegment` 类及其 9 个字段、5 个新的 `static const`，以及顶层 `_nearLine`。该文件从 115 行增至 150 行。`service_topology_widgets.dart` 新增 `topologyEdgePath`（Tier A），从 25 行增至 26 行。
 
 **1.8.2 重新计数。**实测 `/// Purpose:` 计数为 1699（此前 1659），各行之和为 1826（此前 1786），因此差额保持 127：RAID 阵列和硬盘健康状况新增 40 个声明，每一个都带有 `Purpose:` 注释——新增两页（`dataset_copy_summary.dart` 2 个、`storage_health_label.dart` 1 个），`device.dart` +12，`dataset_placement.dart` +14，`device_edit_page.dart` +5，`device_detail_page.dart` +2，`dataset.dart`、`dataset_storage.dart`、`dataset_topology.dart` 和 `dataset_edit_page.dart` 各 +1。`dataset_edit_page.md` 的行数说明此前写作 9，与 12 行和 12 条注释不符，现已更正。
 
@@ -18,9 +20,9 @@
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 966 |
-| Tier B（仅索引行） | 860 |
-| **总计** | **1826** |
+| Tier A（完整条目） | 983 |
+| Tier B（仅索引行） | 879 |
+| **总计** | **1862** |
 
 ## 根（`lib/`）
 
@@ -125,14 +127,14 @@
 | `lib/features/services/services/service_labels.dart` | [features/services/services/service_labels.md](features/services/services/service_labels.md) | 11 | 5 |
 | `lib/features/services/services/service_storage.dart` | [features/services/services/service_storage.md](features/services/services/service_storage.md) | 11 | 11 |
 | `lib/features/services/services/service_template_service.dart` | [features/services/services/service_template_service.md](features/services/services/service_template_service.md) | 4 | 4 |
-| `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 115 | 45 |
+| `lib/features/services/services/service_topology_layout.dart` | [features/services/services/service_topology_layout.md](features/services/services/service_topology_layout.md) | 150 | 61 |
 | `lib/features/services/views/service_access_path_page.dart` | [features/services/views/service_access_path_page.md](features/services/views/service_access_path_page.md) | 54 | 13 |
 | `lib/features/services/views/service_edit_page.dart` | [features/services/views/service_edit_page.md](features/services/views/service_edit_page.md) | 26 | 6 |
 | `lib/features/services/views/service_endpoint_dialog.dart` | [features/services/views/service_endpoint_dialog.md](features/services/views/service_endpoint_dialog.md) | 8 | 1 |
 | `lib/features/services/views/service_list_page.dart` | [features/services/views/service_list_page.md](features/services/views/service_list_page.md) | 34 | 7 |
 | `lib/features/services/views/service_route_edit_page.dart` | [features/services/views/service_route_edit_page.md](features/services/views/service_route_edit_page.md) | 32 | 11 |
 | `lib/features/services/views/service_topology_page.dart` | [features/services/views/service_topology_page.md](features/services/views/service_topology_page.md) | 40 | 18 |
-| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 25 | 7 |
+| `lib/features/services/views/service_topology_widgets.dart` | [features/services/views/service_topology_widgets.md](features/services/views/service_topology_widgets.md) | 26 | 8 |
 | `lib/features/services/widgets/service_avatar.dart` | [features/services/widgets/service_avatar.md](features/services/widgets/service_avatar.md) | 3 | 0 |
 | `lib/features/services/widgets/service_icon.dart` | [features/services/widgets/service_icon.md](features/services/widgets/service_icon.md) | 1 | 0 |
 
@@ -147,7 +149,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1699/1826 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1719/1862 手写声明）。
 
 ## shared/
 
@@ -190,7 +192,7 @@
 | `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
-| `features/services/` | 17 | 535 | 232 | 303 |
+| `features/services/` | 17 | 571 | 249 | 322 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 25 | 291 | 194 | 97 |
-| **总计** | **101** | **1826** | **966** | **860** |
+| **总计** | **101** | **1862** | **983** | **879** |

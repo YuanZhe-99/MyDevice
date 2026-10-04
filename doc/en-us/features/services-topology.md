@@ -113,11 +113,18 @@ full-screen topology defers expensive layout until after the first frame and cac
 layouts by graph, routes, width, rotation-derived viewport and layout options, so a
 selection, a pan or a zoom doesn't rerun routing.
 
-Edges are precomputed by a **fast clear-path orthogonal router with an A* fallback**,
+Since 1.8.3 connected nodes are **lined up**. A port chip sits level with its service, so the
+edge between them is one straight line, and a domain sits beside the card or chip it hangs off
+rather than below the containers.
+
+Edges are precomputed by a **fast clear-path orthogonal router with an A* fallback**, with
 inflated node obstacles, turn costs, congestion costs, explicit exit/entry stubs, and
-outside-obstacle routing tracks — so arrows avoid element interiors and enter/leave
-cards perpendicularly. See [Service Topology Layout](../algorithms/service-topology-layout.md)
-for the algorithm detail (class/function names, obstacle model, cost function).
+outside-obstacle routing tracks, so arrows avoid element interiors and enter/leave cards
+perpendicularly. Edges that turn in the same gap between columns are then **spread onto their
+own parallel tracks** (8 px apart, the gap widening when needed), ordered so that a fan-in reads
+as a comb without crossings. Bends are drawn rounded. See
+[Service Topology Layout](../algorithms/service-topology-layout.md) for the algorithm detail
+(class/function names, obstacle model, cost function, alignment and nudging).
 
 Direct/LAN/VPN access nodes and remote VPS devices appear as **parallel branches**
 after the source endpoint rather than a single chain, and same-device public reverse

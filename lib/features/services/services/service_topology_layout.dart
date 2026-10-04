@@ -118,6 +118,28 @@ class ServiceTopologyLayout {
   static const _routingEscape = 18.0;
   static const _routingTrackGap = 22.0;
 
+  /// What leaving or entering a node on the side facing away from the
+  /// other end adds to a path's score: such an edge reads as running
+  /// backwards, so it must save a long detour to be chosen.
+  static const _sidePenalty = 120.0;
+
+  /// Two anchors at most this far apart in y are made level, so nodes the
+  /// alignment put side by side get a straight line.
+  static const _alignSnap = 12.0;
+
+  /// Distance between two parallel vertical segments `_nudgeSegments`
+  /// spreads apart.
+  static const _trackSpacing = 8.0;
+
+  /// The least horizontal run between a node's column and a vertical
+  /// segment `_nudgeSegments` moves.
+  static const _minStub = 18.0;
+
+  /// Alternating down and up passes `_alignRanks` and `_alignFreeNodes`
+  /// make. Odd, so the last pass goes down and every chip ends beside its
+  /// service's final position.
+  static const _alignPasses = 9;
+
   /// Purpose: Calculate node positions and pre-routed edge paths for a topology graph.
   /// Inputs: `graph`, `routes`, `viewportWidth`; `options` — device grouping,
   /// domain sink alignment and the crossing sweep.
@@ -210,8 +232,31 @@ class ServiceTopologyLayout {
         nodeRanks,
         groups,
       );
-      nodeRects = contained.rects;
+      nodeRects = _alignFreeNodes(
+        contained.rects,
+        contained.groups,
+        groups,
+        nodeMap,
+        drawnEdges,
+        nodeRanks,
+      );
       groupRects = contained.groups;
+      // Free nodes that moved down may leave the top empty.
+      final top = [
+        ...nodeRects.values,
+        ...groupRects.values,
+      ].map((rect) => rect.top).fold<double>(double.infinity, math.min);
+      if (top.isFinite && top > padding) {
+        final lift = padding - top;
+        nodeRects = {
+          for (final entry in nodeRects.entries)
+            entry.key: entry.value.translate(0, lift),
+        };
+        groupRects = {
+          for (final entry in groupRects.entries)
+            entry.key: entry.value.translate(0, lift),
+        };
+      }
     }
 
     var maxRight = padding;
@@ -224,14 +269,29 @@ class ServiceTopologyLayout {
       math.max(viewportWidth, maxRight + padding + _routingMargin),
       math.max(360.0, maxBottom + padding + _routingMargin),
     );
-    final edgePaths = _routeEdges(drawnEdges, nodeRects, nodeRanks, size);
+    final columns = _columnBounds(nodeRects, nodeRanks, groups.keys.toSet());
+    final routed = _routeEdges(
+      drawnEdges,
+      nodeRects,
+      nodeRanks,
+      size,
+      columns: columns,
+      headers: groups.keys.toSet(),
+    );
+    final nudged = _nudgeSegments(
+      routed,
+      nodeRects,
+      groupRects,
+      columns.values.toList()..sort((a, b) => a.left.compareTo(b.left)),
+      size,
+    );
 
     return ServiceTopologyLayout(
-      size: size,
-      nodeRects: nodeRects,
+      size: nudged.size,
+      nodeRects: nudged.rects,
       nodeRanks: nodeRanks,
-      edgePaths: edgePaths,
-      groupRects: groupRects,
+      edgePaths: nudged.paths,
+      groupRects: nudged.groups,
       hiddenEdges: hiddenEdges,
       crossings: placed.crossings,
     );
@@ -389,8 +449,7 @@ class ServiceTopologyLayout {
     );
     final rowY = _rowPositions(rows, nodeMap);
 
-    final rects = <String, Rect>{};
-    final targets = <String, double>{};
+    final rowRects = <String, Rect>{};
     for (final rank in orderedRanks) {
       final rankWidth = rankWidths[rank] ?? nodeWidth;
       var previousBottom = padding - verticalGap;
@@ -399,14 +458,289 @@ class ServiceTopologyLayout {
         final width = _nodeWidth(node);
         final height = _nodeHeight(node);
         final target = rowY(rows[id] ?? 0);
-        targets[id] = target;
         final y = math.max(target, previousBottom + verticalGap);
         final centeredX = (rankX[rank] ?? padding) + (rankWidth - width) / 2;
-        rects[id] = Rect.fromLTWH(centeredX, y, width, height);
+        rowRects[id] = Rect.fromLTWH(centeredX, y, width, height);
         previousBottom = y + height;
       }
     }
-    return (rects: rects, targets: targets, crossings: crossings);
+    final rects = _alignRanks(order, rowRects, nodeMap, [
+      for (final edge in edges)
+        if (nodeMap.containsKey(edge.from) && nodeMap.containsKey(edge.to))
+          edge,
+    ], nodeRanks);
+    return (
+      rects: rects,
+      targets: {for (final entry in rects.entries) entry.key: entry.value.top},
+      crossings: crossings,
+    );
+  }
+
+  /// Purpose: Line up connected nodes across ranks without changing any
+  /// rank's order.
+  /// Inputs: `order` — rank → ids top to bottom; `rects` — the row-based
+  /// placement; `nodeMap`; `edges` — drawn edges between placed nodes;
+  /// `ranks`.
+  /// Returns: The same rects moved vertically, the topmost at `padding`.
+  /// Side effects: None.
+  /// Notes: Alternating down and up passes. A port chip (see `_portOwners`)
+  /// asks for its service's centre, any other node for the median centre of
+  /// its neighbours on other ranks, or its own centre without any. Each rank
+  /// is then projected with `_pava`, which keeps the order and puts
+  /// consecutive nodes at least `rowGap` apart — the stride the rows had —
+  /// as close to what they asked for as it can. A chip thus sits beside its
+  /// service and a node with many neighbours moves to their middle. A last
+  /// step centres each service on its chips: chips stack 88 px apart and
+  /// cards 112, so a busy chip column may have pushed a chip, and the
+  /// service column has the room to follow.
+  static Map<String, Rect> _alignRanks(
+    Map<int, List<String>> order,
+    Map<String, Rect> rects,
+    Map<String, ServiceTopologyNode> nodeMap,
+    List<ServiceTopologyEdge> edges,
+    Map<String, int> ranks,
+  ) {
+    final centers = {
+      for (final entry in rects.entries) entry.key: entry.value.center.dy,
+    };
+    final neighbors = _rankNeighbors(edges, ranks, centers.containsKey);
+    final owners = _portOwners(edges, nodeMap, centers.containsKey);
+    final rankList = order.keys.toList()..sort();
+    // How far below the top of its rank each node must at least sit.
+    final reach = <String, double>{};
+    for (final ids in order.values) {
+      var offset = 0.0;
+      for (var i = 0; i < ids.length; i++) {
+        if (i > 0) {
+          offset +=
+              (rects[ids[i - 1]]!.height + rects[ids[i]]!.height) / 2 + rowGap;
+        }
+        reach[ids[i]] = offset;
+      }
+    }
+    for (var pass = 0; pass < _alignPasses; pass++) {
+      for (final rank in pass.isEven ? rankList : rankList.reversed) {
+        final ids = order[rank]!;
+        final positions = _pava(
+          [
+            for (final id in ids)
+              _desiredCenter(id, owners, neighbors, centers),
+          ],
+          [
+            for (var i = 1; i < ids.length; i++)
+              _alignGap(ids[i - 1], ids[i], rects, owners, reach),
+          ],
+        );
+        for (var i = 0; i < ids.length; i++) {
+          centers[ids[i]] = positions[i];
+        }
+      }
+    }
+    // Chips stack tighter than cards, so a crowded chip column can push a
+    // chip off its service; the services, which have room, settle last on
+    // the chips in the next column, nodes without such chips giving way.
+    final owned = <String, List<String>>{};
+    owners.forEach((chip, owner) {
+      if (ranks[chip] == (ranks[owner] ?? -2) + 1) {
+        owned.putIfAbsent(owner, () => []).add(chip);
+      }
+    });
+    for (final rank in rankList) {
+      final ids = order[rank]!;
+      if (!ids.any(owned.containsKey)) continue;
+      double middle(List<String> chips) {
+        final ys = [for (final chip in chips) centers[chip]!];
+        return (ys.reduce(math.min) + ys.reduce(math.max)) / 2;
+      }
+
+      final positions = _pava(
+        [
+          for (final id in ids)
+            owned[id] == null ? centers[id]! : middle(owned[id]!),
+        ],
+        [
+          for (var i = 1; i < ids.length; i++)
+            (rects[ids[i - 1]]!.height + rects[ids[i]]!.height) / 2 + rowGap,
+        ],
+        [for (final id in ids) owned.containsKey(id) ? 1.0 : 0.01],
+      );
+      for (var i = 0; i < ids.length; i++) {
+        centers[ids[i]] = positions[i];
+      }
+    }
+    var top = double.infinity;
+    for (final entry in rects.entries) {
+      top = math.min(top, centers[entry.key]! - entry.value.height / 2);
+    }
+    final shift = top.isFinite ? padding - top : 0.0;
+    return {
+      for (final entry in rects.entries)
+        entry.key: Rect.fromCenter(
+          center: Offset(entry.value.center.dx, centers[entry.key]! + shift),
+          width: entry.value.width,
+          height: entry.value.height,
+        ),
+    };
+  }
+
+  /// Purpose: Return the least distance between two neighbouring centres
+  /// in a rank during alignment.
+  /// Inputs: `upper`, `lower` — adjacent ids, top first; `rects`; `owners`
+  /// — chip → its service; `reach` — each node's least distance below the
+  /// top of its rank.
+  /// Returns: Half of each height plus `rowGap`; for two chips of different
+  /// services that share a rank, at least the distance those services need
+  /// between them.
+  /// Side effects: None.
+  /// Notes: Chips are shorter than cards, and a service without a chip
+  /// leaves no chip between its neighbours' chips; without the second rule a
+  /// chip column packs tighter than the service column beside it and the
+  /// chips cannot all sit level with their services.
+  static double _alignGap(
+    String upper,
+    String lower,
+    Map<String, Rect> rects,
+    Map<String, String> owners,
+    Map<String, double> reach,
+  ) {
+    final gap = (rects[upper]!.height + rects[lower]!.height) / 2 + rowGap;
+    final a = owners[upper];
+    final b = owners[lower];
+    if (a == null || b == null || a == b) return gap;
+    final distance = (reach[b] ?? 0) - (reach[a] ?? 0);
+    return math.max(gap, distance);
+  }
+
+  /// Purpose: List each node's neighbours on other ranks.
+  /// Inputs: `edges`, `ranks`, `placed` — whether a node id has a position.
+  /// Returns: Node id → neighbour ids, both directions, placed nodes only.
+  /// Side effects: None.
+  /// Notes: Edges within one rank are left out: they say nothing about where
+  /// a node should sit relative to the next column.
+  static Map<String, List<String>> _rankNeighbors(
+    List<ServiceTopologyEdge> edges,
+    Map<String, int> ranks,
+    bool Function(String id) placed,
+  ) {
+    final neighbors = <String, List<String>>{};
+    for (final edge in edges) {
+      if (!placed(edge.from) || !placed(edge.to)) continue;
+      if (ranks[edge.from] == ranks[edge.to]) continue;
+      neighbors.putIfAbsent(edge.from, () => []).add(edge.to);
+      neighbors.putIfAbsent(edge.to, () => []).add(edge.from);
+    }
+    return neighbors;
+  }
+
+  /// Purpose: Find the service each port chip belongs to.
+  /// Inputs: `edges`, `nodeMap`, `placed` — whether a node id has a position.
+  /// Returns: Chip id → the id of the service node it hangs off.
+  /// Side effects: None.
+  /// Notes: A chip is a compact endpoint of that same service, or a compact
+  /// remote entry the service leads to (an FRP server's public port). The
+  /// first such edge wins.
+  static Map<String, String> _portOwners(
+    List<ServiceTopologyEdge> edges,
+    Map<String, ServiceTopologyNode> nodeMap,
+    bool Function(String id) placed,
+  ) {
+    final owners = <String, String>{};
+    for (final edge in edges) {
+      if (!placed(edge.from) || !placed(edge.to)) continue;
+      final from = nodeMap[edge.from];
+      final to = nodeMap[edge.to];
+      if (from == null || to == null) continue;
+      if (from.kind != ServiceTopologyNodeKind.service || !to.compact) continue;
+      final own =
+          (to.kind == ServiceTopologyNodeKind.endpoint &&
+              to.serviceId == from.serviceId) ||
+          to.kind == ServiceTopologyNodeKind.remoteEntry;
+      if (own) owners.putIfAbsent(edge.to, () => edge.from);
+    }
+    return owners;
+  }
+
+  /// Purpose: Return the centre one node asks for during alignment.
+  /// Inputs: `id`; `owners` — chip → its service; `neighbors`; `centers` —
+  /// current centres.
+  /// Returns: The owner's centre for a chip, else the median of the
+  /// outside neighbours' centres, else the node's own centre.
+  /// Side effects: None.
+  /// Notes: A service and its chips move as one block: the service looks
+  /// past its own chips to what they connect to, so a service whose only
+  /// neighbours are its chips still moves towards the rest of the graph
+  /// instead of staying where the rows first put it.
+  static double _desiredCenter(
+    String id,
+    Map<String, String> owners,
+    Map<String, List<String>> neighbors,
+    Map<String, double> centers,
+  ) {
+    final owner = owners[id];
+    if (owner != null && centers.containsKey(owner)) return centers[owner]!;
+    final values = <double>[];
+    for (final neighbor in neighbors[id] ?? const <String>[]) {
+      if (owners[neighbor] == id) {
+        for (final next in neighbors[neighbor] ?? const <String>[]) {
+          if (next != id && centers.containsKey(next)) {
+            values.add(centers[next]!);
+          }
+        }
+      } else if (centers.containsKey(neighbor)) {
+        values.add(centers[neighbor]!);
+      }
+    }
+    return values.isEmpty ? centers[id]! : _median(values);
+  }
+
+  /// Purpose: Place an ordered column of items as close to their wishes as
+  /// the minimum gaps allow (the pool-adjacent-violators algorithm).
+  /// Inputs: `desired` — each item's wanted centre, top to bottom;
+  /// `separations` — the least distance between item i and i + 1;
+  /// `weights` — how strongly each item holds its wish, 1 by default.
+  /// Returns: The centres, in the same order.
+  /// Side effects: None.
+  /// Notes: Minimises the weighted squared distance to the wishes while
+  /// keeping the order and the separations. Subtracting the running
+  /// separation turns it into isotonic regression, which pooling adjacent
+  /// violating blocks solves exactly. A very heavy item acts as a fixed
+  /// obstacle.
+  static List<double> _pava(
+    List<double> desired,
+    List<double> separations, [
+    List<double>? weights,
+  ]) {
+    final n = desired.length;
+    final offsets = List<double>.filled(n, 0);
+    for (var i = 1; i < n; i++) {
+      offsets[i] = offsets[i - 1] + separations[i - 1];
+    }
+    final values = <double>[];
+    final blockWeights = <double>[];
+    final sizes = <int>[];
+    for (var i = 0; i < n; i++) {
+      var value = desired[i] - offsets[i];
+      var weight = weights?[i] ?? 1.0;
+      var size = 1;
+      while (values.isNotEmpty && values.last > value) {
+        final lastWeight = blockWeights.removeLast();
+        value =
+            (values.removeLast() * lastWeight + value * weight) /
+            (lastWeight + weight);
+        weight += lastWeight;
+        size += sizes.removeLast();
+      }
+      values.add(value);
+      blockWeights.add(weight);
+      sizes.add(size);
+    }
+    final result = <double>[];
+    for (var block = 0; block < values.length; block++) {
+      for (var k = 0; k < sizes[block]; k++) {
+        result.add(values[block] + offsets[result.length]);
+      }
+    }
+    return result;
   }
 
   /// Purpose: Reorder one rank so each container's members sit together.
@@ -778,6 +1112,96 @@ class ServiceTopologyLayout {
     return (rects: rects, groups: containers);
   }
 
+  /// Purpose: Move the nodes outside every container next to what they
+  /// connect to, once the containers are placed.
+  /// Inputs: `rects` — after `_placeContainers`; `containers` — device node
+  /// id → container rect; `groups` — device node id → member ids; `nodeMap`;
+  /// `edges` — the drawn edges; `ranks`.
+  /// Returns: The rects with free nodes moved; members and headers stay.
+  /// Side effects: None.
+  /// Notes: `_placeContainers` pushes every node after a container down by
+  /// the space the container added, even in ranks no container covers, so a
+  /// domain could end up far below its source. Here each rank's free nodes
+  /// ask for what `_alignRanks` asks for, and `_pava` places them with the
+  /// containers covering that rank as fixed obstacles (and the canvas top as
+  /// another), so a free node keeps its side of every container and never
+  /// meets one.
+  static Map<String, Rect> _alignFreeNodes(
+    Map<String, Rect> rects,
+    Map<String, Rect> containers,
+    Map<String, List<String>> groups,
+    Map<String, ServiceTopologyNode> nodeMap,
+    List<ServiceTopologyEdge> edges,
+    Map<String, int> ranks,
+  ) {
+    if (containers.isEmpty) return rects;
+    final members = {for (final ids in groups.values) ...ids};
+    final centers = {
+      for (final entry in rects.entries) entry.key: entry.value.center.dy,
+    };
+    final neighbors = _rankNeighbors(edges, ranks, centers.containsKey);
+    final owners = _portOwners(edges, nodeMap, centers.containsKey);
+    final free = <int, List<String>>{};
+    for (final id in rects.keys) {
+      if (members.contains(id) || groups.containsKey(id)) continue;
+      free.putIfAbsent(ranks[id] ?? 0, () => []).add(id);
+    }
+    final spans = {
+      for (final entry in groups.entries)
+        entry.key: (
+          first: entry.value.map((id) => ranks[id] ?? 0).reduce(math.min),
+          last: entry.value.map((id) => ranks[id] ?? 0).reduce(math.max),
+        ),
+    };
+    const fixed = 1e9;
+    final rankList = free.keys.toList()..sort();
+    for (var pass = 0; pass < _alignPasses; pass++) {
+      for (final rank in pass.isEven ? rankList : rankList.reversed) {
+        final items = <({String? id, double center, double height})>[
+          (id: null, center: padding - rowGap, height: 0),
+          for (final entry in containers.entries)
+            if (spans[entry.key] != null &&
+                spans[entry.key]!.first <= rank &&
+                spans[entry.key]!.last >= rank)
+              (
+                id: null,
+                center: entry.value.center.dy,
+                height: entry.value.height,
+              ),
+          for (final id in free[rank]!)
+            (id: id, center: centers[id]!, height: rects[id]!.height),
+        ]..sort((a, b) => a.center.compareTo(b.center));
+        final positions = _pava(
+          [
+            for (final item in items)
+              item.id == null
+                  ? item.center
+                  : _desiredCenter(item.id!, owners, neighbors, centers),
+          ],
+          [
+            for (var i = 1; i < items.length; i++)
+              (items[i - 1].height + items[i].height) / 2 +
+                  (items[i - 1].id == null || items[i].id == null
+                      ? verticalGap
+                      : rowGap),
+          ],
+          [for (final item in items) item.id == null ? fixed : 1.0],
+        );
+        for (var i = 0; i < items.length; i++) {
+          final id = items[i].id;
+          if (id != null) centers[id] = positions[i];
+        }
+      }
+    }
+    return {
+      for (final entry in rects.entries)
+        entry.key: entry.value.translate(
+          0,
+          centers[entry.key]! - entry.value.center.dy,
+        ),
+    };
+  }
+
   /// Purpose: Compact desired rows within one rank before turning them into y positions.
   /// Inputs: `nodes`, `desiredRows`.
   /// Returns: A compact row number for each node in the rank.
@@ -1125,17 +1549,26 @@ class ServiceTopologyLayout {
     return desired;
   }
 
-  /// Purpose: Provide the internal route edges helper for this file.
-  /// Inputs: `validEdges`, `rects`, `ranks`, `size`.
+  /// Purpose: Route every drawn edge into an orthogonal polyline.
+  /// Inputs: `validEdges`, `rects`, `ranks`, `size`; `columns` — rank →
+  /// the x-range of its column (see `_columnBounds`); `headers` — the
+  /// container header ids, which have no column.
   /// Returns: `Map<ServiceTopologyEdge, List<Offset>>`.
   /// Side effects: None.
   /// Notes: Reuses obstacle-derived routing tracks across edge searches.
+  /// The paths may still share vertical lines; `_nudgeSegments` spreads them
+  /// onto their own tracks afterwards.
   static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(
     List<ServiceTopologyEdge> validEdges,
     Map<String, Rect> rects,
     Map<String, int> ranks,
-    Size size,
-  ) {
+    Size size, {
+    Map<int, ({double left, double right})> columns = const {},
+    Set<String> headers = const {},
+  }) {
+    ({double left, double right})? columnOf(String id) =>
+        headers.contains(id) ? null : columns[ranks[id]];
+
     final outgoingOffsets = _portOffsets(
       validEdges,
       rects,
@@ -1148,6 +1581,7 @@ class ServiceTopologyLayout {
       ranks,
       outgoing: false,
     );
+    _levelAnchors(validEdges, rects, outgoingOffsets, incomingOffsets);
     final obstacles = [
       for (final rect in rects.values) rect.inflate(_routingClearance),
     ];
@@ -1172,6 +1606,8 @@ class ServiceTopologyLayout {
         to: to,
         fromOffset: outgoingOffsets[edge] ?? 0,
         toOffset: incomingOffsets[edge] ?? 0,
+        fromColumn: columnOf(edge.from),
+        toColumn: columnOf(edge.to),
         obstacles: obstacles,
         gridBase: gridBase,
         routedSegments: routedSegments,
@@ -1183,11 +1619,523 @@ class ServiceTopologyLayout {
     return paths;
   }
 
-  /// Purpose: Provide the internal port offsets helper for this file.
-  /// Inputs: `edges`, `rects`, `ranks`.
-  /// Returns: `Map<ServiceTopologyEdge, double>`.
-  /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: Internal helper used within this file only.
+  /// Purpose: Find each rank's column, the x-range its nodes share.
+  /// Inputs: `rects`, `ranks`; `headers` — container header ids, left out
+  /// because a header sits at its container's corner, not in a column.
+  /// Returns: Rank → the leftmost left and rightmost right of its nodes.
+  /// Side effects: None.
+  /// Notes: The gaps between columns are where edges turn; see
+  /// `_nudgeSegments`.
+  static Map<int, ({double left, double right})> _columnBounds(
+    Map<String, Rect> rects,
+    Map<String, int> ranks,
+    Set<String> headers,
+  ) {
+    final columns = <int, ({double left, double right})>{};
+    for (final entry in rects.entries) {
+      if (headers.contains(entry.key)) continue;
+      final rank = ranks[entry.key];
+      if (rank == null) continue;
+      final column = columns[rank];
+      columns[rank] = column == null
+          ? (left: entry.value.left, right: entry.value.right)
+          : (
+              left: math.min(column.left, entry.value.left),
+              right: math.max(column.right, entry.value.right),
+            );
+    }
+    return columns;
+  }
+
+  /// Purpose: Give vertical segments that share a gap their own parallel
+  /// tracks, widening a gap that has too little room.
+  /// Inputs: `paths` — the routed edges; `rects`, `groups` — node and
+  /// container rects; `columns` — column x-ranges, left to right; `size`.
+  /// Returns: The paths with their vertical segments moved, and the rects,
+  /// containers and canvas size after any widening.
+  /// Side effects: None.
+  /// Notes: The router may put many vertical segments on one line in the
+  /// gap between two columns (and to the right of the last one). Within each
+  /// such cell, segments whose y-ranges overlap must not share a line; they
+  /// are ordered so that the horizontal runs at their ends cross as few of
+  /// the others as possible (`_crossingsIfLeft`), each takes the track
+  /// after the highest track of the earlier ones it overlaps, and each group
+  /// of overlapping segments is centred in the cell `_trackSpacing` apart.
+  /// When a gap is too narrow for its tracks, every x on the canvas is
+  /// mapped through one monotone stretch: nodes and headers move rigidly,
+  /// containers stretch, path points inside the gap scale with it. Since no
+  /// x changes order, every path still avoids every node it avoided. A
+  /// segment never moves closer than `_minStub` to an anchor at its end, so
+  /// stubs stay perpendicular; a path that would end up touching a node
+  /// keeps its unmoved segments.
+  static ({
+    Map<ServiceTopologyEdge, List<Offset>> paths,
+    Map<String, Rect> rects,
+    Map<String, Rect> groups,
+    Size size,
+  })
+  _nudgeSegments(
+    Map<ServiceTopologyEdge, List<Offset>> routed,
+    Map<String, Rect> rects,
+    Map<String, Rect> groups,
+    List<({double left, double right})> columns,
+    Size size,
+  ) {
+    final unchanged = (paths: routed, rects: rects, groups: groups, size: size);
+    if (columns.isEmpty) return unchanged;
+    // Cells, left to right: each column, the gap after it, and the margin
+    // after the last column. Only gaps and that margin may widen.
+    final cells = <({double left, double right, bool gap})>[
+      for (var i = 0; i < columns.length; i++) ...[
+        (left: columns[i].left, right: columns[i].right, gap: false),
+        (
+          left: columns[i].right,
+          right: i + 1 < columns.length
+              ? columns[i + 1].left
+              : columns[i].right + _routingMargin,
+          gap: true,
+        ),
+      ],
+    ];
+    int cellOf(double x) => cells.indexWhere(
+      (c) => x > c.left + _epsilon && x < c.right - _epsilon,
+    );
+    final paths = {
+      for (final entry in routed.entries)
+        entry.key: _mergeJogs(entry.value, cellOf),
+    };
+    final obstacles = [...rects.values];
+    final segments = <_TrackSegment>[];
+    for (final entry in paths.entries) {
+      final path = entry.value;
+      bool vertical(int k) =>
+          (path[k].dx - path[k + 1].dx).abs() < _epsilon &&
+          (path[k].dy - path[k + 1].dy).abs() > _epsilon;
+      var k = 1;
+      while (k + 2 < path.length) {
+        final cell = vertical(k) ? cellOf(path[k].dx) : -1;
+        if (cell < 0) {
+          k++;
+          continue;
+        }
+        // One unit: this vertical run and the next ones of the path in the
+        // same cell, joined by horizontal runs; they move together.
+        var last = k;
+        while (last + 4 < path.length &&
+            vertical(last + 2) &&
+            cellOf(path[last + 2].dx) == cell) {
+          last += 2;
+        }
+        final x = path[k].dx;
+        final members = [for (var i = k; i <= last; i += 2) i];
+        // Runs that all head the same way become one straight run; others
+        // keep their routed distance from the first run.
+        final down = path[k + 1].dy > path[k].dy;
+        final monotone = members.every(
+          (i) => (path[i + 1].dy > path[i].dy) == down,
+        );
+        final offsets = {
+          for (final i in members) i: monotone ? 0.0 : path[i].dx - x,
+        };
+        var top = double.infinity;
+        var bottom = double.negativeInfinity;
+        for (var i = k; i <= last + 1; i++) {
+          top = math.min(top, path[i].dy);
+          bottom = math.max(bottom, path[i].dy);
+        }
+        final limits = <({double x, double offset, double margin, bool lower})>[
+          if (k - 1 == 0)
+            (x: path[0].dx, offset: 0, margin: _minStub, lower: path[0].dx < x),
+          if (last + 2 == path.length - 1)
+            (
+              x: path.last.dx,
+              offset: offsets[last]!,
+              margin: _minStub,
+              lower: path.last.dx < path[last].dx,
+            ),
+          for (final i in members)
+            for (final rect in obstacles)
+              if (rect.top - _routingClearance <
+                      math.max(path[i].dy, path[i + 1].dy) &&
+                  rect.bottom + _routingClearance >
+                      math.min(path[i].dy, path[i + 1].dy) &&
+                  (rect.right <= path[i].dx || rect.left >= path[i].dx))
+                (
+                  x: rect.right <= path[i].dx ? rect.right : rect.left,
+                  offset: offsets[i]!,
+                  margin: _routingClearance,
+                  lower: rect.right <= path[i].dx,
+                ),
+        ];
+        final entrySide = path[k - 1].dx < x ? -1 : 1;
+        final exitSide = path[last + 2].dx < path[last].dx ? -1 : 1;
+        segments.add(
+          _TrackSegment(
+            edge: entry.key,
+            members: offsets,
+            cell: cell,
+            top: top,
+            bottom: bottom,
+            ends: [
+              (y: path[k].dy, side: entrySide),
+              (y: path[last + 1].dy, side: exitSide),
+            ],
+            x: x,
+            limits: limits,
+          ),
+        );
+        k = last + 2;
+      }
+    }
+    if (segments.isEmpty) return unchanged;
+
+    // Order and stack each cell's units.
+    final widen = List<double>.filled(cells.length, 0);
+    final placements = <({List<_TrackSegment> members, int width})>[];
+    for (var cell = 0; cell < cells.length; cell++) {
+      final members =
+          [
+            for (final segment in segments)
+              if (segment.cell == cell) segment,
+          ]..sort((a, b) {
+            final xCmp = a.x.compareTo(b.x);
+            return xCmp != 0 ? xCmp : a.top.compareTo(b.top);
+          });
+      if (members.isEmpty) continue;
+      final ordered = <_TrackSegment>[];
+      for (final segment in members) {
+        var bestIndex = 0;
+        var bestCost = 1 << 30;
+        for (var index = 0; index <= ordered.length; index++) {
+          var cost = 0;
+          for (var j = 0; j < ordered.length; j++) {
+            final other = ordered[j];
+            if (!segment.overlaps(other)) continue;
+            cost += j < index
+                ? _crossingsIfLeft(other, segment)
+                : _crossingsIfLeft(segment, other);
+          }
+          if (cost < bestCost) {
+            bestCost = cost;
+            bestIndex = index;
+          }
+        }
+        ordered.insert(bestIndex, segment);
+      }
+      for (var i = 0; i < ordered.length; i++) {
+        var track = 0;
+        for (var j = 0; j < i; j++) {
+          if (ordered[i].overlaps(ordered[j])) {
+            track = math.max(track, ordered[j].track + 1);
+          }
+        }
+        ordered[i].track = track;
+      }
+      // Groups of overlapping units, each centred on its own.
+      final group = List<int>.generate(ordered.length, (i) => i);
+      int find(int i) => group[i] == i ? i : group[i] = find(group[i]);
+      for (var i = 0; i < ordered.length; i++) {
+        for (var j = 0; j < i; j++) {
+          if (ordered[i].overlaps(ordered[j])) group[find(i)] = find(j);
+        }
+      }
+      final components = <int, List<_TrackSegment>>{};
+      for (var i = 0; i < ordered.length; i++) {
+        components.putIfAbsent(find(i), () => []).add(ordered[i]);
+      }
+      for (final component in components.values) {
+        final width = component.map((s) => s.track).reduce(math.max);
+        placements.add((members: component, width: width));
+        if (cells[cell].gap) {
+          final range = _unitRange(component, cells[cell], (x) => x);
+          widen[cell] = math.max(
+            widen[cell],
+            width * _trackSpacing - (range.hi - range.lo),
+          );
+        }
+      }
+    }
+
+    // Stretch the gaps that are too narrow.
+    double stretch(double x) {
+      var result = x;
+      for (var cell = 0; cell < cells.length; cell++) {
+        final extra = widen[cell];
+        if (extra <= 0) continue;
+        final c = cells[cell];
+        if (x >= c.right) {
+          result += extra;
+        } else if (x > c.left) {
+          result += (x - c.left) / (c.right - c.left) * extra;
+        }
+      }
+      return result;
+    }
+
+    final total = widen.fold<double>(
+      0,
+      (sum, extra) => sum + math.max(0, extra),
+    );
+    final newRects = {
+      for (final entry in rects.entries)
+        entry.key: entry.value.translate(
+          stretch(entry.value.left) - entry.value.left,
+          0,
+        ),
+    };
+    final newGroups = {
+      for (final entry in groups.entries)
+        entry.key: Rect.fromLTRB(
+          stretch(entry.value.left),
+          entry.value.top,
+          stretch(entry.value.right),
+          entry.value.bottom,
+        ),
+    };
+    final newPaths = {
+      for (final entry in paths.entries)
+        entry.key: [
+          for (final point in entry.value)
+            Offset(_snap(stretch(point.dx)), point.dy),
+        ],
+    };
+    final stretched = {
+      for (final entry in newPaths.entries) entry.key: [...entry.value],
+    };
+
+    // Put each group's units on their tracks.
+    for (final placement in placements) {
+      final cell = cells[placement.members.first.cell];
+      final range = _unitRange(placement.members, cell, stretch);
+      final lo = range.lo;
+      final hi = range.hi;
+      if (lo > hi) continue;
+      final width = placement.width;
+      final spacing = width == 0
+          ? 0.0
+          : math.min(_trackSpacing, (hi - lo) / width);
+      var center = (lo + hi) / 2;
+      if (!cell.gap) {
+        final current =
+            placement.members.map((s) => stretch(s.x)).reduce((a, b) => a + b) /
+            placement.members.length;
+        center = current
+            .clamp(lo + width * spacing / 2, hi - width * spacing / 2)
+            .toDouble();
+      }
+      for (final segment in placement.members) {
+        final x = _snap(center + (segment.track - width / 2) * spacing);
+        final path = newPaths[segment.edge]!;
+        for (final member in segment.members.entries) {
+          final memberX = _snap(x + member.value);
+          path[member.key] = Offset(memberX, path[member.key].dy);
+          path[member.key + 1] = Offset(memberX, path[member.key + 1].dy);
+        }
+      }
+    }
+
+    _separateHorizontals(newPaths, newRects);
+
+    final result = <ServiceTopologyEdge, List<Offset>>{};
+    for (final entry in newPaths.entries) {
+      final edge = entry.key;
+      var path = _simplifyPolyline(entry.value);
+      var clear = true;
+      for (final rect in newRects.entries) {
+        if (rect.key == edge.from || rect.key == edge.to) continue;
+        for (var i = 1; i < path.length && clear; i++) {
+          if (_segmentBlocked(path[i - 1], path[i], [rect.value.inflate(1)])) {
+            clear = false;
+          }
+        }
+        if (!clear) break;
+      }
+      if (!clear) path = _simplifyPolyline(stretched[edge]!);
+      result[edge] = path;
+    }
+    return (
+      paths: result,
+      rects: newRects,
+      groups: newGroups,
+      size: Size(size.width + total, size.height),
+    );
+  }
+
+  /// Purpose: Return the x-range a group of track units can share.
+  /// Inputs: `units`; `cell`; `map` — the stretch applied to every x, or
+  /// the identity before stretching.
+  /// Returns: The lowest and highest x the group's first runs may take:
+  /// the cell less `_minStub` for a gap, narrowed by every unit's limits.
+  /// Side effects: None.
+  /// Notes: A limit set on a later run of a unit is moved by that run's
+  /// offset from the first one.
+  static ({double lo, double hi}) _unitRange(
+    List<_TrackSegment> units,
+    ({double left, double right, bool gap}) cell,
+    double Function(double) map,
+  ) {
+    var lo = map(cell.left) + (cell.gap ? _minStub : 0);
+    var hi = map(cell.right) - (cell.gap ? _minStub : 0);
+    for (final unit in units) {
+      for (final limit in unit.limits) {
+        if (limit.lower) {
+          lo = math.max(lo, map(limit.x) + limit.margin - limit.offset);
+        } else {
+          hi = math.min(hi, map(limit.x) - limit.margin - limit.offset);
+        }
+      }
+    }
+    return (lo: lo, hi: hi);
+  }
+
+  /// Purpose: Move a middle horizontal run off a line another edge runs on.
+  /// Inputs: `paths` — changed in place; `rects` — node rects.
+  /// Returns: None.
+  /// Side effects: Changes points of `paths`.
+  /// Notes: A run between two bends moves freely; a run at an anchor
+  /// slides its anchor along the node's side, never closer than 12 px to a
+  /// corner — two edges leaving and entering one side can otherwise meet on
+  /// one anchor. It tries half a track up or down, then a whole track, and
+  /// so on up to two tracks, and takes the first y where the run and its
+  /// lengthened or shortened vertical neighbours stay clear of every node
+  /// but the edge's own ends and no other edge runs on that line.
+  static void _separateHorizontals(
+    Map<ServiceTopologyEdge, List<Offset>> paths,
+    Map<String, Rect> rects,
+  ) {
+    bool onLine(ServiceTopologyEdge self, double y, double x1, double x2) {
+      for (final entry in paths.entries) {
+        if (entry.key == self) continue;
+        final path = entry.value;
+        for (var i = 1; i < path.length; i++) {
+          final a = path[i - 1];
+          final b = path[i];
+          if ((a.dy - b.dy).abs() > _epsilon || (a.dy - y).abs() > _epsilon) {
+            continue;
+          }
+          if (_Segment._rangesOverlap(a.dx, b.dx, x1, x2)) return true;
+        }
+      }
+      return false;
+    }
+
+    bool clear(ServiceTopologyEdge edge, List<Offset> points) {
+      for (final entry in rects.entries) {
+        if (entry.key == edge.from || entry.key == edge.to) continue;
+        final rect = entry.value.inflate(1);
+        for (var i = 1; i < points.length; i++) {
+          if (_segmentBlocked(points[i - 1], points[i], [rect])) return false;
+        }
+      }
+      return true;
+    }
+
+    for (final entry in paths.entries) {
+      final edge = entry.key;
+      final path = entry.value;
+      for (var k = 1; k < path.length; k++) {
+        final a = path[k - 1];
+        final b = path[k];
+        if ((a.dy - b.dy).abs() > _epsilon || (a.dx - b.dx).abs() < _epsilon) {
+          continue;
+        }
+        final fromAnchor = k - 1 == 0;
+        final toAnchor = k == path.length - 1;
+        if (fromAnchor && toAnchor) continue;
+        if (!onLine(edge, a.dy, a.dx, b.dx)) continue;
+        // An anchor run may slide its anchor along the node's side.
+        final node = fromAnchor
+            ? rects[edge.from]
+            : (toAnchor ? rects[edge.to] : null);
+        if ((fromAnchor || toAnchor) && node == null) continue;
+        for (final step in const [0.5, -0.5, 1.0, -1.0, 1.5, -1.5, 2.0, -2.0]) {
+          final y = _snap(a.dy + step * _trackSpacing);
+          if (node != null && (y < node.top + 12 || y > node.bottom - 12)) {
+            continue;
+          }
+          final moved = [...path];
+          moved[k - 1] = Offset(a.dx, y);
+          moved[k] = Offset(b.dx, y);
+          final first = fromAnchor ? k - 1 : k - 2;
+          final last = toAnchor ? k : k + 1;
+          if (onLine(edge, y, a.dx, b.dx) ||
+              !clear(edge, moved.sublist(first, last + 1))) {
+            continue;
+          }
+          path
+            ..[k - 1] = moved[k - 1]
+            ..[k] = moved[k];
+          break;
+        }
+      }
+    }
+  }
+
+  /// Purpose: Straighten small S-jogs a path makes inside one gap.
+  /// Inputs: `path`; `cellOf` — the gap cell an x lies in, or -1.
+  /// Returns: The path with each pair of vertical segments that sit in the
+  /// same cell and are joined by a horizontal run shorter than two track
+  /// spacings merged onto the first one's x, then simplified.
+  /// Side effects: None.
+  /// Notes: The router sometimes steps over by a pixel or two between two
+  /// vertical runs; left alone, the two pin each other in place and
+  /// `_nudgeSegments` cannot give them a track. Neither run may touch an
+  /// anchor, and the cell holds no node, so the merge stays clear.
+  static List<Offset> _mergeJogs(
+    List<Offset> path,
+    int Function(double) cellOf,
+  ) {
+    var points = [...path];
+    var changed = true;
+    while (changed) {
+      changed = false;
+      for (var k = 2; k + 3 < points.length; k++) {
+        final a = points[k];
+        final b = points[k + 1];
+        if ((a.dy - b.dy).abs() > _epsilon) continue;
+        if ((a.dx - b.dx).abs() >= 2 * _trackSpacing) continue;
+        if ((points[k - 1].dx - a.dx).abs() > _epsilon) continue;
+        if ((points[k + 2].dx - b.dx).abs() > _epsilon) continue;
+        final cell = cellOf(a.dx);
+        if (cell < 0 || cell != cellOf(b.dx)) continue;
+        points[k + 1] = Offset(a.dx, b.dy);
+        points[k + 2] = Offset(a.dx, points[k + 2].dy);
+        points = _simplifyPolyline(points);
+        changed = true;
+        break;
+      }
+    }
+    return points;
+  }
+
+  /// Purpose: Count the crossings two overlapping vertical segments make if
+  /// `left` takes the track left of `right`.
+  /// Inputs: `left`, `right`.
+  /// Returns: How many of their end runs cross the other segment.
+  /// Side effects: None.
+  /// Notes: An end run heading left from `right` crosses `left` when its y
+  /// lies inside `left`'s range, and an end run heading right from `left`
+  /// crosses `right` likewise. Comparing both orders tells which one is
+  /// cleaner; equal counts mean the crossing cannot be avoided.
+  static int _crossingsIfLeft(_TrackSegment left, _TrackSegment right) {
+    var count = 0;
+    for (final end in right.ends) {
+      if (end.side < 0 && left.contains(end.y)) count++;
+    }
+    for (final end in left.ends) {
+      if (end.side > 0 && right.contains(end.y)) count++;
+    }
+    return count;
+  }
+
+  /// Purpose: Spread the edges that leave (or enter) one node over its side.
+  /// Inputs: `edges`, `rects`, `ranks`; `outgoing` — group by the edges'
+  /// `from` (true) or `to` node.
+  /// Returns: Edge → vertical offset of its anchor from the node's centre.
+  /// Side effects: None.
+  /// Notes: Edges are ordered by where their other end sits, then spread
+  /// evenly — 9 px apart, closer when the side is too short — within 12 px
+  /// of the node's corners, so no two anchors coincide.
   static Map<ServiceTopologyEdge, double> _portOffsets(
     List<ServiceTopologyEdge> edges,
     Map<String, Rect> rects,
@@ -1218,25 +2166,35 @@ class ServiceTopologyLayout {
         });
 
       final midpoint = (nodeEdges.length - 1) / 2;
+      final step = nodeEdges.length < 2
+          ? 0.0
+          : math.min(9.0, 2 * maxOffset / (nodeEdges.length - 1));
       for (var i = 0; i < nodeEdges.length; i++) {
-        offsets[nodeEdges[i]] = ((i - midpoint) * 9.0)
-            .clamp(-maxOffset, maxOffset)
-            .toDouble();
+        offsets[nodeEdges[i]] = (i - midpoint) * step;
       }
     }
     return offsets;
   }
 
   /// Purpose: Route one edge between two node rectangles using the best valid anchor pair.
-  /// Inputs: `from`, `to`, anchor offsets, obstacles, `gridBase`, prior routed segments, and `size`.
+  /// Inputs: `from`, `to`, anchor offsets; `fromColumn`, `toColumn` — the
+  /// x-range of each end's column, or null; obstacles, `gridBase`, prior
+  /// routed segments, and `size`.
   /// Returns: A simplified orthogonal polyline, or an empty list when routing fails.
   /// Side effects: None.
-  /// Notes: Fast clear candidates are tried before the A* fallback.
+  /// Notes: Fast clear candidates are tried first; A* runs when none is
+  /// clear or the best one runs along a routed horizontal line. A stub runs
+  /// out to the edge of its node's column, so a chip in a column of cards
+  /// turns in the gap between columns like its neighbours. A candidate that
+  /// leaves or enters on the side facing away from the other end pays
+  /// `_sidePenalty`.
   static List<Offset> _routeEdge({
     required Rect from,
     required Rect to,
     required double fromOffset,
     required double toOffset,
+    ({double left, double right})? fromColumn,
+    ({double left, double right})? toColumn,
     required List<Rect> obstacles,
     required _RoutingGridBase gridBase,
     required _RoutedSegments routedSegments,
@@ -1276,35 +2234,49 @@ class ServiceTopologyLayout {
     for (final candidate in candidates) {
       final start = _snapOffset(_anchor(from, candidate.start, fromOffset));
       final end = _snapOffset(_anchor(to, candidate.end, toOffset));
-      final startExit = _snapOffset(
-        _clampOffset(
-          start + _sideVector(candidate.start) * _routingEscape,
-          size,
-        ),
+      final startExit = _stubEnd(
+        start,
+        candidate.start,
+        fromColumn,
+        size,
+        obstacles,
+        fromObstacle,
       );
-      final endEntry = _snapOffset(
-        _clampOffset(end + _sideVector(candidate.end) * _routingEscape, size),
+      final endEntry = _stubEnd(
+        end,
+        candidate.end,
+        toColumn,
+        size,
+        obstacles,
+        toObstacle,
       );
       if (_stubBlocked(start, startExit, obstacles, allowed: fromObstacle) ||
           _stubBlocked(endEntry, end, obstacles, allowed: toObstacle)) {
         continue;
       }
-      final middle =
-          _fastRouteBetween(
-            start: startExit,
-            goal: endEntry,
-            obstacles: obstacles,
-            routedSegments: routedSegments,
-            size: size,
-          ) ??
-          _routeBetween(
-            start: startExit,
-            goal: endEntry,
-            obstacles: obstacles,
-            gridBase: gridBase,
-            routedSegments: routedSegments,
-            size: size,
-          );
+      var middle = _fastRouteBetween(
+        start: startExit,
+        goal: endEntry,
+        obstacles: obstacles,
+        routedSegments: routedSegments,
+        size: size,
+      );
+      if (middle == null || routedSegments.sharesHorizontalLine(middle)) {
+        final searched = _routeBetween(
+          start: startExit,
+          goal: endEntry,
+          obstacles: obstacles,
+          gridBase: gridBase,
+          routedSegments: routedSegments,
+          size: size,
+        );
+        if (searched != null &&
+            (middle == null ||
+                _pathScore(searched, routedSegments) <
+                    _pathScore(middle, routedSegments))) {
+          middle = searched;
+        }
+      }
       if (middle == null) continue;
       final path = _simplifyPolyline([
         start,
@@ -1312,7 +2284,10 @@ class ServiceTopologyLayout {
         ...middle.skip(1),
         end,
       ]);
-      final score = _pathScore(path, routedSegments);
+      final score =
+          _pathScore(path, routedSegments) +
+          (candidate.start == startSide ? 0 : _sidePenalty) +
+          (candidate.end == endSide ? 0 : _sidePenalty);
       if (score < bestScore) {
         bestScore = score;
         bestPath = path;
@@ -1320,6 +2295,90 @@ class ServiceTopologyLayout {
     }
 
     return bestPath ?? const [];
+  }
+
+  /// Purpose: Make the two anchors of a nearly level edge exactly level.
+  /// Inputs: `edges`, `rects`; `outgoing`, `incoming` — the anchor offsets
+  /// from `_portOffsets`, changed in place.
+  /// Returns: None.
+  /// Side effects: Changes entries of `outgoing` and `incoming`.
+  /// Notes: Fanning anchors out leaves a few pixels between nodes the
+  /// alignment put side by side, which would draw as a tiny jog. When an
+  /// edge's anchors are at most `_alignSnap` apart in y, its entry anchor
+  /// moves level with its exit — or else its exit with its entry — as long
+  /// as the moved anchor stays on the usable side (12 px from the corners)
+  /// and at least 6 px from the node's other anchors on that side.
+  static void _levelAnchors(
+    List<ServiceTopologyEdge> edges,
+    Map<String, Rect> rects,
+    Map<ServiceTopologyEdge, double> outgoing,
+    Map<ServiceTopologyEdge, double> incoming,
+  ) {
+    bool fits(
+      Rect rect,
+      double offset,
+      ServiceTopologyEdge edge,
+      Map<ServiceTopologyEdge, double> offsets,
+      String Function(ServiceTopologyEdge) node,
+    ) {
+      if (offset.abs() > math.max(0, rect.height / 2 - 12)) return false;
+      for (final entry in offsets.entries) {
+        if (entry.key == edge || node(entry.key) != node(edge)) continue;
+        if ((entry.value - offset).abs() < 6) return false;
+      }
+      return true;
+    }
+
+    for (final edge in edges) {
+      final from = rects[edge.from];
+      final to = rects[edge.to];
+      if (from == null || to == null) continue;
+      final fromY = from.center.dy + (outgoing[edge] ?? 0);
+      final toY = to.center.dy + (incoming[edge] ?? 0);
+      final drift = (fromY - toY).abs();
+      if (drift < _epsilon || drift > _alignSnap) continue;
+      final entry = _snap(fromY) - to.center.dy;
+      final exit = _snap(toY) - from.center.dy;
+      if (fits(to, entry, edge, incoming, (e) => e.to)) {
+        incoming[edge] = entry;
+      } else if (fits(from, exit, edge, outgoing, (e) => e.from)) {
+        outgoing[edge] = exit;
+      }
+    }
+  }
+
+  /// Purpose: Return where an edge's perpendicular stub ends.
+  /// Inputs: `anchor` — the point on the node's side; `side`; `column` —
+  /// the node's column x-range, or null; `size`; `obstacles`; `own` — the
+  /// node's inflated rect.
+  /// Returns: The stub's far end, snapped and kept on the canvas.
+  /// Side effects: None.
+  /// Notes: `_routingEscape` past the column's edge when the node is
+  /// narrower than its column and that longer stub is clear, else
+  /// `_routingEscape` past the node.
+  static Offset _stubEnd(
+    Offset anchor,
+    _TopologySide side,
+    ({double left, double right})? column,
+    Size size,
+    List<Rect> obstacles,
+    Rect own,
+  ) {
+    final short = _snapOffset(
+      _clampOffset(anchor + _sideVector(side) * _routingEscape, size),
+    );
+    if (column == null) return short;
+    final edge = side == _TopologySide.right
+        ? math.max(anchor.dx, column.right)
+        : math.min(anchor.dx, column.left);
+    if ((edge - anchor.dx).abs() < _epsilon) return short;
+    final long = _snapOffset(
+      _clampOffset(
+        Offset(edge, anchor.dy) + _sideVector(side) * _routingEscape,
+        size,
+      ),
+    );
+    return _stubBlocked(anchor, long, obstacles, allowed: own) ? short : long;
   }
 
   /// Purpose: Try simple orthogonal edge paths before falling back to A* routing.
@@ -1877,6 +2936,10 @@ class _RoutingGridBase {
   }
 }
 
+/// How close two parallel horizontal runs may be before the router pays
+/// for running them side by side.
+const _nearLine = 4.0;
+
 /// The segments routed so far, indexed by axis coordinate for congestion
 /// scoring.
 class _RoutedSegments {
@@ -1915,18 +2978,20 @@ class _RoutedSegments {
   /// Purpose: Score how much a candidate segment conflicts with the routed
   /// segments.
   /// Inputs: `a`, `b` — the candidate's ends.
-  /// Returns: `double` — 180 per routed segment on the same line whose span
-  /// overlaps it, else 58 per parallel one within 0.85 × the track gap, else
-  /// 28 per perpendicular one it crosses.
+  /// Returns: `double` — for a horizontal candidate, 180 per routed
+  /// horizontal on the same line whose span overlaps it, else 58 per one
+  /// closer than `_nearLine`; for a vertical candidate, 6 per routed
+  /// vertical on the same line; and 28 per perpendicular one it crosses.
   /// Side effects: None.
-  /// Notes: The same tests, `sameAxisOverlap`, `nearAxisOverlap` and
-  /// `crosses`, as checking the candidate against every segment, but only
-  /// the segments inside the candidate's band are visited, found by binary
-  /// search: parallel ones within the near distance of its line, and
-  /// perpendicular ones whose line lies within its span. Costs are whole numbers, so the order of the sum cannot change
-  /// the result.
+  /// Notes: Vertical segments that share a line cost only a tie-breaker,
+  /// because `_nudgeSegments` moves them onto their own tracks afterwards;
+  /// nothing moves horizontal runs, so those still pay for sharing. The
+  /// near test is tighter than the 9 px anchor spacing, so runs into one
+  /// node's fanned-out anchors are not penalised. Only segments inside the
+  /// candidate's band are visited, found by binary search. Costs are whole
+  /// numbers, so the order of the sum cannot change the result.
   double cost(Offset a, Offset b) {
-    const near = ServiceTopologyLayout._routingTrackGap * 0.85;
+    const near = _nearLine;
     final candidate = _Segment(a, b);
     var cost = 0.0;
     if (candidate.horizontal) {
@@ -1956,16 +3021,11 @@ class _RoutedSegments {
     if (candidate.vertical) {
       final x = a.dx;
       for (
-        var i = _lowerBound(_vertical, x - near, (s) => s.a.dx);
-        i < _vertical.length && _vertical[i].a.dx <= x + near;
+        var i = _lowerBound(_vertical, x - _epsilon, (s) => s.a.dx);
+        i < _vertical.length && _vertical[i].a.dx <= x + _epsilon;
         i++
       ) {
-        final other = _vertical[i];
-        if (candidate.sameAxisOverlap(other)) {
-          cost += 180.0;
-        } else if (candidate.nearAxisOverlap(other, near)) {
-          cost += 58.0;
-        }
+        if (candidate.sameAxisOverlap(_vertical[i])) cost += 6.0;
       }
       final minY = math.min(a.dy, b.dy) - _epsilon;
       final maxY = math.max(a.dy, b.dy) + _epsilon;
@@ -1978,6 +3038,29 @@ class _RoutedSegments {
       }
     }
     return cost;
+  }
+
+  /// Purpose: Tell whether a path runs along a routed horizontal line.
+  /// Inputs: `path`.
+  /// Returns: `true` when one of its horizontal segments lies on the same
+  /// line as a routed one, with overlapping spans.
+  /// Side effects: None.
+  /// Notes: Vertical sharing is fine — `_nudgeSegments` separates it — but
+  /// nothing separates horizontal runs, so the router then also tries A*.
+  bool sharesHorizontalLine(List<Offset> path) {
+    for (var k = 1; k < path.length; k++) {
+      final candidate = _Segment(path[k - 1], path[k]);
+      if (!candidate.horizontal || candidate.vertical) continue;
+      final y = candidate.a.dy;
+      for (
+        var i = _lowerBound(_horizontal, y - _epsilon, (s) => s.a.dy);
+        i < _horizontal.length && _horizontal[i].a.dy <= y + _epsilon;
+        i++
+      ) {
+        if (candidate.sameAxisOverlap(_horizontal[i])) return true;
+      }
+    }
+    return false;
   }
 
   /// Purpose: Find the first index whose key is at least `value`.
@@ -2188,4 +3271,73 @@ class _RouteHeap {
     _items[a] = _items[b];
     _items[b] = temp;
   }
+}
+
+/// One or more vertical runs of a routed path inside one cell, as
+/// `_nudgeSegments` moves them: together, by the same amount.
+class _TrackSegment {
+  final ServiceTopologyEdge edge;
+
+  /// Index in the path of each vertical run's first point → its x offset
+  /// from the first run once placed (0 when the runs merge into one).
+  final Map<int, double> members;
+
+  /// Index of the cell it lies in.
+  final int cell;
+
+  /// The y-range its runs cover.
+  final double top;
+  final double bottom;
+
+  /// Where its two end runs leave it — their y, and which way they head:
+  /// -1 left, 1 right.
+  final List<({double y, int side})> ends;
+
+  /// Where the router put its first run.
+  final double x;
+
+  /// What limits the move: each an x (an anchor its end run reaches, or a
+  /// node beside one of its runs), the offset of the run it applies to, the
+  /// least distance to keep, and whether it lies to the left (a lower
+  /// bound).
+  final List<({double x, double offset, double margin, bool lower})> limits;
+
+  /// The track it was given, 0 for the leftmost.
+  int track = 0;
+
+  /// Purpose: Create a track unit.
+  /// Inputs: Every field but `track`.
+  /// Returns: A new `_TrackSegment`.
+  /// Side effects: None.
+  /// Notes: None.
+  _TrackSegment({
+    required this.edge,
+    required this.members,
+    required this.cell,
+    required this.top,
+    required this.bottom,
+    required this.ends,
+    required this.x,
+    required this.limits,
+  });
+
+  /// Purpose: Tell whether two units compete for the same line.
+  /// Inputs: `other`.
+  /// Returns: `true` when their y-ranges overlap or come within two track
+  /// spacings of each other.
+  /// Side effects: None.
+  /// Notes: Two runs that nearly meet end to end would read as one line
+  /// with a jog if they sat a few pixels apart, so they get separate tracks
+  /// too.
+  bool overlaps(_TrackSegment other) {
+    const reach = 2 * ServiceTopologyLayout._trackSpacing;
+    return top < other.bottom + reach && other.top < bottom + reach;
+  }
+
+  /// Purpose: Tell whether a y lies strictly inside this unit's range.
+  /// Inputs: `y`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Half a pixel of slack at either end.
+  bool contains(double y) => y > top + 0.5 && y < bottom - 0.5;
 }

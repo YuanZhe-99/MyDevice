@@ -8,7 +8,9 @@ node, a pre-routed orthogonal polyline (`List<Offset>`) per drawn edge, and — 
 group by device — a container `Rect` per grouped device (`groupRects`) plus the device→own-service
 edges the containers imply (`hiddenEdges`, neither routed nor painted). Between rank assignment
 and y placement, a barycenter crossing sweep may reorder each rank; the crossings it leaves are
-reported as `crossings`. The widget layer (`_ServiceTopologyView` in
+reported as `crossings`. Since 1.8.3 the placement then lines connected nodes up (`_alignRanks`,
+`_alignFreeNodes`) and the routed edges are spread onto their own parallel tracks, widening a gap
+between columns that has too little room (`_nudgeSegments`). The widget layer (`_ServiceTopologyView` in
 [`../views/service_topology_page.md`](../views/service_topology_page.md) and the painter and
 node cards in [`../views/service_topology_widgets.md`](../views/service_topology_widgets.md),
 in `lib/features/services/views/service_topology_page.dart` /
@@ -58,16 +60,28 @@ renders.
 | `_routingClearance` | static const (`ServiceTopologyLayout`) | B | Obstacle inflation applied to node rects during routing (14.0). |
 | `_routingEscape` | static const (`ServiceTopologyLayout`) | B | Length of the perpendicular exit/entry stub at each node (18.0). |
 | `_routingTrackGap` | static const (`ServiceTopologyLayout`) | B | Spacing between parallel routing tracks/lanes (22.0). |
+| `_sidePenalty` | static const (`ServiceTopologyLayout`) | B | Score added for leaving or entering a node on the side facing away from the other end (120.0). |
+| `_alignSnap` | static const (`ServiceTopologyLayout`) | B | Largest y difference between an edge's two anchors that `_levelAnchors` makes level (12.0). |
+| `_trackSpacing` | static const (`ServiceTopologyLayout`) | B | Distance between parallel vertical runs that `_nudgeSegments` spreads apart (8.0). |
+| `_minStub` | static const (`ServiceTopologyLayout`) | B | Least horizontal run between an anchor or a column and a moved vertical run (18.0). |
+| `_alignPasses` | static const (`ServiceTopologyLayout`) | B | Alternating down/up passes of `_alignRanks` and `_alignFreeNodes` (9, odd so the last goes down). |
 | [`build`](#build) | static method (`ServiceTopologyLayout`) | A | Compute node positions, containers, and pre-routed edge paths for a topology graph. |
 | [`_deviceGroups`](#_devicegroups) | static method (`ServiceTopologyLayout`) | A | Find the devices drawn as containers and their member node ids. |
 | [`_headerRanks`](#_headerranks) | static method (`ServiceTopologyLayout`) | A | Re-densify ranks once grouped device nodes leave the columns. |
 | [`_placeNodes`](#_placenodes) | static method (`ServiceTopologyLayout`) | A | Place nodes into rank columns, reduce crossings, and turn rows into y positions. |
 | [`_keepGroupsTogether`](#_keepgroupstogether) | static method (`ServiceTopologyLayout`) | A | Reorder one rank so each container's members are contiguous. |
 | [`_rowPositions`](#_rowpositions) | static method (`ServiceTopologyLayout`) | A | Turn compact row values into content-sized y positions. |
+| [`_alignRanks`](#_alignranks) | static method (`ServiceTopologyLayout`) | A | Line up connected nodes across ranks without changing any rank's order. |
+| [`_alignGap`](#_aligngap) | static method (`ServiceTopologyLayout`) | A | Least distance between two neighbouring centres during alignment. |
+| [`_rankNeighbors`](#_rankneighbors) | static method (`ServiceTopologyLayout`) | A | Each node's neighbours on other ranks. |
+| [`_portOwners`](#_portowners) | static method (`ServiceTopologyLayout`) | A | Port chip → the service node it hangs off. |
+| [`_desiredCenter`](#_desiredcenter) | static method (`ServiceTopologyLayout`) | A | The centre one node asks for during alignment. |
+| [`_pava`](#_pava) | static method (`ServiceTopologyLayout`) | A | Place an ordered column as close to its wishes as the gaps allow (pool adjacent violators). |
 | [`_sweepCrossings`](#_sweepcrossings) | static method (`ServiceTopologyLayout`) | A | Reduce edge crossings with alternating barycenter sweeps. |
 | [`_orderPositions`](#_orderpositions) | static method (`ServiceTopologyLayout`) | A | Give each placed node a strictly ordered position within its rank. |
 | [`countCrossings`](#countcrossings) | static method (`ServiceTopologyLayout`) | A | Count edge-pair order swaps across rank lines (public for tests). |
 | [`_placeContainers`](#_placecontainers) | static method (`ServiceTopologyLayout`) | A | Draw device containers around their members and place header tabs. |
+| [`_alignFreeNodes`](#_alignfreenodes) | static method (`ServiceTopologyLayout`) | A | Move nodes outside every container next to what they connect to. |
 | [`_compactRankRows`](#_compactrankrows) | static method (`ServiceTopologyLayout`) | A | Compact desired rows within one rank before turning them into y positions. |
 | [`_compactDesiredRows`](#_compactdesiredrows) | static method (`ServiceTopologyLayout`) | A | Remove row gaps only reserved by routes without visible nodes. |
 | [`_compactRowValueMap`](#_compactrowvaluemap) | static method (`ServiceTopologyLayout`) | A | Build a compact value map from sparse desired-row values. |
@@ -79,8 +93,16 @@ renders.
 | [`_routeRows`](#_routerows) | static method (`ServiceTopologyLayout`) | A | Assign each route a preferred row along a virtual row axis. |
 | [`_desiredRows`](#_desiredrows) | static method (`ServiceTopologyLayout`) | A | Derive each node's preferred row from its routes/neighbors. |
 | [`_routeEdges`](#_routeedges) | static method (`ServiceTopologyLayout`) | A | Entry point: route every drawn edge into an orthogonal polyline. |
-| [`_portOffsets`](#_portoffsets) | static method (`ServiceTopologyLayout`) | A | Fan out edges sharing a node side into distinct perpendicular offsets. |
+| [`_columnBounds`](#_columnbounds) | static method (`ServiceTopologyLayout`) | A | Rank → the x-range its column's nodes share. |
+| [`_nudgeSegments`](#_nudgesegments) | static method (`ServiceTopologyLayout`) | A | Give vertical runs that share a cell their own tracks, widening a gap that is too narrow. |
+| [`_unitRange`](#_unitrange) | static method (`ServiceTopologyLayout`) | A | The x-range a group of track units can share. |
+| [`_separateHorizontals`](#_separatehorizontals) | static method (`ServiceTopologyLayout`) | A | Move a horizontal run off a line another edge runs on. |
+| [`_mergeJogs`](#_mergejogs) | static method (`ServiceTopologyLayout`) | A | Straighten small S-jogs a path makes inside one gap. |
+| [`_crossingsIfLeft`](#_crossingsifleft) | static method (`ServiceTopologyLayout`) | A | Crossings two overlapping units make if one takes the track left of the other. |
+| [`_portOffsets`](#_portoffsets) | static method (`ServiceTopologyLayout`) | A | Spread edges sharing a node evenly over its side so no two anchors coincide. |
+| [`_levelAnchors`](#_levelanchors) | static method (`ServiceTopologyLayout`) | A | Make the two anchors of a nearly level edge exactly level. |
 | [`_routeEdge`](#_routeedge) | static method (`ServiceTopologyLayout`) | A | Route one edge, trying anchor-side candidates in preference order. |
+| [`_stubEnd`](#_stubend) | static method (`ServiceTopologyLayout`) | A | Where an edge's perpendicular stub ends: past the column edge when that is clear. |
 | [`_fastRouteBetween`](#_fastroutebetween) | static method (`ServiceTopologyLayout`) | A | Try cheap direct/L/Z/around-the-box candidates before A*. |
 | [`_routeBetween`](#_routebetween) | static method (`ServiceTopologyLayout`) | A | Obstacle-avoiding orthogonal A*-style grid search (fallback router). |
 | [`_pathScore`](#_pathscore) | static method (`ServiceTopologyLayout`) | A | Score a routed path by length, turns, and congestion. |
@@ -109,6 +131,7 @@ renders.
 | `_TopologySide` | enum | B | `left` / `right` — which side of a node an edge exits/enters. |
 | `_epsilon` | top-level const | B | Shared floating-point tolerance (0.01) for geometry comparisons. |
 | `_rowEpsilon` | top-level const | B | Floating-point tolerance (0.0001) for row-value matching. |
+| `_nearLine` | top-level const | B | How close two parallel horizontal runs may be before the router pays for it (4.0). |
 | `_RoutingGridBase` | class | B | Reusable set of shared x/y routing-track coordinates. |
 | `xs` | field (`_RoutingGridBase`) | B | Shared vertical grid lines (x coordinates). |
 | `ys` | field (`_RoutingGridBase`) | B | Shared horizontal grid lines (y coordinates). |
@@ -120,6 +143,7 @@ renders.
 | `_vertical` | field (`_RoutedSegments`) | B | Vertical segments, sorted by x. |
 | [`addAll`](#addall) | method (`_RoutedSegments`) | A | Append segments to `all` and insert them into the sorted axis index. |
 | [`cost`](#cost) | method (`_RoutedSegments`) | A | Congestion cost of a candidate segment, visiting only nearby segments. |
+| [`sharesHorizontalLine`](#shareshorizontalline) | method (`_RoutedSegments`) | A | Whether a path runs along a routed horizontal line. |
 | [`_lowerBound`](#_lowerbound) | static method (`_RoutedSegments`) | A | Binary search for the first index whose key is at least a value. |
 | `_Segment` | class | B | An orthogonal (horizontal or vertical) line segment `a`→`b`. |
 | `a` | field (`_Segment`) | B | Segment start point. |
@@ -132,6 +156,19 @@ renders.
 | [`crosses`](#crosses) | method (`_Segment`) | A | Whether a horizontal and a vertical segment actually intersect. |
 | [`_rangesOverlap`](#_rangesoverlap) | static method (`_Segment`) | A | Whether two 1-D ranges overlap by more than `_epsilon`. |
 | [`_between`](#_between) | static method (`_Segment`) | A | Inclusive range test with `_epsilon` slack. |
+| `_TrackSegment` | class | B | One or more vertical runs of one path in one cell, moved together by `_nudgeSegments`. |
+| `edge` | field (`_TrackSegment`) | B | The edge the runs belong to. |
+| `members` | field (`_TrackSegment`) | B | Path index of each run's first point → its x offset from the first run once placed. |
+| `cell` | field (`_TrackSegment`) | B | Index of the cell it lies in. |
+| `top` | field (`_TrackSegment`) | B | Top of the y-range its runs cover. |
+| `bottom` | field (`_TrackSegment`) | B | Bottom of that range. |
+| `ends` | field (`_TrackSegment`) | B | Its two end runs: y and the way each heads (−1 left, 1 right). |
+| `x` | field (`_TrackSegment`) | B | Where the router put its first run. |
+| `limits` | field (`_TrackSegment`) | B | Anchors and nodes that bound the move, each with the run's offset, the distance to keep and its side. |
+| `track` | field (`_TrackSegment`) | B | The track it was given, 0 for the leftmost. |
+| `_TrackSegment.new` | constructor (`_TrackSegment`) | B | Creates a unit; `track` starts at 0. |
+| `overlaps` | method (`_TrackSegment`) | B | Whether two units' y-ranges overlap or come within two track spacings. |
+| `contains` | method (`_TrackSegment`) | B | Whether a y lies strictly inside the unit's range (½ px slack). |
 | `_RouteState` | class | B | A search-heap entry: grid state `index` and accumulated `cost`. |
 | `index` | field (`_RouteState`) | B | Encoded `(point, direction)` state index. |
 | `cost` | field (`_RouteState`) | B | Priority (g + heuristic) used to order the heap. |
@@ -145,22 +182,30 @@ renders.
 | [`_bubbleDown`](#_bubbledown) | method (`_RouteHeap`) | A | Sift-down: swap with the smaller child while it beats the current node. |
 | `_swap` | method (`_RouteHeap`) | B | Swap two backing-array slots by index. |
 
-**Row-count note:** `grep -c '/// Purpose:' service_topology_layout.dart` returns **71**. One of
+**Row-count note:** `grep -c '/// Purpose:' service_topology_layout.dart` returns **90**. One of
 those is the local `deviceKey` helper declared inside `_routeRows` (described in that entry, not a
-table row), so **70** table rows carry a `/// Purpose:` comment. The Declarations table above has
-**115** rows because it also lists 45 declarations without one: the 8 class/enum declarations
+table row), so **89** table rows carry a `/// Purpose:` comment. The Declarations table above has
+**150** rows because it also lists 61 declarations without one: the 9 class/enum declarations
 themselves (`ServiceTopologyLayoutOptions`, `ServiceTopologyLayout`, `_TopologySide`,
-`_RoutingGridBase`, `_RoutedSegments`, `_Segment`, `_RouteState`, `_RouteHeap`), 20 data fields
-(3 on `ServiceTopologyLayoutOptions`, 7 on `ServiceTopologyLayout`, 2 on `_RoutingGridBase`, 3 on
-`_RoutedSegments`, 2 on `_Segment`, 2 on `_RouteState`, 1 on `_RouteHeap`), 15 constants (13
-`static const` on `ServiceTopologyLayout` + the top-level `_epsilon`/`_rowEpsilon`), and the 2
-one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 rows.
+`_RoutingGridBase`, `_RoutedSegments`, `_Segment`, `_TrackSegment`, `_RouteState`, `_RouteHeap`),
+29 data fields (3 on `ServiceTopologyLayoutOptions`, 7 on `ServiceTopologyLayout`, 2 on
+`_RoutingGridBase`, 3 on `_RoutedSegments`, 2 on `_Segment`, 9 on `_TrackSegment`, 2 on
+`_RouteState`, 1 on `_RouteHeap`), 21 constants (18 `static const` on `ServiceTopologyLayout` +
+the top-level `_epsilon`/`_rowEpsilon`/`_nearLine`), and the 2 one-line getters
+`_Segment.horizontal`/`.vertical`. 89 + 61 = 150. Tier A: 61 rows.
+
+**1.8.3:** +35 rows — 16 new Tier A helpers (`_alignRanks`, `_alignGap`, `_rankNeighbors`,
+`_portOwners`, `_desiredCenter`, `_pava`, `_alignFreeNodes`, `_columnBounds`, `_nudgeSegments`,
+`_unitRange`, `_separateHorizontals`, `_mergeJogs`, `_crossingsIfLeft`, `_levelAnchors`,
+`_stubEnd`, `sharesHorizontalLine`), the `_TrackSegment` class with its 9 fields, constructor,
+`overlaps` and `contains`, and 6 constants (`_sidePenalty`, `_alignSnap`, `_trackSpacing`,
+`_minStub`, `_alignPasses`, `_nearLine`).
 
 ## Documentation
 
 ### `static ServiceTopologyLayout build(ServiceTopologyGraph graph, List<ServiceRoute> routes, double viewportWidth, {ServiceTopologyLayoutOptions options = const ServiceTopologyLayoutOptions()})` <a id="build"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 131).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 153).
 - **Purpose:** Compute node rectangles, ranks, canvas size, pre-routed edge polylines and, when
   grouping, the device containers and hidden edges for one graph/route set/viewport/options.
 - **Inputs:** `graph` (nodes + edges), `routes` (drives row grouping), `viewportWidth` (minimum
@@ -181,12 +226,17 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
      valid edges; when grouping, re-rank with [`_headerRanks`](#_headerranks).
   6. Compact `desiredRows` globally ([`_compactDesiredRows`](#_compactdesiredrows)), then place
      every node except grouped device nodes with [`_placeNodes`](#_placenodes) (drawn edges,
-     `memberGroup`, `options.crossingSweeps`), which returns rects, row targets and crossings.
+     `memberGroup`, `options.crossingSweeps`), which returns rects, aligned tops (as targets) and crossings.
   7. When grouping, [`_placeContainers`](#_placecontainers) shifts rects around containers and
-     adds each grouped device's header tab; its container rects become `groupRects`.
+     adds each grouped device's header tab; its container rects become `groupRects`. Then
+     [`_alignFreeNodes`](#_alignfreenodes) moves the nodes outside every container beside what
+     they connect to, and the whole drawing is lifted so its top is at `padding` again.
   8. Canvas `size` = `max(viewportWidth, maxRight + padding + _routingMargin)` ×
      `max(360.0, maxBottom + padding + _routingMargin)`, over node **and** container rects.
-  9. Route the drawn edges only ([`_routeEdges`](#_routeedges)) to get `edgePaths`.
+  9. Route the drawn edges only ([`_routeEdges`](#_routeedges), with the column bounds from
+     [`_columnBounds`](#_columnbounds)), then spread their vertical runs onto tracks with
+     [`_nudgeSegments`](#_nudgesegments), which may widen gaps between columns; its rects,
+     containers, paths and size are what the layout returns.
 - **Usage:**
   ```dart
   final layout = ServiceTopologyLayout.build(
@@ -196,7 +246,7 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     options: request.options,
   );
   ```
-  (`lib/features/services/views/service_topology_page.dart`, `_calculateLayout`, lines 163–168,
+  (`lib/features/services/views/service_topology_page.dart`, `_calculateLayout`,
   after an `await Future<void>.delayed(Duration.zero)` so it runs off the current frame.)
 - **Notes:** Ranks come purely from the edge graph (including hidden edges), rows from
   routes/neighbors; they meet in `_placeNodes`. With grouping, grouped device nodes leave the rank
@@ -204,7 +254,7 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
 
 ### `static Map<String, List<String>> _deviceGroups(ServiceTopologyGraph graph)` <a id="_devicegroups"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 248).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 308).
 - **Purpose:** Find the devices the layout draws as containers.
 - **Inputs:** `graph`.
 - **Returns:** Device node id → member node ids, in graph order.
@@ -218,13 +268,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
       ? _deviceGroups(graph)
       : const <String, List<String>>{};
   ```
-  (`build`, lines 155–157.)
+  (`build`.)
 - **Notes:** A device that a hop names but that hosts no service (e.g. a router) stays a plain
   card, and its remote entry stays a free chip.
 
 ### `static Map<String, int> _headerRanks(Map<String, int> ranks, Map<String, List<String>> groups)` <a id="_headerranks"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 281).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 341).
 - **Purpose:** Re-rank the graph once grouped device nodes leave the columns.
 - **Inputs:** `ranks` (from `_nodeRanks`), `groups` (from `_deviceGroups`).
 - **Returns:** Dense ranks for every non-grouped node; each grouped device node gets the smallest
@@ -236,13 +286,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   if (groups.isNotEmpty) nodeRanks = _headerRanks(nodeRanks, groups);
   ```
-  (`build`, line 191.)
+  (`build`.)
 - **Notes:** A column that held only grouped devices (usually rank 0) disappears, so the canvas
   keeps no empty band on the left. The header rank is used by edge routing (`_portOffsets`).
 
 ### `static ({Map<String, Rect> rects, Map<String, double> targets, int crossings}) _placeNodes(List<ServiceTopologyNode> nodes, Map<String, int> nodeRanks, Map<String, double> desiredRows, List<ServiceTopologyEdge> edges, Map<String, String> memberGroup, int sweeps)` <a id="_placenodes"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 316).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 376).
 - **Purpose:** Place nodes into rank columns, reduce crossings, and turn rows into y positions.
 - **Inputs:** `nodes` (every node in a rank column — grouped device nodes are excluded),
   `nodeRanks`, `desiredRows` (already globally compacted), `edges` (drawn edges), `memberGroup`
@@ -261,8 +311,10 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   4. Run [`_sweepCrossings`](#_sweepcrossings) over `order`/`rows` with the edges whose both ends
      are in `nodes`; it may permute rows further and returns the crossing count.
   5. Build `rowY` with [`_rowPositions`](#_rowpositions).
-  6. Walk each rank top-to-bottom: `target = rowY(rows[id])` (recorded in `targets`),
-     `y = max(target, previousBottom + verticalGap)`; x centers the node in its column.
+  6. Walk each rank top-to-bottom: `y = max(rowY(rows[id]), previousBottom + verticalGap)`; x
+     centers the node in its column.
+  7. Line connected nodes up with [`_alignRanks`](#_alignranks); the aligned tops become
+     `targets`.
 - **Usage:**
   ```dart
   final placed = _placeNodes(
@@ -277,15 +329,16 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     options.crossingSweeps,
   );
   ```
-  (`build`, lines 193–203.)
+  (`build`.)
 - **Notes:** There is no fixed row stride any more: each row is as tall as its tallest node plus
-  `rowGap` (112 px for a card row, 88 px for a chip row). `verticalGap` only applies as a floor
-  when compaction would make two nodes in one rank collide. `targets` lets `_placeContainers`
-  re-place members at their own rows.
+  `rowGap` (112 px for a card row, 88 px for a chip row). The row placement is only where
+  alignment starts (1.8.3): `_alignRanks` keeps every rank's order and moves nodes towards their
+  neighbours, so rank-local compaction no longer leaves a port chip a row away from its service.
+  `targets` lets `_placeContainers` re-place members at their aligned positions.
 
 ### `static List<String> _keepGroupsTogether(List<String> ids, Map<String, String> memberGroup)` <a id="_keepgroupstogether"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 419).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 753).
 - **Purpose:** Reorder one rank so each container's members sit together.
 - **Inputs:** `ids` (the rank in row order), `memberGroup`.
 - **Returns:** The same ids, each container's members moved up to its first member, in their own
@@ -299,13 +352,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
       ? ids
       : _keepGroupsTogether(ids, memberGroup);
   ```
-  (`_placeNodes`, lines 369–371.)
+  (`_placeNodes`.)
 - **Notes:** O(n²) per rank. The caller hands out the rank's sorted row values in the new order,
   so the rank's rows stay a permutation of what they were.
 
 ### `static double Function(double) _rowPositions(Map<String, double> rows, Map<String, ServiceTopologyNode> nodeMap)` <a id="_rowpositions"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 449).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 783).
 - **Purpose:** Turn compact row values into y positions sized by content.
 - **Inputs:** `rows` (node id → compact row), `nodeMap`.
 - **Returns:** A function from a row value to its y position.
@@ -321,13 +374,114 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   final rowY = _rowPositions(rows, nodeMap);
   ```
-  (`_placeNodes`, line 390; applied at line 401.)
+  (`_placeNodes`; applied at.)
 - **Notes:** Fractional gaps from compaction keep their proportion, and a row of port chips is
   shorter than a row of cards. This replaced the old fixed `nodeHeight + 44` stride.
 
+### `static Map<String, Rect> _alignRanks(Map<int, List<String>> order, Map<String, Rect> rects, Map<String, ServiceTopologyNode> nodeMap, List<ServiceTopologyEdge> edges, Map<String, int> ranks)` <a id="_alignranks"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 496).
+- **Purpose:** Line up connected nodes across ranks without changing any rank's order — the
+  coordinate-assignment step of a layered (Sugiyama) drawing.
+- **Inputs:** `order` (rank → ids top to bottom), `rects` (the row-based placement), `nodeMap`,
+  `edges` (drawn edges between placed nodes), `ranks`.
+- **Returns:** The same rects moved vertically, the topmost at `padding`.
+- **Side effects:** None.
+- **Algorithm:**
+  1. Collect neighbours on other ranks ([`_rankNeighbors`](#_rankneighbors)), port owners
+     ([`_portOwners`](#_portowners)), and each node's least distance below the top of its rank
+     (`reach`, the running sum of half heights plus `rowGap`).
+  2. `_alignPasses` alternating passes (down = ranks ascending, up = descending; an odd count, so
+     the last goes down). Per rank, each node asks for [`_desiredCenter`](#_desiredcenter), and
+     [`_pava`](#_pava) places the rank with [`_alignGap`](#_aligngap) as the separations.
+  3. Settle: in every rank holding services whose chips sit in the next rank, each such service
+     asks for the middle of those chips (weight 1), every other node for its own centre (weight
+     0.01), and `_pava` places the rank again.
+  4. Shift everything so the topmost node starts at `padding`.
+- **Usage:** `final rects = _alignRanks(order, rowRects, nodeMap, [...], nodeRanks);`
+  (`_placeNodes`).
+- **Notes:** A chip asks for its service's centre and a service looks past its own chips, so a
+  service and its chips move as one block towards the rest of the graph. Without step 3 a crowded
+  chip column (chips stack 88 px apart, cards 112) could leave a chip a few pixels off its
+  service.
+
+### `static double _alignGap(String upper, String lower, Map<String, Rect> rects, Map<String, String> owners, Map<String, double> reach)` <a id="_aligngap"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 599).
+- **Purpose:** Return the least distance between two neighbouring centres in a rank during
+  alignment.
+- **Inputs:** `upper`, `lower` (adjacent ids, top first), `rects`, `owners` (chip → service),
+  `reach` (each node's least distance below the top of its rank).
+- **Returns:** Half of each height plus `rowGap`; for two chips of different services, at least
+  `reach[lowerOwner] − reach[upperOwner]`.
+- **Side effects:** None.
+- **Algorithm:** Compute the plain gap; when both ids have different owners, take the larger of
+  it and the owners' distance.
+- **Usage:** The separations `_alignRanks` passes to `_pava`.
+- **Notes:** Chips are shorter than cards, and a service without a chip (Termix in the homelab
+  fixture) leaves no chip between its neighbours' chips. The owners' distance keeps the chip
+  column as spread out as the service column, so every chip can sit level with its service.
+
+### `static Map<String, List<String>> _rankNeighbors(List<ServiceTopologyEdge> edges, Map<String, int> ranks, bool Function(String id) placed)` <a id="_rankneighbors"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 620).
+- **Purpose:** List each node's neighbours on other ranks.
+- **Inputs:** `edges`, `ranks`, `placed` (whether an id has a position).
+- **Returns:** Node id → neighbour ids, both directions, placed nodes only.
+- **Side effects:** None.
+- **Algorithm:** One pass over `edges`, skipping edges with an unplaced end or both ends on one
+  rank.
+- **Usage:** `_alignRanks`, `_alignFreeNodes`.
+- **Notes:** Same-rank edges say nothing about where a node should sit relative to the next
+  column.
+
+### `static Map<String, String> _portOwners(List<ServiceTopologyEdge> edges, Map<String, ServiceTopologyNode> nodeMap, bool Function(String id) placed)` <a id="_portowners"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 642).
+- **Purpose:** Find the service each port chip belongs to.
+- **Inputs:** `edges`, `nodeMap`, `placed`.
+- **Returns:** Chip id → the id of the service node it hangs off.
+- **Side effects:** None.
+- **Algorithm:** For each edge from a `service` node to a `compact` node: the target is a chip of
+  that service when it is an `endpoint` with the same `serviceId`, or a `remoteEntry` (an FRP
+  server's public port). The first such edge wins.
+- **Usage:** `_alignRanks`, `_alignFreeNodes`.
+- **Notes:** None.
+
+### `static double _desiredCenter(String id, Map<String, String> owners, Map<String, List<String>> neighbors, Map<String, double> centers)` <a id="_desiredcenter"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 673).
+- **Purpose:** Return the centre one node asks for during alignment.
+- **Inputs:** `id`, `owners`, `neighbors`, `centers` (current centres).
+- **Returns:** The owner's centre for a chip; otherwise the median of the outside neighbours'
+  centres; otherwise the node's own centre.
+- **Side effects:** None.
+- **Algorithm:** For a node that is not a chip, every neighbour counts, except that a neighbour
+  which is one of this node's own chips is replaced by that chip's other neighbours.
+- **Usage:** `_alignRanks`, `_alignFreeNodes`.
+- **Notes:** Looking past its own chips lets a service whose only neighbours are its chips still
+  move towards the rest of the graph; otherwise it would stay where the rows first put it and
+  leave holes in its column.
+
+### `static List<double> _pava(List<double> desired, List<double> separations, [List<double>? weights])` <a id="_pava"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 708).
+- **Purpose:** Place an ordered column of items as close to their wishes as the minimum gaps
+  allow (the pool-adjacent-violators algorithm).
+- **Inputs:** `desired` (wanted centres, top to bottom), `separations` (least distance between
+  item i and i + 1), `weights` (1 each by default).
+- **Returns:** The centres, in the same order.
+- **Side effects:** None.
+- **Algorithm:** Subtract the running separation from every wish, which turns the problem into
+  isotonic regression. Scan once, pooling the last block with the new item while the block's
+  weighted mean exceeds the item's value. Add the running separation back.
+- **Usage:** `_alignRanks`, `_alignFreeNodes`.
+- **Notes:** Exactly minimises the weighted squared distance to the wishes under the order and the
+  separations, in O(n). A very heavy item (1e9) acts as a fixed obstacle.
+
 ### `static int _sweepCrossings(Map<int, List<String>> order, Map<String, double> rows, Map<String, int> ranks, List<ServiceTopologyEdge> edges, Map<String, String> memberGroup, int sweeps)` <a id="_sweepcrossings"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 495).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 829).
 - **Purpose:** Reduce edge crossings with alternating barycenter sweeps.
 - **Inputs:** `order` (rank → ids in row order), `rows` (id → compact row), `ranks`, `edges`
   (drawn edges between placed nodes), `memberGroup`, `sweeps` (limit).
@@ -360,14 +514,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     sweeps,
   );
   ```
-  (`_placeNodes`, lines 378–389.)
+  (`_placeNodes`.)
 - **Notes:** Because rows are only permuted within a rank, straight chains stay straight where
   they were, and the result never has more crossings than the input. Each trial recounts every
   edge pair, so the sweep costs O(sweeps × ranks × E² × span).
 
 ### `static Map<String, double> _orderPositions(Map<int, List<String>> order, Map<String, double> rows)` <a id="_orderpositions"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 593).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 927).
 - **Purpose:** Give every placed node a strictly ordered position in its rank.
 - **Inputs:** `order`, `rows`.
 - **Returns:** id → `rows[id] + index × 1e-4`, where `index` is the node's position in its rank list.
@@ -377,13 +531,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   var best = countCrossings(ranks, _orderPositions(order, rows), edges);
   ```
-  (`_sweepCrossings`, line 503; also line 572 for each trial order.)
+  (`_sweepCrossings`; also for each trial order.)
 - **Notes:** Two nodes on the same row value still stack in list order; the index term keeps that
   order visible to `countCrossings`.
 
 ### `static int countCrossings(Map<String, int> ranks, Map<String, double> positions, List<ServiceTopologyEdge> edges)` <a id="countcrossings"></a>
 - **Kind:** static method of `ServiceTopologyLayout` (public).
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 613).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 947).
 - **Purpose:** Count edge crossings between ranks.
 - **Inputs:** `ranks` (node id → rank), `positions` (node id → any measure that orders a rank),
   `edges`.
@@ -404,14 +558,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     edges,
   );
   ```
-  (`_sweepCrossings`, lines 570–574; also called directly by
-  `test/service_topology_layout_test.dart`, line 228.)
+  (`_sweepCrossings`; also called directly by
+  `test/service_topology_layout_test.dart`.)
 - **Notes:** The bilayer inversion count generalized to long edges. Two edges that meet on a line
   and continue in swapped order count once; two that only share an end do not count. O(E² × span).
 
 ### `static ({Map<String, Rect> rects, Map<String, Rect> groups}) _placeContainers(Map<String, Rect> flat, Map<String, double> targets, Map<String, int> ranks, Map<String, List<String>> groups)` <a id="_placecontainers"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 678).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1012).
 - **Purpose:** Draw device containers around their members.
 - **Inputs:** `flat` (rects from `_placeNodes`), `targets` (row targets from `_placeNodes`),
   `ranks`, `groups` (device node id → member ids).
@@ -442,16 +596,36 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     groups,
   );
   ```
-  (`build`, lines 207–212.)
+  (`build`.)
 - **Notes:** Members return to their row targets, so they don't keep a gap another device's node
   left above them; the running shift keeps rows below aligned across ranks. By construction every
   member lies inside its container, no free node meets a container, and containers never overlap,
   so there is no fallback. The header is narrow so edges can still enter the container from
   above. Container rects are not routing obstacles; the header tabs are.
 
+### `static Map<String, Rect> _alignFreeNodes(Map<String, Rect> rects, Map<String, Rect> containers, Map<String, List<String>> groups, Map<String, ServiceTopologyNode> nodeMap, List<ServiceTopologyEdge> edges, Map<String, int> ranks)` <a id="_alignfreenodes"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1129).
+- **Purpose:** Move the nodes outside every container next to what they connect to, once the
+  containers are placed.
+- **Inputs:** `rects` (after `_placeContainers`), `containers`, `groups`, `nodeMap`, `edges`
+  (drawn), `ranks`.
+- **Returns:** The rects with free nodes moved; members and headers stay.
+- **Side effects:** None.
+- **Algorithm:** `_alignPasses` alternating passes over the ranks that hold free nodes. In each
+  rank the items are a fixed pseudo-item at the canvas top, every container whose member ranks
+  cover the rank (fixed: weight 1e9 at its own centre), and the rank's free nodes (asking for
+  [`_desiredCenter`](#_desiredcenter)), sorted by current centre. `_pava` places them with
+  `rowGap` between free nodes and `verticalGap` next to a container or the top.
+- **Usage:** `nodeRects = _alignFreeNodes(contained.rects, contained.groups, groups, nodeMap,
+  drawnEdges, nodeRanks);` (`build`, when grouping).
+- **Notes:** `_placeContainers` adds its running shift to every node after a container, even in
+  ranks no container covers, so a domain could end up far below its source. Each free node keeps
+  its side of every container, so no free node ever meets one.
+
 ### `static Map<String, double> _compactRankRows(List<ServiceTopologyNode> nodes, Map<String, double> desiredRows)` <a id="_compactrankrows"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 786).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1210).
 - **Purpose:** Recompute a compact row number for one rank's nodes only, so unused rows from
   *other* ranks don't leave blank bands in this one.
 - **Inputs:** `nodes` (already filtered to one rank), `desiredRows` (global map).
@@ -464,14 +638,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   final rankRows = _compactRankRows(rankNodes, desiredRows);
   ```
-  (`_placeNodes`, line 367.)
+  (`_placeNodes`.)
 - **Notes:** Because compaction is rank-local, the same raw `desiredRows` value can map to a
   different compacted row number in two different ranks — this is intentional (each rank only
   cares about its own vertical gaps).
 
 ### `static Map<String, double> _compactDesiredRows(ServiceTopologyGraph graph, Map<String, double> desiredRows)` <a id="_compactdesiredrows"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 804).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1228).
 - **Purpose:** Remove row gaps in the global `desiredRows` map that exist only because
   `_routeRows` reserved a row for a route/source with no corresponding visible node.
 - **Inputs:** `graph`, `desiredRows`.
@@ -485,14 +659,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   final compactRows = _compactDesiredRows(graph, desiredRows);
   ```
-  (`build`, line 192.)
+  (`build`.)
 - **Notes:** This is the *global* compaction pass (across all ranks at once), run before
   `_placeNodes`; `_compactRankRows` is a second, rank-local compaction run afterward for the same
   purpose at finer granularity.
 
 ### `static Map<double, double> _compactRowValueMap(Iterable<double> rows)` <a id="_compactrowvaluemap"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 829).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1253).
 - **Purpose:** Turn a sparse, possibly-irregular set of raw row values into a dense compacted
   sequence, collapsing large gaps while preserving small ordering gaps as visual breathing room.
 - **Inputs:** `rows` — raw row values (may contain near-duplicates).
@@ -512,14 +686,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     nodes.map((node) => desiredRows[node.id]).whereType<double>(),
   );
   ```
-  (`_compactRankRows`, lines 790–792; also `_compactDesiredRows`, line 816.)
+  (`_compactRankRows`; also `_compactDesiredRows`.)
 - **Notes:** The `clamp(0.72, 1.0)` bounds are the load-bearing constants for how "loose" versus
   "tight" compacted rows can look; `_rowPositions` then scales each step by the row's height plus
   `rowGap`.
 
 ### `static double _compactRowValue(double row, Map<double, double> rowMap)` <a id="_compactrowvalue"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 856).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1280).
 - **Purpose:** Resolve one raw desired-row value to its compacted row via `rowMap`, tolerating
   floating-point drift.
 - **Inputs:** `row`, `rowMap` (from `_compactRowValueMap`).
@@ -532,13 +706,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   node.id: _compactRowValue(desiredRows[node.id] ?? 0, rowMap),
   ```
-  (`_compactRankRows`, line 795; also `_compactDesiredRows`, line 820.)
+  (`_compactRankRows`; also `_compactDesiredRows`.)
 - **Notes:** Falling back to the original `row` (rather than throwing) means a value from outside
   the map it was built from is preserved as-is instead of being remapped.
 
 ### `static Map<String, int> _nodeRanks(ServiceTopologyGraph graph, List<ServiceTopologyEdge> validEdges, {bool alignDomainSinks = false})` <a id="_noderanks"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 872).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1296).
 - **Purpose:** Derive each node's horizontal rank (column) from the edge graph via relaxation,
   optionally move sink domains to the last rank, then compress ranks into a dense `0..N` sequence.
 - **Inputs:** `graph`, `validEdges`, `alignDomainSinks` (default `false`; `build` passes
@@ -563,14 +737,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     alignDomainSinks: options.alignDomainSinks,
   );
   ```
-  (`build`, lines 186–190.)
+  (`build`.)
 - **Notes:** `rankLimit` caps propagation so a cyclic edge graph cannot grow ranks unboundedly —
   it guarantees termination (the `nodeCount + 2` bound is also a hard iteration cap) instead of
   preventing cycles outright. Sink alignment lines final addresses up in one right-hand column.
 
 ### `static bool _alignSiblingPortRanks(List<ServiceTopologyEdge> edges, Map<String, ServiceTopologyNode> nodeMap, Map<String, int> ranks)` <a id="_alignsiblingportranks"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 925).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1349).
 - **Purpose:** Pull sibling "port-like" child nodes of the same service (e.g. paired FRP
   ingress/public-port nodes) up to the same rank so they read as one visual unit.
 - **Inputs:** `edges`, `nodeMap`, `ranks` (mutated in place).
@@ -588,14 +762,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     changed = true;
   }
   ```
-  (`_nodeRanks`, lines 893–895, called once per relaxation iteration.)
+  (`_nodeRanks`, called once per relaxation iteration.)
 - **Notes:** Only ever raises ranks (never lowers), consistent with `_nodeRanks`'s monotonic
   relaxation; being called inside the same loop means sibling alignment can itself trigger further
   edge relaxation on the next iteration.
 
 ### `static Map<String, double> _routeRows(ServiceTopologyGraph graph, List<ServiceRoute> routes, Map<String, ServiceTopologyNode> nodeMap, {bool byDevice = false})` <a id="_routerows"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 988).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1412).
 - **Purpose:** Assign every route a preferred row along a virtual row axis, grouped by source
   service and ordered so routes from the same source land on adjacent rows.
 - **Inputs:** `graph`, `routes`, `nodeMap`, `byDevice` (order sources by device first).
@@ -620,14 +794,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     byDevice: groups.isNotEmpty,
   );
   ```
-  (`build`, lines 173–178.)
+  (`build`.)
 - **Notes:** `byDevice` gives each device's services a contiguous band of rows, so its container
   stays compact. The 1.35/0.38/1.0 spacing constants are what
   [`_compactRowValueMap`](#_compactrowvaluemap)'s `clamp(0.72, 1.0)` step later normalizes.
 
 ### `static Map<String, double> _desiredRows(ServiceTopologyGraph graph, List<ServiceRoute> routes, Map<String, double> routeRows, Map<String, Set<String>> incoming, Map<String, Set<String>> outgoing)` <a id="_desiredrows"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1063).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1487).
 - **Purpose:** Derive each node's preferred row: directly from the routes it participates in when
   possible, otherwise by propagating from already-scored neighbors, otherwise a stable fallback
   order.
@@ -654,45 +828,163 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     outgoing,
   );
   ```
-  (`build`, lines 179–185.)
+  (`build`.)
 - **Notes:** The 10-iteration cap on neighbor propagation (step 3) means a very long chain of
   otherwise-unrouted nodes could still fall through to the step-4 fallback if propagation hasn't
   reached them within 10 passes — in practice bounded by typical topology diameters.
 
-### `static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(List<ServiceTopologyEdge> validEdges, Map<String, Rect> rects, Map<String, int> ranks, Size size)` <a id="_routeedges"></a>
+### `static Map<ServiceTopologyEdge, List<Offset>> _routeEdges(List<ServiceTopologyEdge> validEdges, Map<String, Rect> rects, Map<String, int> ranks, Size size, {Map<int, ({double left, double right})> columns = const {}, Set<String> headers = const {}})` <a id="_routeedges"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1133).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1561).
 - **Purpose:** Entry point for edge routing: builds shared obstacle/grid state once, then routes
   every edge against it, accumulating routed segments so later edges avoid earlier ones.
 - **Inputs:** `validEdges` (`build` passes the drawn edges only), `rects` (placed node rects,
-  including header tabs), `ranks`, `size` (canvas).
+  including header tabs), `ranks`, `size` (canvas), `columns` (rank → column x-range, from
+  `_columnBounds`), `headers` (container header ids, which have no column).
 - **Returns:** `Map<ServiceTopologyEdge, List<Offset>>` — one polyline per edge (possibly empty on
   routing failure).
 - **Side effects:** None (builds fresh local collections).
 - **Algorithm:**
   1. Compute `outgoingOffsets`/`incomingOffsets` via [`_portOffsets`](#_portoffsets) so edges
-     sharing a node side fan out.
+     sharing a node side fan out, then level nearly level edges with
+     [`_levelAnchors`](#_levelanchors).
   2. Build `obstacles` as every node rect inflated by `_routingClearance`, then build a shared
      [`_RoutingGridBase.fromObstacles`](#_routinggridbase-fromobstacles) and an empty
      `_RoutedSegments` index.
   3. Order edges by descending `_edgeSpan` (longest first), then by `_laneRank(edge.lane)`, then
      by `'from->to'` string — so the edges most likely to need real pathfinding claim direct
      corridors before shorter edges have to route around them.
-  4. For each edge in that order, call [`_routeEdge`](#_routeedge) with the shared obstacles/grid
-     and the segments routed so far; add the result's segments (via
+  4. For each edge in that order, call [`_routeEdge`](#_routeedge) with the shared obstacles/grid,
+     each end's column and the segments routed so far; add the result's segments (via
      [`_segmentsForPath`](#_segmentsforpath)) to `routedSegments` with [`addAll`](#addall).
 - **Usage:**
   ```dart
   final edgePaths = _routeEdges(drawnEdges, nodeRects, nodeRanks, size);
   ```
-  (`build`, line 227.)
+  (`build`.)
 - **Notes:** `routedSegments` accumulates monotonically across the whole call — congestion cost
   is therefore order-dependent: earlier-routed (longer) edges get first pick of clear corridors,
-  and later edges pay a cost to detour around them. Container rects are not obstacles.
+  and later edges pay a cost to detour around them. Container rects are not obstacles. Vertical
+  runs may still share a line here; `_nudgeSegments` separates them afterwards.
+
+### `static Map<int, ({double left, double right})> _columnBounds(Map<String, Rect> rects, Map<String, int> ranks, Set<String> headers)` <a id="_columnbounds"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1629).
+- **Purpose:** Find each rank's column, the x-range its nodes share.
+- **Inputs:** `rects`, `ranks`, `headers` (left out: a header sits at its container's corner).
+- **Returns:** Rank → the leftmost left and rightmost right of its nodes.
+- **Side effects:** None.
+- **Algorithm:** One pass over `rects`, widening each rank's range.
+- **Usage:** `final columns = _columnBounds(nodeRects, nodeRanks, groups.keys.toSet());`
+  (`build`).
+- **Notes:** The gaps between columns are where edges turn.
+
+### `static ({Map<ServiceTopologyEdge, List<Offset>> paths, Map<String, Rect> rects, Map<String, Rect> groups, Size size}) _nudgeSegments(Map<ServiceTopologyEdge, List<Offset>> routed, Map<String, Rect> rects, Map<String, Rect> groups, List<({double left, double right})> columns, Size size)` <a id="_nudgesegments"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1671).
+- **Purpose:** Give vertical runs that share a cell their own parallel tracks, widening a gap that
+  has too little room. This is the "nudging" step of orthogonal connector routing (libavoid),
+  combined with the slot assignment of layered routers (ELK Layered).
+- **Inputs:** `routed` (the routed paths), `rects`, `groups` (containers), `columns` (left to
+  right), `size`.
+- **Returns:** The paths with their vertical runs moved, and the rects, containers and canvas size
+  after any widening.
+- **Side effects:** None.
+- **Algorithm:**
+  1. Cells, left to right: each column, then the gap after it (after the last column, a margin
+     `_routingMargin` wide). Only gaps and that margin may widen.
+  2. [`_mergeJogs`](#_mergejogs) every path.
+  3. Collect **units**. A unit is an interior vertical run plus the path's next vertical runs in
+     the same cell, joined to it by horizontal runs. If all its runs head the same way they get
+     offset 0 and become one straight run; otherwise each keeps its routed offset from the first.
+     A unit's limits are the anchors its end runs reach (keep `_minStub`) and every node beside
+     one of its runs (keep `_routingClearance`).
+  4. In each cell:
+     - two units conflict when their y-ranges come within `2 × _trackSpacing` (`overlaps`);
+     - units are inserted one by one wherever in the cell's order they cause the fewest crossings
+       with the units they conflict with ([`_crossingsIfLeft`](#_crossingsifleft));
+     - each unit takes the track after the highest track of the earlier units it conflicts with;
+     - conflicting units are grouped (union-find).
+
+     A gap is widened by however much `width × _trackSpacing` exceeds a group's common range
+     ([`_unitRange`](#_unitrange)).
+  5. Stretch with one monotone map of x: every widened cell grows and everything right of it
+     shifts. Node rects and headers move rigidly by the map of their left edge, containers
+     stretch, and path points are mapped.
+  6. Place each group in its common range after stretching:
+     - spacing is `_trackSpacing`, or less if the range is short (a column cell never widens);
+     - the group is centred in the range for a gap, and kept near the units' current x for a
+       column;
+     - every run of every unit is set.
+  7. [`_separateHorizontals`](#_separatehorizontals). Then simplify each path; any edge that would
+     now touch a node other than its ends keeps its stretched but unmoved path.
+  8. The canvas width grows by the total widening.
+- **Usage:** `final nudged = _nudgeSegments(routed, nodeRects, groupRects, columns..., size);`
+  (`build`).
+- **Notes:** The stretch never changes the order of any two x values, so every path still avoids
+  every node it avoided and stays orthogonal. Before 1.8.3, the 38 px gap between ranks left a
+  10 px corridor, and every turn between two neighbouring columns landed on one shared vertical
+  line.
+
+### `static ({double lo, double hi}) _unitRange(List<_TrackSegment> units, ({double left, double right, bool gap}) cell, double Function(double) map)` <a id="_unitrange"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1972).
+- **Purpose:** Return the x-range a group of track units can share.
+- **Inputs:** `units`, `cell`, `map` (the stretch, or the identity before stretching).
+- **Returns:** The lowest and highest x the group's first runs may take.
+- **Side effects:** None.
+- **Algorithm:** Start from the cell (less `_minStub` on each side for a gap) and narrow it by
+  every unit's limits, each shifted by the offset of the run it applies to.
+- **Usage:** `_nudgeSegments`, for the widening estimate and for placement.
+- **Notes:** None.
+
+### `static void _separateHorizontals(Map<ServiceTopologyEdge, List<Offset>> paths, Map<String, Rect> rects)` <a id="_separatehorizontals"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2002).
+- **Purpose:** Move a horizontal run off a line another edge runs on.
+- **Inputs:** `paths` (changed in place), `rects`.
+- **Returns:** None.
+- **Side effects:** Changes points of `paths`.
+- **Algorithm:** For each horizontal run that lies on another edge's run (same y, overlapping x),
+  try `y ± 0.5, 1, 1.5, 2 × _trackSpacing`. Keep the first y where no other edge runs and where
+  the run, with its lengthened or shortened vertical neighbours, stays clear of every node except
+  the edge's ends. A run between two bends moves freely; a run at an anchor slides the anchor
+  along the node's side, at least 12 px from a corner.
+- **Usage:** Step 7 of `_nudgeSegments`.
+- **Notes:** Nudging moves vertical runs only; this catches the few horizontal coincidences left,
+  such as an edge that enters a chip from the far side, on the anchor another edge leaves from.
+
+### `static List<Offset> _mergeJogs(List<Offset> path, int Function(double) cellOf)` <a id="_mergejogs"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2084).
+- **Purpose:** Straighten small S-jogs a path makes inside one gap.
+- **Inputs:** `path`, `cellOf` (cell index of an x, or −1).
+- **Returns:** The path with each pair of vertical runs in the same cell, joined by a horizontal
+  run shorter than `2 × _trackSpacing`, merged onto the first run's x and simplified.
+- **Side effects:** None.
+- **Algorithm:** Repeat until nothing changes: find such a pair whose runs touch no anchor, move
+  the second run onto the first, and simplify.
+- **Usage:** Step 2 of `_nudgeSegments`.
+- **Notes:** Left alone, the two runs of a jog would pin each other in place.
+
+### `static int _crossingsIfLeft(_TrackSegment left, _TrackSegment right)` <a id="_crossingsifleft"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2120).
+- **Purpose:** Count the crossings two overlapping units make if `left` takes the track left of
+  `right`.
+- **Inputs:** `left`, `right`.
+- **Returns:** How many of their end runs cross the other unit.
+- **Side effects:** None.
+- **Algorithm:** An end of `right` heading left crosses `left` when its y lies inside `left`'s
+  range, and an end of `left` heading right crosses `right` likewise.
+- **Usage:** The insertion order in `_nudgeSegments`.
+- **Notes:** Comparing both orders tells which is cleaner; equal counts mean the crossing cannot be
+  avoided. In a fan-in, this puts the run of the source closest to the target on the inside, so
+  the comb has no crossings.
 
 ### `static Map<ServiceTopologyEdge, double> _portOffsets(List<ServiceTopologyEdge> edges, Map<String, Rect> rects, Map<String, int> ranks, {required bool outgoing})` <a id="_portoffsets"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1191).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2139).
 - **Purpose:** For edges that share the same node on their `from` (or `to`) side, compute a
   perpendicular offset per edge so they fan out along that node's edge instead of overlapping.
 - **Inputs:** `edges`, `rects`, `ranks`, `outgoing` (whether grouping by `from` or `to`).
@@ -702,25 +994,42 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   1. Group edges by the relevant node id (`entry.key`).
   2. For each group, compute `maxOffset = max(0, nodeRect.height / 2 - 12)` and sort the group's
      edges by peer center y, then by `ranks[peer]`, then by `'from->to'` string.
-  3. Assign offsets symmetric around the group's midpoint index: `((i - midpoint) * 9.0).clamp
-     (-maxOffset, maxOffset)`, i.e. 9px spacing between adjacent edges, clamped so offsets never
-     leave the node's own edge.
+  3. Assign offsets symmetric around the group's midpoint index: `(i - midpoint) * step`, where
+     `step = min(9, 2 * maxOffset / (n - 1))` — 9 px apart, closer when the side is short, never
+     past `maxOffset`.
 - **Usage:**
   ```dart
   final outgoingOffsets = _portOffsets(validEdges, rects, ranks, outgoing: true);
   final incomingOffsets = _portOffsets(validEdges, rects, ranks, outgoing: false);
   ```
-  (`_routeEdges`, lines 1139–1150.)
+  (`_routeEdges`.)
 - **Notes:** Called twice per layout (once per direction) since an edge's exit fan-out on its
   `from` node is independent of its entry fan-out on its `to` node. A header tab is only 40 px
-  tall, so its `maxOffset` is 8.
+  tall, so its `maxOffset` is 8. Before 1.8.3 the offsets were
+  clamped rather than spread, so a chip side with more than five edges got coinciding anchors.
 
-### `static List<Offset> _routeEdge({required Rect from, required Rect to, required double fromOffset, required double toOffset, required List<Rect> obstacles, required _RoutingGridBase gridBase, required _RoutedSegments routedSegments, required Size size})` <a id="_routeedge"></a>
+### `static void _levelAnchors(List<ServiceTopologyEdge> edges, Map<String, Rect> rects, Map<ServiceTopologyEdge, double> outgoing, Map<ServiceTopologyEdge, double> incoming)` <a id="_levelanchors"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2311).
+- **Purpose:** Make the two anchors of a nearly level edge exactly level.
+- **Inputs:** `edges`, `rects`, `outgoing`/`incoming` (anchor offsets, changed in place).
+- **Returns:** None.
+- **Side effects:** Changes entries of `outgoing` and `incoming`.
+- **Algorithm:** For an edge whose anchors are at most `_alignSnap` apart in y, move its entry
+  anchor level with its exit, or else its exit level with its entry. A move is allowed when the
+  moved anchor stays on the usable side (12 px from the corners) and at least 6 px from the
+  node's other anchors.
+- **Usage:** `_routeEdges`, right after `_portOffsets`.
+- **Notes:** Fanning anchors out leaves a few pixels between nodes the alignment put side by side,
+  which would otherwise draw as a tiny jog.
+
+### `static List<Offset> _routeEdge({required Rect from, required Rect to, required double fromOffset, required double toOffset, ({double left, double right})? fromColumn, ({double left, double right})? toColumn, required List<Rect> obstacles, required _RoutingGridBase gridBase, required _RoutedSegments routedSegments, required Size size})` <a id="_routeedge"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1235).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2191).
 - **Purpose:** Route one edge between two placed node rects, trying multiple anchor-side
   candidates and keeping whichever produces the lowest-scoring valid path.
-- **Inputs:** `from`/`to` rects, per-edge port offsets, shared `obstacles`/`gridBase`,
+- **Inputs:** `from`/`to` rects, per-edge port offsets, `fromColumn`/`toColumn` (each end's
+  column x-range, or null for a header), shared `obstacles`/`gridBase`,
   `routedSegments` (index of segments routed so far), canvas `size`.
 - **Returns:** A simplified orthogonal polyline, or `[]` if every candidate anchor pair fails.
 - **Side effects:** None.
@@ -731,15 +1040,18 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
      forward/backward sides.
   2. Build an ordered, deduplicated candidate list: the preferred pair first, then the four
      `{left,right}×{left,right}` combinations as fallbacks.
-  3. For each candidate: compute anchor points via `_anchor` + offset, then push them out by
-     `_routingEscape` along `_sideVector` and clamp to the canvas (`_clampOffset`) to get
-     `startExit`/`endEntry`. Skip the candidate if either stub is blocked by an obstacle other
-     than the node's own inflated rect ([`_stubBlocked`](#_stubblocked)).
-  4. Route the middle segment: try [`_fastRouteBetween`](#_fastroutebetween) first, falling back
-     to [`_routeBetween`](#_routebetween) if it returns `null`. Skip the candidate if both fail.
+  3. For each candidate: compute anchor points via `_anchor` + offset, and the stub ends with
+     [`_stubEnd`](#_stubend), which go past the column's edge for a node narrower than its
+     column. Skip the candidate if either stub is blocked by an obstacle other than the node's
+     own inflated rect ([`_stubBlocked`](#_stubblocked)).
+  4. Route the middle segment. Try [`_fastRouteBetween`](#_fastroutebetween) first; also run
+     [`_routeBetween`](#_routebetween) when it returns `null` or its path runs along a routed
+     horizontal line ([`sharesHorizontalLine`](#shareshorizontalline)), and keep the cheaper of
+     the two. Skip the candidate if both fail.
   5. Assemble the full path (`start → startExit → middle (skip duplicate first point) → end`),
      simplify it ([`_simplifyPolyline`](#_simplifypolyline)), and score it
-     ([`_pathScore`](#_pathscore)); keep the lowest-scoring candidate seen so far.
+     ([`_pathScore`](#_pathscore), plus `_sidePenalty` for each end on the side facing away from the
+     other end); keep the lowest-scoring candidate seen so far.
   6. Return the best path found, or `const []` if no candidate produced one.
 - **Usage:**
   ```dart
@@ -754,14 +1066,28 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     size: size,
   );
   ```
-  (`_routeEdges`, lines 1170–1179.)
+  (`_routeEdges`.)
 - **Notes:** All candidate anchor pairs (at most 5) are tried unconditionally (no early exit on
   first success) — a fixed, small combinatorial search rather than a greedy first-match, trading a
   bounded amount of extra work for a cleaner picked route.
 
+### `static Offset _stubEnd(Offset anchor, _TopologySide side, ({double left, double right})? column, Size size, List<Rect> obstacles, Rect own)` <a id="_stubend"></a>
+- **Kind:** static method of `ServiceTopologyLayout` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2359).
+- **Purpose:** Return where an edge's perpendicular stub ends.
+- **Inputs:** `anchor`, `side`, `column` (or null), `size`, `obstacles`, `own` (the node's
+  inflated rect).
+- **Returns:** The stub's far end, snapped and kept on the canvas.
+- **Side effects:** None.
+- **Algorithm:** `_routingEscape` past the column's edge when the node is narrower than its column
+  and that longer stub is clear; otherwise `_routingEscape` past the node.
+- **Usage:** `_routeEdge`, for both ends of every candidate.
+- **Notes:** A chip in a column of cards then turns in the gap between columns, like its
+  neighbours, where `_nudgeSegments` can give it a track.
+
 ### `static List<Offset>? _fastRouteBetween({required Offset start, required Offset goal, required List<Rect> obstacles, required _RoutedSegments routedSegments, required Size size})` <a id="_fastroutebetween"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1330).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2389).
 - **Purpose:** Try a battery of cheap, direct orthogonal candidate paths between two already-
   escaped points before falling back to full grid pathfinding.
 - **Inputs:** `start`, `goal` (already pushed past their nodes' stubs), `obstacles`,
@@ -791,13 +1117,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
       ) ??
       _routeBetween(...);
   ```
-  (`_routeEdge`, lines 1292–1307.)
+  (`_routeEdge`.)
 - **Notes:** Most edges in a real topology (same or adjacent rank, nothing between them) resolve
   here without ever running the A*-style grid search in `_routeBetween`.
 
 ### `static List<Offset>? _routeBetween({required Offset start, required Offset goal, required List<Rect> obstacles, required _RoutingGridBase gridBase, required _RoutedSegments routedSegments, required Size size})` <a id="_routebetween"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1390).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2449).
 - **Purpose:** Find an obstacle-avoiding orthogonal path between two escaped points using an
   A*-style priority-queue search over a shared+per-edge coordinate grid.
 - **Inputs:** `start`, `goal`, `obstacles`, `gridBase` (shared tracks), `routedSegments`, `size`.
@@ -838,7 +1164,7 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     size: size,
   );
   ```
-  (`_routeEdge`, lines 1300–1307, as the `??` fallback of `_fastRouteBetween`.)
+  (`_routeEdge`, as the `??` fallback of `_fastRouteBetween`.)
 - **Notes:** A step is reached from both ends and in several directions, and neither its obstacles
   nor its congestion change during one search, so caching it is result-identical to recomputing
   (all costs are multiples of 0.5, so summation order cannot change them). Together with the
@@ -849,7 +1175,7 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
 
 ### `static double _pathScore(List<Offset> path, _RoutedSegments routedSegments)` <a id="_pathscore"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1524).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2583).
 - **Purpose:** Score a fully-formed routed path so that competing anchor-pair/candidate paths can
   be ranked and the cleanest one picked.
 - **Inputs:** `path`, `routedSegments` (previously committed segments, for congestion).
@@ -867,13 +1193,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     bestPath = path;
   }
   ```
-  (`_routeEdge`, lines 1315–1319; also `_fastRouteBetween`, lines 1376–1381.)
+  (`_routeEdge`; also `_fastRouteBetween`.)
 - **Notes:** Uses the same 26.0 turn-penalty constant as `_routeBetween`'s search cost, so paths
   found by the fast router and the A* router are scored on a consistent scale.
 
 ### `static bool _pathClear(List<Offset> path, List<Rect> obstacles)` <a id="_pathclear"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1547).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2606).
 - **Purpose:** Check whether every segment of a candidate polyline is obstacle-free, before the
   fast router accepts it.
 - **Inputs:** `path`, `obstacles`.
@@ -888,12 +1214,12 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   final path = _simplifyPolyline(points.map(_snapOffset).toList());
   if (path.length < 2 || !_pathClear(path, obstacles)) return;
   ```
-  (`_fastRouteBetween`'s local `addCandidate`, lines 1340–1341.)
+  (`_fastRouteBetween`'s local `addCandidate`.)
 - **Notes:** None.
 
 ### `static bool _stubBlocked(Offset a, Offset b, List<Rect> obstacles, {required Rect allowed})` <a id="_stubblocked"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1560).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2619).
 - **Purpose:** Check whether a node's short exit/entry stub segment is blocked by some *other*
   obstacle (excluding the node's own inflated rect, which the stub is expected to leave through).
 - **Inputs:** `a`, `b` (stub endpoints), `obstacles`, `allowed` (the node's own inflated rect, to
@@ -910,14 +1236,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     continue;
   }
   ```
-  (`_routeEdge`, lines 1288–1291.)
+  (`_routeEdge`.)
 - **Notes:** Without the `allowed` exclusion, every stub would be flagged as blocked by the very
   node it's leaving/entering, since the stub necessarily starts on that node's own inflated
   boundary.
 
 ### `static bool _segmentBlocked(Offset a, Offset b, List<Rect> obstacles)` <a id="_segmentblocked"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1578).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2637).
 - **Purpose:** Check one orthogonal segment against the full obstacle list.
 - **Inputs:** `a`, `b`, `obstacles`.
 - **Returns:** `true` if the segment is non-orthogonal, or if its bounding rect (inflated by 0.6)
@@ -934,34 +1260,34 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
       ? -1
       : _manhattan(a, b) + _congestionCost(a, b, routedSegments);
   ```
-  (`_routeBetween`'s step-cost cache, lines 1490–1492.)
+  (`_routeBetween`'s step-cost cache.)
 - **Notes:** The core geometric primitive of the router (`_pathClear`, `_stubBlocked`, and every
   first-time grid step in `_routeBetween`).
 
 ### `static double _congestionCost(Offset a, Offset b, _RoutedSegments routedSegments)` <a id="_congestioncost"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1599).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2658).
 - **Purpose:** Penalize a candidate segment for running through, near, or across already-routed
   segments, so multiple edges sharing a corridor spread into distinct parallel tracks instead of
   overlapping.
 - **Inputs:** `a`, `b` (candidate segment endpoints), `routedSegments`.
 - **Returns:** `double` — summed penalty across the routed segments.
 - **Side effects:** None.
-- **Algorithm:** Delegates to [`_RoutedSegments.cost`](#cost): per routed segment, 180.0 on the
-  same line with overlapping span, else 58.0 for a parallel one within `_routingTrackGap * 0.85`
-  with overlapping span, else 28.0 for a perpendicular crossing.
+- **Algorithm:** Delegates to [`_RoutedSegments.cost`](#cost): for horizontals, 180.0 on the same
+  line with an overlapping span, else 58.0 for a parallel one within `_nearLine`; for verticals,
+  6.0 on the same line; and 28.0 per perpendicular crossing.
 - **Usage:**
   ```dart
   : _manhattan(a, b) + _congestionCost(a, b, routedSegments);
   ```
-  (`_routeBetween`, line 1492; also `_pathScore`, line 1532.)
+  (`_routeBetween`; also `_pathScore`.)
 - **Notes:** Results are identical to the former linear scan over every routed segment; only the
   segments near the candidate's axis are now visited. Literal lane reuse is penalized roughly 6×
   harder than a crossing, with "too close but not coincident" in between.
 
 ### `static List<_Segment> _segmentsForPath(List<Offset> path)` <a id="_segmentsforpath"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1610).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2669).
 - **Purpose:** Convert an accepted routed polyline into the `_Segment` list used for future
   congestion checks.
 - **Inputs:** `path`.
@@ -975,13 +1301,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   paths[edge] = path;
   routedSegments.addAll(_segmentsForPath(path));
   ```
-  (`_routeEdges`, lines 1180–1181.)
+  (`_routeEdges`.)
 - **Notes:** Dropping zero-length segments is what lets `_RoutedSegments.addAll` file each segment
   as exactly one of horizontal or vertical.
 
 ### `static List<Offset> _simplifyPolyline(List<Offset> points)` <a id="_simplifypolyline"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1625).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2684).
 - **Purpose:** Clean up a raw candidate polyline into its minimal orthogonal representation:
   dedupe near-identical points, then drop interior points that don't represent an actual turn.
 - **Inputs:** `points`.
@@ -1003,13 +1329,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     end,
   ]);
   ```
-  (`_routeEdge`, lines 1309–1314.)
+  (`_routeEdge`.)
 - **Notes:** A specialized, orthogonal-only simplification (not Douglas-Peucker) — it only removes
   points exactly collinear along one of the two grid axes.
 
 ### `static int _compareRoutesForLayout(ServiceRoute a, ServiceRoute b)` <a id="_compareroutesforlayout"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1695).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2754).
 - **Purpose:** Order one service's routes for row assignment: by access lane first, then HTTP
   method, then display target.
 - **Inputs:** `a`, `b` (`ServiceRoute`).
@@ -1023,13 +1349,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   final orderedRoutes = [...sourceRoutes]..sort(_compareRoutesForLayout);
   ```
-  (`_routeRows`, line 1048.)
+  (`_routeRows`.)
 - **Notes:** `serviceAccessLaneForRoute`/`serviceRouteDisplayTarget` are defined in
   `lib/features/services/services/service_analysis.dart`, not this file.
 
 ### `static double _median(List<double> values)` <a id="_median"></a>
 - **Kind:** static method of `ServiceTopologyLayout`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1749).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2808).
 - **Purpose:** Compute the statistical median of a list of row scores, used to derive a node's
   desired row from its routes/neighbors.
 - **Inputs:** `values` (non-empty in every call site).
@@ -1041,13 +1367,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   if (scores.isNotEmpty) desired[node.id] = _median(scores);
   ```
-  (`_desiredRows`, line 1089, and again at line 1105 for neighbor propagation.)
+  (`_desiredRows`, and again at for neighbor propagation.)
 - **Notes:** Using the median rather than the mean means one far-outlier route row doesn't drag a
   node's whole position toward it.
 
 ### `factory _RoutingGridBase.fromObstacles(List<Rect> obstacles, Size size)` <a id="_routinggridbase-fromobstacles"></a>
 - **Kind:** factory constructor of `_RoutingGridBase`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1858).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2917).
 - **Purpose:** Build the shared set of x/y routing-track coordinates derived once from node
   obstacles and canvas size, reused across every edge's pathfinding call.
 - **Inputs:** `obstacles` (inflated node rects), `size` (canvas).
@@ -1062,14 +1388,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   final gridBase = _RoutingGridBase.fromObstacles(obstacles, size);
   ```
-  (`_routeEdges`, line 1154 — built once per `build()` call and passed to every `_routeEdge`/
+  (`_routeEdges` — built once per `build()` call and passed to every `_routeEdge`/
   `_routeBetween` invocation.)
 - **Notes:** `_routeBetween` still adds per-call tracks on top of this shared base for the
   specific start/goal/routed segments of that one edge.
 
 ### `void addAll(Iterable<_Segment> segments)` <a id="addall"></a>
 - **Kind:** method of `_RoutedSegments`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1898).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2961).
 - **Purpose:** Add segments to the list and the axis indexes.
 - **Inputs:** `segments`.
 - **Returns:** `void`.
@@ -1081,38 +1407,57 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   routedSegments.addAll(_segmentsForPath(path));
   ```
-  (`_routeEdges`, line 1181.)
+  (`_routeEdges`.)
 - **Notes:** A segment is filed as horizontal or vertical, never both — `_segmentsForPath` drops
   zero-length segments. Insertion is O(n) per segment (list shift), paid once per routed segment.
 
 ### `double cost(Offset a, Offset b)` <a id="cost"></a>
 - **Kind:** method of `_RoutedSegments`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1928).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2993).
 - **Purpose:** Score how much a candidate segment conflicts with the routed segments.
 - **Inputs:** `a`, `b` — the candidate's ends.
-- **Returns:** `double` — 180 per routed segment on the same line whose span overlaps it, else 58
-  per parallel one within `0.85 × _routingTrackGap` whose span overlaps, plus 28 per perpendicular
-  one it crosses.
+- **Returns:** `double`:
+  - for a horizontal candidate, 180 per routed horizontal on the same line whose span overlaps it,
+    else 58 per one closer than `_nearLine` (4 px);
+  - for a vertical candidate, 6 per routed vertical on the same line;
+  - in both cases, plus 28 per perpendicular segment it crosses.
 - **Side effects:** None.
-- **Algorithm:** For a horizontal candidate at `y`: binary-search `_horizontal` from `y - near`
-  and walk while `s.a.dy <= y + near`; add 180 for each that
+- **Algorithm:** For a horizontal candidate at `y`: binary-search `_horizontal` from
+  `y - _nearLine` and walk while `s.a.dy <= y + _nearLine`; add 180 for each that
   [`sameAxisOverlap`](#sameaxisoverlap)s the candidate, else 58 for each that
   [`nearAxisOverlap`](#nearaxisoverlap)s it. Then walk `_vertical` over
   `[minX - _epsilon, maxX + _epsilon]` and add 28 for each the candidate [`crosses`](#crosses). A
-  vertical candidate mirrors this with the axes swapped.
+  vertical candidate adds 6 for each vertical on its own line whose span overlaps, then 28 per
+  horizontal it crosses.
 - **Usage:**
   ```dart
   ) => routedSegments.cost(a, b);
   ```
-  (`_congestionCost`, line 1603.)
-- **Notes:** Applies the same three tests as checking the candidate against every segment, but
-  visits only segments inside the candidate's band — parallel ones within the near distance of
-  its line, perpendicular ones whose line lies within its span — so it produces the same sums. Costs are whole
-  numbers, so the order of the sum cannot change the result.
+  (`_congestionCost`.)
+- **Notes:** Only segments inside the candidate's band are visited.
+  - Since 1.8.3, vertical sharing costs only a tie-breaker: `_nudgeSegments` moves such runs onto
+    their own tracks. Nothing moves horizontal runs, so those still pay for sharing.
+  - The near test is 4 px (formerly 0.85 × the track gap), tighter than the 9 px anchor spacing,
+    so runs into one node's fanned-out anchors are not penalised. The old test used to send an
+    edge round to the far side of Caddy.
+  - Costs are whole numbers, so the order of the sum cannot change the result.
+
+### `bool sharesHorizontalLine(List<Offset> path)` <a id="shareshorizontalline"></a>
+- **Kind:** method of `_RoutedSegments` (1.8.3).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3050).
+- **Purpose:** Tell whether a path runs along a routed horizontal line.
+- **Inputs:** `path`.
+- **Returns:** `true` when one of its horizontal segments lies on the same line as a routed one,
+  with overlapping spans.
+- **Side effects:** None.
+- **Algorithm:** For each horizontal segment, binary-search `_horizontal` at its y and test
+  [`sameAxisOverlap`](#sameaxisoverlap).
+- **Usage:** `_routeEdge`, to decide whether A* should also run.
+- **Notes:** Vertical sharing is fine, because nudging separates it.
 
 ### `static int _lowerBound(List<_Segment> sorted, double value, double Function(_Segment) key)` <a id="_lowerbound"></a>
 - **Kind:** static method of `_RoutedSegments`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 1988).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3071).
 - **Purpose:** Find the first index whose key is at least `value`.
 - **Inputs:** `sorted` (ascending by `key`), `value`, `key`.
 - **Returns:** `int` — the insertion point, `sorted.length` when none.
@@ -1123,12 +1468,12 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   var i = _lowerBound(_horizontal, y - near, (s) => s.a.dy);
   ```
-  (`cost`, lines 1935, 1949, 1959, 1973; `addAll`, lines 1903 and 1908.)
+  (`cost`; `addAll`.)
 - **Notes:** None.
 
 ### `bool sameAxisOverlap(_Segment other)` <a id="sameaxisoverlap"></a>
 - **Kind:** method of `_Segment`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2027).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3110).
 - **Purpose:** Determine whether two segments lie on the exact same horizontal or vertical line
   and their spans overlap — i.e. would visually coincide.
 - **Inputs:** `other`.
@@ -1141,12 +1486,12 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   if (candidate.sameAxisOverlap(other)) {
   ```
-  ([`_RoutedSegments.cost`](#cost), lines 1940 and 1964 — the 180 tier.)
+  ([`_RoutedSegments.cost`](#cost) — the 180 tier.)
 - **Notes:** Stricter than `nearAxisOverlap` — the lines must coincide within `_epsilon`.
 
 ### `bool nearAxisOverlap(_Segment other, double distance)` <a id="nearaxisoverlap"></a>
 - **Kind:** method of `_Segment`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2044).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3127).
 - **Purpose:** Determine whether two parallel segments run within a caller-supplied `distance` of
   each other and their spans overlap — a softer "too close" congestion signal rather than a hard
   obstacle.
@@ -1159,14 +1504,14 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   } else if (candidate.nearAxisOverlap(other, near)) {
   ```
-  ([`_RoutedSegments.cost`](#cost), lines 1942 and 1966, with `near = _routingTrackGap * 0.85` —
+  ([`_RoutedSegments.cost`](#cost), with `near = _routingTrackGap * 0.85` —
   the 58 tier.)
 - **Notes:** The `0.85` factor keeps "near" a bit tighter than the actual track spacing, so
   properly spaced adjacent lanes are not penalized.
 
 ### `bool crosses(_Segment other)` <a id="crosses"></a>
 - **Kind:** method of `_Segment`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2061).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3144).
 - **Purpose:** Determine whether a horizontal and a vertical segment actually intersect (a real
   T/X crossing), rather than merely being nearby.
 - **Inputs:** `other`.
@@ -1180,13 +1525,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   if (candidate.crosses(_vertical[i])) cost += 28.0;
   ```
-  ([`_RoutedSegments.cost`](#cost), lines 1953 and 1977 — the 28 tier.)
+  ([`_RoutedSegments.cost`](#cost) — the 28 tier.)
 - **Notes:** A perpendicular crossing is penalized far less than lane reuse because crossings are
   unavoidable in an orthogonal layout and not actually confusing.
 
 ### `static bool _rangesOverlap(double a1, double a2, double b1, double b2)` <a id="_rangesoverlap"></a>
 - **Kind:** static method of `_Segment`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2078).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3161).
 - **Purpose:** Determine whether two 1-D ranges (each given as two unordered endpoints) overlap by
   more than `_epsilon`.
 - **Inputs:** `a1`, `a2`, `b1`, `b2`.
@@ -1199,13 +1544,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   return _rangesOverlap(a.dx, b.dx, other.a.dx, other.b.dx);
   ```
-  (`sameAxisOverlap`, lines 2031 and 2034; `nearAxisOverlap`, lines 2048 and 2051.)
+  (`sameAxisOverlap`; `nearAxisOverlap`.)
 - **Notes:** The strict comparison keeps two segments that just touch end-to-end on the same line
   from being penalized as overlapping.
 
 ### `static bool _between(double value, double start, double end)` <a id="_between"></a>
 - **Kind:** static method of `_Segment`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2091).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3174).
 - **Purpose:** Inclusive range membership test with `_epsilon` slack on both ends, used to test
   whether a crossing point falls within a segment's span.
 - **Inputs:** `value`, `start`, `end` (unordered).
@@ -1218,13 +1563,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   return _between(other.a.dx, a.dx, b.dx) &&
       _between(a.dy, other.a.dy, other.b.dy);
   ```
-  (`crosses`, lines 2063–2068.)
+  (`crosses`.)
 - **Notes:** Unlike `_rangesOverlap`, this is deliberately inclusive, so a crossing exactly at a
   segment's endpoint still counts.
 
 ### `void add(_RouteState state)` <a id="add"></a>
 - **Kind:** method of `_RouteHeap`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2125).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3208).
 - **Purpose:** Insert a new search state into the binary min-heap, maintaining heap order.
 - **Inputs:** `state`.
 - **Returns:** None.
@@ -1236,12 +1581,12 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   heap.add(_RouteState(startState, _manhattan(start, goal)));
   ```
-  (`_routeBetween`, line 1460, seeding the search; also for every relaxed neighbor at line 1505.)
+  (`_routeBetween`, seeding the search; also for every relaxed neighbor at.)
 - **Notes:** None beyond the standard binary-heap insert contract.
 
 ### `_RouteState removeFirst()` <a id="removefirst"></a>
 - **Kind:** method of `_RouteHeap`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2135).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3218).
 - **Purpose:** Pop and return the lowest-cost state (the heap root), restoring heap order
   afterward.
 - **Inputs:** None.
@@ -1254,13 +1599,13 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
   ```dart
   final current = heap.removeFirst();
   ```
-  (`_routeBetween`, line 1464, the main search loop.)
+  (`_routeBetween`, the main search loop.)
 - **Notes:** Correctly handles the single-element case: `first` and `last` are the same element,
   and the `_items.isNotEmpty` guard skips `_bubbleDown` on an empty heap.
 
 ### `void _bubbleUp(int index)` <a id="_bubbleup"></a>
 - **Kind:** method of `_RouteHeap`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2150).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3233).
 - **Purpose:** Restore the min-heap invariant upward from `index` after an insertion.
 - **Inputs:** `index`.
 - **Returns:** `void`.
@@ -1274,12 +1619,12 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     _bubbleUp(_items.length - 1);
   }
   ```
-  (`add`, lines 2125–2128.)
+  (`add`.)
 - **Notes:** Standard array-backed binary heap parent-index arithmetic (`(i - 1) >> 1`).
 
 ### `void _bubbleDown(int index)` <a id="_bubbledown"></a>
 - **Kind:** method of `_RouteHeap`.
-- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 2164).
+- **Source:** `lib/features/services/services/service_topology_layout.dart` (line 3247).
 - **Purpose:** Restore the min-heap invariant downward from `index` after the root is replaced.
 - **Inputs:** `index`.
 - **Returns:** `void`.
@@ -1294,5 +1639,5 @@ one-line getters `_Segment.horizontal`/`.vertical`. 70 + 45 = 115. Tier A: 45 ro
     _bubbleDown(0);
   }
   ```
-  (`removeFirst`, lines 2138–2141.)
+  (`removeFirst`.)
 - **Notes:** Standard array-backed binary heap child-index arithmetic (`i*2+1`, `i*2+2`).

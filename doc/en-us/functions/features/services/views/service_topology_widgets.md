@@ -5,7 +5,7 @@ split out of `service_list_page.dart` in 1.5.6: `ServiceTopologyNodeCard` (a ful
 small port chip for compact nodes, or the header tab of a device container — selected with a
 heavier border, dimmed when a selection leaves it out, and announced to screen readers by label,
 role and lane), `ServiceTopologyEdgePainter` (the device containers, then the routed edges with
-arrow heads, coloured by access lane, the selection's edges emphasized), `ServiceTopologyLegend` (the key to the lane and role colours),
+arrow heads and rounded bends (1.8.3, `topologyEdgePath`), coloured by access lane, the selection's edges emphasized), `ServiceTopologyLegend` (the key to the lane and role colours),
 and the icon and colour helpers behind them. `fitTransform` moved to the shared
 [`topology_canvas_viewer.md`](../../../shared/widgets/topology_canvas_viewer.md#fittransform) in
 1.8.0; this file re-exports it so existing imports keep working.
@@ -14,8 +14,8 @@ colour rule for the painter, the legend and that page's preview. `iconForService
 for topology callers and delegates Material icon lookup to
 [`service_icon.md`](../widgets/service_icon.md), which is also used by `ServiceAvatar`.
 
-**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **25**, one per
-declaration below (**7 Tier A / 18 Tier B**). The
+**Row-count note:** `grep -c 'Purpose:' service_topology_widgets.dart` returns **26**, one per
+declaration below (**8 Tier A / 18 Tier B**; 1.8.3 added `topologyEdgePath`). The
 public constants `topologyDimmedNodeOpacity` (0.35) and `topologyDimmedEdgeAlpha` (0.18) are
 documented in source and not listed; the data set topology uses them too. The English-only `topologyLaneLabel` and
 `topologyRoleLabel` of the extraction are gone: cards and details use the localized
@@ -37,9 +37,10 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 | [`_paintContainers`](#paintcontainers) | method (`ServiceTopologyEdgePainter`) | A | Fill and outline each device container, dashed for remote and VPS devices. |
 | `_dashed` | static method (`ServiceTopologyEdgePainter`) | B | A dashed copy of a path (7 px dashes, 5 px gaps). |
 | `_paintEdge` | method (`ServiceTopologyEdgePainter`) | B | Stroke one edge's path at a given alpha and width. |
-| [`_drawPolyline`](#drawpolyline) | method (`ServiceTopologyEdgePainter`) | A | Draw one edge's path plus a triangular arrowhead at its end. |
+| [`_drawPolyline`](#drawpolyline) | method (`ServiceTopologyEdgePainter`) | A | Draw one edge's path, bends rounded, plus a triangular arrowhead at its end. |
 | `_edgeColor` | method (`ServiceTopologyEdgePainter`) | B | An edge's lane colour, the outline colour without a lane. |
 | `shouldRepaint` | method (`ServiceTopologyEdgePainter`) | B | Repaint only when the graph, layout, color scheme or highlight changed. |
+| [`topologyEdgePath`](#topologyedgepath) | top-level function | A | The drawn shape of a routed edge: the polyline with each bend rounded. |
 | `serviceAccessLaneColor` | top-level function | B | The colour of an access lane (local tertiary, VPN secondary, public primary). |
 | [`_nodeSubtitle`](#nodesubtitle) | top-level function | A | The subtitle a topology node card shows: a remote relay service's localized "{method} service", a relay's localized method or hop type, a device's localized category, else the builder's detail. |
 | [`_compactTopologyLabel`](#compacttopologylabel) | top-level function | A | Shorten a topology node's label/detail to a compact chip-sized string. |
@@ -115,24 +116,43 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `void _drawPolyline(Canvas canvas, Paint paint, List<Offset> points)` <a id="drawpolyline"></a>
 - **Kind:** method of `ServiceTopologyEdgePainter`.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 417).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 422).
 - **Purpose:** Draw one edge's multi-segment path plus a triangular arrowhead at its end.
 - **Inputs:** `canvas`, `paint`, `points` — the routed polyline (2 or more points).
 - **Returns:** `void`.
 - **Side effects:** Draws onto `canvas`.
-- **Algorithm:** 1. Build a `Path` moving to `points.first` then `lineTo` through every subsequent
-  point; draw it. 2. Scan backward from the end to find the last point more than 0.5px from the
+- **Algorithm:** 1. Draw [`topologyEdgePath`](#topologyedgepath) of the points (bends
+  rounded). 2. Scan backward from the end to find the last point more than 0.5px from the
   endpoint, to use as the direction reference (guards against a degenerate near-zero-length final
   segment). 3. Compute the approach angle via `atan2`. 4. Draw two short lines from the endpoint
   back at `angle ± 0.45` radians (a `V`-shaped arrowhead, ~9px long).
 - **Usage:** Called once per edge from [`paint`](#paint).
 - **Notes:** The backward scan for a non-degenerate reference point means the arrowhead's direction
   reflects the edge's actual approach direction even if the router emitted a near-duplicate final
-  point.
+  point. The last segment is a horizontal stub at least 18 px long, so the rounded bend before it
+  never turns the arrowhead.
+
+### `Path topologyEdgePath(List<Offset> points, {double radius = 6})` <a id="topologyedgepath"></a>
+- **Kind:** top-level function (1.8.3).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 486).
+- **Purpose:** Build the drawn shape of a routed edge, with rounded bends.
+- **Inputs:** `points` — the routed polyline, at least two points; `radius` — the largest corner
+  radius.
+- **Returns:** A `Path` from the first point to the last.
+- **Side effects:** None.
+- **Algorithm:** For each interior point, the corner radius is `min(radius, half the shorter
+  adjacent segment)`. Below half a pixel the corner stays sharp. Otherwise the path runs to `r`
+  before the corner and arcs (`arcToPoint`, clockwise by the sign of the turn's cross product)
+  to `r` after it. The path ends with a line to the last point.
+- **Usage:** `canvas.drawPath(topologyEdgePath(points), paint);` (`_drawPolyline`).
+- **Notes:** Halving the shorter segment keeps two close bends from overlapping, and keeps a short
+  jog a jog. The ends stay exact, so the arrowhead still sits on the node's side. It is public so
+  `test/service_topology_layout_test.dart` can measure it (an L of two 100 px legs is
+  `200 − 12 + 3π` long).
 
 ### `String? _nodeSubtitle(BuildContext context, ServiceTopologyNode node)` <a id="nodesubtitle"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 499).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 540).
 - **Purpose:** Return the subtitle a topology node card shows under its label.
 - **Inputs:** `context`, `node`.
 - **Returns:** `String?` — null when there is nothing to show.
@@ -159,7 +179,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `String _compactTopologyLabel(ServiceTopologyNode node)` <a id="compacttopologylabel"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 543).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 584).
 - **Purpose:** Shorten a topology node's label/detail to a short string that fits inside a compact
   port-chip.
 - **Inputs:** `node`.
@@ -179,7 +199,7 @@ became the role-keyed `_roleFill` / `_roleBorder` so the legend can use them.
 
 ### `IconData iconForTopologyNode(ServiceTopologyNode node, List<ServiceNode> services, List<Device> devices)` <a id="iconfortopologynode"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 565).
+- **Source:** `lib/features/services/views/service_topology_widgets.dart` (line 606).
 - **Purpose:** Resolve the icon to show for a topology node, based on its kind and, when
   resolvable, its underlying device/service.
 - **Inputs:** `node`, `services`, `devices`.

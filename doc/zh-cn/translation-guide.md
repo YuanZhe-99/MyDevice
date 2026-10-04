@@ -138,6 +138,11 @@
 | container header | 分组框标题 | 设备分组框左上角的设备标签 |
 | crossing sweep | 交叉消减扫描 | 调整各层顺序以减少连线交叉的布局步骤 |
 | domain sink | 终点域名 | 没有出边的域名节点，对齐到最后一层 |
+| alignment (topology) | 对齐 | 让相连节点跨层对齐的布局步骤；端口芯片与其服务齐平 |
+| gap (between columns) | 列间通道 | 两个等级列之间、边在其中拐弯的空间；加宽它 = 加宽通道 |
+| track | 轨道 | 通道中一条边的竖段所占的一个 x 位置 |
+| nudging | 错开 | 把共用一条通道的竖段分到各自的平行轨道上 |
+| rounded bend | 圆角拐弯 | 画成四分之一圆的边拐角 |
 | network assignment | 网络分配 | 一个 `NetworkDevice`：设备在某个网络中的成员关系；旧页面曾用「网络赋值」 |
 | proxy-like service | 类代理服务 | 引导流程作为反向代理候选提供的服务 |
 | overlay network | 叠加网络 | 叠加在其他网络之上的 VPN 网络（Tailscale、ZeroTier、EasyTier、WireGuard） |

@@ -9,6 +9,7 @@ import '../../devices/services/device_storage.dart';
 import '../models/dataset.dart';
 import '../services/dataset_placement.dart';
 import '../services/dataset_storage.dart';
+import 'dataset_copy_summary.dart';
 import 'dataset_edit_page.dart';
 import 'dataset_topology_page.dart';
 
@@ -214,6 +215,10 @@ class _DataSetListPageState extends State<DataSetListPage> {
         if (idx < device.storage.length) {
           storageParts.add(device.storage[idx].displayString);
         }
+      }
+      for (final id in link.arrayIds) {
+        final array = device.storageArrays.where((a) => a.id == id);
+        if (array.isNotEmpty) storageParts.add(array.first.displayString);
       }
       if (storageParts.isEmpty) {
         lines.add(device.name);
@@ -563,13 +568,13 @@ class _DataSetListPageState extends State<DataSetListPage> {
   /// Inputs: `group`, `l10n`.
   /// Returns: `String`.
   /// Side effects: None.
-  /// Notes: Storage groups read "device · storage".
+  /// Notes: Storage groups read "device · storage" (or "device · array").
   String _groupTitle(DataSetGroup group, AppLocalizations l10n) {
     final device = group.device;
     if (device == null) return l10n.dataSetUnlinked;
-    final index = group.storageIndex;
-    if (index == null) return device.name;
-    return '${device.name} · ${storageSlotLabel(device, index, l10n.dataSetStorageFallback)}';
+    final place = group.place;
+    if (place == null) return device.name;
+    return '${device.name} · ${placeLabel(place, l10n.dataSetStorageFallback)}';
   }
 
   /// Purpose: Build a tile's subtitle inside a group.
@@ -577,8 +582,9 @@ class _DataSetListPageState extends State<DataSetListPage> {
   /// Returns: The copy count, then where else the data set is; null in the
   /// unlinked group.
   /// Side effects: None.
-  /// Notes: A data set with a single copy says so in the error colour, since
-  /// it has no backup. "Also on" lists the other devices in a device group,
+  /// Notes: [dataSetReplicaSummary] words the count; a data set with at most one
+  /// usable copy (copies on failed drives do not count) is drawn in the
+  /// error colour, since it has no backup. "Also on" lists the other devices in a device group,
   /// the other device-and-storage places in a storage group.
   Widget? _groupedSubtitle(
     DataSet ds,
@@ -590,29 +596,29 @@ class _DataSetListPageState extends State<DataSetListPage> {
     final others = <String>[];
     for (final r in replicas) {
       final String place;
-      if (group.storageIndex == null) {
+      if (group.place == null) {
         if (r.device.id == group.device!.id) continue;
         place = r.device.name;
       } else {
         if (r.device.id == group.device!.id &&
-            r.storageIndex == group.storageIndex) {
+            r.place.key == group.place!.key) {
           continue;
         }
         place =
-            '${r.device.name} – ${storageSlotLabel(r.device, r.storageIndex, l10n.dataSetStorageFallback)}';
+            '${r.device.name} – ${placeLabel(r.place, l10n.dataSetStorageFallback)}';
       }
       if (!others.contains(place)) others.add(place);
     }
-    final single = replicas.length <= 1;
+    final summary = dataSetReplicaSummary(l10n, replicas);
     final theme = Theme.of(context);
     return Text(
       [
-        single ? l10n.dataSetSingleCopy : l10n.dataSetCopies(replicas.length),
+        summary.text,
         if (others.isNotEmpty) l10n.dataSetAlsoOn(others.join(', ')),
       ].join('\n'),
       maxLines: 3,
       overflow: TextOverflow.ellipsis,
-      style: single ? TextStyle(color: theme.colorScheme.error) : null,
+      style: summary.warn ? TextStyle(color: theme.colorScheme.error) : null,
     );
   }
 

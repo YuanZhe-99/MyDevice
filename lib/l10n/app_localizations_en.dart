@@ -785,6 +785,83 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storageSerialNumber => 'Serial Number';
 
   @override
+  String get storageStatus => 'Status';
+
+  @override
+  String get storageStatusOk => 'Working';
+
+  @override
+  String get storageStatusFailed => 'Failed';
+
+  @override
+  String get storageStatusOffline => 'Offline';
+
+  @override
+  String get storageStatusNote => 'Status note';
+
+  @override
+  String get storageStatusNoteHint =>
+      'e.g. dropped out of the array on 2026-09-30';
+
+  @override
+  String get storageArrays => 'RAID Arrays';
+
+  @override
+  String get storageArrayAdd => 'Add RAID array';
+
+  @override
+  String get storageArrayRemove => 'Remove RAID array';
+
+  @override
+  String get storageArrayName => 'Array name';
+
+  @override
+  String get storageArrayNameHint => 'e.g. Pool 1';
+
+  @override
+  String get storageArrayLevel => 'RAID level';
+
+  @override
+  String get storageArrayMembers => 'Member drives';
+
+  @override
+  String get storageArrayHint =>
+      'Data on an array counts as one copy, however many drives it spans. A drive belongs to at most one array.';
+
+  @override
+  String get storageArrayNoMembers => 'Add storage entries above first.';
+
+  @override
+  String get storageArrayUnsaved => 'Save to pick this drive';
+
+  @override
+  String get storageArrayDegraded => 'Degraded';
+
+  @override
+  String get storageArrayUnavailable => 'Data lost';
+
+  @override
+  String storageArraySummary(String level, int count) {
+    return '$level · $count drives';
+  }
+
+  @override
+  String storageInArray(String array) {
+    return 'In $array';
+  }
+
+  @override
+  String dataSetCopiesUnavailable(int count) {
+    return '$count unavailable';
+  }
+
+  @override
+  String get dataSetNoAvailableCopy => 'No usable copy';
+
+  @override
+  String get dataSetTopologyLegendUnavailable => 'Copy on a failed drive';
+
+  @override
   String get fetchFromInternet => 'Fetch Online';
 
   @override

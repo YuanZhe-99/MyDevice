@@ -93,7 +93,7 @@
 
 ### `static Future<void> start()` <a id="start"></a>
 - **种类：** `LocalApiServer` 的静态方法。
-- **来源：** 第 80 行。
+- **来源：** 第 111 行。
 - **用途：** 按当前设置绑定并启动 API 服务器，禁用时不做事。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 绑定监听套接字；设置 `_server`/`_lastError`；记录到 stdout。
@@ -102,7 +102,7 @@
 - **备注：** 与 MyAnime 的 `LocalApiServer.start` 相同的无凭据不安全非本地主机拒绝，但带 MyDevice 自己默认端口 `7789`（对比 MyAnime `7788`）和路由表。
 
 ### `static Future<void> stop()` <a id="stop"></a>
-- **种类：** 静态方法。**来源：** 第 148 行。
+- **种类：** 静态方法。**来源：** 第 160 行。
 - **用途：** 强制关闭运行中服务器（如有）。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 关闭套接字（`force: true`）；设 `_server = null`。
@@ -111,7 +111,7 @@
 - **备注：** 丢弃在途连接；无优雅排空。
 
 ### `static Future<void> restart()` <a id="restart"></a>
-- **种类：** 静态方法。**来源：** 第 158 行。
+- **种类：** 静态方法。**来源：** 第 170 行。
 - **用途：** 重新加载设置并重新绑定。
 - **输入：** 无。**返回：** `Future<void>`。
 - **副作用：** 与 `loadConfig()` + `start()` 相同。
@@ -120,7 +120,7 @@
 - **备注：** 无。
 
 ### `static Future<Response> _handleList(Request request)` <a id="handlelist"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 179 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 191 行。
 - **用途：** 返回保存设备，可选按类别过滤。
 - **输入：** `request` — 可选 `?category=` 匹配 `DeviceCategory.name`。
 - **返回：** 带设备列表（经 `buildStatsJson` 邻近序列化，见 `deviceToJson`）的 `200` JSON。
@@ -130,7 +130,7 @@
 - **备注：** 类别值必须精确匹配 `DeviceCategory.name`（区分大小写枚举名）。
 
 ### `static Future<Response> _handleSearch(Request request)` <a id="handlesearch"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 202 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 214 行。
 - **用途：** 按人类可读清单字段搜索保存设备。
 - **输入：** `request` — `?q=` 搜索文本。
 - **返回：** `200` JSON 列表；无匹配时空列表。
@@ -140,7 +140,7 @@
 - **备注：** 绝不执行在线查找——只清单字段。
 
 ### `static Future<Response> _handleAdd(Request request)` <a id="handleadd"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 217 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 229 行。
 - **用途：** 从 JSON 体创建新设备。
 - **输入：** `request` — JSON 体；`name` 和 `category` 必填，其他一切可选（CPU/GPU/存储/财务/位置字段，加图标字段 `emoji`、`imagePath` 和 `templateImage`——手选缩略图的资源路径）。
 - **返回：** 缺失/无效体、缺失名或无效类别时 `400`；否则带 `{success: true, id, name}` 的 `200`。
@@ -150,7 +150,7 @@
 - **备注：** 未知或格式错误可选字段静默忽略而非拒绝整个请求——只有 `name`/`category` 是硬要求。
 
 ### `static Future<Response> _handleStats(Request request)` <a id="handlestats"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 327 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 339 行。
 - **用途：** 返回跨模块摘要统计。
 - **输入：** `request`（不直接使用）。**返回：** `200` JSON，见 `buildStatsJson`。
 - **副作用：** 读取设备、服务、网络和数据集存储。
@@ -159,7 +159,7 @@
 - **备注：** 为 API 兼容保留遗留顶层设备摘要字段。
 
 ### `static Future<Response> _handleNetworkList(Request request)` <a id="handlenetworklist"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 351 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 363 行。
 - **用途：** 返回富化赋值详情的保存网络。
 - **输入：** `request`（未用）。**返回：** `200` JSON，见 `buildNetworkListJson`。
 - **副作用：** 读取网络和设备存储（供赋值设备名）。
@@ -168,7 +168,7 @@
 - **备注：** 只读端点。
 
 ### `static Future<Response> _handleNetworkSearch(Request request)` <a id="handlenetworksearch"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 368 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 380 行。
 - **用途：** 搜索保存网络及其设备赋值。
 - **输入：** `request` — `?q=`。**返回：** `200` JSON 列表。
 - **副作用：** 读取网络和设备存储。
@@ -177,7 +177,7 @@
 - **备注：** 也搜索赋值主机/IP 数据，不只网络记录本身。
 
 ### `static Future<Response> _handleDatasetList(Request request)` <a id="handledatasetlist"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 395 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 407 行。
 - **用途：** 返回带链接设备存储详情的保存数据集。
 - **输入：** `request`（未用）。**返回：** `200` JSON，见 `buildDataSetListJson`。
 - **副作用：** 读取数据集和设备存储。
@@ -186,7 +186,7 @@
 - **备注：** 只读端点。
 
 ### `static Future<Response> _handleDatasetSearch(Request request)` <a id="handledatasetsearch"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 411 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 423 行。
 - **用途：** 搜索数据集及其链接设备存储槽。
 - **输入：** `request` — `?q=`。**返回：** `200` JSON 列表。
 - **副作用：** 读取数据集和设备存储。
@@ -195,7 +195,7 @@
 - **备注：** 无。
 
 ### `static Future<Response> _handleServiceList(Request request)` <a id="handleservicelist"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 433 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 445 行。
 - **用途：** 返回带可选简单过滤器的保存服务节点。
 - **输入：** `request` — 可选 `?deviceId=`、`?kind=`、`?state=`（序列化枚举名）。
 - **返回：** `200` JSON，见 `buildServiceListJson`。
@@ -205,7 +205,7 @@
 - **备注：** 适用时过滤值用序列化枚举名。
 
 ### `static Future<Response> _handleServiceSearch(Request request)` <a id="handleservicesearch"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 458 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 470 行。
 - **用途：** 按名、设备、端点、标签和备注搜索服务节点。
 - **输入：** `request` — `?q=`。**返回：** `200` JSON 列表。
 - **副作用：** 读取服务、设备和网络存储。
@@ -214,7 +214,7 @@
 - **备注：** 不扫描活端口或不检查运行中服务——仅手动清单。
 
 ### `static Future<Response> _handleServiceRoutes(Request request)` <a id="handleserviceroutes"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 486 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 498 行。
 - **用途：** 返回保存服务访问路由。
 - **输入：** `request`（未用）。**返回：** `200` JSON，见 `buildServiceRouteListJson`。
 - **副作用：** 读取服务和设备存储。
@@ -223,7 +223,7 @@
 - **备注：** 路由名可内部生成；按本仓库服务功能约定，调用方显示应偏好备注/最终目标。
 
 ### `static Future<Response> _handleServiceStats(Request request)` <a id="handleservicestats"></a>
-- **种类：** 静态方法（路由处理器）。**来源：** 第 503 行。
+- **种类：** 静态方法（路由处理器）。**来源：** 第 515 行。
 - **用途：** 返回服务特定摘要统计。
 - **输入：** `request`（未用）。**返回：** `200` JSON，见 `buildServiceStatsJson`。
 - **副作用：** 读取服务存储。
@@ -232,7 +232,7 @@
 - **备注：** 无。
 
 ### `static Map<String, dynamic> buildStatsJson({required List<Device> devices, ...})` <a id="buildstatsjson"></a>
-- **种类：** 静态方法。**来源：** 第 518 行。
+- **种类：** 静态方法。**来源：** 第 530 行。
 - **用途：** 构建跨模块 `/device/stats` 响应：设备总计/按类别计数/最近添加，加嵌入服务/网络/数据集摘要计数。
 - **输入：** `devices`、`services`、`routes`，加可选 `networks`/`datasets` 列表。
 - **返回：** `Map<String, dynamic>`。
@@ -242,25 +242,25 @@
 - **备注：** `total`、`byCategory`、`recentlyAdded` 和 `services` 为 API 兼容原因文档化为稳定字段名。
 
 ### `static Map<String, dynamic> deviceToJson(Device device)` <a id="devicetojson"></a>
-- **种类：** 静态方法。**来源：** 第 606 行。
+- **种类：** 静态方法。**来源：** 第 618 行。
 - **用途：** 把 `Device` 序列化进本地 API 公共响应形态。
 - **输入：** `device`。**返回：** `Map<String, dynamic>` — 身份/类别/CPU/GPU/RAM/存储/屏幕/位置/生命周期/财务字段加 `emoji`、`imagePath` 和 `templateImage`（手选缩略图，自动匹配时为 `null`）。
 - **副作用：** 无。
 - **算法：** 直接字段映射，含每个存储槽嵌套 `storageToJson` 和计算财务摘要字段。
 - **用法：** 被 `_handleList`/`_handleSearch`/`_handleAdd` 响应和 `buildNetworkListJson`/`buildDataSetListJson` 的设备名富化路径经 `_deviceNameMap` 间接调用。
-- **备注：** 保留遗留键，同时附加包含原始 API 契约后添加的生命周期/位置/图像/财务字段。
+- **备注：** 保留遗留键，同时附加包含原始 API 契约后添加的生命周期/位置/图像/财务字段，以及——自 1.8.2 起——`storageArrays`（每个阵列的 `StorageArray.toJson`：`id`、`name`、`level`、`memberIndices`）。
 
 ### `static Map<String, dynamic> storageToJson(StorageInfo storage)` <a id="storagetojson"></a>
-- **种类：** 静态方法。**来源：** 第 665 行。
+- **种类：** 静态方法。**来源：** 第 678 行。
 - **用途：** 为设备/数据集 API 响应序列化 `StorageInfo` 槽。
-- **输入：** `storage`。**返回：** `Map<String, dynamic>`（容量、类型、接口、品牌、序列号）。
+- **输入：** `storage`。**返回：** `Map<String, dynamic>`（容量、类型、接口、品牌、序列号，以及自 1.8.2 起的 `status`——`ok`/`failed`/`offline`，总是存在——和 `statusNote`）。
 - **副作用：** 无。
 - **算法：** 直接字段映射。
 - **用法：** 被 `deviceToJson` 为每个存储槽调用。
-- **备注：** 含原始契约后添加到 API 的品牌和序列号。
+- **备注：** 含原始契约后添加到 API 的品牌和序列号，以及 1.8.2 添加的硬盘健康字段。
 
 ### `static List<Device> filterDevicesForSearch({required List<Device> devices, required String query})` <a id="filterdevicesforsearch"></a>
-- **种类：** 静态方法。**来源：** 第 678 行。
+- **种类：** 静态方法。**来源：** 第 693 行。
 - **用途：** 设备清单字段不区分大小写文本搜索。
 - **输入：** `devices`、`query`。**返回：** 匹配设备，保留原始顺序。
 - **副作用：** 无。
@@ -269,7 +269,7 @@
 - **备注：** 只搜索清单字段；绝不执行在线查找。
 
 ### `static List<Map<String, dynamic>> buildNetworkListJson({required List<Network> networks, ...})` <a id="buildnetworklistjson"></a>
-- **种类：** 静态方法。**来源：** 第 720 行。
+- **种类：** 静态方法。**来源：** 第 735 行。
 - **用途：** 序列化网络，其设备赋值分组其下。
 - **输入：** `networks`、`assignments`、`devices`（供名解析）。
 - **返回：** `List<Map<String, dynamic>>`。
@@ -279,7 +279,7 @@
 - **备注：** 无。
 
 ### `static Map<String, dynamic> networkToJson(Network network, {List<NetworkDevice>? assignments, Map<String, String>? deviceNames})` <a id="networktojson"></a>
-- **种类：** 静态方法。**来源：** 第 744 行。
+- **种类：** 静态方法。**来源：** 第 759 行。
 - **用途：** 序列化一个 `Network`，可选包含其解析设备赋值。
 - **输入：** `network`；可选 `assignments`/`deviceNames`。
 - **返回：** `Map<String, dynamic>`。
@@ -289,7 +289,7 @@
 - **备注：** 无。
 
 ### `static List<Network> filterNetworksForSearch({required List<Network> networks, ...})` <a id="filternetworksforsearch"></a>
-- **种类：** 静态方法。**来源：** 第 777 行。
+- **种类：** 静态方法。**来源：** 第 792 行。
 - **用途：** 跨网络和赋值文本字段不区分大小写搜索。
 - **输入：** `networks`、`assignments`、`devices`、`query`。
 - **返回：** 匹配网络，保留原始顺序。
@@ -299,7 +299,7 @@
 - **备注：** 含设备名让调用方能搜"设备 X 在哪个网络"。
 
 ### `static List<Map<String, dynamic>> buildDataSetListJson({required List<DataSet> datasets, required List<Device> devices})` <a id="builddatasetlistjson"></a>
-- **种类：** 静态方法。**来源：** 第 816 行。
+- **种类：** 静态方法。**来源：** 第 831 行。
 - **用途：** 序列化带解析链接设备存储详情的数据集。
 - **输入：** `datasets`、`devices`。**返回：** `List<Map<String, dynamic>>`。
 - **副作用：** 无。
@@ -308,17 +308,17 @@
 - **备注：** 无。
 
 ### `static Map<String, dynamic> dataSetToJson(DataSet dataset, {List<Device>? devices})` <a id="datasettojson"></a>
-- **种类：** 静态方法。**来源：** 第 830 行。
+- **种类：** 静态方法。**来源：** 第 845 行。
 - **用途：** 序列化一个 `DataSet`，解析每个存储链接设备名和当前存储槽摘要。
 - **输入：** `dataset`；可选 `devices` 供解析。
 - **返回：** `Map<String, dynamic>`。
 - **副作用：** 无。
 - **算法：** 直接字段映射加每存储链接查找链接设备并经 `storageToJson` 等价显示字符串渲染其存储槽摘要。
 - **用法：** 被 `buildDataSetListJson` 调用。
-- **备注：** 存储链接在输出保留槽索引，因为数据集按索引链接存储（见 [数据集](../../../features/datasets.md)）。
+- **备注：** 存储链接在输出保留槽索引，因为数据集按索引链接存储（见 [数据集](../../../features/datasets.md)）；自 1.8.2 起每个链接还带有 `arrayIds`，即所链接 RAID 阵列的 id（见 `deviceToJson` 的 `storageArrays`）。
 
 ### `static List<DataSet> filterDataSetsForSearch({required List<DataSet> datasets, required List<Device> devices, required String query})` <a id="filterdatasetsforsearch"></a>
-- **种类：** 静态方法。**来源：** 第 866 行。
+- **种类：** 静态方法。**来源：** 第 882 行。
 - **用途：** 跨数据集、链接设备和链接存储文本不区分大小写搜索。
 - **输入：** `datasets`、`devices`、`query`。**返回：** 匹配数据集，原始顺序。
 - **副作用：** 无。
@@ -327,7 +327,7 @@
 - **备注：** 无。
 
 ### `static List<Map<String, dynamic>> buildServiceListJson({required List<ServiceNode> services, ...})` <a id="buildservicelistjson"></a>
-- **种类：** 静态方法。**来源：** 第 909 行。
+- **种类：** 静态方法。**来源：** 第 925 行。
 - **用途：** 为 API 响应序列化服务节点。
 - **输入：** `services`、`devices`、`networks`（供端点网络名解析）。
 - **返回：** `List<Map<String, dynamic>>`。
@@ -337,7 +337,7 @@
 - **备注：** 只暴露保存备注；绝不查询活服务状态。
 
 ### `static Map<String, dynamic> serviceToJson(ServiceNode service, {Map<String, String>? deviceNames, Map<String, String>? networkNames})` <a id="servicetojson"></a>
-- **种类：** 静态方法。**来源：** 第 934 行。
+- **种类：** 静态方法。**来源：** 第 950 行。
 - **用途：** 序列化一个 `ServiceNode`，含经 `_serviceEndpointToJson` 的端点。
 - **输入：** `service`；可选名映射供富化。
 - **返回：** `Map<String, dynamic>`。
@@ -347,7 +347,7 @@
 - **备注：** 端点端口范围同时暴露原始 `port` 值和格式化 `portText`。
 
 ### `static List<ServiceNode> filterServicesForList({required List<ServiceNode> services, String? deviceId, String? kind, String? state})` <a id="filterservicesforlist"></a>
-- **种类：** 静态方法。**来源：** 第 962 行。
+- **种类：** 静态方法。**来源：** 第 978 行。
 - **用途：** 应用 `/service/list` 端点可选简单相等过滤器。
 - **输入：** `services`；可选 `deviceId`/`kind`/`state`。
 - **返回：** 匹配服务，原始顺序。
@@ -357,7 +357,7 @@
 - **备注：** 空过滤字符串当作"无过滤"，非"匹配空"。
 
 ### `static List<ServiceNode> filterServicesForSearch({required List<ServiceNode> services, required List<Device> devices, required List<Network> networks, required String query})` <a id="filterservicesforsearch"></a>
-- **种类：** 静态方法。**来源：** 第 984 行。
+- **种类：** 静态方法。**来源：** 第 1000 行。
 - **用途：** 服务元数据、端点和链接名不区分大小写自由文本搜索。
 - **输入：** `services`、`devices`、`networks`、`query`。**返回：** 匹配服务，原始顺序。
 - **副作用：** 无。
@@ -366,7 +366,7 @@
 - **备注：** 只搜索保存元数据和链接名——绝不活端口/进程状态。
 
 ### `static List<Map<String, dynamic>> buildServiceRouteListJson({required List<ServiceRoute> routes, required List<ServiceNode> services, required List<Device> devices})` <a id="buildserviceroutelistjson"></a>
-- **种类：** 静态方法。**来源：** 第 1033 行。
+- **种类：** 静态方法。**来源：** 第 1049 行。
 - **用途：** 为 API 响应序列化服务访问路由。
 - **输入：** `routes`、`services`、`devices`。**返回：** `List<Map<String, dynamic>>`。
 - **副作用：** 无。
@@ -375,7 +375,7 @@
 - **备注：** 无。
 
 ### `static Map<String, dynamic> serviceRouteToJson(ServiceRoute route, {Map<String, ServiceNode>? servicesById, Map<String, String>? deviceNames})` <a id="serviceroutetojson"></a>
-- **种类：** 静态方法。**来源：** 第 1056 行。
+- **种类：** 静态方法。**来源：** 第 1072 行。
 - **用途：** 序列化一个 `ServiceRoute`，含解析源服务/端点、跳（经 `_serviceRouteHopToJson`）和分组公共目标（经 `_publicTargets`）。
 - **输入：** `route`；可选查找映射。
 - **返回：** `Map<String, dynamic>`。
@@ -385,7 +385,7 @@
 - **备注：** 即使 `extraJson.publicTargets` 持有额外分组目标，`finalUrl` 也为 API 兼容保持第一目标（见 [服务与拓扑](../../../features/services-topology.md)）。
 
 ### `static Map<String, dynamic> buildServiceStatsJson({required List<ServiceNode> services, required List<ServiceRoute> routes})` <a id="buildservicestatsjson"></a>
-- **种类：** 静态方法。**来源：** 第 1094 行。
+- **种类：** 静态方法。**来源：** 第 1110 行。
 - **用途：** 构建 `/service/stats` 响应：服务/路由总计和按 kind/按 state 细分。
 - **输入：** `services`、`routes`。**返回：** `Map<String, dynamic>`。
 - **副作用：** 无。
@@ -394,7 +394,7 @@
 - **备注：** 镜像 `/device/stats` 中嵌入的服务部分，作为独立端点。
 
 ### `static Map<String, dynamic> _serviceEndpointToJson(ServiceEndpoint endpoint, Map<String, String>? networkNames)` <a id="serviceendpointtojson"></a>
-- **种类：** 静态方法。**来源：** 第 1129 行。
+- **种类：** 静态方法。**来源：** 第 1145 行。
 - **用途：** 可能时把端点网络 id 解析为显示名序列化 `ServiceEndpoint`。
 - **输入：** `endpoint`、`networkNames`。**返回：** `Map<String, dynamic>`。
 - **副作用：** 无。
@@ -403,7 +403,7 @@
 - **备注：** 服务响应和路由响应都用的内部辅助。
 
 ### `static Map<String, dynamic> _serviceRouteHopToJson(ServiceRouteHop hop, Map<String, ServiceNode>? servicesById, Map<String, String>? deviceNames)` <a id="serviceroutehoptojson"></a>
-- **种类：** 静态方法。**来源：** 第 1154 行。
+- **种类：** 静态方法。**来源：** 第 1170 行。
 - **用途：** 序列化 `ServiceRouteHop`，可能时解析其引用服务/设备名同时保留自由形式字段。
 - **输入：** `hop`；可选查找映射。**返回：** `Map<String, dynamic>`。
 - **副作用：** 无。
@@ -412,7 +412,7 @@
 - **备注：** 即使无服务/设备引用解析也保持自由形式跳字段（scheme/主机/端口/路径）完好。
 
 ### `static List<String> _publicTargets(ServiceRoute route)` <a id="publictargets"></a>
-- **种类：** 静态方法。**来源：** 第 1183 行。
+- **种类：** 静态方法。**来源：** 第 1199 行。
 - **用途：** 读取路由 `extraJson.publicTargets` 存储的分组公共目标。
 - **输入：** `route`。**返回：** `List<String>`。
 - **副作用：** 无。
@@ -421,7 +421,7 @@
 - **备注：** 静默忽略意外条目形态而非抛，支持向前兼容 JSON。
 
 ### `static Map<String, String> _deviceNameMap(List<Device> devices)` <a id="devicenamemap"></a>
-- **种类：** 静态方法。**来源：** 第 1194 行。
+- **种类：** 静态方法。**来源：** 第 1210 行。
 - **用途：** 为设备交叉引用构建 id 到名查找。
 - **输入：** `devices`。**返回：** `Map<String, String>`。
 - **副作用：** 无。
@@ -430,7 +430,7 @@
 - **备注：** 无。
 
 ### `static Map<String, int> _countBy<T>(Iterable<T> values, String Function(T) keyOf)` <a id="countby"></a>
-- **种类：** 静态泛型方法。**来源：** 第 1203 行。
+- **种类：** 静态泛型方法。**来源：** 第 1219 行。
 - **用途：** 按调用方提供键函数分组计数元素。
 - **输入：** `values`、`keyOf`。**返回：** `Map<String, int>`。
 - **副作用：** 无。
@@ -439,7 +439,7 @@
 - **备注：** 泛型——任何分组键可复用，不绑定特定枚举。
 
 ### `static bool _containsText(Iterable<Object?> values, String lowerQuery)` <a id="containstext"></a>
-- **种类：** 静态方法。**来源：** 第 1220 行。
+- **种类：** 静态方法。**来源：** 第 1236 行。
 - **用途：** 测试多个值中是否有任何含小写查询子串。
 - **输入：** `values`（容忍可空条目）、`lowerQuery`（已小写）。
 - **返回：** `bool`。
@@ -449,7 +449,7 @@
 - **备注：** 跳过 null 而非抛；调用方每次搜索一次传预小写查询，而非逐候选。
 
 ### `static int? _intValue(Object? value)` <a id="intvalue"></a>
-- **种类：** 静态方法。**来源：** 第 1232 行。
+- **种类：** 静态方法。**来源：** 第 1248 行。
 - **用途：** 从可能已是 `int`、数字字符串或其他东西的 JSON 解码输入容忍解析 `int`。
 - **输入：** `value`。**返回：** `int?` — 不可解析 `null`。
 - **副作用：** 无。
@@ -458,7 +458,7 @@
 - **备注：** 容忍数字字符串，使最小/松散类型 API 客户端不被拒绝。
 
 ### `static double? _doubleValue(Object? value)` <a id="doublevalue"></a>
-- **种类：** 静态方法。**来源：** 第 1244 行。
+- **种类：** 静态方法。**来源：** 第 1260 行。
 - **用途：** 从 JSON 解码输入容忍解析 `double`。
 - **输入：** `value`。**返回：** `double?`。
 - **副作用：** 无。
@@ -467,7 +467,7 @@
 - **备注：** 经共享 `num` 检查接受 `int` 和 `double` JSON 数字编码两者。
 
 ### `static DateTime? _dateValue(Object? value)` <a id="datevalue"></a>
-- **种类：** 静态方法。**来源：** 第 1255 行。
+- **种类：** 静态方法。**来源：** 第 1271 行。
 - **用途：** 从 JSON 字符串容忍解析 `DateTime`。
 - **输入：** `value`。**返回：** `DateTime?` — 非字符串、空字符串或不可解析字符串 `null`。
 - **副作用：** 无。
@@ -476,7 +476,7 @@
 - **备注：** 无效字符串被忽略（非错误），为与最小添加请求兼容。
 
 ### `static MoneyValue? _moneyValueFromJson(Object? value)` <a id="moneyvaluefromjson"></a>
-- **种类：** 静态方法。**来源：** 第 1265 行。
+- **种类：** 静态方法。**来源：** 第 1281 行。
 - **用途：** 从 JSON 映射解析可选 `MoneyValue`（金额 + 货币）。
 - **输入：** `value`。**返回：** `MoneyValue?` — `value` 不是 `Map<String, dynamic>` 或所需子字段格式错误时 `null`。
 - **副作用：** 无。
@@ -485,7 +485,7 @@
 - **备注：** 格式错误货币映射被忽略而非拒绝整个添加请求。
 
 ### `static DeviceRecurringCost? _recurringCostFromJson(Object? value)` <a id="recurringcostfromjson"></a>
-- **种类：** 静态方法。**来源：** 第 1279 行。
+- **种类：** 静态方法。**来源：** 第 1295 行。
 - **用途：** 从 JSON 映射解析可选 `DeviceRecurringCost` 条目。
 - **输入：** `value`。**返回：** `DeviceRecurringCost?` — 错误形态 `null`。
 - **副作用：** 无。
@@ -494,7 +494,7 @@
 - **备注：** 格式错误条目单独跳过（经调用方 `whereType` 过滤）而非拒绝整个列表。
 
 ### `static Future<Map<String, dynamic>?> _parseBody(Request request)` <a id="parsebody"></a>
-- **种类：** 静态方法。**来源：** 第 1314 行。
+- **种类：** 静态方法。**来源：** 第 1330 行。
 - **用途：** 读取并 JSON 解码请求体，容忍格式错误输入。
 - **输入：** `request`。**返回：** `Future<Map<String, dynamic>?>` — 任何解码失败或非对象体 `null`。
 - **副作用：** 读取请求体流。
@@ -530,7 +530,7 @@
 - **备注：** 取代此前的通配符 `Access-Control-Allow-Origin: *`（以及 `_corsHeaders` 常量）。
 
 ### `static Middleware _authMiddleware()` <a id="authmiddleware"></a>
-- **种类：** 静态方法。**来源：** 第 1357 行。
+- **种类：** 静态方法。**来源：** 第 1416 行。
 - **用途：** 执行 API 访问规则：回环默认受信，但一旦配置凭据，每个请求（含回环）必须呈现有效 Basic Auth。
 - **输入：** 无。**返回：** `Middleware`。
 - **副作用：** 从 `request.context` 读取连接远程地址。
@@ -539,7 +539,7 @@
 - **备注：** 与 MyAnime 的 `LocalApiServer._authMiddleware` 相同安全规则和理由——完整引用推理见那个页面备注。
 
 ### `static bool _validateBasicAuth(String header)` <a id="validatebasicauth"></a>
-- **种类：** 静态方法。**来源：** 第 1399 行。
+- **种类：** 静态方法。**来源：** 第 1458 行。
 - **用途：** 对照配置凭据验证 `Authorization: Basic <base64>` 页头。
 - **输入：** `header`。**返回：** `bool`。
 - **副作用：** 无。
@@ -548,7 +548,7 @@
 - **备注：** 对照明文存储凭据的普通相等检查。
 
 ### `static Middleware _errorMiddleware()` <a id="errormiddleware"></a>
-- **种类：** 静态方法。**来源：** 第 1416 行。
+- **种类：** 静态方法。**来源：** 第 1476 行。
 - **用途：** 捕获任何未处理路由处理器异常并返回干净 JSON `500` 而非未处理崩溃。
 - **输入：** 无。**返回：** `Middleware`。
 - **副作用：** 除包裹处理器外无。

@@ -1,7 +1,8 @@
 # lib/features/datasets/models/dataset.dart
 
 Model source for [Datasets](../../../../features/datasets.md). Defines `DataSetStorageLink` (a
-reference from a dataset to one or more storage slots on a specific device, by positional index),
+reference from a dataset to one or more storage slots on a specific device, by positional index,
+and — since 1.8.2 — to RAID arrays of that device, by `StorageArray.id`),
 `DataSet` (a named collection of such links, spanning one or more devices), and the top-level
 `DataSetData` container persisted by
 [`../services/dataset_storage.md`](../services/dataset_storage.md). Every model here follows the
@@ -22,6 +23,7 @@ for the exhaustive persisted-field reference.
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
 | [`DataSetStorageLink`](#datasetstoragelink-new) | constructor | A | Create a data set storage link instance. |
+| [`isEmpty`](#datasetstoragelink-isempty) | getter (`DataSetStorageLink`) | A | Whether the link lists no slot and no array. |
 | [`toJson`](#datasetstoragelink-tojson) | method (`DataSetStorageLink`) | A | Serialize this value into a JSON-compatible map. |
 | [`DataSetStorageLink.fromJson`](#datasetstoragelink-fromjson) | factory constructor | A | Parse a `DataSetStorageLink` from JSON. |
 | [`mergeUnknownFieldsFrom`](#datasetstoragelink-mergeunknownfieldsfrom) | method (`DataSetStorageLink`) | A | Three-way merge unknown JSON fields from another `DataSetStorageLink`. |
@@ -34,15 +36,16 @@ for the exhaustive persisted-field reference.
 | [`toJson`](#datasetdata-tojson) | method (`DataSetData`) | A | Serialize this value into a JSON-compatible map. |
 | [`DataSetData.fromJson`](#datasetdata-fromjson) | factory constructor | A | Parse a `DataSetData` from JSON. |
 
-Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
+Row count (13) matches `grep -c 'Purpose:' dataset.dart` (13) exactly.
 
 ## Documentation
 
-### `const DataSetStorageLink({required this.deviceId, this.storageIndices = const [], this.extraJson = const {}})` <a id="datasetstoragelink-new"></a>
+### `const DataSetStorageLink({required this.deviceId, this.storageIndices = const [], this.arrayIds = const [], this.extraJson = const {}})` <a id="datasetstoragelink-new"></a>
 - **Kind:** constructor of `DataSetStorageLink`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 22).
-- **Purpose:** Hold a reference from a dataset to one device's storage slots, by positional index.
-- **Inputs:** `deviceId` required; `storageIndices` defaults to `[]`.
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 26).
+- **Purpose:** Hold a reference from a dataset to one device's storage slots (by positional index)
+  and RAID arrays (by id).
+- **Inputs:** `deviceId` required; `storageIndices` and `arrayIds` default to `[]`.
 - **Returns:** A new `DataSetStorageLink`.
 - **Side effects:** None.
 - **Algorithm:** Trivial field assignment with defaults.
@@ -50,49 +53,71 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
   ```dart
   DataSetStorageLink(
     deviceId: entry.key,
-    storageIndices: entry.value.toList()..sort(),
+    storageIndices: [
+      for (final k in entry.value)
+        if (int.tryParse(k) != null) int.parse(k),
+    ]..sort(),
+    arrayIds: [
+      for (final k in entry.value)
+        if (k.startsWith('a:')) k.substring(2),
+    ]..sort(),
     extraJson: existingLinks[entry.key]?.extraJson ?? const {},
-  ),
+  );
   ```
-  (from [`dataset_edit_page.md`](../views/dataset_edit_page.md)'s `_save`, one per device with at
-  least one selected storage slot)
+  (from [`dataset_edit_page.md`](../views/dataset_edit_page.md)'s `_save`, one per device; the
+  selection is keyed by place key, and a link that ends up [`isEmpty`](#datasetstoragelink-isempty)
+  is dropped)
 - **Notes:** `storageIndices` are plain positions into the referenced device's
   `storage: List<StorageInfo>`, not stable slot identifiers — see the file overview above and
   [`remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) for how the
-  app keeps them valid across storage-list edits.
+  app keeps them valid across storage-list edits. Every slot and every array is one full copy.
+  `arrayIds` are stable ids, so they survive slot reordering.
+
+### `bool get isEmpty` <a id="datasetstoragelink-isempty"></a>
+- **Kind:** getter of `DataSetStorageLink`.
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 38).
+- **Purpose:** Tell whether the link points at nothing.
+- **Inputs:** None.
+- **Returns:** `true` when both `storageIndices` and `arrayIds` are empty.
+- **Side effects:** None.
+- **Algorithm:** `storageIndices.isEmpty && arrayIds.isEmpty`.
+- **Usage:** `_save` in [`dataset_edit_page.md`](../views/dataset_edit_page.md) and the import path in [`import_export_service.md`](../../../shared/services/import_export_service.md), which skip empty links.
+- **Notes:** None.
 
 ### `Map<String, dynamic> toJson()` <a id="datasetstoragelink-tojson"></a>
 - **Kind:** method of `DataSetStorageLink`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 33).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 45).
 - **Purpose:** Serialize this storage link into the JSON persisted inside a dataset's
   `storageLinks` array.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>` with `deviceId` and `storageIndices` (a raw `List<int>`,
-  always included even if empty).
+  always included even if empty), plus `arrayIds` when non-empty.
 - **Side effects:** None.
-- **Algorithm:** `{...extraJson, 'deviceId': deviceId, 'storageIndices': storageIndices}`.
+- **Algorithm:** `{...extraJson, 'deviceId': deviceId, 'storageIndices': storageIndices,
+  if (arrayIds.isNotEmpty) 'arrayIds': arrayIds}`.
 - **Usage:** Called by [`DataSet.toJson`](#dataset-tojson) for each entry of `storageLinks`, and by
   [`mergeUnknownFieldsFrom`](#datasetstoragelink-mergeunknownfieldsfrom).
 - **Notes:** Unlike most other `toJson`s in this app, `storageIndices` is written unconditionally
-  even when empty — there is no `if (storageIndices.isNotEmpty)` guard.
+  even when empty — there is no `if (storageIndices.isNotEmpty)` guard. `arrayIds` (1.8.2) is
+  guarded, so a link without arrays writes the same JSON as before.
 
 ### `factory DataSetStorageLink.fromJson(Map<String, dynamic> json)` <a id="datasetstoragelink-fromjson"></a>
 - **Kind:** factory constructor of `DataSetStorageLink`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 44).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 57).
 - **Purpose:** Parse a `DataSetStorageLink` from JSON.
 - **Inputs:** `json`.
 - **Returns:** A new `DataSetStorageLink`; `extraJson` holds every key not in
   `_dataSetStorageLinkJsonKeys`.
 - **Side effects:** None.
-- **Algorithm:** `deviceId` required; `storageIndices` maps a `List<dynamic>` to `List<int>` or
-  defaults to `[]` if absent.
+- **Algorithm:** `deviceId` required; `storageIndices` maps a `List<dynamic>` to `List<int>` and
+  `arrayIds` to `List<String>`, each defaulting to `[]` if absent.
 - **Usage:** Called by [`DataSet.fromJson`](#dataset-fromjson) for each entry of
   `json['storageLinks']`.
 - **Notes:** None.
 
 ### `DataSetStorageLink mergeUnknownFieldsFrom(DataSetStorageLink other, {DataSetStorageLink? base})` <a id="datasetstoragelink-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `DataSetStorageLink`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 60).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 78).
 - **Purpose:** Three-way merge this link's unknown JSON fields with another's.
 - **Inputs:** `other`; optional `base`.
 - **Returns:** A new `DataSetStorageLink` with merged `extraJson`.
@@ -102,12 +127,12 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
   [`mergeUnknownJsonFields`](../../../shared/utils/json_preservation.md)).
 - **Usage:** Called by [`DataSet.mergeUnknownFieldsFrom`](#dataset-mergeunknownfieldsfrom), once per
   index-aligned pair of `storageLinks` entries.
-- **Notes:** Only `extraJson` is merged; the known fields (`deviceId`, `storageIndices`) still come
+- **Notes:** Only `extraJson` is merged; the known fields (`deviceId`, `storageIndices`, `arrayIds`) still come
   from `this`.
 
 ### `DataSet({String? id, required this.name, required this.emoji, this.storageLinks = const [], DateTime? modifiedAt, this.extraJson = const {}})` <a id="dataset-new"></a>
 - **Kind:** constructor of `DataSet`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 89).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 107).
 - **Purpose:** Create a named dataset spanning zero or more device storage slots, generating a
   fresh UUID `id` and UTC `modifiedAt` when neither is supplied.
 - **Inputs:** `name`, `emoji` required; `storageLinks` defaults to `[]`; `id`/`modifiedAt`
@@ -131,7 +156,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `DataSet copyWith({String? name, String? emoji, List<DataSetStorageLink>? storageLinks, DateTime? modifiedAt})` <a id="copywith"></a>
 - **Kind:** method of `DataSet`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 104).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 122).
 - **Purpose:** Create a copy of this dataset with selected fields replaced.
 - **Inputs:** Any field to override; there is no explicit-clear flag for any field (unlike
   `Network.copyWith`) since every `DataSet` field is either required or has a non-null default.
@@ -147,7 +172,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `Map<String, dynamic> toJson()` <a id="dataset-tojson"></a>
 - **Kind:** method of `DataSet`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 125).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 143).
 - **Purpose:** Serialize this dataset into the JSON persisted inside `dataset_data.json`'s
   `datasets` array.
 - **Inputs:** None.
@@ -163,7 +188,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `factory DataSet.fromJson(Map<String, dynamic> json)` <a id="dataset-fromjson"></a>
 - **Kind:** factory constructor of `DataSet`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 140).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 158).
 - **Purpose:** Parse a `DataSet` from JSON.
 - **Inputs:** `json`.
 - **Returns:** A new `DataSet`; `extraJson` holds every key not in `_dataSetJsonKeys`.
@@ -179,7 +204,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `DataSet mergeUnknownFieldsFrom(DataSet other, {DataSet? base})` <a id="dataset-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `DataSet`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 158).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 176).
 - **Purpose:** Three-way merge this dataset's unknown JSON fields with another's, including each
   index-aligned pair of nested `storageLinks`' own unknown fields.
 - **Inputs:** `other` — the other side; optional `base` — the last-synced snapshot.
@@ -203,7 +228,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `const DataSetData({this.datasets = const [], this.extraJson = const {}})` <a id="datasetdata-new"></a>
 - **Kind:** constructor of `DataSetData`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 198).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 216).
 - **Purpose:** Hold the full persisted dataset list.
 - **Inputs:** `datasets` defaults to `[]`.
 - **Returns:** A new `DataSetData`.
@@ -218,7 +243,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `Map<String, dynamic> toJson()` <a id="datasetdata-tojson"></a>
 - **Kind:** method of `DataSetData`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 205).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 223).
 - **Purpose:** Serialize the full dataset list into the JSON written to `dataset_data.json`.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>` with a `datasets` array.
@@ -229,7 +254,7 @@ Row count (12) matches `grep -c 'Purpose:' dataset.dart` (12) exactly.
 
 ### `factory DataSetData.fromJson(Map<String, dynamic> json)` <a id="datasetdata-fromjson"></a>
 - **Kind:** factory constructor of `DataSetData`.
-- **Source:** `lib/features/datasets/models/dataset.dart` (line 215).
+- **Source:** `lib/features/datasets/models/dataset.dart` (line 233).
 - **Purpose:** Parse a `DataSetData` from the JSON stored in `dataset_data.json`.
 - **Inputs:** `json`.
 - **Returns:** A new `DataSetData`; `datasets` defaults to `[]` if the key is absent.

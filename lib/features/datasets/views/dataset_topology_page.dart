@@ -9,11 +9,13 @@ import '../../../shared/utils/detail_layout.dart';
 import '../../../shared/widgets/topology_canvas_viewer.dart';
 import '../../devices/models/device.dart';
 import '../../devices/widgets/device_category_icon.dart';
+import '../../devices/widgets/storage_health_label.dart';
 import '../../services/views/service_topology_widgets.dart'
     show topologyDimmedEdgeAlpha, topologyDimmedNodeOpacity;
 import '../models/dataset.dart';
 import '../services/dataset_placement.dart';
 import '../services/dataset_topology.dart';
+import 'dataset_copy_summary.dart';
 
 /// The data sets and devices the topology draws; what `reload` returns.
 typedef DataSetTopologyInventory = ({
@@ -592,6 +594,10 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
                     box(cs.errorContainer, cs.error, 8),
                     l10n.dataSetSingleCopy,
                   ),
+                  entry(
+                    Icon(Icons.error_outline, size: 16, color: cs.error),
+                    l10n.dataSetTopologyLegendUnavailable,
+                  ),
                 ],
               ),
             ),
@@ -610,9 +616,8 @@ class _DataSetTopologyPageState extends State<DataSetTopologyPage> {
 String _nodeLabel(DataSetTopologyNode node, AppLocalizations l10n) =>
     switch (node.kind) {
       DataSetTopologyNodeKind.device => node.device.name,
-      DataSetTopologyNodeKind.storage => storageSlotLabel(
-        node.device,
-        node.storageIndex!,
+      DataSetTopologyNodeKind.storage => placeLabel(
+        node.place!,
         l10n.dataSetStorageFallback,
       ),
       DataSetTopologyNodeKind.copy =>
@@ -726,8 +731,13 @@ class _DataSetTopologyBox extends StatelessWidget {
   /// Side effects: None.
   /// Notes: Device and storage boxes take taps only on their header strip,
   /// so a tap on a copy inside always reaches the copy. A copy of a data
-  /// set with a single copy uses the error colours. Screen readers hear the
-  /// label, the kind and, for a copy, the copy count.
+  /// set with at most one usable copy uses the error colours. A storage box
+  /// for a RAID array shows a layers icon; a failed, offline or lost place
+  /// has an error border and icon (a degraded array keeps its border but
+  /// shows the icon), and the copies on an unavailable place are struck
+  /// through. The copy badge reads `×total`, or `×usable/total` when some
+  /// copies are unavailable. Screen readers hear the label, the kind and,
+  /// for a storage, its health; for a copy, the copy summary.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -753,16 +763,39 @@ class _DataSetTopologyBox extends StatelessWidget {
           ),
         );
       case DataSetTopologyNodeKind.storage:
-        kind = l10n.dataSetTopologyLegendStorage;
+        final place = node.place!;
+        final health = place.health;
+        kind = [
+          l10n.dataSetTopologyLegendStorage,
+          if (health == PlaceHealth.degraded) l10n.storageArrayDegraded,
+          if (health == PlaceHealth.unavailable)
+            place.isArray
+                ? l10n.storageArrayUnavailable
+                : storageHealthLabel(
+                    l10n,
+                    place.device.storage[place.storageIndex!].status,
+                  ),
+        ].join(', ');
         child = _frame(
           cs.surfaceContainerHighest,
           BorderSide(
-            color: selected ? cs.primary : cs.outlineVariant,
+            color: selected
+                ? cs.primary
+                : health == PlaceHealth.unavailable
+                ? cs.error
+                : cs.outlineVariant,
             width: width,
           ),
           8,
           DataSetTopologyLayout.storageHeader,
-          const Icon(Icons.storage, size: 16),
+          health == PlaceHealth.ok
+              ? Icon(place.isArray ? Icons.layers : Icons.storage, size: 16)
+              : Icon(
+                  Icons.error_outline,
+                  key: ValueKey('dataset-topology-unhealthy-${node.id}'),
+                  size: 16,
+                  color: cs.error,
+                ),
           Text(
             label,
             maxLines: 1,
@@ -771,13 +804,23 @@ class _DataSetTopologyBox extends StatelessWidget {
           ),
         );
       case DataSetTopologyNodeKind.copy:
-        kind = l10n.dataSetCopies(node.copyCount);
-        final single = node.copyCount <= 1;
-        final accent = single
+        final summary = dataSetCopySummary(
+          l10n,
+          total: node.copyCount,
+          available: node.availableCount,
+        );
+        final lost = node.place!.health == PlaceHealth.unavailable;
+        kind = lost
+            ? '${summary.text}, ${l10n.dataSetTopologyLegendUnavailable}'
+            : summary.text;
+        final single = summary.warn;
+        final accent = single || lost
             ? cs.error
             : dataSetTopologyColor(cs, node.dataSet!.id);
         child = Material(
-          color: single
+          color: lost
+              ? cs.surfaceContainerHighest
+              : single
               ? cs.errorContainer
               : Color.alphaBlend(accent.withValues(alpha: 0.16), cs.surface),
           shape: RoundedRectangleBorder(
@@ -796,11 +839,18 @@ class _DataSetTopologyBox extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: text.labelLarge,
+                      style: lost
+                          ? text.labelLarge?.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                              color: cs.onSurfaceVariant,
+                            )
+                          : text.labelLarge,
                     ),
                   ),
                   Text(
-                    '×${node.copyCount}',
+                    node.availableCount == node.copyCount
+                        ? '×${node.copyCount}'
+                        : '×${node.availableCount}/${node.copyCount}',
                     style: text.labelSmall?.copyWith(
                       color: accent,
                       fontWeight: FontWeight.bold,
@@ -996,7 +1046,7 @@ class _DataSetTopologyDetails extends StatelessWidget {
   /// Notes: The header names the box; then one card per data set on it —
   /// just the one for a copy — listing every copy as "device – storage",
   /// with an edit button keyed `dataset-topology-edit-<id>`. Copies on the
-  /// selected device or storage are marked with a check.
+  /// selected device or storage are marked with a check; copies on an unavailable place get an error icon and are struck through.
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -1007,8 +1057,7 @@ class _DataSetTopologyDetails extends StatelessWidget {
           (r) => switch (node.kind) {
             DataSetTopologyNodeKind.copy => ds.id == node.dataSet!.id,
             DataSetTopologyNodeKind.storage =>
-              r.device.id == node.device.id &&
-                  r.storageIndex == node.storageIndex,
+              r.device.id == node.device.id && r.place.key == node.place!.key,
             DataSetTopologyNodeKind.device => r.device.id == node.device.id,
           },
         ))
@@ -1025,7 +1074,9 @@ class _DataSetTopologyDetails extends StatelessWidget {
               DataSetTopologyNodeKind.device => Icon(
                 deviceCategoryIcon(node.device.category),
               ),
-              DataSetTopologyNodeKind.storage => const Icon(Icons.storage),
+              DataSetTopologyNodeKind.storage => Icon(
+                node.place!.isArray ? Icons.layers : Icons.storage,
+              ),
               DataSetTopologyNodeKind.copy => Text(node.dataSet!.emoji),
             },
           ),
@@ -1038,8 +1089,28 @@ class _DataSetTopologyDetails extends StatelessWidget {
               l10n,
               node.device.category,
             ),
-            DataSetTopologyNodeKind.storage => node.device.name,
-            DataSetTopologyNodeKind.copy => l10n.dataSetCopies(node.copyCount),
+            DataSetTopologyNodeKind.storage => [
+              node.device.name,
+              if (node.place!.isArray)
+                l10n.storageArraySummary(
+                  node.place!.array!.level.displayName,
+                  node.place!.memberIndices.length,
+                ),
+              if (node.place!.health == PlaceHealth.degraded)
+                l10n.storageArrayDegraded,
+              if (node.place!.health == PlaceHealth.unavailable)
+                node.place!.isArray
+                    ? l10n.storageArrayUnavailable
+                    : storageHealthLabel(
+                        l10n,
+                        node.device.storage[node.storageIndex!].status,
+                      ),
+            ].join(' · '),
+            DataSetTopologyNodeKind.copy => dataSetCopySummary(
+              l10n,
+              total: node.copyCount,
+              available: node.availableCount,
+            ).text,
           }),
           trailing: onClose == null
               ? null
@@ -1077,7 +1148,7 @@ class _DataSetTopologyDetails extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     final replicas = resolveReplicas(ds, devices);
-    final single = replicas.length <= 1;
+    final summary = dataSetReplicaSummary(l10n, replicas);
     return Card(
       key: ValueKey('dataset-topology-card-${ds.id}'),
       margin: const EdgeInsets.only(top: 8),
@@ -1102,11 +1173,11 @@ class _DataSetTopologyDetails extends StatelessWidget {
               ],
             ),
             Text(
-              single
-                  ? l10n.dataSetSingleCopy
-                  : '${l10n.dataSetTopologyCopiesTitle} · ${l10n.dataSetCopies(replicas.length)}',
+              summary.warn
+                  ? summary.text
+                  : '${l10n.dataSetTopologyCopiesTitle} · ${summary.text}',
               style: theme.textTheme.labelMedium?.copyWith(
-                color: single
+                color: summary.warn
                     ? theme.colorScheme.error
                     : theme.colorScheme.onSurfaceVariant,
               ),
@@ -1117,17 +1188,28 @@ class _DataSetTopologyDetails extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      _isHere(r) ? Icons.check_circle : Icons.circle_outlined,
+                      !r.isAvailable
+                          ? Icons.error_outline
+                          : _isHere(r)
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
                       size: 16,
-                      color: _isHere(r)
+                      color: !r.isAvailable
+                          ? theme.colorScheme.error
+                          : _isHere(r)
                           ? theme.colorScheme.primary
                           : theme.colorScheme.outline,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${r.device.name} – ${storageSlotLabel(r.device, r.storageIndex, l10n.dataSetStorageFallback)}',
-                        style: theme.textTheme.bodySmall,
+                        '${r.device.name} – ${placeLabel(r.place, l10n.dataSetStorageFallback)}',
+                        style: r.isAvailable
+                            ? theme.textTheme.bodySmall
+                            : theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                                decoration: TextDecoration.lineThrough,
+                              ),
                       ),
                     ),
                   ],
@@ -1146,6 +1228,6 @@ class _DataSetTopologyDetails extends StatelessWidget {
   /// Notes: Internal helper of [_buildDataSetCard].
   bool _isHere(DataSetReplica r) => switch (node.kind) {
     DataSetTopologyNodeKind.device => r.device.id == node.device.id,
-    _ => r.device.id == node.device.id && r.storageIndex == node.storageIndex,
+    _ => r.device.id == node.device.id && r.place.key == node.place!.key,
   };
 }

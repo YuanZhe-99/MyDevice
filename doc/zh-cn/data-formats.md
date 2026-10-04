@@ -12,7 +12,8 @@
 - **类别：** `category`（`DeviceCategory`：`desktop`、`laptop`、`phone`、`tablet`、`headphone`、`watch`、`router`、`gameConsole`、`vps`、`devBoard`、`other`）、`emoji`、`imagePath`、`templateImage`、`brand`、`model`、`serialNumber`。`templateImage`（自 1.6.1 起，可选，为 null 时省略）是用户手选的内置缩略图，写法与模板的 `image` 完全相同（`assets/device_images/<file>.png`）。旧版构建经 `extraJson` 保留它，并回退到自动匹配。
 - **CPU/GPU：** `cpu`（`CpuInfo`：`model`、`architecture`、`frequency`、`performanceCores`、`efficiencyCores`、`threads`、`cache`，加 `extraJson`）、`gpu`（`GpuInfo`：`model`、`architecture`，加 `extraJson`）。
 - **RAM：** `ram`（自由文本大小字符串）、`ramType`（`RamType`：`ddr3`、`lpddr3`、`ddr4`、`lpddr4`、`lpddr4x`、`ddr5`、`lpddr5`、`lpddr5x`、`lpddr6`，各带 `'LPDDR5X'` 风格的 `displayName` getter）。
-- **存储：** `storage`（`List<StorageInfo>`；每个 `StorageInfo` 有 `capacity`、`type`（`StorageType`：`ssd`、`sdCard`、`hdd`）、`interface_`（`StorageInterface`：`m2Nvme`、`sata25`、`m2Sata`、`usb`）、`serialNumber`、`brand`，加 `extraJson`）。`StorageInfo.fromJson` 为向后兼容也接受遗留普通字符串格式（如 `"512 GB"`）。
+- **存储：** `storage`（`List<StorageInfo>`；每个 `StorageInfo` 有 `capacity`、`type`（`StorageType`：`ssd`、`sdCard`、`hdd`）、`interface_`（`StorageInterface`：`m2Nvme`、`sata25`、`m2Sata`、`usb`）、`serialNumber`、`brand`、`status`（`StorageHealth`：`ok`、`failed`、`offline`；自 1.8.2 起，仅在不为 `ok` 时写入）、`statusNote`（自 1.8.2 起），加 `extraJson`）。`StorageInfo.fromJson` 为向后兼容也接受遗留普通字符串格式（如 `"512 GB"`）；它不认识的 `status` 值读作 `ok` 并保留在 `extraJson` 中，因此较新构建写入的值在保存后依然存在。
+- **RAID 阵列**（自 1.8.2 起）：`storageArrays`（`List<StorageArray>`，为空时省略）；每个有 `id`（UUID，稳定——数据集链接到它）、`name`（为空时省略）、`level`（`RaidLevel`：`raid0`、`raid1`、`raid5`、`raid6`、`raid10`、`raidz1`、`raidz2`、`raidz3`、`jbod`、`other`）、`memberIndices`（`List<int>`，指向 `storage` 的索引），加 `extraJson`。一块硬盘最多属于一个阵列（由编辑器保证）。`Device.mergeUnknownFieldsFrom` 按 `id` 合并阵列的未知字段。旧构建通过 `extraJson` 保留整个 `storageArrays` 键，以及每个存储条目中的 `status`/`statusNote`。
 - **显示/电池/操作系统：** `screenSize`、`screenResolutionW`、`screenResolutionH`、`battery`、`os`。派生 `ppi` getter 从分辨率和解析屏幕对角线计算像素密度。
 - **位置：** `locationName`、`latitude`、`longitude`（由 [地图](features/map.md) 使用）。
 - **生命周期/财务**（`v0.4.0` 添加）：
@@ -37,7 +38,7 @@
 ## DataSet / DataSetStorageLink（`lib/features/datasets/models/dataset.dart`） <a id="dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart"></a>
 
 - **`DataSet`：** `id`、`name`、`emoji`（解析时缺席默认 `'📁'`）、`storageLinks`（`List<DataSetStorageLink>`）、`modifiedAt`、`extraJson`。
-- **`DataSetStorageLink`：** `deviceId` 加 `storageIndices`（`List<int>`）——该设备 `storage` 列表上属于此数据集的存储槽*索引*。列出的每个槽都保存该数据集一份完整、对等的副本——数据集从不拆分到多块存储上——因此可解析的槽数就是它的副本数。设备存储列表变化时这些索引如何保持有效见 [数据集](features/datasets.md)。
+- **`DataSetStorageLink`：** `deviceId` 加 `storageIndices`（`List<int>`）——该设备 `storage` 列表上属于此数据集的存储槽*索引*——以及自 1.8.2 起的 `arrayIds`（`List<String>`，为空时省略）——该设备 `storageArrays` 的 id。列出的每个槽和每个阵列都保存该数据集一份完整、对等的副本——数据集从不拆分到多块存储上，一个阵列无论跨多少块硬盘都只算一份副本——因此可解析的位置数就是它的副本数。位于故障或离线硬盘上、或位于失去的硬盘数超过其级别容错能力的阵列上的副本，仍计入该数，但不计入*可用*副本。旧构建通过 `extraJson` 保留 `arrayIds`，但不计入这些副本。设备存储列表变化时这些索引如何保持有效见 [数据集](features/datasets.md)。
 
 ## ServiceNode / ServiceEndpoint / ServiceRoute / ServiceRouteHop（`lib/features/services/models/service.dart`） <a id="servicenode--serviceendpoint--serviceroute--serviceroutehop-libfeaturesservicesmodelsservicedart"></a>
 

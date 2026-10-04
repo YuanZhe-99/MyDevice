@@ -614,7 +614,7 @@ class LocalApiServer {
   /// Inputs: `device`.
   /// Returns: `Map<String, dynamic>`.
   /// Side effects: None.
-  /// Notes: Keeps legacy keys while adding lifecycle, location, image, and finance fields.
+  /// Notes: Keeps legacy keys while adding lifecycle, location, image, and finance fields, and `storageArrays` since 1.8.2.
   static Map<String, dynamic> deviceToJson(Device device) => {
     'id': device.id,
     'name': device.name,
@@ -638,6 +638,7 @@ class LocalApiServer {
     'ram': device.ram,
     'ramType': device.ramType?.name,
     'storage': device.storage.map(storageToJson).toList(),
+    'storageArrays': device.storageArrays.map((a) => a.toJson()).toList(),
     'screenSize': device.screenSize,
     'screenResolutionW': device.screenResolutionW,
     'screenResolutionH': device.screenResolutionH,
@@ -673,13 +674,15 @@ class LocalApiServer {
   /// Inputs: `storage`.
   /// Returns: `Map<String, dynamic>`.
   /// Side effects: None.
-  /// Notes: Includes brand and serial number added after the original API contract.
+  /// Notes: Includes brand and serial number added after the original API contract, and `status` (`ok`/`failed`/`offline`) and `statusNote` since 1.8.2.
   static Map<String, dynamic> storageToJson(StorageInfo storage) => {
     'capacity': storage.capacity,
     'type': storage.type?.name,
     'interface': storage.interface_?.name,
     'serialNumber': storage.serialNumber,
     'brand': storage.brand,
+    'status': storage.status.name,
+    'statusNote': storage.statusNote,
   };
 
   /// Purpose: Filter devices for a case-insensitive local API search query.
@@ -838,7 +841,7 @@ class LocalApiServer {
   /// Inputs: `dataset`, optional `devices`.
   /// Returns: `Map<String, dynamic>`.
   /// Side effects: None.
-  /// Notes: Linked storage entries include index plus current storage summary.
+  /// Notes: Linked storage entries include index plus current storage summary; `arrayIds` lists linked RAID arrays (since 1.8.2).
   static Map<String, dynamic> dataSetToJson(
     DataSet dataset, {
     List<Device> devices = const [],
@@ -854,6 +857,7 @@ class LocalApiServer {
           'deviceId': link.deviceId,
           'deviceName': device?.name,
           'storageIndices': link.storageIndices,
+          'arrayIds': link.arrayIds,
           'storage': link.storageIndices.map((index) {
             final storage =
                 device != null && index >= 0 && index < device.storage.length

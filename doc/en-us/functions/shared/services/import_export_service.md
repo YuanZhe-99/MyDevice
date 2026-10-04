@@ -42,6 +42,10 @@ domain-specific and stay here.
 ### `buildMarkdown({...})` <a id="buildmarkdown"></a>
 - **Purpose:** Render devices, networks, datasets, and services into the Markdown report body.
 - **Notes:** Unchanged by the extraction; kept app-side because it is entirely domain-specific.
+  Since 1.8.2 a failed or offline drive's `**Storage:**` line carries its status (and note) in
+  parentheses, each RAID array gets a `**RAID:** <level · name> — storage <1-based members>` line,
+  and a data set's linked storages also list its linked arrays by `displayString` (links are
+  skipped only when [`isEmpty`](../../features/datasets/models/dataset.md#datasetstoragelink-isempty)).
 
 ## Where the engine documentation lives
 

@@ -105,7 +105,7 @@ constant is gone).
 
 ### `static Future<void> start()` <a id="start"></a>
 - **Kind:** static method of `LocalApiServer`.
-- **Source:** line 80.
+- **Source:** line 111.
 - **Purpose:** Bind and start the API server per current settings, or do nothing if disabled.
 - **Inputs:** None. **Returns:** `Future<void>`.
 - **Side effects:** Binds a listening socket; sets `_server`/`_lastError`; logs to stdout.
@@ -123,7 +123,7 @@ constant is gone).
   route table.
 
 ### `static Future<void> stop()` <a id="stop"></a>
-- **Kind:** static method. **Source:** line 148.
+- **Kind:** static method. **Source:** line 160.
 - **Purpose:** Forcibly close the running server, if any.
 - **Inputs:** None. **Returns:** `Future<void>`.
 - **Side effects:** Closes the socket (`force: true`); sets `_server = null`.
@@ -132,7 +132,7 @@ constant is gone).
 - **Notes:** Drops in-flight connections; no graceful drain.
 
 ### `static Future<void> restart()` <a id="restart"></a>
-- **Kind:** static method. **Source:** line 158.
+- **Kind:** static method. **Source:** line 170.
 - **Purpose:** Reload settings and rebind.
 - **Inputs:** None. **Returns:** `Future<void>`.
 - **Side effects:** Same as `loadConfig()` + `start()`.
@@ -141,7 +141,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Future<Response> _handleList(Request request)` <a id="handlelist"></a>
-- **Kind:** static method (route handler). **Source:** line 179.
+- **Kind:** static method (route handler). **Source:** line 191.
 - **Purpose:** Return saved devices, optionally filtered by category.
 - **Inputs:** `request` — optional `?category=` matching `DeviceCategory.name`.
 - **Returns:** `200` JSON with the device list (via `buildStatsJson`-adjacent serialization, see
@@ -153,7 +153,7 @@ constant is gone).
 - **Notes:** Category values must match `DeviceCategory.name` exactly (case-sensitive enum name).
 
 ### `static Future<Response> _handleSearch(Request request)` <a id="handlesearch"></a>
-- **Kind:** static method (route handler). **Source:** line 202.
+- **Kind:** static method (route handler). **Source:** line 214.
 - **Purpose:** Search saved devices by human-readable inventory fields.
 - **Inputs:** `request` — `?q=` search text.
 - **Returns:** `200` JSON list; empty list when there are no matches.
@@ -163,7 +163,7 @@ constant is gone).
 - **Notes:** Never performs online lookup — inventory fields only.
 
 ### `static Future<Response> _handleAdd(Request request)` <a id="handleadd"></a>
-- **Kind:** static method (route handler). **Source:** line 217.
+- **Kind:** static method (route handler). **Source:** line 229.
 - **Purpose:** Create a new device from a JSON body.
 - **Inputs:** `request` — JSON body; `name` and `category` required, everything else optional
   (CPU/GPU/storage/finance/location fields, plus the icon fields `emoji`, `imagePath` and
@@ -183,7 +183,7 @@ constant is gone).
   whole request — only `name`/`category` are hard requirements.
 
 ### `static Future<Response> _handleStats(Request request)` <a id="handlestats"></a>
-- **Kind:** static method (route handler). **Source:** line 327.
+- **Kind:** static method (route handler). **Source:** line 339.
 - **Purpose:** Return cross-module summary statistics.
 - **Inputs:** `request` (unused directly). **Returns:** `200` JSON, see `buildStatsJson`.
 - **Side effects:** Reads device, service, network, and dataset storage.
@@ -192,7 +192,7 @@ constant is gone).
 - **Notes:** Keeps legacy top-level device summary fields for API compatibility.
 
 ### `static Future<Response> _handleNetworkList(Request request)` <a id="handlenetworklist"></a>
-- **Kind:** static method (route handler). **Source:** line 351.
+- **Kind:** static method (route handler). **Source:** line 363.
 - **Purpose:** Return saved networks enriched with assignment details.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildNetworkListJson`.
 - **Side effects:** Reads network and device storage (for assignment device names).
@@ -201,7 +201,7 @@ constant is gone).
 - **Notes:** Read-only endpoint.
 
 ### `static Future<Response> _handleNetworkSearch(Request request)` <a id="handlenetworksearch"></a>
-- **Kind:** static method (route handler). **Source:** line 368.
+- **Kind:** static method (route handler). **Source:** line 380.
 - **Purpose:** Search saved networks and their device assignments.
 - **Inputs:** `request` — `?q=`. **Returns:** `200` JSON list.
 - **Side effects:** Reads network and device storage.
@@ -210,7 +210,7 @@ constant is gone).
 - **Notes:** Searches assignment host/IP data too, not just the network record itself.
 
 ### `static Future<Response> _handleDatasetList(Request request)` <a id="handledatasetlist"></a>
-- **Kind:** static method (route handler). **Source:** line 395.
+- **Kind:** static method (route handler). **Source:** line 407.
 - **Purpose:** Return saved datasets with linked device storage details.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildDataSetListJson`.
 - **Side effects:** Reads dataset and device storage.
@@ -219,7 +219,7 @@ constant is gone).
 - **Notes:** Read-only endpoint.
 
 ### `static Future<Response> _handleDatasetSearch(Request request)` <a id="handledatasetsearch"></a>
-- **Kind:** static method (route handler). **Source:** line 411.
+- **Kind:** static method (route handler). **Source:** line 423.
 - **Purpose:** Search datasets and their linked device storage slots.
 - **Inputs:** `request` — `?q=`. **Returns:** `200` JSON list.
 - **Side effects:** Reads dataset and device storage.
@@ -228,7 +228,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Future<Response> _handleServiceList(Request request)` <a id="handleservicelist"></a>
-- **Kind:** static method (route handler). **Source:** line 433.
+- **Kind:** static method (route handler). **Source:** line 445.
 - **Purpose:** Return saved service nodes with optional simple filters.
 - **Inputs:** `request` — optional `?deviceId=`, `?kind=`, `?state=` (serialized enum names).
 - **Returns:** `200` JSON, see `buildServiceListJson`.
@@ -238,7 +238,7 @@ constant is gone).
 - **Notes:** Filter values use serialized enum names where applicable.
 
 ### `static Future<Response> _handleServiceSearch(Request request)` <a id="handleservicesearch"></a>
-- **Kind:** static method (route handler). **Source:** line 458.
+- **Kind:** static method (route handler). **Source:** line 470.
 - **Purpose:** Search service nodes by name, device, endpoint, tags, and notes.
 - **Inputs:** `request` — `?q=`. **Returns:** `200` JSON list.
 - **Side effects:** Reads service, device, and network storage.
@@ -247,7 +247,7 @@ constant is gone).
 - **Notes:** Does not scan live ports or inspect running services — manual inventory only.
 
 ### `static Future<Response> _handleServiceRoutes(Request request)` <a id="handleserviceroutes"></a>
-- **Kind:** static method (route handler). **Source:** line 486.
+- **Kind:** static method (route handler). **Source:** line 498.
 - **Purpose:** Return saved service access routes.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildServiceRouteListJson`.
 - **Side effects:** Reads service and device storage.
@@ -257,7 +257,7 @@ constant is gone).
   for display, per this repo's Services feature conventions.
 
 ### `static Future<Response> _handleServiceStats(Request request)` <a id="handleservicestats"></a>
-- **Kind:** static method (route handler). **Source:** line 503.
+- **Kind:** static method (route handler). **Source:** line 515.
 - **Purpose:** Return service-specific summary statistics.
 - **Inputs:** `request` (unused). **Returns:** `200` JSON, see `buildServiceStatsJson`.
 - **Side effects:** Reads service storage.
@@ -266,7 +266,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Map<String, dynamic> buildStatsJson({required List<Device> devices, ...})` <a id="buildstatsjson"></a>
-- **Kind:** static method. **Source:** line 518.
+- **Kind:** static method. **Source:** line 530.
 - **Purpose:** Build the cross-module `/device/stats` response: device totals/by-category
   counts/recently-added, plus embedded service/network/dataset summary counts.
 - **Inputs:** `devices`, `services`, `routes`, plus optional `networks`/`datasets` lists.
@@ -282,7 +282,7 @@ constant is gone).
   field names for API-compatibility reasons.
 
 ### `static Map<String, dynamic> deviceToJson(Device device)` <a id="devicetojson"></a>
-- **Kind:** static method. **Source:** line 606.
+- **Kind:** static method. **Source:** line 618.
 - **Purpose:** Serialize a `Device` into the local API's public response shape.
 - **Inputs:** `device`. **Returns:** `Map<String, dynamic>` — identity/category/CPU/GPU/RAM/
   storage/screen/location/lifecycle/finance fields plus `emoji`, `imagePath` and `templateImage`
@@ -294,20 +294,23 @@ constant is gone).
   `buildNetworkListJson`/`buildDataSetListJson`'s device-name enrichment paths indirectly via
   `_deviceNameMap`.
 - **Notes:** Keeps legacy keys while additively including lifecycle/location/image/finance
-  fields added after the original API contract.
+  fields added after the original API contract, and — since 1.8.2 — `storageArrays` (each array's
+  `StorageArray.toJson`: `id`, `name`, `level`, `memberIndices`).
 
 ### `static Map<String, dynamic> storageToJson(StorageInfo storage)` <a id="storagetojson"></a>
-- **Kind:** static method. **Source:** line 665.
+- **Kind:** static method. **Source:** line 678.
 - **Purpose:** Serialize a `StorageInfo` slot for device/dataset API responses.
 - **Inputs:** `storage`. **Returns:** `Map<String, dynamic>` (capacity, type, interface, brand,
-  serial number).
+  serial number, and since 1.8.2 `status` — `ok`/`failed`/`offline`, always present — and
+  `statusNote`).
 - **Side effects:** None.
 - **Algorithm:** Direct field mapping.
 - **Usage:** Called by `deviceToJson` for each storage slot.
-- **Notes:** Includes brand and serial number, added to the API after its original contract.
+- **Notes:** Includes brand and serial number, added to the API after its original contract, and
+  the drive health fields added in 1.8.2.
 
 ### `static List<Device> filterDevicesForSearch({required List<Device> devices, required String query})` <a id="filterdevicesforsearch"></a>
-- **Kind:** static method. **Source:** line 678.
+- **Kind:** static method. **Source:** line 693.
 - **Purpose:** Case-insensitive text search over device inventory fields.
 - **Inputs:** `devices`, `query`. **Returns:** matching devices, original order preserved.
 - **Side effects:** None.
@@ -317,7 +320,7 @@ constant is gone).
 - **Notes:** Searches inventory fields only; never performs an online lookup.
 
 ### `static List<Map<String, dynamic>> buildNetworkListJson({required List<Network> networks, ...})` <a id="buildnetworklistjson"></a>
-- **Kind:** static method. **Source:** line 720.
+- **Kind:** static method. **Source:** line 735.
 - **Purpose:** Serialize networks with their device assignments grouped underneath.
 - **Inputs:** `networks`, `assignments`, `devices` (for name resolution).
 - **Returns:** `List<Map<String, dynamic>>`.
@@ -328,7 +331,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Map<String, dynamic> networkToJson(Network network, {List<NetworkDevice>? assignments, Map<String, String>? deviceNames})` <a id="networktojson"></a>
-- **Kind:** static method. **Source:** line 744.
+- **Kind:** static method. **Source:** line 759.
 - **Purpose:** Serialize one `Network`, optionally including its resolved device assignments.
 - **Inputs:** `network`; optional `assignments`/`deviceNames`.
 - **Returns:** `Map<String, dynamic>`.
@@ -340,7 +343,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static List<Network> filterNetworksForSearch({required List<Network> networks, ...})` <a id="filternetworksforsearch"></a>
-- **Kind:** static method. **Source:** line 777.
+- **Kind:** static method. **Source:** line 792.
 - **Purpose:** Case-insensitive search across network and assignment text fields.
 - **Inputs:** `networks`, `assignments`, `devices`, `query`.
 - **Returns:** matching networks, original order preserved.
@@ -351,7 +354,7 @@ constant is gone).
 - **Notes:** Including device names lets callers search "which network is device X on."
 
 ### `static List<Map<String, dynamic>> buildDataSetListJson({required List<DataSet> datasets, required List<Device> devices})` <a id="builddatasetlistjson"></a>
-- **Kind:** static method. **Source:** line 816.
+- **Kind:** static method. **Source:** line 831.
 - **Purpose:** Serialize datasets with resolved linked-device-storage details.
 - **Inputs:** `datasets`, `devices`. **Returns:** `List<Map<String, dynamic>>`.
 - **Side effects:** None.
@@ -360,7 +363,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Map<String, dynamic> dataSetToJson(DataSet dataset, {List<Device>? devices})` <a id="datasettojson"></a>
-- **Kind:** static method. **Source:** line 830.
+- **Kind:** static method. **Source:** line 845.
 - **Purpose:** Serialize one `DataSet`, resolving each storage link's device name and current
   storage-slot summary.
 - **Inputs:** `dataset`; optional `devices` for resolution.
@@ -370,10 +373,12 @@ constant is gone).
   render its storage-slot summaries via `storageToJson`-equivalent display strings.
 - **Usage:** Called by `buildDataSetListJson`.
 - **Notes:** Storage links retain slot indices in the output because datasets link to storage by
-  index (see [../../../features/datasets.md](../../../features/datasets.md)).
+  index (see [../../../features/datasets.md](../../../features/datasets.md)); since 1.8.2 each link
+  also carries `arrayIds`, the ids of the linked RAID arrays (see `deviceToJson`'s
+  `storageArrays`).
 
 ### `static List<DataSet> filterDataSetsForSearch({required List<DataSet> datasets, required List<Device> devices, required String query})` <a id="filterdatasetsforsearch"></a>
-- **Kind:** static method. **Source:** line 866.
+- **Kind:** static method. **Source:** line 882.
 - **Purpose:** Case-insensitive search across dataset, linked-device, and linked-storage text.
 - **Inputs:** `datasets`, `devices`, `query`. **Returns:** matching datasets, original order.
 - **Side effects:** None.
@@ -383,7 +388,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static List<Map<String, dynamic>> buildServiceListJson({required List<ServiceNode> services, ...})` <a id="buildservicelistjson"></a>
-- **Kind:** static method. **Source:** line 909.
+- **Kind:** static method. **Source:** line 925.
 - **Purpose:** Serialize service nodes for API responses.
 - **Inputs:** `services`, `devices`, `networks` (for endpoint network-name resolution).
 - **Returns:** `List<Map<String, dynamic>>`.
@@ -393,7 +398,7 @@ constant is gone).
 - **Notes:** Exposes saved notes only; never queries live service state.
 
 ### `static Map<String, dynamic> serviceToJson(ServiceNode service, {Map<String, String>? deviceNames, Map<String, String>? networkNames})` <a id="servicetojson"></a>
-- **Kind:** static method. **Source:** line 934.
+- **Kind:** static method. **Source:** line 950.
 - **Purpose:** Serialize one `ServiceNode`, including its endpoints via `_serviceEndpointToJson`.
 - **Inputs:** `service`; optional name maps for enrichment.
 - **Returns:** `Map<String, dynamic>`.
@@ -404,7 +409,7 @@ constant is gone).
 - **Notes:** Endpoint port ranges expose both the raw `port` value and the formatted `portText`.
 
 ### `static List<ServiceNode> filterServicesForList({required List<ServiceNode> services, String? deviceId, String? kind, String? state})` <a id="filterservicesforlist"></a>
-- **Kind:** static method. **Source:** line 962.
+- **Kind:** static method. **Source:** line 978.
 - **Purpose:** Apply the `/service/list` endpoint's optional simple equality filters.
 - **Inputs:** `services`; optional `deviceId`/`kind`/`state`.
 - **Returns:** matching services, original order.
@@ -414,7 +419,7 @@ constant is gone).
 - **Notes:** Empty filter strings are treated as "no filter," not as "match empty."
 
 ### `static List<ServiceNode> filterServicesForSearch({required List<ServiceNode> services, required List<Device> devices, required List<Network> networks, required String query})` <a id="filterservicesforsearch"></a>
-- **Kind:** static method. **Source:** line 984.
+- **Kind:** static method. **Source:** line 1000.
 - **Purpose:** Case-insensitive free-text search over service metadata, endpoints, and linked
   names.
 - **Inputs:** `services`, `devices`, `networks`, `query`. **Returns:** matching services,
@@ -426,7 +431,7 @@ constant is gone).
 - **Notes:** Searches saved metadata and linked names only — never live port/process state.
 
 ### `static List<Map<String, dynamic>> buildServiceRouteListJson({required List<ServiceRoute> routes, required List<ServiceNode> services, required List<Device> devices})` <a id="buildserviceroutelistjson"></a>
-- **Kind:** static method. **Source:** line 1033.
+- **Kind:** static method. **Source:** line 1049.
 - **Purpose:** Serialize service access routes for API responses.
 - **Inputs:** `routes`, `services`, `devices`. **Returns:** `List<Map<String, dynamic>>`.
 - **Side effects:** None.
@@ -435,7 +440,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Map<String, dynamic> serviceRouteToJson(ServiceRoute route, {Map<String, ServiceNode>? servicesById, Map<String, String>? deviceNames})` <a id="serviceroutetojson"></a>
-- **Kind:** static method. **Source:** line 1056.
+- **Kind:** static method. **Source:** line 1072.
 - **Purpose:** Serialize one `ServiceRoute`, including resolved source service/endpoint, hops
   (via `_serviceRouteHopToJson`), and grouped public targets (via `_publicTargets`).
 - **Inputs:** `route`; optional lookup maps.
@@ -449,7 +454,7 @@ constant is gone).
   [../../../features/services-topology.md](../../../features/services-topology.md)).
 
 ### `static Map<String, dynamic> buildServiceStatsJson({required List<ServiceNode> services, required List<ServiceRoute> routes})` <a id="buildservicestatsjson"></a>
-- **Kind:** static method. **Source:** line 1094.
+- **Kind:** static method. **Source:** line 1110.
 - **Purpose:** Build the `/service/stats` response: service/route totals and by-kind/by-state
   breakdowns.
 - **Inputs:** `services`, `routes`. **Returns:** `Map<String, dynamic>`.
@@ -460,7 +465,7 @@ constant is gone).
 - **Notes:** Mirrors the service portion embedded in `/device/stats`, as a standalone endpoint.
 
 ### `static Map<String, dynamic> _serviceEndpointToJson(ServiceEndpoint endpoint, Map<String, String>? networkNames)` <a id="serviceendpointtojson"></a>
-- **Kind:** static method. **Source:** line 1129.
+- **Kind:** static method. **Source:** line 1145.
 - **Purpose:** Serialize a `ServiceEndpoint` with its network id resolved to a display name where
   possible.
 - **Inputs:** `endpoint`, `networkNames`. **Returns:** `Map<String, dynamic>`.
@@ -471,7 +476,7 @@ constant is gone).
 - **Notes:** Internal helper used for both service and route responses.
 
 ### `static Map<String, dynamic> _serviceRouteHopToJson(ServiceRouteHop hop, Map<String, ServiceNode>? servicesById, Map<String, String>? deviceNames)` <a id="serviceroutehoptojson"></a>
-- **Kind:** static method. **Source:** line 1154.
+- **Kind:** static method. **Source:** line 1170.
 - **Purpose:** Serialize a `ServiceRouteHop`, resolving its referenced service/device names where
   possible while preserving free-form fields.
 - **Inputs:** `hop`; optional lookup maps. **Returns:** `Map<String, dynamic>`.
@@ -483,7 +488,7 @@ constant is gone).
   device reference resolves.
 
 ### `static List<String> _publicTargets(ServiceRoute route)` <a id="publictargets"></a>
-- **Kind:** static method. **Source:** line 1183.
+- **Kind:** static method. **Source:** line 1199.
 - **Purpose:** Read the grouped public targets stored in a route's `extraJson.publicTargets`.
 - **Inputs:** `route`. **Returns:** `List<String>`.
 - **Side effects:** None.
@@ -494,7 +499,7 @@ constant is gone).
   than throwing.
 
 ### `static Map<String, String> _deviceNameMap(List<Device> devices)` <a id="devicenamemap"></a>
-- **Kind:** static method. **Source:** line 1194.
+- **Kind:** static method. **Source:** line 1210.
 - **Purpose:** Build an id-to-name lookup for device cross-referencing.
 - **Inputs:** `devices`. **Returns:** `Map<String, String>`.
 - **Side effects:** None.
@@ -503,7 +508,7 @@ constant is gone).
 - **Notes:** None.
 
 ### `static Map<String, int> _countBy<T>(Iterable<T> values, String Function(T) keyOf)` <a id="countby"></a>
-- **Kind:** static generic method. **Source:** line 1203.
+- **Kind:** static generic method. **Source:** line 1219.
 - **Purpose:** Count elements grouped by a caller-supplied key function.
 - **Inputs:** `values`, `keyOf`. **Returns:** `Map<String, int>`.
 - **Side effects:** None.
@@ -513,7 +518,7 @@ constant is gone).
 - **Notes:** Generic — reusable for any grouping key, not tied to a specific enum.
 
 ### `static bool _containsText(Iterable<Object?> values, String lowerQuery)` <a id="containstext"></a>
-- **Kind:** static method. **Source:** line 1220.
+- **Kind:** static method. **Source:** line 1236.
 - **Purpose:** Test whether any of several values contains a lowercased query substring.
 - **Inputs:** `values` (nullable entries tolerated), `lowerQuery` (already lowercased).
 - **Returns:** `bool`.
@@ -524,7 +529,7 @@ constant is gone).
   search rather than per candidate.
 
 ### `static int? _intValue(Object? value)` <a id="intvalue"></a>
-- **Kind:** static method. **Source:** line 1232.
+- **Kind:** static method. **Source:** line 1248.
 - **Purpose:** Tolerantly parse an `int` from JSON-decoded input that may already be an `int`, a
   numeric string, or something else.
 - **Inputs:** `value`. **Returns:** `int?` — `null` if unparseable.
@@ -535,7 +540,7 @@ constant is gone).
 - **Notes:** Tolerates numeric strings so minimal/loosely-typed API clients don't get rejected.
 
 ### `static double? _doubleValue(Object? value)` <a id="doublevalue"></a>
-- **Kind:** static method. **Source:** line 1244.
+- **Kind:** static method. **Source:** line 1260.
 - **Purpose:** Tolerantly parse a `double` from JSON-decoded input.
 - **Inputs:** `value`. **Returns:** `double?`.
 - **Side effects:** None.
@@ -545,7 +550,7 @@ constant is gone).
 - **Notes:** Accepts both `int` and `double` JSON number encodings via the shared `num` check.
 
 ### `static DateTime? _dateValue(Object? value)` <a id="datevalue"></a>
-- **Kind:** static method. **Source:** line 1255.
+- **Kind:** static method. **Source:** line 1271.
 - **Purpose:** Tolerantly parse a `DateTime` from a JSON string.
 - **Inputs:** `value`. **Returns:** `DateTime?` — `null` for non-strings, empty strings, or
   unparseable strings.
@@ -556,7 +561,7 @@ constant is gone).
   requests.
 
 ### `static MoneyValue? _moneyValueFromJson(Object? value)` <a id="moneyvaluefromjson"></a>
-- **Kind:** static method. **Source:** line 1265.
+- **Kind:** static method. **Source:** line 1281.
 - **Purpose:** Parse an optional `MoneyValue` (amount + currency) from a JSON map.
 - **Inputs:** `value`. **Returns:** `MoneyValue?` — `null` if `value` isn't a
   `Map<String, dynamic>` or required sub-fields are malformed.
@@ -567,7 +572,7 @@ constant is gone).
 - **Notes:** Malformed money maps are ignored rather than rejecting the whole add request.
 
 ### `static DeviceRecurringCost? _recurringCostFromJson(Object? value)` <a id="recurringcostfromjson"></a>
-- **Kind:** static method. **Source:** line 1279.
+- **Kind:** static method. **Source:** line 1295.
 - **Purpose:** Parse an optional `DeviceRecurringCost` entry from a JSON map.
 - **Inputs:** `value`. **Returns:** `DeviceRecurringCost?` — `null` on wrong shape.
 - **Side effects:** None.
@@ -577,7 +582,7 @@ constant is gone).
   rather than rejecting the whole list.
 
 ### `static Future<Map<String, dynamic>?> _parseBody(Request request)` <a id="parsebody"></a>
-- **Kind:** static method. **Source:** line 1314.
+- **Kind:** static method. **Source:** line 1330.
 - **Purpose:** Read and JSON-decode a request body, tolerating malformed input.
 - **Inputs:** `request`. **Returns:** `Future<Map<String, dynamic>?>` — `null` on any decode
   failure or non-object body.
@@ -630,7 +635,7 @@ constant is gone).
   `_corsHeaders` constant).
 
 ### `static Middleware _authMiddleware()` <a id="authmiddleware"></a>
-- **Kind:** static method. **Source:** line 1357.
+- **Kind:** static method. **Source:** line 1416.
 - **Purpose:** Enforce the API's access rule: loopback is trusted by default, but once
   credentials are configured, every request (including loopback) must present valid Basic Auth.
 - **Inputs:** None. **Returns:** `Middleware`.
@@ -644,7 +649,7 @@ constant is gone).
   — see that page's Notes for the full quoted reasoning.
 
 ### `static bool _validateBasicAuth(String header)` <a id="validatebasicauth"></a>
-- **Kind:** static method. **Source:** line 1399.
+- **Kind:** static method. **Source:** line 1458.
 - **Purpose:** Validate an `Authorization: Basic <base64>` header against configured credentials.
 - **Inputs:** `header`. **Returns:** `bool`.
 - **Side effects:** None.
@@ -654,7 +659,7 @@ constant is gone).
 - **Notes:** Plain equality check against plaintext-stored credentials.
 
 ### `static Middleware _errorMiddleware()` <a id="errormiddleware"></a>
-- **Kind:** static method. **Source:** line 1416.
+- **Kind:** static method. **Source:** line 1476.
 - **Purpose:** Catch any unhandled route-handler exception and return a clean JSON `500` instead
   of an unhandled crash.
 - **Inputs:** None. **Returns:** `Middleware`.

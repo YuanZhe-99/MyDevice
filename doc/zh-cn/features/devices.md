@@ -8,6 +8,14 @@
 
 `DeviceCategory` 值：`desktop`、`laptop`、`phone`、`tablet`、`headphone`、`watch`、`router`、`gameConsole`、`vps`、`devBoard`、`other`。
 
+## 硬盘状态与 RAID 阵列 <a id="drive-status-and-raid-arrays"></a>
+
+自 1.8.2 起，每个存储条目都有一个**状态**——*正常*（默认）、*故障*或*离线*——并在不正常时附带一条自由文本的**状态备注**。故障硬盘会被保留而不是删除：设备详情以错误色显示其状态，其上的数据集副本不再计为可用（见 [数据集](datasets.md#drive-health-and-raid-arrays)）。
+
+编辑器在存储行下方有一个 **RAID 阵列**区域。每个阵列有名称、级别（`RaidLevel`：RAID 0/1/5/6/10、RAID-Z1/Z2/Z3、JBOD、其他）以及以 chip 形式从设备存储行中选取的成员硬盘；已属于另一个阵列的硬盘被禁用，因此一块硬盘最多属于一个阵列。成员在编辑中跟随其所在行：移除一个存储行会把它从所属阵列中去掉，保存的 `memberIndices` 是压实后的位置。保存时，指向加入了阵列的槽的数据集链接会移到该阵列，指向已移除阵列的链接会被丢弃（`remapDeviceStorageLinks`）。
+
+设备详情会为每块硬盘列出它所属的阵列，并为每个阵列列出一行："级别 · n 块硬盘"，另以错误色标出*降级*或*已失效*。阵列的健康状况来自 `RaidLevel.faultTolerance`：故障成员数在容错范围内（RAID 1：n − 1；RAID 5/RAID-Z1/RAID 10：1；RAID 6/RAID-Z2：2；RAID-Z3：3；RAID 0/JBOD：0）时为*降级*，超出则为*已失效*；*其他*没有定义的容错能力，最坏也只是降级。RAID 10 保守地按只容忍一块故障计算。Markdown 导出和本地 API 都包含这两个字段。
+
 ## 生命周期与财务跟踪 <a id="lifecycle-and-finance-tracking"></a>
 
 `v0.4.0` 添加。源码确认（`Device.lifecycleStatus`）：

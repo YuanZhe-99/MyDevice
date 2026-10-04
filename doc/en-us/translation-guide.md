@@ -181,6 +181,14 @@ Not copied to the other repos — no other app has these.
 | copy count | 副本数 | how many storage slots hold a data set |
 | data set topology | 资料集拓扑 | the full-screen device → storage → data set view (zh UI uses 资料集 for data set) |
 | sync line | 同步连线 | the topology line joining two copies of the same data set |
+| RAID array | RAID 阵列 | a `StorageArray`: drives of one device pooled at a RAID level; data on it is one copy |
+| member drive | 成员硬盘 | a storage slot that belongs to a RAID array |
+| place (of a copy) | 位置 | a storage slot or a RAID array a copy can live on (`StoragePlace`) |
+| drive status | 硬盘状态 | working / failed / offline: 正常 / 故障 / 离线 |
+| degraded | 降级 | an array with failed members it still tolerates |
+| data lost (array) | 已失效 | an array that lost more drives than its level tolerates |
+| usable copy | 可用副本 | a copy whose place is not failed, offline or lost; "unavailable" = 不可用 |
+| fault tolerance | 容错能力 | how many member drives a RAID level may lose |
 | weak linking | 弱链接 | linking FoundationModels so the app still launches where it does not exist |
 | hand-picked thumbnail | 手选缩略图 | a bundled thumbnail the user chose for a device (`templateImage`) |
 | thumbnail candidate | 候选缩略图 | an entry of the ranked chooser grid |

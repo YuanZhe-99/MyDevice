@@ -14,6 +14,29 @@ and unknown JSON fields (`extraJson`).
 `DeviceCategory` values: `desktop`, `laptop`, `phone`, `tablet`, `headphone`, `watch`,
 `router`, `gameConsole`, `vps`, `devBoard`, `other`.
 
+## Drive status and RAID arrays
+
+Since 1.8.2 each storage entry has a **status** — *Working* (default), *Failed* or *Offline* — and,
+when not working, a free-text **status note**. A failed drive is kept rather than deleted: the
+device details show its status in the error colour, and data set copies on it stop counting as
+usable (see [Datasets](datasets.md#drive-health-and-raid-arrays)).
+
+Below the storage rows the editor has a **RAID Arrays** section. Each array has a name, a level
+(`RaidLevel`: RAID 0/1/5/6/10, RAID-Z1/Z2/Z3, JBOD, Other) and member drives picked as chips from
+the device's storage rows; a drive already in another array is disabled, so a drive belongs to at
+most one. Members follow their rows through edits: removing a storage row drops it from its array,
+and the saved `memberIndices` are the compacted positions. On save, data set links to a slot that
+joined an array move to the array, and links to a removed array are dropped
+(`remapDeviceStorageLinks`).
+
+The device details list, per drive, the array it belongs to, and one row per array:
+"level · n drives", plus *Degraded* or *Data lost* in the error colour. An array's health comes
+from `RaidLevel.faultTolerance`: with failed members within the tolerance (RAID 1: n − 1;
+RAID 5/RAID-Z1/RAID 10: 1; RAID 6/RAID-Z2: 2; RAID-Z3: 3; RAID 0/JBOD: 0) it is *degraded*,
+beyond it *data lost*; *Other* has no defined tolerance and is at worst degraded. RAID 10 counts
+conservatively as tolerating one failure. The Markdown export and the local API include both
+fields.
+
 ## Lifecycle and finance tracking
 
 Added in `v0.4.0`. Confirmed in source (`Device.lifecycleStatus`):

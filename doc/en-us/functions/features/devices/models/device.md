@@ -1,9 +1,9 @@
 # lib/features/devices/models/device.dart
 
 The core device model: `Device` itself plus every value type it's built from (`CpuInfo`, `GpuInfo`,
-`StorageInfo`, `MoneyValue`, `DeviceRecurringCost`) and their supporting enums
+`StorageInfo`, `StorageArray`, `MoneyValue`, `DeviceRecurringCost`) and their supporting enums
 (`DeviceCategory`, `DeviceAcquisitionType`, `DeviceLifecycleStatus`, `RecurringCostKind`,
-`BillingCycle`, `StorageType`, `RamType`, `StorageInterface`), plus the top-level `DeviceData`
+`BillingCycle`, `StorageType`, `RamType`, `StorageInterface`, `StorageHealth`, `RaidLevel`), plus the top-level `DeviceData`
 container persisted by [`../services/device_storage.md`](../services/device_storage.md). Every
 model here follows the app's standard shape: a `const`/plain constructor, `toJson`/`fromJson`, and
 a `mergeUnknownFieldsFrom` that participates in the three-way sync merge (see
@@ -15,7 +15,7 @@ lifecycle/finance behavior this page documents against real source, and
 [Data Formats](../../../../data-formats.md#device-libfeaturesdevicesmodelsdevicedart) for the
 exhaustive persisted-field reference.
 
-This file is large (58 declarations across 14 enums/classes); see the note at the end of the
+This file is large (70 declarations across 17 enums/classes); see the note at the end of the
 Declarations table for how its row count compares to the file's `/// Purpose:` doc-comment count.
 
 ## Declarations
@@ -47,12 +47,24 @@ Declarations table for how its row count compares to the file's `/// Purpose:` d
 | [`RamType.fromJson`](#ramtype-fromjson) | static method | A | Parse a `RamType`, or `null`. |
 | `jsonValue` | getter (`StorageInterface`) | B | Return the serialized enum name. |
 | [`StorageInterface.fromJson`](#storageinterface-fromjson) | static method | A | Parse a `StorageInterface`, or `null`. |
+| `jsonValue` | getter (`StorageHealth`) | B | Return the serialized enum name (`ok` is never written). |
+| [`StorageHealth.fromJson`](#storagehealth-fromjson) | static method | A | Parse a `StorageHealth`, defaulting to `ok`. |
+| `jsonValue` | getter (`RaidLevel`) | B | Return the serialized enum name. |
+| [`displayName`](#raidlevel-displayname) | getter (`RaidLevel`) | A | Return the level as usually written (e.g. `"RAID 5"`, `"RAID-Z2"`). |
+| [`faultTolerance`](#raidlevel-faulttolerance) | method (`RaidLevel`) | A | How many member drives may fail without data loss, or `null`. |
+| [`RaidLevel.fromJson`](#raidlevel-fromjson) | static method | A | Parse a `RaidLevel`, defaulting to `other`. |
 | [`StorageInfo`](#storageinfo-new) | constructor | A | Create a `StorageInfo` instance. |
+| `isHealthy` | getter (`StorageInfo`) | B | Return whether `status` is `ok`. |
 | `isEmpty` | getter (`StorageInfo`) | B | Return whether every field is unset. |
 | [`displayString`](#storageinfo-displaystring) | getter (`StorageInfo`) | A | Build a human-readable summary (e.g. `"512 GB SSD (M.2 NVMe)"`). |
 | [`toJson`](#storageinfo-tojson) | method (`StorageInfo`) | A | Serialize this value into a JSON-compatible map. |
 | [`StorageInfo.fromJson`](#storageinfo-fromjson) | factory constructor | A | Parse a `StorageInfo` from JSON or a legacy plain string. |
 | [`mergeUnknownFieldsFrom`](#storageinfo-mergeunknownfieldsfrom) | method (`StorageInfo`) | A | Three-way merge unknown JSON fields from another `StorageInfo`. |
+| [`StorageArray`](#storagearray-new) | constructor | A | Create a `StorageArray` (fresh `id` by default). |
+| [`displayString`](#storagearray-displaystring) | getter (`StorageArray`) | A | `"<level> · <name>"`, or just the level when unnamed. |
+| [`toJson`](#storagearray-tojson) | method (`StorageArray`) | A | Serialize this value into a JSON-compatible map. |
+| [`StorageArray.fromJson`](#storagearray-fromjson) | factory constructor | A | Parse a `StorageArray` from JSON. |
+| [`mergeUnknownFieldsFrom`](#storagearray-mergeunknownfieldsfrom) | method (`StorageArray`) | A | Three-way merge unknown JSON fields from another `StorageArray`. |
 | [`MoneyValue`](#moneyvalue-new) | constructor | A | Create a `MoneyValue` instance. |
 | [`toJson`](#moneyvalue-tojson) | method (`MoneyValue`) | A | Serialize this value into a JSON-compatible map. |
 | [`MoneyValue.fromJson`](#moneyvalue-fromjson) | factory constructor | A | Parse a `MoneyValue` from JSON, tolerating legacy keys. |
@@ -76,12 +88,13 @@ Declarations table for how its row count compares to the file's `/// Purpose:` d
 | [`copyWith`](#copywith) | method (`Device`) | A | Create a copy with any subset of fields replaced or cleared. |
 | [`toJson`](#device-tojson) | method (`Device`) | A | Serialize this value into a JSON-compatible map. |
 | [`Device.fromJson`](#device-fromjson) | factory constructor | A | Parse a `Device` from JSON, tolerating the legacy string `storage` shape. |
-| [`mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom) | method (`Device`) | A | Merge unknown fields plus nested cpu/gpu/storage/price/recurring-cost structures. |
+| [`mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom) | method (`Device`) | A | Merge unknown fields plus nested cpu/gpu/storage/storage-array/price/recurring-cost structures. |
 | [`DeviceData`](#devicedata-new) | constructor | A | Create a `DeviceData` instance. |
 | [`toJson`](#devicedata-tojson) | method (`DeviceData`) | A | Serialize this value into a JSON-compatible map. |
 | [`DeviceData.fromJson`](#devicedata-fromjson) | factory constructor | A | Parse a `DeviceData` from JSON. |
 
-Row count (58) matches `grep -c 'Purpose:' device.dart` (58) exactly. Before 1.6.1 only 31
+Row count (70) matches `grep -c 'Purpose:' device.dart` (70) exactly; 1.8.2 added the 12 rows of
+`StorageHealth`, `RaidLevel`, `StorageInfo.isHealthy` and `StorageArray`. Before 1.6.1 only 31
 declarations carried a `/// Purpose:` block: the 27 declarations from `StorageInfo.toJson` through
 the entire `MoneyValue`, `DeviceRecurringCost`, and `Device` classes
 (`StorageInfo.toJson`/`fromJson`/`mergeUnknownFieldsFrom`, all four `MoneyValue` declarations, all
@@ -89,13 +102,14 @@ six `DeviceRecurringCost` declarations, and all fourteen `Device` declarations) 
 documentation audit added Purpose/Inputs/Returns/Side effects/Notes blocks to those 27 declarations
 in source (comment-only), so the row count and the comment count now agree. `DeviceLifecycleStatus`
 (a bare three-value enum with no getters/methods of its own) has no row, consistent with how this
-doc set indexes only executable declarations, not bare type declarations.
+doc set indexes only executable declarations, not bare type declarations; the same goes for the
+`StorageArray` class declaration itself.
 
 ## Documentation
 
 ### `static DeviceCategory fromJson(String value)` <a id="devicecategory-fromjson"></a>
 - **Kind:** static method of enum `DeviceCategory`.
-- **Source:** `lib/features/devices/models/device.dart` (line 104).
+- **Source:** `lib/features/devices/models/device.dart` (line 109).
 - **Purpose:** Parse a `DeviceCategory` from its serialized name, defaulting to `other` for any
   unrecognized value.
 - **Inputs:** `value`.
@@ -115,7 +129,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static DeviceAcquisitionType? fromJson(String? value)` <a id="deviceacquisitiontype-fromjson"></a>
 - **Kind:** static method of enum `DeviceAcquisitionType`.
-- **Source:** `lib/features/devices/models/device.dart` (line 127).
+- **Source:** `lib/features/devices/models/device.dart` (line 132).
 - **Purpose:** Parse a `DeviceAcquisitionType` from its serialized name.
 - **Inputs:** `value` — nullable.
 - **Returns:** `DeviceAcquisitionType?` — `null` if `value` is `null` or unrecognized.
@@ -128,7 +142,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static RecurringCostKind fromJson(String? value)` <a id="recurringcostkind-fromjson"></a>
 - **Kind:** static method of enum `RecurringCostKind`.
-- **Source:** `lib/features/devices/models/device.dart` (line 157).
+- **Source:** `lib/features/devices/models/device.dart` (line 162).
 - **Purpose:** Parse a `RecurringCostKind`, defaulting to `other` when unrecognized or absent.
 - **Inputs:** `value` — nullable.
 - **Returns:** `RecurringCostKind` — never `null`.
@@ -140,7 +154,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static BillingCycle fromJson(String? value)` <a id="billingcycle-fromjson"></a>
 - **Kind:** static method of enum `BillingCycle`.
-- **Source:** `lib/features/devices/models/device.dart` (line 179).
+- **Source:** `lib/features/devices/models/device.dart` (line 184).
 - **Purpose:** Parse a `BillingCycle`, defaulting to `monthly` when unrecognized or absent.
 - **Inputs:** `value` — nullable.
 - **Returns:** `BillingCycle` — never `null`.
@@ -154,7 +168,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `const CpuInfo({this.model, this.architecture, this.frequency, this.performanceCores, this.efficiencyCores, this.threads, this.cache, this.extraJson = const {}})` <a id="cpuinfo-new"></a>
 - **Kind:** constructor of `CpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 200).
+- **Source:** `lib/features/devices/models/device.dart` (line 205).
 - **Purpose:** Hold a device's CPU specs — model, architecture, frequency, core/thread counts,
   cache — plus any unrecognized JSON fields.
 - **Inputs:** All fields optional; `extraJson` defaults to `{}`.
@@ -170,7 +184,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="cpuinfo-tojson"></a>
 - **Kind:** method of `CpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 231).
+- **Source:** `lib/features/devices/models/device.dart` (line 236).
 - **Purpose:** Serialize this CPU spec into the JSON persisted inside a device's `cpu` field.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>` — `extraJson` spread first, then only the non-null known
@@ -185,7 +199,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory CpuInfo.fromJson(Map<String, dynamic> json)` <a id="cpuinfo-fromjson"></a>
 - **Kind:** factory constructor of `CpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 247).
+- **Source:** `lib/features/devices/models/device.dart` (line 252).
 - **Purpose:** Parse a `CpuInfo` from JSON, tolerating an older `cores` key in place of
   `performanceCores`.
 - **Inputs:** `json`.
@@ -201,7 +215,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `CpuInfo mergeUnknownFieldsFrom(CpuInfo other, {CpuInfo? base})` <a id="cpuinfo-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `CpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 263).
+- **Source:** `lib/features/devices/models/device.dart` (line 268).
 - **Purpose:** Three-way merge this `CpuInfo`'s unknown JSON fields with another's, so unrecognized
   keys survive a sync merge the same way known fields do.
 - **Inputs:** `other` — the other side (typically remote when `this` is local); optional `base` —
@@ -221,7 +235,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `const GpuInfo({this.model, this.architecture, this.extraJson = const {}})` <a id="gpuinfo-new"></a>
 - **Kind:** constructor of `GpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 286).
+- **Source:** `lib/features/devices/models/device.dart` (line 291).
 - **Purpose:** Hold a device's GPU model/architecture plus any unrecognized JSON fields.
 - **Inputs:** All fields optional; `extraJson` defaults to `{}`.
 - **Returns:** A new `GpuInfo`.
@@ -236,7 +250,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="gpuinfo-tojson"></a>
 - **Kind:** method of `GpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 301).
+- **Source:** `lib/features/devices/models/device.dart` (line 306).
 - **Purpose:** Serialize this GPU spec into the JSON persisted inside a device's `gpu` field.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>`.
@@ -249,7 +263,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory GpuInfo.fromJson(Map<String, dynamic> json)` <a id="gpuinfo-fromjson"></a>
 - **Kind:** factory constructor of `GpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 312).
+- **Source:** `lib/features/devices/models/device.dart` (line 317).
 - **Purpose:** Parse a `GpuInfo` from JSON.
 - **Inputs:** `json`.
 - **Returns:** A new `GpuInfo`; `extraJson` holds every key not in `_gpuInfoJsonKeys`.
@@ -260,7 +274,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `GpuInfo mergeUnknownFieldsFrom(GpuInfo other, {GpuInfo? base})` <a id="gpuinfo-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `GpuInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 323).
+- **Source:** `lib/features/devices/models/device.dart` (line 328).
 - **Purpose:** Three-way merge this `GpuInfo`'s unknown JSON fields with another's.
 - **Inputs:** `other`; optional `base`.
 - **Returns:** A new `GpuInfo` with merged `extraJson`.
@@ -271,7 +285,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static StorageType? fromJson(String? value)` <a id="storagetype-fromjson"></a>
 - **Kind:** static method of enum `StorageType`.
-- **Source:** `lib/features/devices/models/device.dart` (line 353).
+- **Source:** `lib/features/devices/models/device.dart` (line 358).
 - **Purpose:** Parse a `StorageType` from its serialized name.
 - **Inputs:** `value` — nullable.
 - **Returns:** `StorageType?` — `null` if `value` is `null` or unrecognized.
@@ -282,7 +296,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `String get displayName` (RamType) <a id="ramtype-displayname"></a>
 - **Kind:** getter of enum `RamType`.
-- **Source:** `lib/features/devices/models/device.dart` (line 383).
+- **Source:** `lib/features/devices/models/device.dart` (line 388).
 - **Purpose:** Return the conventional uppercase display name for a RAM standard (e.g.
   `RamType.lpddr5x` → `"LPDDR5X"`), distinct from the lowercase `jsonValue`/`name` used in
   persisted JSON.
@@ -297,7 +311,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static RamType? fromJson(String? value)` <a id="ramtype-fromjson"></a>
 - **Kind:** static method of enum `RamType`.
-- **Source:** `lib/features/devices/models/device.dart` (line 400).
+- **Source:** `lib/features/devices/models/device.dart` (line 405).
 - **Purpose:** Parse a `RamType` from its serialized name.
 - **Inputs:** `value` — nullable.
 - **Returns:** `RamType?`.
@@ -308,7 +322,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static StorageInterface? fromJson(String? value)` <a id="storageinterface-fromjson"></a>
 - **Kind:** static method of enum `StorageInterface`.
-- **Source:** `lib/features/devices/models/device.dart` (line 425).
+- **Source:** `lib/features/devices/models/device.dart` (line 430).
 - **Purpose:** Parse a `StorageInterface` from its serialized name.
 - **Inputs:** `value` — nullable.
 - **Returns:** `StorageInterface?`.
@@ -317,12 +331,64 @@ doc set indexes only executable declarations, not bare type declarations.
 - **Usage:** Called by [`StorageInfo.fromJson`](#storageinfo-fromjson).
 - **Notes:** None.
 
-### `const StorageInfo({this.capacity, this.type, this.interface_, this.serialNumber, this.brand, this.extraJson = const {}})` <a id="storageinfo-new"></a>
+### `static StorageHealth fromJson(String? value)` <a id="storagehealth-fromjson"></a>
+- **Kind:** static method of `StorageHealth` (`ok`, `failed`, `offline`). **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 456).
+- **Purpose:** Parse a stored drive health value.
+- **Inputs:** `value` — the `status` key of a storage entry, or `null`.
+- **Returns:** The matching `StorageHealth`; `ok` for `null` or an unknown value.
+- **Side effects:** None.
+- **Algorithm:** `values.where((e) => e.name == value).firstOrNull ?? ok`.
+- **Usage:** [`StorageInfo.fromJson`](#storageinfo-fromjson).
+- **Notes:** An absent `status` means `ok` (`ok` is never written). An unknown value from a newer
+  build reads as `ok` here, but `StorageInfo.fromJson` keeps the raw value in `extraJson`, so it is
+  written back unchanged.
+
+### `String get displayName` (RaidLevel) <a id="raidlevel-displayname"></a>
+- **Kind:** getter of `RaidLevel` (`raid0`, `raid1`, `raid5`, `raid6`, `raid10`, `raidz1`,
+  `raidz2`, `raidz3`, `jbod`, `other`). **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 485).
+- **Purpose:** Return the level as it is usually written.
+- **Inputs:** None.
+- **Returns:** `"RAID 0"` … `"RAID 10"`, `"RAID-Z1"` … `"RAID-Z3"`, `"JBOD"`; `"RAID"` for `other`.
+- **Side effects:** None.
+- **Algorithm:** An exhaustive `switch` over the ten values.
+- **Usage:** [`StorageArray.displayString`](#storagearray-displaystring); the level dropdown and
+  array summaries in the device editor, device details, data set editor and topology.
+- **Notes:** Not localized — these are technical names.
+
+### `int? faultTolerance(int members)` (RaidLevel) <a id="raidlevel-faulttolerance"></a>
+- **Kind:** method of `RaidLevel`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 505).
+- **Purpose:** Return how many member drives may fail without losing data.
+- **Inputs:** `members` — the array's member count.
+- **Returns:** `0` for `raid0`/`jbod`; `members − 1` for `raid1`; `1` for `raid5`/`raidz1`/`raid10`;
+  `2` for `raid6`/`raidz2`; `3` for `raidz3`; `null` for `other`.
+- **Side effects:** None.
+- **Algorithm:** An exhaustive `switch`.
+- **Usage:** [`StoragePlace.health`](../../datasets/services/dataset_placement.md#health), which
+  turns failed members into `degraded` or `unavailable`.
+- **Notes:** RAID 10 is counted conservatively as tolerating one failure — two in the same mirror
+  pair lose data. `null` means "no defined tolerance"; such an array with failed members is
+  treated as degraded, not lost.
+
+### `static RaidLevel fromJson(String? value)` <a id="raidlevel-fromjson"></a>
+- **Kind:** static method of `RaidLevel`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 519).
+- **Purpose:** Parse a stored level.
+- **Inputs:** `value`.
+- **Returns:** The matching `RaidLevel`; `other` for `null` or an unknown value.
+- **Side effects:** None.
+- **Algorithm:** `values.where((e) => e.name == value).firstOrNull ?? other`.
+- **Usage:** [`StorageArray.fromJson`](#storagearray-fromjson).
+- **Notes:** None.
+
+### `const StorageInfo({this.capacity, this.type, this.interface_, this.serialNumber, this.brand, this.status = StorageHealth.ok, this.statusNote, this.extraJson = const {}})` <a id="storageinfo-new"></a>
 - **Kind:** constructor of `StorageInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 445).
-- **Purpose:** Hold one storage device's capacity, type, physical interface, serial number, and
-  brand.
-- **Inputs:** All fields optional.
+- **Source:** `lib/features/devices/models/device.dart` (line 543).
+- **Purpose:** Hold one storage device's capacity, type, physical interface, serial number,
+  brand and (since 1.8.2) health: `status` and a free-text `statusNote`.
+- **Inputs:** All fields optional; `status` defaults to `StorageHealth.ok`.
 - **Returns:** A new `StorageInfo`.
 - **Side effects:** None.
 - **Algorithm:** Trivial field assignment.
@@ -330,11 +396,12 @@ doc set indexes only executable declarations, not bare type declarations.
   [`StorageInfo.fromJson`](#storageinfo-fromjson).
 - **Notes:** The field is named `interface_` (trailing underscore) in Dart source specifically to
   avoid colliding with the reserved-ish `interface` identifier pattern, while the JSON key remains
-  the natural `'interface'`.
+  the natural `'interface'`. A failed or offline drive stays in the list (so slot indices and
+  data set links keep pointing at it) but holds no usable data; `isHealthy` is `status == ok`.
 
 ### `String get displayString` (StorageInfo) <a id="storageinfo-displaystring"></a>
 - **Kind:** getter of `StorageInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 473).
+- **Source:** `lib/features/devices/models/device.dart` (line 582).
 - **Purpose:** Build a human-readable one-line summary of this storage entry, e.g. `"512 GB SSD
   (M.2 NVMe)"`.
 - **Inputs:** None.
@@ -351,14 +418,15 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="storageinfo-tojson"></a>
 - **Kind:** method of `StorageInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 501).
+- **Source:** `lib/features/devices/models/device.dart` (line 610).
 - **Purpose:** Serialize this storage entry into the JSON persisted inside a device's `storage`
   list.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>`.
 - **Side effects:** None.
 - **Algorithm:** Same spread-then-known-fields shape as `CpuInfo.toJson`; `type`/`interface_` are
-  serialized via their `.jsonValue` (enum name).
+  serialized via their `.jsonValue` (enum name); `status` is written only when not `ok`, and
+  `statusNote` only when set, so a healthy drive serializes exactly as before 1.8.2.
 - **Usage:** Called by [`Device.toJson`](#device-tojson) for each entry of `storage`, and by
   [`mergeUnknownFieldsFrom`](#storageinfo-mergeunknownfieldsfrom).
 - **Notes:** Its `/// Purpose:` block was added in 1.6.1 (see the row-count note above the
@@ -366,7 +434,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory StorageInfo.fromJson(dynamic json)` <a id="storageinfo-fromjson"></a>
 - **Kind:** factory constructor of `StorageInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 517).
+- **Source:** `lib/features/devices/models/device.dart` (line 628).
 - **Purpose:** Parse a `StorageInfo` from either the current JSON object shape or the legacy plain
   string shape (e.g. `"512 GB"`).
 - **Inputs:** `json` — `dynamic`, not `Map<String, dynamic>`, specifically to accept either shape.
@@ -375,7 +443,9 @@ doc set indexes only executable declarations, not bare type declarations.
 - **Side effects:** None.
 - **Algorithm:** 1. If `json is String`, return `StorageInfo(capacity: json)` directly — the legacy
   path. 2. Otherwise cast to `Map<String, dynamic>` and extract each known field, parsing
-  `type`/`interface` via their respective `fromJson` enum parsers.
+  `type`/`interface`/`status` via their respective `fromJson` enum parsers (a missing `status`
+  means `ok`). 3. `extraJson` is the unknown keys plus — when `status` is a string this build does
+  not know — the raw `status`, so it is written back on save.
 - **Usage:** Called by [`Device.fromJson`](#device-fromjson) for each entry of a device's
   `storage` array (which itself branches on whether the whole `storage` value is a legacy single
   string or a list — see [`Device.fromJson`](#device-fromjson)).
@@ -386,7 +456,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `StorageInfo mergeUnknownFieldsFrom(StorageInfo other, {StorageInfo? base})` <a id="storageinfo-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `StorageInfo`.
-- **Source:** `lib/features/devices/models/device.dart` (line 538).
+- **Source:** `lib/features/devices/models/device.dart` (line 657).
 - **Purpose:** Three-way merge this `StorageInfo`'s unknown JSON fields with another's.
 - **Inputs:** `other`; optional `base`.
 - **Returns:** A new `StorageInfo` with merged `extraJson`.
@@ -397,9 +467,73 @@ doc set indexes only executable declarations, not bare type declarations.
   up when the two sides' lists differ in length).
 - **Notes:** Its `/// Purpose:` block was added in 1.6.1.
 
+### `StorageArray({String? id, this.name = '', this.level = RaidLevel.other, this.memberIndices = const [], this.extraJson = const {}})` <a id="storagearray-new"></a>
+- **Kind:** constructor of `StorageArray`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 686).
+- **Purpose:** Create a RAID array (or pool) built from some of a device's storage slots.
+- **Inputs:** `id` — generated (UUID v4) when absent; `name` — may be empty; `level`;
+  `memberIndices` — indices into the device's `storage` list; `extraJson`.
+- **Returns:** A new `StorageArray`.
+- **Side effects:** None (beyond `Uuid().v4()`).
+- **Algorithm:** Field assignment; `id = id ?? const Uuid().v4()`.
+- **Usage:** The device editor's `_StorageArrayDraft` on save, and
+  [`StorageArray.fromJson`](#storagearray-fromjson).
+- **Notes:** Data on an array is one copy however many drives it spans. Data sets reference arrays
+  by `id` (`DataSetStorageLink.arrayIds`), so it must stay stable; `memberIndices` are positional
+  like `storageIndices` and are re-mapped by the device editor when slots move.
+
+### `String get displayString` (StorageArray) <a id="storagearray-displaystring"></a>
+- **Kind:** getter of `StorageArray`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 699).
+- **Purpose:** Name the array for display.
+- **Inputs:** None.
+- **Returns:** `"<level> · <name>"`, or just `level.displayName` when `name` is empty.
+- **Side effects:** None.
+- **Algorithm:** One conditional.
+- **Usage:** [`placeLabel`](../../datasets/services/dataset_placement.md#declarations); the device
+  details' array rows; the data set list's storage lines.
+- **Notes:** None.
+
+### `Map<String, dynamic> toJson()` <a id="storagearray-tojson"></a>
+- **Kind:** method of `StorageArray`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 707).
+- **Purpose:** Serialize this array into the JSON persisted inside a device's `storageArrays` list.
+- **Inputs:** None.
+- **Returns:** `Map<String, dynamic>` — `extraJson`, then `id`, `name` (only when non-empty),
+  `level` (enum name) and `memberIndices`.
+- **Side effects:** None.
+- **Algorithm:** Spread-then-known-fields shape.
+- **Usage:** [`Device.toJson`](#device-tojson); [`mergeUnknownFieldsFrom`](#storagearray-mergeunknownfieldsfrom).
+- **Notes:** None.
+
+### `factory StorageArray.fromJson(Map<String, dynamic> json)` <a id="storagearray-fromjson"></a>
+- **Kind:** factory constructor of `StorageArray`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 720).
+- **Purpose:** Parse a `StorageArray` from JSON.
+- **Inputs:** `json`.
+- **Returns:** A new `StorageArray`; `extraJson` holds every key not in `_storageArrayJsonKeys`
+  (`id`, `name`, `level`, `memberIndices`).
+- **Side effects:** None.
+- **Algorithm:** `name` defaults to `''`; `level` via [`RaidLevel.fromJson`](#raidlevel-fromjson);
+  `memberIndices` maps a list to `List<int>` or defaults to `[]`; a missing `id` gets a fresh one
+  from the constructor.
+- **Usage:** [`Device.fromJson`](#device-fromjson) for each `storageArrays` entry.
+- **Notes:** None.
+
+### `StorageArray mergeUnknownFieldsFrom(StorageArray other, {StorageArray? base})` <a id="storagearray-mergeunknownfieldsfrom"></a>
+- **Kind:** method of `StorageArray`. **Since:** 1.8.2.
+- **Source:** `lib/features/devices/models/device.dart` (line 737).
+- **Purpose:** Three-way merge this array's unknown JSON fields with another's.
+- **Inputs:** `other`; optional `base`.
+- **Returns:** A new `StorageArray` with merged `extraJson`; known fields come from `this`.
+- **Side effects:** None.
+- **Algorithm:** Identical shape to `CpuInfo.mergeUnknownFieldsFrom`.
+- **Usage:** [`Device.mergeUnknownFieldsFrom`](#device-mergeunknownfieldsfrom), paired by `id`.
+- **Notes:** None.
+
 ### `const MoneyValue({required this.amount, required this.currency, required this.defaultCurrency, required this.convertedAmount, required this.exchangeRate, required this.autoRate, this.rateUpdatedAt, this.extraJson = const {}})` <a id="moneyvalue-new"></a>
 - **Kind:** constructor of `MoneyValue`.
-- **Source:** `lib/features/devices/models/device.dart` (line 567).
+- **Source:** `lib/features/devices/models/device.dart` (line 769).
 - **Purpose:** Hold a price entered in any currency together with its conversion into the app's
   default currency, the rate used, and whether that rate was automatic or manual.
 - **Inputs:** `amount`, `currency`, `defaultCurrency`, `convertedAmount`, `exchangeRate`,
@@ -418,7 +552,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="moneyvalue-tojson"></a>
 - **Kind:** method of `MoneyValue`.
-- **Source:** `lib/features/devices/models/device.dart` (line 583).
+- **Source:** `lib/features/devices/models/device.dart` (line 785).
 - **Purpose:** Serialize this money value into the JSON persisted inside `purchasePrice`,
   `soldPrice`, or a `DeviceRecurringCost.price`.
 - **Inputs:** None.
@@ -434,7 +568,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory MoneyValue.fromJson(Map<String, dynamic> json)` <a id="moneyvalue-fromjson"></a>
 - **Kind:** factory constructor of `MoneyValue`.
-- **Source:** `lib/features/devices/models/device.dart` (line 601).
+- **Source:** `lib/features/devices/models/device.dart` (line 803).
 - **Purpose:** Parse a `MoneyValue` from JSON, tolerating an older `baseCurrency` key in place of
   `defaultCurrency` and a missing `convertedAmount`.
 - **Inputs:** `json`.
@@ -455,7 +589,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `MoneyValue mergeUnknownFieldsFrom(MoneyValue other, {MoneyValue? base})` <a id="moneyvalue-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `MoneyValue`.
-- **Source:** `lib/features/devices/models/device.dart` (line 628).
+- **Source:** `lib/features/devices/models/device.dart` (line 830).
 - **Purpose:** Three-way merge this `MoneyValue`'s unknown JSON fields with another's.
 - **Inputs:** `other`; optional `base`.
 - **Returns:** A new `MoneyValue` with merged `extraJson`.
@@ -469,7 +603,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `DeviceRecurringCost({String? id, required this.kind, this.name, required this.price, this.billingCycle = BillingCycle.monthly, this.extraJson = const {}})` <a id="devicerecurringcost-new"></a>
 - **Kind:** constructor of `DeviceRecurringCost`.
-- **Source:** `lib/features/devices/models/device.dart` (line 655).
+- **Source:** `lib/features/devices/models/device.dart` (line 857).
 - **Purpose:** Hold one recurring device cost (lease, insurance, subscription, or other), generating
   a fresh UUID `id` when none is supplied.
 - **Inputs:** Optional `id` (auto-generated if `null`); `kind`, `price` required; optional `name`;
@@ -503,7 +637,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `double get annualConvertedAmount` (DeviceRecurringCost) <a id="devicerecurringcost-annualconvertedamount"></a>
 - **Kind:** getter of `DeviceRecurringCost`.
-- **Source:** `lib/features/devices/models/device.dart` (line 669).
+- **Source:** `lib/features/devices/models/device.dart` (line 871).
 - **Purpose:** Project this recurring cost to an equivalent yearly converted amount, based on its
   `billingCycle`.
 - **Inputs:** None.
@@ -521,7 +655,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="devicerecurringcost-tojson"></a>
 - **Kind:** method of `DeviceRecurringCost`.
-- **Source:** `lib/features/devices/models/device.dart` (line 686).
+- **Source:** `lib/features/devices/models/device.dart` (line 888).
 - **Purpose:** Serialize this recurring cost into the JSON persisted inside a device's
   `recurringCosts` list.
 - **Inputs:** None.
@@ -534,7 +668,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory DeviceRecurringCost.fromJson(Map<String, dynamic> json)` <a id="devicerecurringcost-fromjson"></a>
 - **Kind:** factory constructor of `DeviceRecurringCost`.
-- **Source:** `lib/features/devices/models/device.dart` (line 700).
+- **Source:** `lib/features/devices/models/device.dart` (line 902).
 - **Purpose:** Parse a `DeviceRecurringCost` from JSON.
 - **Inputs:** `json`.
 - **Returns:** A new `DeviceRecurringCost`; throws if `price` is missing (required, non-nullable).
@@ -546,7 +680,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `DeviceRecurringCost mergeUnknownFieldsFrom(DeviceRecurringCost other, {DeviceRecurringCost? base})` <a id="devicerecurringcost-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `DeviceRecurringCost`.
-- **Source:** `lib/features/devices/models/device.dart` (line 716).
+- **Source:** `lib/features/devices/models/device.dart` (line 918).
 - **Purpose:** Three-way merge this cost's unknown JSON fields with another's, including the
   nested `price`'s own unknown fields.
 - **Inputs:** `other`; optional `base`.
@@ -566,12 +700,12 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Device({String? id, required this.name, required this.category, ..., DateTime? modifiedAt, this.extraJson = const {}})` <a id="device-new"></a>
 - **Kind:** constructor of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 781).
+- **Source:** `lib/features/devices/models/device.dart` (line 986).
 - **Purpose:** Create a device record, generating a fresh UUID `id` and UTC `modifiedAt` timestamp
   when neither is supplied.
 - **Inputs:** `name`, `category` required; every other field (identity, specs, location,
   lifecycle, finance, `notes`) optional with sensible defaults (`cpu`/`gpu` default to empty
-  `const` instances, `storage`/`recurringCosts` default to `[]`, `isRetired`/`isSold` default to
+  `const` instances, `storage`/`storageArrays`/`recurringCosts` default to `[]`, `isRetired`/`isSold` default to
   `false`). The icon fields are `emoji`, `imagePath` (the user's own photo) and, since 1.6.1,
   `templateImage` — a bundled thumbnail asset path (as `DeviceTemplate.image` stores it) the user
   chose by hand, which wins over automatic template matching in `DeviceAvatar`.
@@ -602,7 +736,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `DeviceLifecycleStatus get lifecycleStatus` <a id="lifecyclestatus"></a>
 - **Kind:** getter of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 825).
+- **Source:** `lib/features/devices/models/device.dart` (line 1031).
 - **Purpose:** Derive the device's lifecycle bucket (`sold`/`retired`/`inService`) from the
   `isSold`/`isRetired` flags, with `isSold` taking priority when both are set.
 - **Inputs:** None.
@@ -624,7 +758,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `bool get hasFinancialData` <a id="hasfinancialdata"></a>
 - **Kind:** getter of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 844).
+- **Source:** `lib/features/devices/models/device.dart` (line 1050).
 - **Purpose:** Return whether this device has any financial data recorded at all — a purchase
   price, a sold price, or at least one recurring cost.
 - **Inputs:** None.
@@ -644,7 +778,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `int? serviceDays({DateTime? asOf})` <a id="servicedays"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 853).
+- **Source:** `lib/features/devices/models/device.dart` (line 1059).
 - **Purpose:** Compute the number of days this device has been (or was) in service, counting from
   `purchaseDate` through either now (if still in service) or `retiredDate` (if not).
 - **Inputs:** Optional `asOf` — overrides "now" for the "still in service" branch; defaults to
@@ -667,7 +801,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `double recurringCostThrough({DateTime? asOf})` <a id="recurringcostthrough"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 866).
+- **Source:** `lib/features/devices/models/device.dart` (line 1072).
 - **Purpose:** Sum every recurring cost's daily-equivalent rate across the device's total service
   days, giving the total amount spent on recurring costs to date (or projected to `asOf`).
 - **Inputs:** Optional `asOf`, forwarded to [`serviceDays`](#servicedays).
@@ -690,7 +824,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `double totalCost({DateTime? asOf})` <a id="totalcost"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 880).
+- **Source:** `lib/features/devices/models/device.dart` (line 1086).
 - **Purpose:** Compute this device's total cost of ownership: purchase price plus accumulated
   recurring costs, minus any sold price recovered.
 - **Inputs:** Optional `asOf`, forwarded to [`recurringCostThrough`](#recurringcostthrough).
@@ -712,7 +846,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `double? averageDailyCost({DateTime? asOf})` <a id="averagedailycost"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 892).
+- **Source:** `lib/features/devices/models/device.dart` (line 1098).
 - **Purpose:** Compute the average daily cost of owning this device, or `null` when there's no
   financial data or no `purchaseDate` to measure days from.
 - **Inputs:** Optional `asOf`, forwarded to both [`serviceDays`](#servicedays) and
@@ -736,7 +870,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `double? get ppi` <a id="ppi"></a>
 - **Kind:** getter of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 905).
+- **Source:** `lib/features/devices/models/device.dart` (line 1111).
 - **Purpose:** Compute pixels-per-inch from the device's screen resolution and physical screen
   size.
 - **Inputs:** None.
@@ -759,7 +893,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `static double? _parseScreenDiagonal(String? s)` <a id="_parsescreendiagonal"></a>
 - **Kind:** private static method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 920).
+- **Source:** `lib/features/devices/models/device.dart` (line 1126).
 - **Purpose:** Parse a free-text screen-size string (e.g. `6.7"`, `15.6 inch`, `13寸`) into a plain
   numeric inch value.
 - **Inputs:** `s` — nullable, free-text.
@@ -775,7 +909,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Device copyWith({...many optional fields..., bool clearEmoji = false, ...})` <a id="copywith"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 936).
+- **Source:** `lib/features/devices/models/device.dart` (line 1142).
 - **Purpose:** Create a copy of this device with any subset of fields replaced, and — for every
   nullable field — an explicit `clearXxx` flag to null it out entirely (since passing `null` for an
   optional parameter is indistinguishable from "not provided" in Dart).
@@ -788,7 +922,7 @@ doc set indexes only executable declarations, not bare type declarations.
   `clearXxx` fields nulled, everything else unchanged.
 - **Side effects:** None.
 - **Algorithm:** For every clearable field: `clearXxx ? null : (xxx ?? this.xxx)`; for
-  non-clearable fields (`name`, `category`, `cpu`, `gpu`, `storage`, `isRetired`, `isSold`,
+  non-clearable fields (`name`, `category`, `cpu`, `gpu`, `storage`, `storageArrays`, `isRetired`, `isSold`,
   `recurringCosts`): `xxx ?? this.xxx`; `modifiedAt: modifiedAt ?? DateTime.now().toUtc()`.
 - **Returns (continued):** `extraJson` is always copied unchanged — `copyWith` cannot modify
   unrecognized/preserved fields.
@@ -804,18 +938,18 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="device-tojson"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 1053).
+- **Source:** `lib/features/devices/models/device.dart` (line 1261).
 - **Purpose:** Serialize this device into the JSON persisted in `device_data.json` and synced to
   the WebDAV remote.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>` — `extraJson` spread first, then every known field, most
   gated `if (field != null)`; `cpu`/`gpu` only included `if (!cpu.isEmpty)`/`if (!gpu.isEmpty)`;
-  `storage`/`recurringCosts` only included `if (...isNotEmpty)`; `isRetired`/`isSold` only included
+  `storage`/`storageArrays`/`recurringCosts` only included `if (...isNotEmpty)`; `isRetired`/`isSold` only included
   `if (true)` (omitted entirely when `false`); `id`/`name`/`category`/`modifiedAt` are always
   present.
 - **Side effects:** None.
 - **Algorithm:** Direct field-to-key mapping with the conditional-inclusion rules above; nested
-  values (`cpu`, `gpu`, each `storage`/`recurringCosts` entry, `purchasePrice`/`soldPrice`) are
+  values (`cpu`, `gpu`, each `storage`/`storageArrays`/`recurringCosts` entry, `purchasePrice`/`soldPrice`) are
   serialized via their own `toJson()`.
 - **Usage:** Called by [`DeviceData.toJson`](#devicedata-tojson) for each device, and by
   `local_api_server.dart`'s `mergeUnknownFields` callback (`primary.mergeUnknownFieldsFrom(...)`)
@@ -829,7 +963,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory Device.fromJson(Map<String, dynamic> json)` <a id="device-fromjson"></a>
 - **Kind:** factory constructor of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 1097).
+- **Source:** `lib/features/devices/models/device.dart` (line 1307).
 - **Purpose:** Parse a `Device` from JSON, tolerating the legacy single-string `storage` shape in
   addition to the current list-of-objects shape.
 - **Inputs:** `json`.
@@ -840,6 +974,8 @@ doc set indexes only executable declarations, not bare type declarations.
   [`CpuInfo.fromJson`](#cpuinfo-fromjson)/[`GpuInfo.fromJson`](#gpuinfo-fromjson) when present,
   else the empty `const` default; `storage` branches on whether `json['storage']` is a `String`
   (legacy: wrap in a single-element list via `StorageInfo.fromJson`) or a `List` (map each entry);
+  `storageArrays` maps each entry through [`StorageArray.fromJson`](#storagearray-fromjson) or
+  defaults to `[]`;
   date fields via `DateTime.parse`; the optional `templateImage` string copied as is; `extraJson`
   via `unknownJsonFields(json, _deviceJsonKeys)`.
 - **Usage:**
@@ -855,10 +991,10 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Device mergeUnknownFieldsFrom(Device other, {Device? base})` <a id="device-mergeunknownfieldsfrom"></a>
 - **Kind:** method of `Device`.
-- **Source:** `lib/features/devices/models/device.dart` (line 1168).
+- **Source:** `lib/features/devices/models/device.dart` (line 1383).
 - **Purpose:** Merge this device's unknown JSON fields with another's, and additionally recurse the
   same three-way unknown-field merge into every nested value object (`cpu`, `gpu`, each `storage`
-  entry, `purchasePrice`, `soldPrice`, each `recurringCosts` entry) so no nested unrecognized field
+  entry, each `storageArrays` entry, `purchasePrice`, `soldPrice`, each `recurringCosts` entry) so no nested unrecognized field
   is lost during a sync merge.
 - **Inputs:** `other` — the other side (secondary); optional `base` — the last-synced snapshot.
 - **Returns:** A new `Device` — same known top-level fields as `this`, but with every nested value
@@ -873,7 +1009,9 @@ doc set indexes only executable declarations, not bare type declarations.
   result `isEmpty`, remove the key entirely rather than writing an empty object. 3. `storage`: if
   `this.storage` is non-empty, rebuild the whole list by merging each index `i` of `this.storage`
   against `other.storage[i]` (or a fresh empty `StorageInfo()` if `other` has fewer entries) and
-  `base.storage[i]` (if `base` exists and has that many entries). 4. `purchasePrice`/`soldPrice`:
+  `base.storage[i]` (if `base` exists and has that many entries). 3a. `storageArrays` (since
+  1.8.2): if non-empty, rebuild the list by merging each array with the `other` and `base` array
+  of the same **id** (an array `other` lacks is kept as is). 4. `purchasePrice`/`soldPrice`:
   merge only when *both* `this` and `other` have a non-null value for that field (otherwise the
   field is left as whatever `toJson()` already produced from `this`). 5. `recurringCosts`: same
   index-aligned rebuild as `storage`, except the fallback for a missing `other` entry is
@@ -889,7 +1027,8 @@ doc set indexes only executable declarations, not bare type declarations.
   `mergeUnknownFields` callback into `mergeRecords<Device>` — see
   [Three-Way Merge](../../../../algorithms/three-way-merge.md) for how `mergeRecords<T>` decides
   which side is `primary`/`secondary` before ever calling this)
-- **Notes:** List merging here is strictly **index-aligned**, not matched by any identity within
+- **Notes:** List merging of `storage`/`recurringCosts` is strictly **index-aligned** (only
+  `storageArrays` is matched by id), not matched by any identity within
   `storage`/`recurringCosts` entries themselves (`StorageInfo`/`DeviceRecurringCost` list items
   have no stable cross-side matching key beyond their position, except that `DeviceRecurringCost`
   does have an `id` which this method does *not* use for matching) — if the two sides reordered or
@@ -899,7 +1038,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `const DeviceData({this.devices = const [], this.extraJson = const {}})` <a id="devicedata-new"></a>
 - **Kind:** constructor of `DeviceData`.
-- **Source:** `lib/features/devices/models/device.dart` (line 1251).
+- **Source:** `lib/features/devices/models/device.dart` (line 1481).
 - **Purpose:** Hold the top-level device list persisted to `device_data.json`.
 - **Inputs:** Optional `devices` (defaults to `[]`); optional `extraJson`.
 - **Returns:** A new `DeviceData`.
@@ -915,7 +1054,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `Map<String, dynamic> toJson()` <a id="devicedata-tojson"></a>
 - **Kind:** method of `DeviceData`.
-- **Source:** `lib/features/devices/models/device.dart` (line 1258).
+- **Source:** `lib/features/devices/models/device.dart` (line 1488).
 - **Purpose:** Serialize the device list container into the JSON written to `device_data.json`.
 - **Inputs:** None.
 - **Returns:** `Map<String, dynamic>` with `devices` (each serialized via
@@ -927,7 +1066,7 @@ doc set indexes only executable declarations, not bare type declarations.
 
 ### `factory DeviceData.fromJson(Map<String, dynamic> json)` <a id="devicedata-fromjson"></a>
 - **Kind:** factory constructor of `DeviceData`.
-- **Source:** `lib/features/devices/models/device.dart` (line 1268).
+- **Source:** `lib/features/devices/models/device.dart` (line 1498).
 - **Purpose:** Parse a `DeviceData` from the decoded contents of `device_data.json`.
 - **Inputs:** `json`.
 - **Returns:** A new `DeviceData`; `devices` defaults to `[]` if the key is absent.

@@ -98,7 +98,7 @@ class ImportExportService {
   /// Inputs: None.
   /// Returns: `String`.
   /// Side effects: May read or mutate application state, storage, or service resources.
-  /// Notes: None.
+  /// Notes: Failed or offline drives carry their status in parentheses; RAID arrays get a `**RAID:**` line each and appear by name under a data set's linked storages.
   static String buildMarkdown({
     required DeviceData deviceData,
     required NetworkData networkData,
@@ -213,7 +213,16 @@ class ImportExportService {
 
         // Storage
         for (final s in d.storage) {
-          if (!s.isEmpty) buf.writeln('- **Storage:** ${s.displayString}');
+          if (s.isEmpty) continue;
+          final status = s.isHealthy
+              ? ''
+              : ' (${s.status.name}${s.statusNote != null ? ': ${s.statusNote}' : ''})';
+          buf.writeln('- **Storage:** ${s.displayString}$status');
+        }
+        for (final a in d.storageArrays) {
+          buf.writeln(
+            '- **RAID:** ${a.displayString} — storage ${a.memberIndices.map((i) => i + 1).join(', ')}',
+          );
         }
 
         // Screen
@@ -334,12 +343,17 @@ class ImportExportService {
           for (final link in ds.storageLinks) {
             final device = deviceMap[link.deviceId];
             final dName = device?.name ?? link.deviceId;
-            if (device != null && link.storageIndices.isNotEmpty) {
-              final slots = link.storageIndices
-                  .where((i) => i < device.storage.length)
-                  .map((i) => device.storage[i].displayString)
-                  .where((s) => s.isNotEmpty)
-                  .toList();
+            if (device != null && !link.isEmpty) {
+              final slots = [
+                ...link.storageIndices
+                    .where((i) => i < device.storage.length)
+                    .map((i) => device.storage[i].displayString)
+                    .where((s) => s.isNotEmpty),
+                for (final id in link.arrayIds)
+                  ...device.storageArrays
+                      .where((a) => a.id == id)
+                      .map((a) => a.displayString),
+              ];
               if (slots.isNotEmpty) {
                 buf.writeln('- $dName: ${slots.join(', ')}');
               } else {

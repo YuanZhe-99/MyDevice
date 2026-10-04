@@ -27,9 +27,18 @@ current source in `lib/features/*/models/*.dart`, not a general Flutter data-mod
   getter like `'LPDDR5X'`).
 - **Storage:** `storage` (`List<StorageInfo>`; each `StorageInfo` has `capacity`, `type`
   (`StorageType`: `ssd`, `sdCard`, `hdd`), `interface_` (`StorageInterface`: `m2Nvme`,
-  `sata25`, `m2Sata`, `usb`), `serialNumber`, `brand`, plus `extraJson`).
-  `StorageInfo.fromJson` also accepts a legacy plain-string format (e.g. `"512 GB"`) for
-  backward compatibility.
+  `sata25`, `m2Sata`, `usb`), `serialNumber`, `brand`, `status` (`StorageHealth`: `ok`,
+  `failed`, `offline`; since 1.8.2, written only when not `ok`), `statusNote` (since 1.8.2),
+  plus `extraJson`). `StorageInfo.fromJson` also accepts a legacy plain-string format (e.g.
+  `"512 GB"`) for backward compatibility; a `status` value it does not know reads as `ok` and is
+  kept in `extraJson`, so a newer build's value survives a save.
+- **RAID arrays** (since 1.8.2): `storageArrays` (`List<StorageArray>`, omitted when empty); each
+  has `id` (UUID, stable — data sets link to it), `name` (omitted when empty), `level`
+  (`RaidLevel`: `raid0`, `raid1`, `raid5`, `raid6`, `raid10`, `raidz1`, `raidz2`, `raidz3`,
+  `jbod`, `other`), `memberIndices` (`List<int>`, indices into `storage`), plus `extraJson`. A
+  drive belongs to at most one array (the editor enforces it). `Device.mergeUnknownFieldsFrom`
+  merges arrays' unknown fields by `id`. Older builds keep the whole `storageArrays` key, and
+  `status`/`statusNote` inside each storage entry, through `extraJson`.
 - **Display/battery/OS:** `screenSize`, `screenResolutionW`, `screenResolutionH`,
   `battery`, `os`. A derived `ppi` getter computes pixel density from resolution and
   parsed screen diagonal.
@@ -78,9 +87,14 @@ source: its constructor takes only `networkId`, `deviceId`, `addressMode`, `ipAd
 - **`DataSet`:** `id`, `name`, `emoji` (defaults to `'📁'` on parse if absent),
   `storageLinks` (`List<DataSetStorageLink>`), `modifiedAt`, `extraJson`.
 - **`DataSetStorageLink`:** `deviceId` plus `storageIndices` (`List<int>`) — the storage
-  slot *indices* on that device's `storage` list that belong to this dataset. Every listed slot
-  holds a full, equal copy of the data set — a data set is never split across storages — so the
-  number of resolvable slots is its copy count. See
+  slot *indices* on that device's `storage` list that belong to this dataset — and, since 1.8.2,
+  `arrayIds` (`List<String>`, omitted when empty) — ids of that device's `storageArrays`. Every
+  listed slot and every listed array holds a full, equal copy of the data set — a data set is never
+  split across storages, and an array is one copy however many drives it spans — so the number of
+  resolvable places is its copy count. A copy on a failed or offline drive, or on an array that lost
+  more drives than its level tolerates, still counts towards that number but not towards the
+  *usable* copies. An older build keeps `arrayIds` through `extraJson` but does not count those
+  copies. See
   [Datasets](features/datasets.md) for how these indices are kept valid when a device's
   storage list changes.
 

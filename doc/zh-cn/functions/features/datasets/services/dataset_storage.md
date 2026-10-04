@@ -1,6 +1,6 @@
 # lib/features/datasets/services/dataset_storage.dart
 
-`DataSetStorage` 持久化 `dataset_data.json` 文件并拥有数据集需要的唯一横切逻辑：设备的 `storage` 列表被重排或移除条目时保持每个数据集位置 `storageIndices` 有效。`remapDeviceStorageLinks` 的概念级走查（已对照此精确源码确认）见 [数据集 — remapDeviceStorageLinks()](../../../../features/datasets.md#remapdevicestoragelinks)，持久化 JSON 形态见 [数据格式 — DataSet / DataSetStorageLink](../../../../data-formats.md#dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart)。像 `NetworkStorage` 一样，它经 `DeviceStorage.getAppDir()`（`../../../devices/services/device_storage.md`）解析文件位置，并在每次写入后通知 [`AutoSyncService`](../../../shared/services/auto_sync_service.md)。
+`DataSetStorage` 持久化 `dataset_data.json` 文件并拥有数据集需要的唯一横切逻辑：设备的 `storage` 列表被重排或移除条目、或其 RAID 阵列变化时，保持每个数据集位置 `storageIndices`（及其 `arrayIds`）有效。`remapDeviceStorageLinks` 的概念级走查（已对照此精确源码确认）见 [数据集 — remapDeviceStorageLinks()](../../../../features/datasets.md#remapdevicestoragelinks)，持久化 JSON 形态见 [数据格式 — DataSet / DataSetStorageLink](../../../../data-formats.md#dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart)。像 `NetworkStorage` 一样，它经 `DeviceStorage.getAppDir()`（`../../../devices/services/device_storage.md`）解析文件位置，并在每次写入后通知 [`AutoSyncService`](../../../shared/services/auto_sync_service.md)。
 
 ## 声明
 
@@ -13,10 +13,11 @@
 | [`save`](#save) | 静态方法 | A | 持久化 `DataSetData` 并通知自动同步服务。 |
 | [`addOrUpdate`](#addorupdate) | 静态方法 | A | 按 id 插入或替换数据集。 |
 | [`delete`](#delete) | 静态方法 | A | 按 id 删除数据集。 |
-| [`remapDeviceStorageLinks`](#remapdevicestoragelinks) | 静态方法 | A | 设备存储列表变化后重映射（或丢弃）数据集存储槽索引。 |
+| [`remapDeviceStorageLinks`](#remapdevicestoragelinks) | 静态方法 | A | 设备存储或阵列变化后重映射（或丢弃）数据集槽索引和阵列 id。 |
+| [`_sameIds`](#sameids) | 静态方法（私有） | A | 逐元素比较两个阵列 id 列表是否相等。 |
 | [`_sameIndices`](#sameindices) | 静态方法（私有） | A | 逐元素比较两个存储索引列表是否相等。 |
 
-行数（9）与 `grep -c 'Purpose:' dataset_storage.dart`（9）精确匹配。
+行数（10）与 `grep -c 'Purpose:' dataset_storage.dart`（10）精确匹配。
 
 自 1.6.2 起每次写入都是**原子且串行的**：`save` 和每个读-改-写变更方法都在按文件路径的写队列（`DeviceStorage.serializeWrite`，每个路径一个 `AtomicWriteQueue`）中运行，重新读取文件，并以私有的 `_write` 结束，后者经临时文件加重命名替换文件（`DeviceStorage.atomicWrite`）——因此两个重叠的编辑不会丢失彼此的更改，崩溃也不会留下被截断的文件。已在队列中运行的代码必须调用 `_write`，绝不能调用公开的 `save`，否则会等待自己而死锁。容器的每次重建还会带过文件的未知顶层字段（`extraJson`），使旧版本不会丢弃新版本的数据。
 
@@ -24,7 +25,7 @@
 
 ### `static Future<File> _getFile()` <a id="getfile"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 17 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 27 行）。
 - **用途：** 解析当前应用目录内 `dataset_data.json` 文件。
 - **输入：** 无。
 - **返回：** `Future<File>`。
@@ -53,7 +54,7 @@
 
 ### `static Future<DataSetData> load()` <a id="load"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 27 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 37 行）。
 - **用途：** 从 `dataset_data.json` 加载持久化数据集列表。
 - **输入：** 无。
 - **返回：** `Future<DataSetData>` — 文件缺席或为空时 `const DataSetData()`（空）。
@@ -68,7 +69,7 @@
 
 ### `static Future<void> save(DataSetData data)` <a id="save"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 41 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 53 行）。
 - **用途：** 把完整数据集列表持久化到 `dataset_data.json` 并通知自动同步服务本地数据已变。
 - **输入：** `data`。
 - **返回：** `Future<void>`。
@@ -83,7 +84,7 @@
 
 ### `static Future<void> addOrUpdate(DataSet dataset)` <a id="addorupdate"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 53 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 72 行）。
 - **用途：** 插入新数据集或按 `id` 替换既有数据集。
 - **输入：** `dataset`。
 - **返回：** `Future<void>`。
@@ -98,7 +99,7 @@
 
 ### `static Future<void> delete(String id)` <a id="delete"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 70 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 89 行）。
 - **用途：** 按 id 删除数据集。
 - **输入：** `id`。
 - **返回：** `Future<void>`。
@@ -111,20 +112,31 @@
   （来自 [`dataset_list_page.md`](../views/dataset_list_page.md) 的 `_deleteDataSet`）
 - **备注：** 与 `DeviceStorage.deleteDevice` 不同，这不清理任何反向引用——数据集无依赖者，删除它无需级联（对比 [设备 — 退役/出售/删除的级联规则](../../../../features/devices.md#cascade-rules-on-retiresell-delete)，那里删除*设备*确实清理其数据集存储链接，反方向）。
 
-### `static Future<void> remapDeviceStorageLinks({required String deviceId, required int oldSlotCount, required Map<int, int> indexMap})` <a id="remapdevicestoragelinks"></a>
+### `static Future<void> remapDeviceStorageLinks({required String deviceId, required int oldSlotCount, required Map<int, int> indexMap, Set<String>? keptArrayIds, Map<int, String> arrayOfSlot = const {}})` <a id="remapdevicestoragelinks"></a>
 - **种类：** 静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 86 行）。
-- **用途：** 设备存储列表被重排或移除条目后，为一台设备重映射每个数据集的 `storageIndices`，使链接继续指向正确物理槽而非静默漂移。
-- **输入：** `deviceId` — 哪台设备存储变了；`oldSlotCount` — 编辑前有多少槽；`indexMap` — 把每个**旧**槽索引（`0..oldSlotCount-1`）映射到其**新**索引；映射缺席的旧索引意为该槽被移除无替代。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 110 行）。
+- **用途：** 设备存储列表或 RAID 阵列变化后，为一台设备重映射每个数据集的 `storageIndices`（以及自 1.8.2 起的 `arrayIds`），使链接继续指向正确的物理槽或阵列而非静默漂移。
+- **输入：** `deviceId` — 哪台设备存储变了；`oldSlotCount` — 编辑前有多少槽；`indexMap` — 把每个**旧**槽索引（`0..oldSlotCount-1`）映射到其**新**索引；映射缺席的旧索引意为该槽被移除无替代；`keptArrayIds` — 非 null 时为编辑后该设备的阵列 id（指向其他阵列的链接被丢弃）；`arrayOfSlot` — **新**槽索引 → 该槽现在所属阵列的 id。
 - **返回：** `Future<void>`。
 - **副作用：** 经写队列（[`_serialised`](#serialised) → [`_write`](#write)）重写 `dataset_data.json`——但只在至少一个数据集实际变化时；给触碰的每个数据集 bump `modifiedAt`（经 [`copyWith`](../models/dataset.md#copywith)）。
-- **算法：** 1. 检查 `indexMap` 对每个索引 `0..oldSlotCount-1` 是否恒等映射；是则不做任何加载或保存地立即返回（空操作快速路径）。2. 否则加载所有数据集。3. 对每个数据集、每个 `DataSetStorageLink`：其 `deviceId` 不匹配则保持不变。否则在 `indexMap` 查找链接每个 `storageIndices` 构建 `newIndices`——有映射的索引保留在新位置；无映射的索引（`indexMap[idx] == null`）完全丢弃。4. `newIndices` 与原始 `storageIndices` 不同（按长度或按内容，经 [`_sameIndices`](#sameindices)）时标记此数据集已变。5. `newIndices` 最终为空的链接被完全从数据集 `storageLinks` 丢弃（而非带空列表保留）。6. 至少一个链接变化的任何数据集经 `copyWith(storageLinks: links)` 替换（这也 bump `modifiedAt`）；未受影响数据集原样通过。7. 无数据集变化时保存前返回；否则保存更新数据集列表。
-- **用法：** 设备编辑器保存处理器每次保存时调用，带用户在编辑/重排/移除存储行时跟踪的旧→新槽索引映射——此函数调用方必须维持的调用点契约见 [数据集 — 设备编辑器集成](../../../../features/datasets.md#device-editor-integration)。
-- **备注：** 这是 `AGENTS.md` 点名的"重排/移除设备存储槽必须保持数据集链接同步"规则的唯一实现（见 [数据集 — 存储槽索引链接](../../../../features/datasets.md#storage-slot-index-linking)）——任何让用户重排或移除存储槽的*新*代码路径也必须带结果索引映射调用此函数，否则数据集链接会静默指向错误（或不复存在）槽。步骤 1 的恒等映射快速路径意味着每次设备保存无条件调用在存储实际未被重排/移除时便宜。
+- **算法：** 1. 若 `indexMap` 对每个索引 `0..oldSlotCount-1` 都是恒等映射、`keptArrayIds` 为 null 且 `arrayOfSlot` 为空，则不做任何加载或保存地立即返回（空操作快速路径）。2. 否则加载所有数据集。3. 对每个数据集、每个 `DataSetStorageLink`：其 `deviceId` 不匹配则保持不变。否则从链接的 `arrayIds`（给出 `keptArrayIds` 时按其过滤）开始构建 `newArrays`，然后在 `indexMap` 中查找链接的每个 `storageIndices`——无映射的索引丢弃；新槽位于 `arrayOfSlot` 中的已映射索引移到该阵列（只加入 `newArrays` 一次）；其他已映射索引以新位置保留在 `newIndices` 中。4. `newIndices` 与原始 `storageIndices` 不同（按长度或内容，经 [`_sameIndices`](#sameindices)）或 `newArrays` 与 `arrayIds` 不同（经 [`_sameIds`](#sameids)）时标记此数据集已变。5. 既无槽也无阵列的链接被完全从数据集 `storageLinks` 丢弃。6. 至少一个链接变化的任何数据集经 `copyWith(storageLinks: links)` 替换（这也 bump `modifiedAt`）；未受影响数据集原样通过。7. 无数据集变化时保存前返回；否则保存更新数据集列表。
+- **用法：** 设备编辑器保存处理器每次保存时调用，带用户在编辑/重排/移除存储行时跟踪的旧→新槽索引映射、保留的阵列 id 以及所编辑阵列的槽 → 阵列成员关系——此函数调用方必须维持的调用点契约见 [数据集 — 设备编辑器集成](../../../../features/datasets.md#device-editor-integration)。
+- **备注：** 这是 `AGENTS.md` 点名的"重排/移除设备存储槽必须保持数据集链接同步"规则的唯一实现（见 [数据集 — 存储槽索引链接](../../../../features/datasets.md#storage-slot-index-linking)）——任何让用户重排或移除存储槽的*新*代码路径也必须带结果索引映射调用此函数，否则数据集链接会静默指向错误（或不复存在）槽。阵列链接按 id 记录，因此在槽变化后依然有效；指向成为阵列成员的槽的链接会移到该阵列，因为阵列的数据算一份副本。编辑器总是传入 `keptArrayIds`，因此从那里调用时步骤 1 的快速路径不再短路；加载后比较在没有链接变化时仍不保存任何东西。
+
+### `static bool _sameIds(List<String> a, List<String> b)` <a id="sameids"></a>
+- **种类：** 私有静态方法。**起始版本：** 1.8.2。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 185 行）。
+- **用途：** 逐元素比较两个阵列 id 列表是否相等。
+- **输入：** `a`、`b`。
+- **返回：** `bool`——长度不匹配时为 `false`；否则只有每个位置都匹配时为 `true`。
+- **副作用：** 无。
+- **算法：** 长度检查，然后用 `for` 循环比较 `a[i]` 与 `b[i]`。
+- **用法：** 只被 [`remapDeviceStorageLinks`](#remapdevicestoragelinks) 调用，用于判断链接的 `arrayIds` 是否变化。
+- **备注：** 与 [`_sameIndices`](#sameindices) 一样对顺序敏感。
 
 ### `static bool _sameIndices(List<int> a, List<int> b)` <a id="sameindices"></a>
 - **种类：** 私有静态方法。
-- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 146 行）。
+- **来源：** `lib/features/datasets/services/dataset_storage.dart`（第 198 行）。
 - **用途：** 逐元素比较两个存储索引列表是否相等。
 - **输入：** `a`、`b`。
 - **返回：** `bool` — 长度不匹配立即 `false`；否则只在每个位置都匹配时 `true`。

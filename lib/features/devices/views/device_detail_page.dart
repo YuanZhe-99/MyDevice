@@ -8,7 +8,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/utils/detail_layout.dart';
 import '../models/device.dart';
 import '../services/exchange_rate_service.dart';
+import '../../datasets/services/dataset_placement.dart';
 import '../widgets/device_avatar.dart';
+import '../widgets/storage_health_label.dart';
 import 'device_edit_page.dart';
 
 class DeviceDetailPage extends StatelessWidget {
@@ -480,7 +482,25 @@ class DeviceDetailPage extends StatelessWidget {
                 l10n.storageSerialNumber,
                 device.storage[i].serialNumber,
               ),
+            if (!device.storage[i].isHealthy)
+              _statusRow(
+                cs,
+                l10n.storageStatus,
+                [
+                  storageHealthLabel(l10n, device.storage[i].status),
+                  if (device.storage[i].statusNote != null)
+                    device.storage[i].statusNote!,
+                ].join(' · '),
+                key: ValueKey('device-storage-status-$i'),
+              ),
+            for (final a in device.storageArrays)
+              if (StoragePlace.array(device, a).memberIndices.contains(i))
+                _specRow(
+                  l10n.storageArrays,
+                  l10n.storageInArray(a.displayString),
+                ),
           ],
+          for (final a in device.storageArrays) _arrayRow(cs, l10n, device, a),
         ]),
         const SizedBox(height: 16),
       ],
@@ -775,6 +795,71 @@ class DeviceDetailPage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Purpose: Build a spec row whose value is drawn in the error colour.
+  /// Inputs: `cs`, `label`, `value`, `key`.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: Used for a failed or offline drive and a degraded or lost array.
+  Widget _statusRow(ColorScheme cs, String label, String value, {Key? key}) {
+    return Padding(
+      key: key,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Icon(Icons.error_outline, size: 16, color: cs.error),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(value, style: TextStyle(color: cs.error)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Purpose: Build the summary row of one RAID array.
+  /// Inputs: `cs`, `l10n`, `device`, `array`.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: Reads `name: level · n drives`, with "Degraded" or
+  /// "Data lost" in the error colour when members failed.
+  Widget _arrayRow(
+    ColorScheme cs,
+    AppLocalizations l10n,
+    Device device,
+    StorageArray array,
+  ) {
+    final place = StoragePlace.array(device, array);
+    final summary = l10n.storageArraySummary(
+      array.level.displayName,
+      place.memberIndices.length,
+    );
+    final label = array.name.isEmpty ? l10n.storageArrays : array.name;
+    final key = ValueKey('device-array-${array.id}');
+    return switch (place.health) {
+      PlaceHealth.ok => _specRow(label, summary)!,
+      PlaceHealth.degraded => _statusRow(
+        cs,
+        label,
+        '$summary · ${l10n.storageArrayDegraded}',
+        key: key,
+      ),
+      PlaceHealth.unavailable => _statusRow(
+        cs,
+        label,
+        '$summary · ${l10n.storageArrayUnavailable}',
+        key: key,
+      ),
+    };
   }
 
   /// Purpose: Provide the internal spec row with logo helper for this file.

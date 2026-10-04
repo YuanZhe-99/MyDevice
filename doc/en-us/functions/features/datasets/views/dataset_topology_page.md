@@ -2,8 +2,8 @@
 
 The full-screen data set topology (since 1.8.0), pushed on the root navigator from the data set
 list's app bar ([`dataset_list_page.md`](dataset_list_page.md), `_openTopology`). Devices are
-large boxes, their storage slots medium boxes inside them, and each data set copy a small box
-inside its slot; copies of the same data set are joined by sync lines. The layout comes from
+large boxes, their storage places — RAID arrays and free slots, since 1.8.2 — medium boxes
+inside them, and each data set copy a small box inside its place; copies of the same data set are joined by sync lines. The layout comes from
 [`../services/dataset_topology.md`](../services/dataset_topology.md); the canvas is the shared
 [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md) — tap to select, drag
 or wheel to pan, pinch or Ctrl + wheel to zoom. See
@@ -36,10 +36,10 @@ listed. Keys: boxes `dataset-topology-node-<id>`; app bar `dataset-topology-filt
 | `apply` | nested function (`_openFilters`) | B | Apply a filter to page and sheet, resetting the transform. |
 | `_export` | method (`_DataSetTopologyPageState`) | B | Capture the canvas with its highlight as `mydevice_dataset_topology.png` and share it. |
 | [`build`](#build) | method (widget, `_DataSetTopologyPageState`) | A | App bar, view controls, legend strip, canvas, details pane. |
-| `_buildLegendStrip` | method (widget helper) | B | Legend toggle, the legend, the selection chip. |
+| `_buildLegendStrip` | method (widget helper) | B | Legend toggle, the legend (with an "unavailable" entry since 1.8.2), the selection chip. |
 | `entry` | nested function (`_buildLegendStrip`) | B | One legend entry. |
 | `box` | nested function (`_buildLegendStrip`) | B | One box swatch. |
-| `_nodeLabel` | top-level function | B | Device name, storage label or "emoji name". |
+| `_nodeLabel` | top-level function | B | Device name, place label (`placeLabel`) or "emoji name". |
 | `_DataSetTopologyCanvas` (constructor) | constructor | B | Create the canvas from a layout, a highlight, the sync-line switch and a tap callback. |
 | [`build`](#canvasbuild) | method (widget, `_DataSetTopologyCanvas`) | A | Device and storage boxes, the line painter (when on), then copy boxes. |
 | `place` | nested function (`_DataSetTopologyCanvas.build`) | B | Position one box at its rect. |
@@ -51,8 +51,8 @@ listed. Keys: boxes `dataset-topology-node-<id>`; app bar `dataset-topology-filt
 | `shouldRepaint` | method (`_DataSetLinkPainter`) | B | Repaint when the layout, the selection or the scheme changed. |
 | `_DataSetTopologyDetails` (constructor) | constructor | B | Create the details for a box. |
 | [`build`](#detailsbuild) | method (widget, `_DataSetTopologyDetails`) | A | The box's header, then one card per data set on it. |
-| `_buildDataSetCard` | method (widget helper, `_DataSetTopologyDetails`) | B | A data set's copies as "device – storage", with an edit button. |
-| `_isHere` | method (`_DataSetTopologyDetails`) | B | Whether a copy lies on the selected box. |
+| `_buildDataSetCard` | method (widget helper, `_DataSetTopologyDetails`) | B | A data set's copy summary and copies as "device – place" (unavailable ones struck through in the error colour), with an edit button. |
+| `_isHere` | method (`_DataSetTopologyDetails`) | B | Whether a copy lies on the selected box (device and place key). |
 
 Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exactly.
 
@@ -60,7 +60,7 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Color dataSetTopologyColor(ColorScheme cs, String dataSetId)` <a id="datasettopologycolor"></a>
 - **Kind:** top-level function.
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 30).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 32).
 - **Purpose:** Pick the colour of a data set's copies and sync lines.
 - **Inputs:** `cs`, `dataSetId`.
 - **Returns:** One of eight palette colours (scheme primary and tertiary, teal, indigo, orange,
@@ -69,11 +69,11 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 - **Algorithm:** `hash = (hash × 31 + unit) & 0x7fffffff` over the code units; `palette[hash % 8]`.
 - **Usage:** Copy boxes and `_DataSetLinkPainter`.
 - **Notes:** Stable across launches and devices (unlike `String.hashCode`). The error colour is
-  not in the palette; it marks single-copy data sets.
+  not in the palette; it marks data sets with at most one usable copy and unavailable places.
 
 ### `DataSetTopologyLayout _layout()` <a id="layoutfor"></a>
 - **Kind:** method of `_DataSetTopologyPageState`.
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 127).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 129).
 - **Purpose:** Return the layout.
 - **Inputs:** None.
 - **Returns:** `DataSetTopologyLayout`.
@@ -88,7 +88,7 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyPageState`) <a id="build"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 340).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 342).
 - **Purpose:** Build the page.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
@@ -105,7 +105,7 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyCanvas`) <a id="canvasbuild"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 652).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 657).
 - **Purpose:** Build the boxes and lines.
 - **Inputs:** `context`.
 - **Returns:** A `Stack` at `layout.size`.
@@ -118,23 +118,28 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyBox`) <a id="boxbuild"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 732).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 742).
 - **Purpose:** Render one box.
 - **Inputs:** `context`.
 - **Returns:** The widget tree.
 - **Side effects:** None.
 - **Algorithm:** Device: a framed box with a 44 px header (category icon, name). Storage: a
-  framed, darker box with a 34 px header (storage icon, label). Copy: a filled chip in the data
-  set's colour (error colours for a single copy) with the label and an `×n` badge. Wrapped in
-  `Semantics` (label, kind or copy count, button, selected), `Opacity` for dimming and a
-  `Tooltip`.
+  framed, darker box with a 34 px header (storage icon for a slot, layers icon for a RAID array,
+  label); a place that is not `ok` shows an `error_outline` icon keyed
+  `dataset-topology-unhealthy-<id>` instead, and an `unavailable` one also gets an error border.
+  Copy: a filled chip in the data set's colour (error colours when
+  [`dataSetCopySummary`](dataset_copy_summary.md#datasetcopysummary) warns) with the label and a
+  badge `×total`, or `×usable/total` when some copies are unavailable; a copy on an unavailable
+  place is greyed and struck through. Wrapped in `Semantics` (label; kind plus the place's health
+  for a storage, the copy summary — and "unavailable" — for a copy; button, selected), `Opacity`
+  for dimming and a `Tooltip`.
 - **Usage:** `place` in the canvas.
 - **Notes:** Device and storage boxes take taps only on their header (`_frame`), so a tap in a
   box's body reaches the copy there, or the background.
 
 ### `void paint(Canvas canvas, Size size)` (`_DataSetLinkPainter`) <a id="paint"></a>
 - **Kind:** method of `_DataSetLinkPainter`.
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 902).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 952).
 - **Purpose:** Paint the sync lines.
 - **Inputs:** `canvas`, `size`.
 - **Returns:** None.
@@ -148,15 +153,17 @@ Row count (30) matches `grep -c 'Purpose:' dataset_topology_page.dart` (30) exac
 
 ### `Widget build(BuildContext context)` (`_DataSetTopologyDetails`) <a id="detailsbuild"></a>
 - **Kind:** method (widget build).
-- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 1001).
+- **Source:** `lib/features/datasets/views/dataset_topology_page.dart` (line 1051).
 - **Purpose:** Render the selected box's details.
 - **Inputs:** `context`.
 - **Returns:** A `ListView`.
 - **Side effects:** None.
-- **Algorithm:** A header tile (device icon / storage icon / emoji; the name; the category,
-  device name or copy count; a close button in the pane). Then the data sets on the box — only
-  its own for a copy — as cards: emoji, name, edit button, "Copies · n copies" (or *Only one
-  copy* in the error colour) and one row per copy, ticked when on the selected box; *No data
-  sets* when there are none.
+- **Algorithm:** A header tile (device icon / storage or layers icon / emoji; the name; the
+  category, for a storage the device name joined with the array summary and health, or for a copy
+  the copy summary; a close button in the pane). Then the data sets on the box — only its own for
+  a copy — as cards: emoji, name, edit button, "Copies · <summary>" (or the warning summary alone
+  in the error colour, via [`dataSetReplicaSummary`](dataset_copy_summary.md#datasetreplicasummary))
+  and one row per copy, ticked when on the selected box, or with an error icon and struck through
+  when its place is unavailable; *No data sets* when there are none.
 - **Usage:** The sheet and the pane.
 - **Notes:** None.

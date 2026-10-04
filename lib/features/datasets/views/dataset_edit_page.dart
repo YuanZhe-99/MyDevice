@@ -5,7 +5,9 @@ import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/detail_layout.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
+import '../../devices/widgets/storage_health_label.dart';
 import '../models/dataset.dart';
+import '../services/dataset_placement.dart';
 import '../services/dataset_storage.dart';
 
 /// Common emoji options for quick pick.
@@ -48,11 +50,78 @@ class DataSetEditPage extends StatefulWidget {
 }
 
 class _DataSetEditPageState extends State<DataSetEditPage> {
+  /// Purpose: Build one tickable place of a device.
+  /// Inputs: `context`, `l10n`, `device`, `place`, `selected` — the device's
+  /// ticked place keys.
+  /// Returns: A `CheckboxListTile` keyed `dataset-place-<deviceId>-<key>`.
+  /// Side effects: Toggling updates `_selectedStorages`.
+  /// Notes: Internal helper of [_buildStorageChildren].
+  Widget _buildPlaceTile(
+    BuildContext context,
+    AppLocalizations l10n,
+    Device device,
+    StoragePlace place,
+    Set<String> selected,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    final health = place.health;
+    final String? state = switch (health) {
+      PlaceHealth.ok => null,
+      PlaceHealth.degraded => l10n.storageArrayDegraded,
+      PlaceHealth.unavailable =>
+        place.isArray
+            ? l10n.storageArrayUnavailable
+            : storageHealthLabel(
+                l10n,
+                device.storage[place.storageIndex!].status,
+              ),
+    };
+    final subtitle = [
+      if (place.isArray)
+        l10n.storageArraySummary(
+          place.array!.level.displayName,
+          place.memberIndices.length,
+        ),
+      ?state,
+    ];
+    return CheckboxListTile(
+      key: ValueKey('dataset-place-${device.id}-${place.key}'),
+      value: selected.contains(place.key),
+      secondary: Icon(
+        health != PlaceHealth.ok
+            ? Icons.error_outline
+            : place.isArray
+            ? Icons.layers
+            : Icons.storage,
+        color: health != PlaceHealth.ok ? cs.error : null,
+      ),
+      title: Text(placeLabel(place, l10n.dataSetStorageFallback)),
+      subtitle: subtitle.isEmpty
+          ? null
+          : Text(
+              subtitle.join(' · '),
+              style: state == null ? null : TextStyle(color: cs.error),
+            ),
+      dense: true,
+      onChanged: (val) {
+        setState(() {
+          final set = _selectedStorages.putIfAbsent(device.id, () => {});
+          if (val == true) {
+            set.add(place.key);
+          } else {
+            set.remove(place.key);
+          }
+        });
+      },
+    );
+  }
+
   final _nameController = TextEditingController();
   String _emoji = '📁';
 
-  /// deviceId → set of selected storage indices
-  final Map<String, Set<int>> _selectedStorages = {};
+  /// deviceId → set of selected place keys ([StoragePlace.key]: a slot
+  /// index as text, or `a:<arrayId>`).
+  final Map<String, Set<String>> _selectedStorages = {};
 
   List<Device> _devices = [];
   bool _loading = true;
@@ -76,7 +145,10 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
       _nameController.text = widget.dataSet!.name;
       _emoji = widget.dataSet!.emoji;
       for (final link in widget.dataSet!.storageLinks) {
-        _selectedStorages[link.deviceId] = Set.of(link.storageIndices);
+        _selectedStorages[link.deviceId] = {
+          for (final i in link.storageIndices) '$i',
+          for (final id in link.arrayIds) 'a:$id',
+        };
       }
     }
     _loadDevices();
@@ -114,15 +186,19 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
         link.deviceId: link,
     };
     for (final entry in _selectedStorages.entries) {
-      if (entry.value.isNotEmpty) {
-        links.add(
-          DataSetStorageLink(
-            deviceId: entry.key,
-            storageIndices: entry.value.toList()..sort(),
-            extraJson: existingLinks[entry.key]?.extraJson ?? const {},
-          ),
-        );
-      }
+      final link = DataSetStorageLink(
+        deviceId: entry.key,
+        storageIndices: [
+          for (final k in entry.value)
+            if (int.tryParse(k) != null) int.parse(k),
+        ]..sort(),
+        arrayIds: [
+          for (final k in entry.value)
+            if (k.startsWith('a:')) k.substring(2),
+        ]..sort(),
+        extraJson: existingLinks[entry.key]?.extraJson ?? const {},
+      );
+      if (!link.isEmpty) links.add(link);
     }
 
     final ds =
@@ -294,7 +370,11 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
   /// Returns: `List<Widget>` ready to spread into a `ListView`.
   /// Side effects: None beyond building widgets.
   /// Notes: Internal helper used within this file only. Extracted from
-  /// `build` unchanged so both layouts share it.
+  /// `build` so both layouts share it. A device lists its places as
+  /// [devicePlaces] orders them — RAID arrays (layers icon, summary
+  /// subtitle), then slots in no array — plus any array member this data
+  /// set still links directly. A failed or offline drive, or a degraded or
+  /// lost array, shows its state in the error colour but stays tickable.
   List<Widget> _buildStorageChildren(
     BuildContext context,
     AppLocalizations l10n,
@@ -339,28 +419,14 @@ class _DataSetEditPageState extends State<DataSetEditPage> {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-              ...List.generate(device.storage.length, (i) {
-                final st = device.storage[i];
-                final checked = selected.contains(i);
-                return CheckboxListTile(
-                  value: checked,
-                  title: Text(st.displayString),
-                  dense: true,
-                  onChanged: (val) {
-                    setState(() {
-                      final set = _selectedStorages.putIfAbsent(
-                        device.id,
-                        () => {},
-                      );
-                      if (val == true) {
-                        set.add(i);
-                      } else {
-                        set.remove(i);
-                      }
-                    });
-                  },
-                );
-              }),
+              for (final place in [
+                ...devicePlaces(device),
+                for (var i = 0; i < device.storage.length; i++)
+                  if (selected.contains('$i') &&
+                      !devicePlaces(device).any((p) => p.key == '$i'))
+                    StoragePlace.slot(device, i),
+              ])
+                _buildPlaceTile(context, l10n, device, place, selected),
             ],
           ),
         );

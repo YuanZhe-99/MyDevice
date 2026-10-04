@@ -2,28 +2,40 @@ import 'package:uuid/uuid.dart';
 
 import '../../../shared/utils/json_preservation.dart';
 
-const _dataSetStorageLinkJsonKeys = {'deviceId', 'storageIndices'};
+const _dataSetStorageLinkJsonKeys = {'deviceId', 'storageIndices', 'arrayIds'};
 
 const _dataSetJsonKeys = {'id', 'name', 'emoji', 'storageLinks', 'modifiedAt'};
 
 const _dataSetDataJsonKeys = {'datasets'};
 
-/// A reference from a DataSet to one or more storage slots on a specific device.
+/// A reference from a DataSet to one or more storage slots, or RAID arrays,
+/// on a specific device.
 class DataSetStorageLink {
   final String deviceId;
   final List<int> storageIndices;
+
+  /// Ids of the device's `storageArrays` holding a copy each.
+  final List<String> arrayIds;
   final Map<String, dynamic> extraJson;
 
   /// Purpose: Create a data set storage link instance.
-  /// Inputs: `storageIndices`.
+  /// Inputs: `storageIndices` — slots; `arrayIds` — RAID arrays.
   /// Returns: A new `DataSetStorageLink` instance.
   /// Side effects: None.
-  /// Notes: None.
+  /// Notes: Every slot and every array is one full copy.
   const DataSetStorageLink({
     required this.deviceId,
     this.storageIndices = const [],
+    this.arrayIds = const [],
     this.extraJson = const {},
   });
+
+  /// Purpose: Tell whether the link points at nothing.
+  /// Inputs: None.
+  /// Returns: True when it lists no slot and no array.
+  /// Side effects: None.
+  /// Notes: Empty links are dropped on save.
+  bool get isEmpty => storageIndices.isEmpty && arrayIds.isEmpty;
 
   /// Purpose: Serialize this value into a JSON-compatible map.
   /// Inputs: None.
@@ -34,6 +46,7 @@ class DataSetStorageLink {
     ...extraJson,
     'deviceId': deviceId,
     'storageIndices': storageIndices,
+    if (arrayIds.isNotEmpty) 'arrayIds': arrayIds,
   };
 
   /// Purpose: Create an instance from a JSON-compatible map.
@@ -47,6 +60,11 @@ class DataSetStorageLink {
         storageIndices:
             (json['storageIndices'] as List<dynamic>?)
                 ?.map((e) => e as int)
+                .toList() ??
+            const [],
+        arrayIds:
+            (json['arrayIds'] as List<dynamic>?)
+                ?.map((e) => e as String)
                 .toList() ??
             const [],
         extraJson: unknownJsonFields(json, _dataSetStorageLinkJsonKeys),

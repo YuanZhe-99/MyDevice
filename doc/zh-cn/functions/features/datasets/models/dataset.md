@@ -1,12 +1,13 @@
 # lib/features/datasets/models/dataset.dart
 
-[数据集](../../../../features/datasets.md) 的模型来源。定义 `DataSetStorageLink`（数据集对特定设备上一个或多个存储槽的引用，按位置索引）、`DataSet`（此类链接的命名集合，跨一台或多台设备）和由 [`../services/dataset_storage.md`](../services/dataset_storage.md) 持久化的顶层 `DataSetData` 容器。这里每个模型都遵循应用标准形态——普通/const 构造函数、`toJson`/`fromJson` 和构建在通用 [`json_preservation.md`](../../../shared/utils/json_preservation.md) 辅助上的 `mergeUnknownFieldsFrom`。见 [数据集 — 存储槽索引链接](../../../../features/datasets.md#storage-slot-index-linking)，了解为何 `storageIndices` 是*位置*（非稳定每槽 id）意味着任何重排或移除设备存储槽的代码都必须调用 [`DataSetStorage.remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) 保持这些链接有效；穷举持久化字段参考见 [数据格式 — DataSet / DataSetStorageLink](../../../../data-formats.md#dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart)。
+[数据集](../../../../features/datasets.md) 的模型来源。定义 `DataSetStorageLink`（数据集对特定设备上一个或多个存储槽的引用，按位置索引；自 1.8.2 起也引用该设备的 RAID 阵列，按 `StorageArray.id`）、`DataSet`（此类链接的命名集合，跨一台或多台设备）和由 [`../services/dataset_storage.md`](../services/dataset_storage.md) 持久化的顶层 `DataSetData` 容器。这里每个模型都遵循应用标准形态——普通/const 构造函数、`toJson`/`fromJson` 和构建在通用 [`json_preservation.md`](../../../shared/utils/json_preservation.md) 辅助上的 `mergeUnknownFieldsFrom`。见 [数据集 — 存储槽索引链接](../../../../features/datasets.md#storage-slot-index-linking)，了解为何 `storageIndices` 是*位置*（非稳定每槽 id）意味着任何重排或移除设备存储槽的代码都必须调用 [`DataSetStorage.remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) 保持这些链接有效；穷举持久化字段参考见 [数据格式 — DataSet / DataSetStorageLink](../../../../data-formats.md#dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart)。
 
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
 | [`DataSetStorageLink`](#datasetstoragelink-new) | 构造函数 | A | 创建数据集存储链接实例。 |
+| [`isEmpty`](#datasetstoragelink-isempty) | getter（`DataSetStorageLink`） | A | 链接是否既未列出槽也未列出阵列。 |
 | [`toJson`](#datasetstoragelink-tojson) | 方法（`DataSetStorageLink`） | A | 把此值序列化为 JSON 兼容映射。 |
 | [`DataSetStorageLink.fromJson`](#datasetstoragelink-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `DataSetStorageLink`。 |
 | [`mergeUnknownFieldsFrom`](#datasetstoragelink-mergeunknownfieldsfrom) | 方法（`DataSetStorageLink`） | A | 从另一个 `DataSetStorageLink` 三方合并未知 JSON 字段。 |
@@ -19,15 +20,15 @@
 | [`toJson`](#datasetdata-tojson) | 方法（`DataSetData`） | A | 把此值序列化为 JSON 兼容映射。 |
 | [`DataSetData.fromJson`](#datasetdata-fromjson) | 工厂构造函数 | A | 从 JSON 解析 `DataSetData`。 |
 
-行数（12）与 `grep -c 'Purpose:' dataset.dart`（12）精确匹配。
+行数（13）与 `grep -c 'Purpose:' dataset.dart`（13）精确匹配。
 
 ## 文档
 
-### `const DataSetStorageLink({required this.deviceId, this.storageIndices = const [], this.extraJson = const {}})` <a id="datasetstoragelink-new"></a>
+### `const DataSetStorageLink({required this.deviceId, this.storageIndices = const [], this.arrayIds = const [], this.extraJson = const {}})` <a id="datasetstoragelink-new"></a>
 - **种类：** `DataSetStorageLink` 的构造函数。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 22 行）。
-- **用途：** 持有数据集对一台设备存储槽的引用，按位置索引。
-- **输入：** `deviceId` 必填；`storageIndices` 默认 `[]`。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 26 行）。
+- **用途：** 持有数据集对一台设备存储槽（按位置索引）和 RAID 阵列（按 id）的引用。
+- **输入：** `deviceId` 必填；`storageIndices` 和 `arrayIds` 默认 `[]`。
 - **返回：** 新 `DataSetStorageLink`。
 - **副作用：** 无。
 - **算法：** 带默认的平凡字段赋值。
@@ -35,49 +36,67 @@
   ```dart
   DataSetStorageLink(
     deviceId: entry.key,
-    storageIndices: entry.value.toList()..sort(),
+    storageIndices: [
+      for (final k in entry.value)
+        if (int.tryParse(k) != null) int.parse(k),
+    ]..sort(),
+    arrayIds: [
+      for (final k in entry.value)
+        if (k.startsWith('a:')) k.substring(2),
+    ]..sort(),
     extraJson: existingLinks[entry.key]?.extraJson ?? const {},
-  ),
+  );
   ```
-  （来自 [`dataset_edit_page.md`](../views/dataset_edit_page.md) 的 `_save`，每台至少选一个存储槽的设备一个）
-- **备注：** `storageIndices` 是引用设备 `storage: List<StorageInfo>` 的普通位置，非稳定槽标识符——见上面文件总览和 [`remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) 了解应用如何跨存储列表编辑保持它们有效。
+  （来自 [`dataset_edit_page.md`](../views/dataset_edit_page.md) 的 `_save`，每台设备一个；所选内容以位置键为键，最终 [`isEmpty`](#datasetstoragelink-isempty) 的链接被丢弃）
+- **备注：** `storageIndices` 是引用设备 `storage: List<StorageInfo>` 的普通位置，非稳定槽标识符——见上面文件总览和 [`remapDeviceStorageLinks`](../services/dataset_storage.md#remapdevicestoragelinks) 了解应用如何跨存储列表编辑保持它们有效。每个槽和每个阵列都是一份完整的副本。`arrayIds` 是稳定 id，因此在槽重排后依然有效。
+
+### `bool get isEmpty` <a id="datasetstoragelink-isempty"></a>
+- **种类：** `DataSetStorageLink` 的 getter。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 38 行）。
+- **用途：** 判断链接是否什么都不指向。
+- **输入：** 无。
+- **返回：** `storageIndices` 和 `arrayIds` 都为空时为 `true`。
+- **副作用：** 无。
+- **算法：** `storageIndices.isEmpty && arrayIds.isEmpty`。
+- **用法：** [`dataset_edit_page.md`](../views/dataset_edit_page.md) 中的 `_save` 和 [`import_export_service.md`](../../../shared/services/import_export_service.md) 中的导入路径，它们跳过空链接。
+- **备注：** 无。
 
 ### `Map<String, dynamic> toJson()` <a id="datasetstoragelink-tojson"></a>
 - **种类：** `DataSetStorageLink` 的方法。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 33 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 45 行）。
 - **用途：** 把此存储链接序列化为持久化在数据集 `storageLinks` 数组内的 JSON。
 - **输入：** 无。
-- **返回：** 带 `deviceId` 和 `storageIndices`（原始 `List<int>`，即使空也总是包含）的 `Map<String, dynamic>`。
+- **返回：** 带 `deviceId` 和 `storageIndices`（原始 `List<int>`，即使空也总是包含）的 `Map<String, dynamic>`，`arrayIds` 非空时另加 `arrayIds`。
 - **副作用：** 无。
-- **算法：** `{...extraJson, 'deviceId': deviceId, 'storageIndices': storageIndices}`。
+- **算法：** `{...extraJson, 'deviceId': deviceId, 'storageIndices': storageIndices, if (arrayIds.isNotEmpty) 'arrayIds': arrayIds}`。
 - **用法：** 被 [`DataSet.toJson`](#dataset-tojson) 为 `storageLinks` 每个条目调用，也被 [`mergeUnknownFieldsFrom`](#datasetstoragelink-mergeunknownfieldsfrom) 调用。
-- **备注：** 与本应用大多数其他 `toJson` 不同，`storageIndices` 即使空也无条件写——无 `if (storageIndices.isNotEmpty)` 守卫。
+- **备注：** 与本应用大多数其他 `toJson` 不同，`storageIndices` 即使空也无条件写——无 `if (storageIndices.isNotEmpty)` 守卫。`arrayIds`（1.8.2）带守卫，因此没有阵列的链接写出的 JSON 与以前相同。
 
 ### `factory DataSetStorageLink.fromJson(Map<String, dynamic> json)` <a id="datasetstoragelink-fromjson"></a>
 - **种类：** `DataSetStorageLink` 的工厂构造函数。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 44 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 57 行）。
 - **用途：** 从 JSON 解析 `DataSetStorageLink`。
 - **输入：** `json`。
 - **返回：** 新 `DataSetStorageLink`；`extraJson` 持有不在 `_dataSetStorageLinkJsonKeys` 的每个键。
 - **副作用：** 无。
-- **算法：** `deviceId` 必填；`storageIndices` 把 `List<dynamic>` 映射为 `List<int>` 或缺席时默认 `[]`。
+- **算法：** `deviceId` 必填；`storageIndices` 把 `List<dynamic>` 映射为 `List<int>`，`arrayIds` 映射为 `List<String>`，缺席时各默认 `[]`。
 - **用法：** 被 [`DataSet.fromJson`](#dataset-fromjson) 为 `json['storageLinks']` 每个条目调用。
 - **备注：** 无。
 
 ### `DataSetStorageLink mergeUnknownFieldsFrom(DataSetStorageLink other, {DataSetStorageLink? base})` <a id="datasetstoragelink-mergeunknownfieldsfrom"></a>
 - **种类：** `DataSetStorageLink` 的方法。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 60 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 78 行）。
 - **用途：** 三方合并此链接的未知 JSON 字段与另一个的。
 - **输入：** `other`；可选 `base`。
 - **返回：** 带合并 `extraJson` 的新 `DataSetStorageLink`。
 - **副作用：** 无。
 - **算法：** 经 `DataSetStorageLink.fromJson` 重新解析 `{...toJson(), ...mergeUnknownJsonFields(...)}`——与本应用每个其他模型的合并方法相同形态（见 [`mergeUnknownJsonFields`](../../../shared/utils/json_preservation.md)）。
 - **用法：** 被 [`DataSet.mergeUnknownFieldsFrom`](#dataset-mergeunknownfieldsfrom) 调用，对每对索引对齐的 `storageLinks` 条目一次。
-- **备注：** 只合并 `extraJson`；已知字段（`deviceId`、`storageIndices`）仍来自 `this`。
+- **备注：** 只合并 `extraJson`；已知字段（`deviceId`、`storageIndices`、`arrayIds`）仍来自 `this`。
 
 ### `DataSet({String? id, required this.name, required this.emoji, this.storageLinks = const [], DateTime? modifiedAt, this.extraJson = const {}})` <a id="dataset-new"></a>
 - **种类：** `DataSet` 的构造函数。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 89 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 107 行）。
 - **用途：** 创建跨零个或多个设备存储槽的命名数据集，两者都未提供时生成新鲜 UUID `id` 和 UTC `modifiedAt`。
 - **输入：** `name`、`emoji` 必填；`storageLinks` 默认 `[]`；`id`/`modifiedAt` 省略时自动生成。
 - **返回：** 新 `DataSet`。
@@ -93,7 +112,7 @@
 
 ### `DataSet copyWith({String? name, String? emoji, List<DataSetStorageLink>? storageLinks, DateTime? modifiedAt})` <a id="copywith"></a>
 - **种类：** `DataSet` 的方法。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 104 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 122 行）。
 - **用途：** 创建此数据集的副本并替换所选字段。
 - **输入：** 任何要覆盖的字段；无任何字段的显式清除标志（不同于 `Network.copyWith`），因为每个 `DataSet` 字段要么必填要么有非 null 默认。
 - **返回：** 新 `DataSet`——`id` 总是从 `this` 保留；`modifiedAt` 未显式传入时默认"现在"。
@@ -104,7 +123,7 @@
 
 ### `Map<String, dynamic> toJson()` <a id="dataset-tojson"></a>
 - **种类：** `DataSet` 的方法。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 125 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 143 行）。
 - **用途：** 把此数据集序列化为持久化在 `dataset_data.json` 的 `datasets` 数组内的 JSON。
 - **输入：** 无。
 - **返回：** `Map<String, dynamic>`——先展开 `extraJson`，然后 `id`/`name`/`emoji` 总是、`storageLinks` 只在非空时、`modifiedAt` 为 ISO-8601。
@@ -115,7 +134,7 @@
 
 ### `factory DataSet.fromJson(Map<String, dynamic> json)` <a id="dataset-fromjson"></a>
 - **种类：** `DataSet` 的工厂构造函数。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 140 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 158 行）。
 - **用途：** 从 JSON 解析 `DataSet`。
 - **输入：** `json`。
 - **返回：** 新 `DataSet`；`extraJson` 持有不在 `_dataSetJsonKeys` 的每个键。
@@ -126,7 +145,7 @@
 
 ### `DataSet mergeUnknownFieldsFrom(DataSet other, {DataSet? base})` <a id="dataset-mergeunknownfieldsfrom"></a>
 - **种类：** `DataSet` 的方法。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 158 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 176 行）。
 - **用途：** 三方合并此数据集的未知 JSON 字段与另一个的，含每对索引对齐嵌套 `storageLinks` 自己的未知字段。
 - **输入：** `other` — 另一侧；可选 `base` — 上次同步快照。
 - **返回：** 新 `DataSet`——与 `this` 相同已知字段、`extraJson` 合并，且（`storageLinks` 非空时）每个链接的 `extraJson` 对照 `other`/`base` 的同索引链接合并。
@@ -137,7 +156,7 @@
 
 ### `const DataSetData({this.datasets = const [], this.extraJson = const {}})` <a id="datasetdata-new"></a>
 - **种类：** `DataSetData` 的构造函数。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 198 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 216 行）。
 - **用途：** 持有完整持久化数据集列表。
 - **输入：** `datasets` 默认 `[]`。
 - **返回：** 新 `DataSetData`。
@@ -152,7 +171,7 @@
 
 ### `Map<String, dynamic> toJson()` <a id="datasetdata-tojson"></a>
 - **种类：** `DataSetData` 的方法。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 205 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 223 行）。
 - **用途：** 把完整数据集列表序列化为写入 `dataset_data.json` 的 JSON。
 - **输入：** 无。
 - **返回：** 带 `datasets` 数组的 `Map<String, dynamic>`。
@@ -163,7 +182,7 @@
 
 ### `factory DataSetData.fromJson(Map<String, dynamic> json)` <a id="datasetdata-fromjson"></a>
 - **种类：** `DataSetData` 的工厂构造函数。
-- **来源：** `lib/features/datasets/models/dataset.dart`（第 215 行）。
+- **来源：** `lib/features/datasets/models/dataset.dart`（第 233 行）。
 - **用途：** 从 `dataset_data.json` 存储的 JSON 解析 `DataSetData`。
 - **输入：** `json`。
 - **返回：** 新 `DataSetData`；`datasets` 键缺席时默认 `[]`。

@@ -772,6 +772,82 @@ class AppLocalizationsJa extends AppLocalizations {
   String get storageSerialNumber => 'シリアル番号';
 
   @override
+  String get storageStatus => '状態';
+
+  @override
+  String get storageStatusOk => '正常';
+
+  @override
+  String get storageStatusFailed => '故障';
+
+  @override
+  String get storageStatusOffline => 'オフライン';
+
+  @override
+  String get storageStatusNote => '状態メモ';
+
+  @override
+  String get storageStatusNoteHint => '例：2026-09-30 にアレイから脱落';
+
+  @override
+  String get storageArrays => 'RAID アレイ';
+
+  @override
+  String get storageArrayAdd => 'RAID アレイを追加';
+
+  @override
+  String get storageArrayRemove => 'RAID アレイを削除';
+
+  @override
+  String get storageArrayName => 'アレイ名';
+
+  @override
+  String get storageArrayNameHint => '例：プール 1';
+
+  @override
+  String get storageArrayLevel => 'RAID レベル';
+
+  @override
+  String get storageArrayMembers => 'メンバードライブ';
+
+  @override
+  String get storageArrayHint =>
+      'アレイ上のデータは、何台のドライブにまたがっても 1 つのコピーとして数えます。1 台のドライブは最大 1 つのアレイに属します。';
+
+  @override
+  String get storageArrayNoMembers => '先に上でストレージを追加してください。';
+
+  @override
+  String get storageArrayUnsaved => '保存するとこのドライブを選べます';
+
+  @override
+  String get storageArrayDegraded => 'デグレード';
+
+  @override
+  String get storageArrayUnavailable => 'データ消失';
+
+  @override
+  String storageArraySummary(String level, int count) {
+    return '$level · ドライブ $count 台';
+  }
+
+  @override
+  String storageInArray(String array) {
+    return '$array に所属';
+  }
+
+  @override
+  String dataSetCopiesUnavailable(int count) {
+    return '$count 件が利用不可';
+  }
+
+  @override
+  String get dataSetNoAvailableCopy => '利用可能なコピーなし';
+
+  @override
+  String get dataSetTopologyLegendUnavailable => '故障ドライブ上のコピー';
+
+  @override
   String get fetchFromInternet => 'オンライン検索';
 
   @override

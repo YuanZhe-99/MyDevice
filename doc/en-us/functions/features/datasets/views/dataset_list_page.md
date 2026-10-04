@@ -34,7 +34,7 @@ and "Also on: …" (`_groupedSubtitle`); *Reorder* is hidden while grouped. See
 | [`_saveSortPrefs`](#savesortprefs) | method (`_DataSetListPageState`) | A | Persist the current sort mode/direction to device storage config. |
 | [`_sortedDatasets`](#sorteddatasets) | getter (`_DataSetListPageState`) | A | Sort `_datasets` per the current sort mode/direction. |
 | [`_load`](#load) | method (`_DataSetListPageState`) | A | Reload both the dataset list and the device list from storage. |
-| [`_storageLines`](#storagelines) | method (`_DataSetListPageState`) | A | Build one display line per storage link, resolving device/slot names. |
+| [`_storageLines`](#storagelines) | method (`_DataSetListPageState`) | A | Build one display line per storage link, resolving device/slot/array names. |
 | `_addDataSet` | method (`_DataSetListPageState`) | B | Push the blank dataset edit page, then reload if it reported a save. |
 | `_editDataSet` | method (`_DataSetListPageState`) | B | Push the dataset edit page for an existing dataset, then reload if it reported a save. |
 | [`_deleteDataSet`](#deletedataset) | method (`_DataSetListPageState`) | A | Confirm and, if accepted, delete a dataset and notify the sync layer. |
@@ -44,8 +44,8 @@ and "Also on: …" (`_groupedSubtitle`); *Reorder* is hidden while grouped. See
 | `_buildMenuTile` | method (widget helper) | B | The multi-column tile: `_buildDataSetTile` with a trailing delete `PopupMenuButton` in place of the swipe. |
 | `build` | method (widget) | B | Build the scaffold: app bar (topology, column control hidden at capacity 1 and while reordering, group menu, sort menu), dataset list — grouped, swipe tiles at one column, `adaptiveTileRow`s of menu tiles above — or reorder view, add FAB. Column count from `listColumnCount` at `shellContentWidth − 16` and `dataSetTileMinWidth`. |
 | `_buildSwipeTile` | method (widget helper) | B | The one-column swipe-to-delete tile; grouped lists key it by group and data set. |
-| `_groupTitle` | method (`_DataSetListPageState`) | B | A group header: device name, "device · storage", or "Not on any storage". |
-| [`_groupedSubtitle`](#groupedsubtitle) | method (`_DataSetListPageState`) | A | A grouped tile's copy count and where else the data set is. |
+| `_groupTitle` | method (`_DataSetListPageState`) | B | A group header: device name, "device · storage" (slot or array via `placeLabel`), or "Not on any storage". |
+| [`_groupedSubtitle`](#groupedsubtitle) | method (`_DataSetListPageState`) | A | A grouped tile's copy summary (usable vs unavailable) and where else the data set is. |
 | `_buildGroupedList` | method (widget helper) | B | The grouped `ListView`: header then tiles per group, swipe tiles at one column, menu-tile rows above. |
 
 Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly. (Before 1.8.0 this line said 16 while the table and the source both had 18.)
@@ -54,7 +54,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `void initState()` <a id="initstate"></a>
 - **Kind:** method of `_DataSetListPageState` (widget lifecycle override).
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 43).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 51).
 - **Purpose:** Wire this page into the auto-sync notification system and kick off the initial
   preference/dataset loads.
 - **Inputs:** None.
@@ -72,7 +72,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `Future<void> _loadSortPrefs()` <a id="loadsortprefs"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 75).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 82).
 - **Purpose:** Load the persisted sort mode and sort direction from device storage config, falling
   back to sensible defaults.
 - **Inputs:** None.
@@ -87,7 +87,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `Future<void> _saveSortPrefs()` <a id="savesortprefs"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 92).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 162).
 - **Purpose:** Persist the current sort mode and direction back to device storage config.
 - **Inputs:** None (reads `_sortMode`, `_sortAscending`).
 - **Returns:** `Future<void>`.
@@ -99,7 +99,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `List<DataSet> get _sortedDatasets` <a id="sorteddatasets"></a>
 - **Kind:** getter of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 104).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 174).
 - **Purpose:** Produce the list for display: `_datasets` sorted by name (or left in custom/storage
   order).
 - **Inputs:** None (reads `_datasets`, `_sortMode`, `_sortAscending`).
@@ -115,7 +115,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `Future<void> _load()` <a id="load"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 121).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 191).
 - **Purpose:** Reload both the dataset list and the full device list, since
   [`_storageLines`](#storagelines) needs live device names/storage entries to build each tile's
   subtitle.
@@ -134,7 +134,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `List<String> _storageLines(DataSet ds)` <a id="storagelines"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 138).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 208).
 - **Purpose:** Build one human-readable subtitle line per storage link on a dataset, grouped by
   device, for the list tile's subtitle.
 - **Inputs:** `ds` — the dataset to summarize.
@@ -146,10 +146,12 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
   index in `link.storageIndices` that is still in range of `device.storage.length`, collect that
   slot's [`StorageInfo.displayString`](../../devices/models/device.md#storageinfo-displaystring).
   Out-of-range indices (stale after a storage-list shrink that wasn't remapped, or genuinely
-  corrupt data) are silently skipped rather than shown as an error. 3. If no storage parts resolved
+  corrupt data) are silently skipped rather than shown as an error. Then, for each `link.arrayIds`
+  entry that names an existing `StorageArray` of the device, add its `displayString` (since 1.8.2);
+  removed arrays are skipped likewise. 3. If no storage parts resolved
   (empty list but the device itself exists), the line is just the device's name; otherwise it's
   `"{device.name} – {parts.join(', ')}"`.
-- **Usage:** `_storageLines(ds)` in `_buildDataSetTile` (this file, line 233), joined with `'\n'`
+- **Usage:** `_storageLines(ds)` in `_buildDataSetTile` (this file, line 318), joined with `'\n'`
   for the tile subtitle (max 4 lines, ellipsized).
 - **Notes:** This method is the read side of the positional-index contract described in
   [Datasets](../../../../features/datasets.md#storage-slot-index-linking) — an index that's out of
@@ -159,7 +161,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `Widget? _groupedSubtitle(DataSet ds, DataSetGroup group, AppLocalizations l10n)` <a id="groupedsubtitle"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 583).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 589).
 - **Purpose:** Build a tile's subtitle inside a group.
 - **Inputs:** `ds`, `group`, `l10n`.
 - **Returns:** `Text` of up to three lines — the copy count, then "Also on: …" — or null in the
@@ -167,14 +169,18 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 - **Side effects:** None.
 - **Algorithm:** Resolve the copies
   ([`resolveReplicas`](../services/dataset_placement.md#resolvereplicas)). In a device group
-  list the other devices' names; in a storage group the other "device – storage" places. One
-  copy ⇒ *Only one copy* in the error colour; otherwise "n copies".
+  list the other devices' names; in a storage group the other "device – place" entries (compared
+  by place key, named by [`placeLabel`](../services/dataset_placement.md#declarations)). The first
+  line is [`dataSetReplicaSummary`](dataset_copy_summary.md#datasetreplicasummary) — "Only one
+  copy", "n copies", or with unavailable copies "n copies · k unavailable" (led by "No usable
+  copy") — drawn in the error colour when its `warn` flag is set (at most one usable copy).
 - **Usage:** `_buildGroupedList`, for both swipe and menu tiles.
-- **Notes:** The red single-copy line is the list's way of flagging a data set with no backup.
+- **Notes:** The red line is the list's way of flagging a data set with no backup; since 1.8.2 a
+  copy on a failed or offline drive, or a lost array, does not count towards that.
 
 ### `Future<void> _deleteDataSet(DataSet ds)` <a id="deletedataset"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 188).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 262).
 - **Purpose:** Show a confirmation dialog for deleting a dataset, and if confirmed, delete it and
   refresh the list.
 - **Inputs:** `ds` — the dataset the user swiped to delete.
@@ -194,7 +200,7 @@ Row count (24) matches `grep -c 'Purpose:' dataset_list_page.dart` (24) exactly.
 
 ### `Future<void> _onReorder(int oldIndex, int newIndex)` <a id="onreorder"></a>
 - **Kind:** method of `_DataSetListPageState`.
-- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 219).
+- **Source:** `lib/features/datasets/views/dataset_list_page.dart` (line 293).
 - **Purpose:** Move a dataset to a new position in the custom order and persist the change.
 - **Inputs:** `oldIndex`, `newIndex` — from `ReorderableListView.builder`'s `onReorderItem`.
 - **Returns:** `Future<void>`.

@@ -1,6 +1,6 @@
 # lib/features/devices/views/device_detail_page.dart
 
-单个 `Device` 的只读、单 `StatelessWidget` 详情视图（模型来源 `lib/features/devices/models/device.dart`，见 [设备](../../../../features/devices.md)）。它渲染英雄页头、生命周期/财务摘要、CPU/GPU/内存/存储/显示/其他规格卡片、可选静态位置地图（`flutter_map`）和备注——尽可能对设备文本字段与捆绑 `assets/logos/*.svg` 集合模糊匹配时拉入品牌/型号/存储/操作系统 logo。编辑完全委托给从应用栏编辑操作打开的 `device_edit_page.dart`。
+单个 `Device` 的只读、单 `StatelessWidget` 详情视图（模型来源 `lib/features/devices/models/device.dart`，见 [设备](../../../../features/devices.md)）。它渲染英雄页头、生命周期/财务摘要、CPU/GPU/内存/存储/显示/其他规格卡片、可选静态位置地图（`flutter_map`）和备注——尽可能对设备文本字段与捆绑 `assets/logos/*.svg` 集合模糊匹配时拉入品牌/型号/存储/操作系统 logo。自 1.8.2 起，存储卡片还会在硬盘故障或离线时显示其状态（`device-storage-status-<i>`，带状态备注）、槽所属的阵列，以及每个 RAID 阵列一行（`_arrayRow`）。编辑完全委托给从应用栏编辑操作打开的 `device_edit_page.dart`。
 
 ## 声明
 
@@ -25,13 +25,28 @@
 | `_sectionTitle` | 方法（组件辅助） | B | 渲染带图标和可选品牌 logo 的小节标题行。 |
 | `_specCard` | 方法（组件辅助） | B | 把规格行列表包进 `Card`，所有行为空时渲染无。 |
 | `_specRow` | 方法（组件辅助） | B | 渲染一个标签/值行，值为空时 `null`。 |
+| `_statusRow` | 方法（组件辅助） | B | 带错误图标、值以错误色显示的规格行（故障/离线硬盘、降级/已失效阵列）。 |
+| [`_arrayRow`](#_arrayrow) | 方法（组件辅助） | A | 一个 RAID 阵列的摘要行，带其健康状况。 |
 | `_specRowWithLogo` | 方法（组件辅助） | B | 渲染带值前可选小 logo 的标签/值行。 |
+
+行数（22）与 `grep -c 'Purpose:' device_detail_page.dart`（22）精确匹配。
 
 ## 文档
 
+### `Widget _arrayRow(ColorScheme cs, AppLocalizations l10n, Device device, StorageArray array)` <a id="_arrayrow"></a>
+- **种类：** `DeviceDetailPage` 的方法（组件辅助）。**起始版本：** 1.8.2。
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 835 行）
+- **用途：** 构建一个 RAID 阵列的摘要行。
+- **输入：** `cs`、`l10n`、`device`、`array`。
+- **返回：** `Widget`——以阵列名称（未命名时为"RAID 阵列"）为标签，内容为 `storageArraySummary`（级别和成员数）。
+- **副作用：** 无。
+- **算法：** 把阵列包装为 [`StoragePlace`](../../datasets/services/dataset_placement.md#health)，并按其健康状况分支：`ok` ⇒ 普通 `_specRow`；`degraded` ⇒ 带"· 降级"的 `_statusRow`；`unavailable` ⇒ 带"· 已失效"的 `_statusRow`。不健康的行以 `device-array-<id>` 为键。
+- **用法：** `_buildSpecSections` 中的存储卡片，在各槽之后为每个 `device.storageArrays` 条目调用一次。
+- **备注：** 成员数是在范围内、不重复的成员槽。
+
 ### `String? _detectBrandLogo()` <a id="_detectbrandlogo"></a>
 - **种类：** `DeviceDetailPage` 的方法
-- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 114 行）
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 117 行）
 - **用途：** 找到匹配设备品牌的 SVG logo 资产路径（如有）。
 - **输入：** 无（读取 `device.brand`）。
 - **返回：** `String?` — `assets/logos/*.svg` 路径，`device.brand` 未设或不匹配 `_brandLogoMap` 任何条目时 `null`。
@@ -46,7 +61,7 @@
 
 ### `String? _detectModelLogo(String? model)` <a id="_detectmodellogo"></a>
 - **种类：** `DeviceDetailPage` 的静态方法
-- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 128 行）
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 131 行）
 - **用途：** 找到匹配 CPU/GPU 型号字符串（如 `device.cpu.model`、`device.gpu.model`）的 SVG logo 资产路径，复用品牌 logo 表加 ARM GPU 特例。
 - **输入：** `model` — 自由文本 CPU/GPU 型号字符串，或 `null`。
 - **返回：** `String?` — `assets/logos/*.svg` 路径，或 `null`。
@@ -72,7 +87,7 @@
 
 ### `String? _detectStorageBrandLogo(String? brand)` <a id="_detectstoragebrandlogo"></a>
 - **种类：** `DeviceDetailPage` 的静态方法
-- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 146 行）
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 149 行）
 - **用途：** 找到匹配存储设备品牌（如 SSD/HDD 厂商）的 SVG logo 资产路径，用单独、存储特定品牌表。
 - **输入：** `brand` — 存储条目品牌字符串，或 `null`。
 - **返回：** `String?` — `assets/logos/*.svg` 路径，或 `null`。
@@ -93,7 +108,7 @@
 
 ### `String? _detectOsLogo(String? os)` <a id="_detectoslogo"></a>
 - **种类：** `DeviceDetailPage` 的静态方法
-- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 162 行）
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 165 行）
 - **用途：** 找到匹配自由文本操作系统字符串的 SVG logo 资产路径。
 - **输入：** `os` — `device.os`，或 `null`。
 - **返回：** `String?` — `assets/logos/*.svg` 路径，或 `null`。
@@ -114,7 +129,7 @@
 
 ### `String _moneyText(MoneyValue money)` <a id="_moneytext"></a>
 - **种类：** `DeviceDetailPage` 的方法
-- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 235 行）
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 238 行）
 - **用途：** 格式化 `MoneyValue` 供显示，两货币不同时在原始旁显示转换默认货币金额。
 - **输入：** `money` — `MoneyValue`（金额 + 货币 + `money.defaultCurrency` 中计算的 `convertedAmount`）。
 - **返回：** `String` — `"{symbol}{amount}"`（货币匹配默认）或 `"{symbol}{amount} ({baseSymbol}{convertedAmount} {defaultCurrency})"`（货币不同）。
@@ -136,7 +151,7 @@
 
 ### `String _defaultMoneyText(double amount)` <a id="_defaultmoneytext"></a>
 - **种类：** `DeviceDetailPage` 的方法
-- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 250 行）
+- **来源：** `lib/features/devices/views/device_detail_page.dart`（第 253 行）
 - **用途：** 用正确货币符号格式化普通金额（已以设备默认货币表达，如计算的总/每日成本）。
 - **输入：** `amount` — 已转换为设备默认货币的 `double`。
 - **返回：** `String` — `"{symbol}{amount.toStringAsFixed(2)}"`。

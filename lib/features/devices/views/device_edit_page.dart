@@ -19,6 +19,7 @@ import '../services/preset_service.dart';
 import '../widgets/device_avatar.dart';
 import '../widgets/template_image_picker.dart';
 import '../widgets/device_category_icon.dart';
+import '../widgets/storage_health_label.dart';
 import 'chip_search_dialog.dart';
 import 'device_image_editor_page.dart';
 import 'device_search_dialog.dart';
@@ -106,6 +107,14 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
   /// Original storage slot index per editor row (null for rows added in this
   /// session); used to re-map positional dataset storage links on save.
   late List<int?> _storageOriginalIndices;
+  late List<StorageHealth> _storageStatuses;
+  late List<TextEditingController> _storageStatusNoteCtrls;
+
+  /// Stable identity per storage editor row, so RAID array drafts keep
+  /// pointing at the same drive while rows are added or removed.
+  late List<int> _storageTokens;
+  int _nextStorageToken = 0;
+  final List<_StorageArrayDraft> _arrayDrafts = [];
   late String _ramUnit;
   RamType? _ramType;
   double? _latitude;
@@ -247,6 +256,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       _storageBrandCtrls = <TextEditingController>[];
       _storageSerialCtrls = <TextEditingController>[];
       _storageOriginalIndices = <int?>[];
+      _storageStatuses = <StorageHealth>[];
+      _storageStatusNoteCtrls = <TextEditingController>[];
+      _storageTokens = <int>[];
       for (var i = 0; i < d.storage.length; i++) {
         final s = d.storage[i];
         final parsed = _parseValueUnit(s.capacity);
@@ -259,6 +271,24 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
           TextEditingController(text: s.serialNumber ?? ''),
         );
         _storageOriginalIndices.add(i);
+        _storageStatuses.add(s.status);
+        _storageStatusNoteCtrls.add(
+          TextEditingController(text: s.statusNote ?? ''),
+        );
+        _storageTokens.add(_nextStorageToken++);
+      }
+      for (final a in d.storageArrays) {
+        _arrayDrafts.add(
+          _StorageArrayDraft(
+            existing: a,
+            name: a.name,
+            level: a.level,
+            memberTokens: {
+              for (final m in a.memberIndices)
+                if (m >= 0 && m < _storageTokens.length) _storageTokens[m],
+            },
+          ),
+        );
       }
     } else {
       _storageEntries = [''];
@@ -268,6 +298,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       _storageBrandCtrls = [TextEditingController()];
       _storageSerialCtrls = [TextEditingController()];
       _storageOriginalIndices = [null];
+      _storageStatuses = [StorageHealth.ok];
+      _storageStatusNoteCtrls = [TextEditingController()];
+      _storageTokens = [_nextStorageToken++];
     }
 
     _loadPresets();
@@ -336,6 +369,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     }
     for (final c in _storageSerialCtrls) {
       c.dispose();
+    }
+    for (final c in _storageStatusNoteCtrls) {
+      c.dispose();
+    }
+    for (final a in _arrayDrafts) {
+      a.nameCtrl.dispose();
     }
     _screenSizeCtrl.dispose();
     _batteryCtrl.dispose();
@@ -508,19 +547,25 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     // Original slot index → saved slot index, used to re-map positional
     // dataset storage links after slots are removed or compacted away.
     final storageIndexMap = <int, int>{};
+    // Editor row token → saved slot index, for the RAID array members.
+    final tokenIndex = <int, int>{};
     for (int i = 0; i < _storageEntries.length; i++) {
       final v = _storageEntries[i].trim();
       final brand = _nonEmpty(_storageBrandCtrls[i].text);
       final serial = _nonEmpty(_storageSerialCtrls[i].text);
+      final statusNote = _nonEmpty(_storageStatusNoteCtrls[i].text);
       if (v.isNotEmpty ||
           _storageTypes[i] != null ||
           _storageInterfaces[i] != null ||
           brand != null ||
-          serial != null) {
+          serial != null ||
+          _storageStatuses[i] != StorageHealth.ok ||
+          statusNote != null) {
         final originalIndex = _storageOriginalIndices[i];
         if (originalIndex != null) {
           storageIndexMap[originalIndex] = storageList.length;
         }
+        tokenIndex[_storageTokens[i]] = storageList.length;
         storageList.add(
           StorageInfo(
             capacity: v.isNotEmpty ? '$v ${_storageUnits[i]}' : null,
@@ -528,6 +573,10 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
             interface_: _storageInterfaces[i],
             brand: brand,
             serialNumber: serial,
+            status: _storageStatuses[i],
+            statusNote: _storageStatuses[i] == StorageHealth.ok
+                ? null
+                : statusNote,
             extraJson:
                 widget.device != null &&
                     originalIndex != null &&
@@ -538,6 +587,20 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         );
       }
     }
+
+    final storageArrays = [
+      for (final a in _arrayDrafts)
+        StorageArray(
+          id: a.existing?.id,
+          name: a.nameCtrl.text.trim(),
+          level: a.level,
+          memberIndices: [
+            for (final t in a.memberTokens)
+              if (tokenIndex[t] != null) tokenIndex[t]!,
+          ]..sort(),
+          extraJson: a.existing?.extraJson ?? const {},
+        ),
+    ];
 
     late final MoneyValue? purchasePrice;
     late final MoneyValue? soldPrice;
@@ -629,6 +692,7 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
       ram: _combineValueUnit(_ramCtrl.text, _ramUnit),
       ramType: _ramType,
       storage: storageList,
+      storageArrays: storageArrays,
       screenSize: _nonEmpty(_screenSizeCtrl.text),
       screenResolutionW: _parseInt(_screenResWCtrl.text),
       screenResolutionH: _parseInt(_screenResHCtrl.text),
@@ -658,6 +722,11 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
         deviceId: widget.device!.id,
         oldSlotCount: widget.device!.storage.length,
         indexMap: storageIndexMap,
+        keptArrayIds: {for (final a in storageArrays) a.id},
+        arrayOfSlot: {
+          for (final a in storageArrays)
+            for (final m in a.memberIndices) m: a.id,
+        },
       );
     }
     AutoSyncService.instance.notifySaved();
@@ -713,6 +782,215 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
     if (picked != null) {
       setState(() => _retiredDate = picked);
     }
+  }
+
+  /// Purpose: Build a storage row's health dropdown and, when it is not
+  /// working, the note field.
+  /// Inputs: `l10n`, `i` — the editor row.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: The dropdown is keyed `storage-status-<i>`. A failed or offline
+  /// drive is kept; its data set copies stop counting.
+  Widget _buildStorageStatusRow(AppLocalizations l10n, int i) {
+    final status = _storageStatuses[i];
+    return Row(
+      children: [
+        Expanded(
+          child: DropdownButtonFormField<StorageHealth>(
+            key: ValueKey('storage-status-${_storageTokens[i]}'),
+            initialValue: status,
+            decoration: InputDecoration(
+              labelText: l10n.storageStatus,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
+            ),
+            items: [
+              for (final h in StorageHealth.values)
+                DropdownMenuItem(
+                  value: h,
+                  child: Text(storageHealthLabel(l10n, h)),
+                ),
+            ],
+            onChanged: (v) {
+              if (v != null) setState(() => _storageStatuses[i] = v);
+            },
+          ),
+        ),
+        if (status != StorageHealth.ok) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextFormField(
+              controller: _storageStatusNoteCtrls[i],
+              decoration: InputDecoration(
+                labelText: l10n.storageStatusNote,
+                hintText: l10n.storageStatusNoteHint,
+                isDense: true,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Purpose: Build the RAID array section under the storage rows.
+  /// Inputs: `theme`, `l10n`.
+  /// Returns: The section's widgets.
+  /// Side effects: None.
+  /// Notes: One card per array: name, level and a member chip per storage
+  /// row (keyed `array-<n>-member-<row>`). A drive already in another array
+  /// is disabled, so a drive belongs to at most one. Members follow the
+  /// rows by token, so removing a row drops it from its array.
+  List<Widget> _buildStorageArrays(ThemeData theme, AppLocalizations l10n) {
+    return [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.storageArrays,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+          IconButton(
+            key: const Key('storage-array-add'),
+            tooltip: l10n.storageArrayAdd,
+            icon: const Icon(Icons.add_circle_outline, size: 20),
+            onPressed: () => setState(
+              () =>
+                  _arrayDrafts.add(_StorageArrayDraft(level: RaidLevel.raid1)),
+            ),
+          ),
+        ],
+      ),
+      if (_arrayDrafts.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            l10n.storageArrayHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      for (var n = 0; n < _arrayDrafts.length; n++)
+        _buildStorageArrayCard(theme, l10n, n),
+    ];
+  }
+
+  /// Purpose: Build one RAID array's editor card.
+  /// Inputs: `theme`, `l10n`, `n` — the array draft index.
+  /// Returns: `Widget`.
+  /// Side effects: None.
+  /// Notes: Internal helper of [_buildStorageArrays].
+  Widget _buildStorageArrayCard(ThemeData theme, AppLocalizations l10n, int n) {
+    final draft = _arrayDrafts[n];
+    final taken = <int>{
+      for (var m = 0; m < _arrayDrafts.length; m++)
+        if (m != n) ..._arrayDrafts[m].memberTokens,
+    };
+    return Card(
+      key: ValueKey(draft),
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: draft.nameCtrl,
+                    decoration: InputDecoration(
+                      labelText: l10n.storageArrayName,
+                      hintText: l10n.storageArrayNameHint,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 130,
+                  child: DropdownButtonFormField<RaidLevel>(
+                    initialValue: draft.level,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.storageArrayLevel,
+                      isDense: true,
+                    ),
+                    items: [
+                      for (final level in RaidLevel.values)
+                        DropdownMenuItem(
+                          value: level,
+                          child: Text(level.displayName),
+                        ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) setState(() => draft.level = v);
+                    },
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.storageArrayRemove,
+                  icon: const Icon(Icons.remove_circle_outline, size: 20),
+                  onPressed: () => setState(() {
+                    draft.nameCtrl.dispose();
+                    _arrayDrafts.removeAt(n);
+                  }),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(l10n.storageArrayMembers, style: theme.textTheme.labelMedium),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (var i = 0; i < _storageEntries.length; i++)
+                  FilterChip(
+                    key: ValueKey('array-$n-member-$i'),
+                    label: Text(_storageRowLabel(l10n, i)),
+                    avatar: _storageStatuses[i] == StorageHealth.ok
+                        ? null
+                        : Icon(
+                            Icons.error_outline,
+                            size: 16,
+                            color: theme.colorScheme.error,
+                          ),
+                    selected: draft.memberTokens.contains(_storageTokens[i]),
+                    onSelected: taken.contains(_storageTokens[i])
+                        ? null
+                        : (on) => setState(() {
+                            if (on) {
+                              draft.memberTokens.add(_storageTokens[i]);
+                            } else {
+                              draft.memberTokens.remove(_storageTokens[i]);
+                            }
+                          }),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Purpose: Name a storage editor row for the array member chips.
+  /// Inputs: `l10n`, `i`.
+  /// Returns: `Storage n`, plus the capacity when entered.
+  /// Side effects: None.
+  /// Notes: None.
+  String _storageRowLabel(AppLocalizations l10n, int i) {
+    final v = _storageEntries[i].trim();
+    final base = '${l10n.storage} ${i + 1}';
+    return v.isEmpty ? base : '$base · $v ${_storageUnits[i]}';
   }
 
   /// Purpose: Return the display label for storage type label.
@@ -2154,6 +2432,9 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
               _storageBrandCtrls.add(TextEditingController());
               _storageSerialCtrls.add(TextEditingController());
               _storageOriginalIndices.add(null);
+              _storageStatuses.add(StorageHealth.ok);
+              _storageStatusNoteCtrls.add(TextEditingController());
+              _storageTokens.add(_nextStorageToken++);
             }),
           ),
         ],
@@ -2193,6 +2474,13 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                       onPressed: () => setState(() {
                         _storageBrandCtrls[i].dispose();
                         _storageSerialCtrls[i].dispose();
+                        _storageStatusNoteCtrls[i].dispose();
+                        for (final a in _arrayDrafts) {
+                          a.memberTokens.remove(_storageTokens[i]);
+                        }
+                        _storageStatuses.removeAt(i);
+                        _storageStatusNoteCtrls.removeAt(i);
+                        _storageTokens.removeAt(i);
                         _storageEntries.removeAt(i);
                         _storageUnits.removeAt(i);
                         _storageTypes.removeAt(i);
@@ -2288,9 +2576,12 @@ class _DeviceEditPageState extends State<DeviceEditPage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              _buildStorageStatusRow(l10n, i),
             ],
           ),
         ),
+      ..._buildStorageArrays(theme, l10n),
 
       const SizedBox(height: 12),
       TextFormField(
@@ -2480,6 +2771,30 @@ class _RecurringCostDraft {
     amountCtrl.dispose();
     rateCtrl.dispose();
   }
+}
+
+/// An editable RAID array in the device editor.
+class _StorageArrayDraft {
+  final StorageArray? existing;
+  final TextEditingController nameCtrl;
+  RaidLevel level;
+
+  /// Tokens of the storage editor rows in the array.
+  final Set<int> memberTokens;
+
+  /// Purpose: Create an array draft.
+  /// Inputs: `existing` — the saved array, for its id and unknown fields;
+  /// `name`, `level`, `memberTokens`.
+  /// Returns: A new `_StorageArrayDraft`.
+  /// Side effects: Creates the name controller.
+  /// Notes: None.
+  _StorageArrayDraft({
+    this.existing,
+    String name = '',
+    required this.level,
+    Set<int>? memberTokens,
+  }) : nameCtrl = TextEditingController(text: name),
+       memberTokens = memberTokens ?? {};
 }
 
 /// Bottom sheet to browse and search CPU presets.

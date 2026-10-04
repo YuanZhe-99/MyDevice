@@ -32,7 +32,7 @@
 
 ### `buildMarkdown({...})` <a id="buildmarkdown"></a>
 - **用途：** 把设备、网络、数据集和服务渲染进 Markdown 报告正文。
-- **备注：** 抽取不变；因完全领域特定留在应用侧。
+- **备注：** 抽取不变；因完全领域特定留在应用侧。自 1.8.2 起，故障或离线硬盘的 `**Storage:**` 行在括号中带上其状态（及备注），每个 RAID 阵列有一行 `**RAID:** <level · name> — storage <1-based members>`，数据集所链接的存储还会按 `displayString` 列出其所链接的阵列（只有 [`isEmpty`](../../features/datasets/models/dataset.md#datasetstoragelink-isempty) 时才跳过链接）。
 
 ## 引擎文档在哪里
 

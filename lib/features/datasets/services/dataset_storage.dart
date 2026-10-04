@@ -94,18 +94,25 @@ class DataSetStorage {
 
   /// Purpose: Re-map dataset storage links after a device's storage slots changed.
   /// Inputs: `deviceId`, `oldSlotCount` slots before the edit, `indexMap`
-  /// original slot index → new slot index (removed slots are absent).
+  /// original slot index → new slot index (removed slots are absent);
+  /// `keptArrayIds` — when given, the device's array ids after the edit, so
+  /// links to removed arrays are dropped; `arrayOfSlot` — new slot index →
+  /// id of the array it now belongs to.
   /// Returns: `Future<void>`.
   /// Side effects: Rewrites affected dataset links, bumps each changed
   /// dataset's `modifiedAt`, and saves.
   /// Notes: Storage links reference device storage slots positionally, so
   /// removing a slot in the device editor must shift or drop linked indices —
-  /// otherwise links silently point at the wrong drive. Links left without
-  /// any valid slot are removed.
+  /// otherwise links silently point at the wrong drive. Array links are by
+  /// id and survive slot changes. A link to a slot that is now an array
+  /// member is moved to the array, since the array's data is one copy. Links
+  /// left without any valid slot or array are removed.
   static Future<void> remapDeviceStorageLinks({
     required String deviceId,
     required int oldSlotCount,
     required Map<int, int> indexMap,
+    Set<String>? keptArrayIds,
+    Map<int, String> arrayOfSlot = const {},
   }) async {
     var identity = true;
     for (var i = 0; i < oldSlotCount; i++) {
@@ -114,7 +121,7 @@ class DataSetStorage {
         break;
       }
     }
-    if (identity) return;
+    if (identity && keptArrayIds == null && arrayOfSlot.isEmpty) return;
 
     await _serialised(() async {
       final data = await load();
@@ -129,19 +136,30 @@ class DataSetStorage {
             continue;
           }
           final newIndices = <int>[];
+          final newArrays = keptArrayIds == null
+              ? List.of(link.arrayIds)
+              : link.arrayIds.where(keptArrayIds.contains).toList();
           for (final idx in link.storageIndices) {
             final mapped = indexMap[idx];
-            if (mapped != null) newIndices.add(mapped);
+            if (mapped == null) continue;
+            final array = arrayOfSlot[mapped];
+            if (array == null) {
+              newIndices.add(mapped);
+            } else if (!newArrays.contains(array)) {
+              newArrays.add(array);
+            }
           }
           if (newIndices.length != link.storageIndices.length ||
-              !_sameIndices(newIndices, link.storageIndices)) {
+              !_sameIndices(newIndices, link.storageIndices) ||
+              !_sameIds(newArrays, link.arrayIds)) {
             dsChanged = true;
           }
-          if (newIndices.isNotEmpty) {
+          if (newIndices.isNotEmpty || newArrays.isNotEmpty) {
             links.add(
               DataSetStorageLink(
                 deviceId: link.deviceId,
                 storageIndices: newIndices,
+                arrayIds: newArrays,
                 extraJson: link.extraJson,
               ),
             );
@@ -157,6 +175,19 @@ class DataSetStorage {
       if (!changed) return;
       await _write(DataSetData(datasets: updated, extraJson: data.extraJson));
     });
+  }
+
+  /// Purpose: Compare two array id lists element-wise.
+  /// Inputs: `a`, `b`.
+  /// Returns: `bool`.
+  /// Side effects: None.
+  /// Notes: Internal helper used within this file only.
+  static bool _sameIds(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// Purpose: Compare two storage index lists element-wise.

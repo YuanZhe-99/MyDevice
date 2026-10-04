@@ -1,8 +1,8 @@
 # lib/features/datasets/services/dataset_storage.dart
 
 `DataSetStorage` persists the `dataset_data.json` file and owns the one piece of cross-cutting
-logic datasets need: keeping each dataset's positional `storageIndices` valid whenever a device's
-`storage` list is reordered or has entries removed. See
+logic datasets need: keeping each dataset's positional `storageIndices` (and its `arrayIds`) valid
+whenever a device's `storage` list is reordered or has entries removed, or its RAID arrays change. See
 [Datasets](../../../../features/datasets.md#remapdevicestoragelinks) for the concept-level
 walkthrough of `remapDeviceStorageLinks` (already confirmed against this exact source), and
 [Data Formats](../../../../data-formats.md#dataset--datasetstoragelink-libfeaturesdatasetsmodelsdatasetdart)
@@ -21,10 +21,11 @@ for the persisted JSON shape. Like `NetworkStorage`, it resolves its file locati
 | [`save`](#save) | static method | A | Persist `DataSetData` and notify the auto-sync service. |
 | [`addOrUpdate`](#addorupdate) | static method | A | Insert or replace a dataset by id. |
 | [`delete`](#delete) | static method | A | Delete a dataset by id. |
-| [`remapDeviceStorageLinks`](#remapdevicestoragelinks) | static method | A | Re-map (or drop) dataset storage-slot indices after a device's storage list changed. |
+| [`remapDeviceStorageLinks`](#remapdevicestoragelinks) | static method | A | Re-map (or drop) dataset slot indices and array ids after a device's storage or arrays changed. |
+| [`_sameIds`](#sameids) | static method (private) | A | Compare two array-id lists element-wise for equality. |
 | [`_sameIndices`](#sameindices) | static method (private) | A | Compare two storage-index lists element-wise for equality. |
 
-Row count (9) matches `grep -c 'Purpose:' dataset_storage.dart` (9) exactly.
+Row count (10) matches `grep -c 'Purpose:' dataset_storage.dart` (10) exactly.
 
 Since 1.6.2 every write is **atomic and serialised**: `save` and every read-modify-write mutator
 run inside a per-file-path write queue (`DeviceStorage.serializeWrite`, one `AtomicWriteQueue` per
@@ -39,7 +40,7 @@ through, so a newer build's data is not dropped by an older one.
 
 ### `static Future<File> _getFile()` <a id="getfile"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 17).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 27).
 - **Purpose:** Resolve the `dataset_data.json` file inside the current app directory.
 - **Inputs:** None.
 - **Returns:** `Future<File>`.
@@ -75,7 +76,7 @@ through, so a newer build's data is not dropped by an older one.
 
 ### `static Future<DataSetData> load()` <a id="load"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 27).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 37).
 - **Purpose:** Load the persisted dataset list from `dataset_data.json`.
 - **Inputs:** None.
 - **Returns:** `Future<DataSetData>` — `const DataSetData()` (empty) if the file is absent or empty.
@@ -91,7 +92,7 @@ through, so a newer build's data is not dropped by an older one.
 
 ### `static Future<void> save(DataSetData data)` <a id="save"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 41).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 53).
 - **Purpose:** Persist the full dataset list to `dataset_data.json` and notify the auto-sync
   service that local data changed.
 - **Inputs:** `data`.
@@ -111,7 +112,7 @@ through, so a newer build's data is not dropped by an older one.
 
 ### `static Future<void> addOrUpdate(DataSet dataset)` <a id="addorupdate"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 53).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 72).
 - **Purpose:** Insert a new dataset or replace an existing one, matched by `id`.
 - **Inputs:** `dataset`.
 - **Returns:** `Future<void>`.
@@ -127,7 +128,7 @@ through, so a newer build's data is not dropped by an older one.
 
 ### `static Future<void> delete(String id)` <a id="delete"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 70).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 89).
 - **Purpose:** Delete a dataset by id.
 - **Inputs:** `id`.
 - **Returns:** `Future<void>`.
@@ -143,46 +144,67 @@ through, so a newer build's data is not dropped by an older one.
   [Devices](../../../../features/devices.md#cascade-rules-on-retiresell-delete), where deleting a
   *device* does clean up its dataset storage links, in the other direction).
 
-### `static Future<void> remapDeviceStorageLinks({required String deviceId, required int oldSlotCount, required Map<int, int> indexMap})` <a id="remapdevicestoragelinks"></a>
+### `static Future<void> remapDeviceStorageLinks({required String deviceId, required int oldSlotCount, required Map<int, int> indexMap, Set<String>? keptArrayIds, Map<int, String> arrayOfSlot = const {}})` <a id="remapdevicestoragelinks"></a>
 - **Kind:** static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 86).
-- **Purpose:** Re-map every dataset's `storageIndices` for one device after that device's storage
-  list was reordered or had entries removed, so links keep pointing at the correct physical slot
-  instead of silently drifting.
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 110).
+- **Purpose:** Re-map every dataset's `storageIndices` (and, since 1.8.2, `arrayIds`) for one
+  device after that device's storage list or RAID arrays changed, so links keep pointing at the
+  correct physical slot or array instead of silently drifting.
 - **Inputs:** `deviceId` — which device's storage changed; `oldSlotCount` — how many slots existed
   before the edit; `indexMap` — maps each **old** slot index (`0..oldSlotCount-1`) to its **new**
-  index; an old index absent from the map means that slot was removed with no replacement.
+  index; an old index absent from the map means that slot was removed with no replacement;
+  `keptArrayIds` — when non-null, the device's array ids after the edit (links to any other array
+  are dropped); `arrayOfSlot` — **new** slot index → id of the array that slot now belongs to.
 - **Returns:** `Future<void>`.
 - **Side effects:** Rewrites `dataset_data.json` through the write queue ([`_serialised`](#serialised) → [`_write`](#write)) — but only if at least one
   dataset actually changed; bumps `modifiedAt` (via [`copyWith`](../models/dataset.md#copywith)) on
   every dataset it touches.
-- **Algorithm:** 1. Check whether `indexMap` is the identity mapping for every index
-  `0..oldSlotCount-1`; if so, return immediately without loading or saving anything (no-op fast
-  path). 2. Otherwise load all datasets. 3. For each dataset, for each `DataSetStorageLink`: if its
-  `deviceId` doesn't match, keep it unchanged. Otherwise, build `newIndices` by looking up each of
-  the link's `storageIndices` in `indexMap` — an index with a mapping is kept at its new position;
-  an index with no mapping (`indexMap[idx] == null`) is dropped entirely. 4. If `newIndices` differs
-  from the original `storageIndices` (by length or by content, via [`_sameIndices`](#sameindices)),
-  mark this dataset as changed. 5. A link whose `newIndices` end up empty is dropped from the
-  dataset's `storageLinks` entirely (rather than kept with an empty list). 6. Any dataset with at
-  least one changed link is replaced via `copyWith(storageLinks: links)` (which also bumps
-  `modifiedAt`); unaffected datasets pass through unchanged. 7. If no dataset changed at all, return
-  without saving; otherwise save the updated dataset list.
+- **Algorithm:** 1. If `indexMap` is the identity mapping for every index `0..oldSlotCount-1`,
+  `keptArrayIds` is null and `arrayOfSlot` is empty, return immediately without loading or saving
+  anything (no-op fast path). 2. Otherwise load all datasets. 3. For each dataset, for each
+  `DataSetStorageLink`: if its `deviceId` doesn't match, keep it unchanged. Otherwise start
+  `newArrays` from the link's `arrayIds` (filtered to `keptArrayIds` when given), then look up each
+  of the link's `storageIndices` in `indexMap` — an index with no mapping is dropped; a mapped
+  index whose new slot is in `arrayOfSlot` is moved to that array (added to `newArrays` once);
+  any other mapped index is kept at its new position in `newIndices`. 4. If `newIndices` differs
+  from the original `storageIndices` (by length or content, via [`_sameIndices`](#sameindices)) or
+  `newArrays` differs from `arrayIds` (via [`_sameIds`](#sameids)), mark this dataset as changed.
+  5. A link left with neither slots nor arrays is dropped from the dataset's `storageLinks`
+  entirely. 6. Any dataset with at least one changed link is replaced via
+  `copyWith(storageLinks: links)` (which also bumps `modifiedAt`); unaffected datasets pass through
+  unchanged. 7. If no dataset changed at all, return without saving; otherwise save the updated
+  dataset list.
 - **Usage:** Called by the device editor's save handler on every save, with the old→new slot index
-  map it tracked while the user edited/reordered/removed storage rows — see
+  map it tracked while the user edited/reordered/removed storage rows, the kept array ids and the
+  slot → array membership of the edited arrays — see
   [Datasets](../../../../features/datasets.md#device-editor-integration) for the call-site
   contract this function's callers must uphold.
 - **Notes:** This is the single implementation of the "reordering/removing device storage slots
   must keep dataset links in sync" rule called out in `AGENTS.md` (see
   [Datasets](../../../../features/datasets.md#storage-slot-index-linking)) — any *new* code path
   that lets a user reorder or remove storage slots must also call this function with the resulting
-  index map, or dataset links will silently point at the wrong (or a nonexistent) slot. The
-  identity-mapping fast path in step 1 means calling this unconditionally on every device save is
-  cheap when storage wasn't actually reordered/removed.
+  index map, or dataset links will silently point at the wrong (or a nonexistent) slot. Array links
+  are by id, so they survive slot changes; a link to a slot that became an array member moves to
+  the array, because the array's data is one copy. The editor always passes `keptArrayIds`, so from
+  there the fast path of step 1 no longer short-circuits; the load-and-compare still saves nothing
+  when no link changed.
+
+### `static bool _sameIds(List<String> a, List<String> b)` <a id="sameids"></a>
+- **Kind:** private static method. **Since:** 1.8.2.
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 185).
+- **Purpose:** Compare two array-id lists element-wise for equality.
+- **Inputs:** `a`, `b`.
+- **Returns:** `bool` — `false` on a length mismatch; otherwise `true` only if every position
+  matches.
+- **Side effects:** None.
+- **Algorithm:** Length check, then a `for` loop comparing `a[i]` to `b[i]`.
+- **Usage:** Called only by [`remapDeviceStorageLinks`](#remapdevicestoragelinks), to decide whether
+  a link's `arrayIds` changed.
+- **Notes:** Order-sensitive, like [`_sameIndices`](#sameindices).
 
 ### `static bool _sameIndices(List<int> a, List<int> b)` <a id="sameindices"></a>
 - **Kind:** private static method.
-- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 146).
+- **Source:** `lib/features/datasets/services/dataset_storage.dart` (line 198).
 - **Purpose:** Compare two storage-index lists element-wise for equality.
 - **Inputs:** `a`, `b`.
 - **Returns:** `bool` — `false` immediately on a length mismatch; otherwise `true` only if every

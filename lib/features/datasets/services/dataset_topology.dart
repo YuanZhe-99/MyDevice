@@ -9,24 +9,30 @@ import 'dataset_placement.dart';
 enum DataSetTopologyNodeKind { device, storage, copy }
 
 /// One placed box of the data set topology: a device (large), a storage
-/// slot inside it (medium) or one copy of a data set on that slot (small).
+/// place inside it — a slot or a RAID array — (medium) or one copy of a data
+/// set on that place (small).
 class DataSetTopologyNode {
-  /// `device:<deviceId>`, `storage:<deviceId>:<index>` or
-  /// `copy:<dataSetId>@<deviceId>:<index>`.
+  /// `device:<deviceId>`, `storage:<deviceId>:<place key>` or
+  /// `copy:<dataSetId>@<deviceId>:<place key>`; a slot's place key is its
+  /// index, an array's `a:<arrayId>`.
   final String id;
   final DataSetTopologyNodeKind kind;
   final Rect rect;
   final Device device;
 
-  /// The slot, for storage and copy boxes.
-  final int? storageIndex;
+  /// The slot or array, for storage and copy boxes.
+  final StoragePlace? place;
 
   /// The data set, for copy boxes.
   final DataSet? dataSet;
 
   /// How many copies the copy box's data set has in the whole inventory,
-  /// counting devices a filter hides; 0 for other boxes.
+  /// counting devices a filter hides and unavailable places; 0 for other
+  /// boxes.
   final int copyCount;
+
+  /// How many of those copies are on a place that is not unavailable.
+  final int availableCount;
 
   /// Purpose: Create a placed box.
   /// Inputs: Every field; see their comments.
@@ -38,10 +44,18 @@ class DataSetTopologyNode {
     required this.kind,
     required this.rect,
     required this.device,
-    this.storageIndex,
+    this.place,
     this.dataSet,
     this.copyCount = 0,
+    this.availableCount = 0,
   });
+
+  /// Purpose: Return the slot of a slot or slot-copy box.
+  /// Inputs: None.
+  /// Returns: The index, or null for devices and arrays.
+  /// Side effects: None.
+  /// Notes: None.
+  int? get storageIndex => place?.storageIndex;
 }
 
 /// One sync line: two copies of the same data set, consecutive in the
@@ -83,8 +97,9 @@ class DataSetTopologyHighlight {
 }
 
 /// The pure, deterministic layout of the data set topology: devices as
-/// large boxes packed into columns of a square-to-16:10 canvas, their storage slots stacked inside, each
-/// slot's data set copies wrapped inside the slot, and one chain of sync
+/// large boxes packed into columns of a square-to-16:10 canvas, their
+/// storage places (RAID arrays, then free slots) stacked inside, each
+/// place's data set copies wrapped inside it, and one chain of sync
 /// lines per data set with more than one copy.
 class DataSetTopologyLayout {
   final Size size;
@@ -154,7 +169,7 @@ class DataSetTopologyLayout {
   /// but no copy.
   /// Returns: The layout.
   /// Side effects: None.
-  /// Notes: Devices with no storage slot are never drawn. Device order:
+  /// Notes: Devices with no storage slot are never drawn; a device shows its places in [devicePlaces] order, plus array members a link names directly. Device order:
   /// the device with the most copies first, then repeatedly the device that
   /// shares the most data sets with those already placed, so devices that
   /// sync sit side by side; ties keep the device-list order. Devices are
@@ -175,7 +190,7 @@ class DataSetTopologyLayout {
     final dataSetsOnDevice = <String, Set<String>>{};
     for (final ds in dataSets) {
       for (final r in replicasByDataSet[ds.id]!) {
-        onSlot.putIfAbsent('${r.device.id}:${r.storageIndex}', () => []).add(r);
+        onSlot.putIfAbsent('${r.device.id}:${r.place.key}', () => []).add(r);
         dataSetsOnDevice.putIfAbsent(r.device.id, () => {}).add(ds.id);
       }
     }
@@ -192,7 +207,7 @@ class DataSetTopologyLayout {
     }
 
     /// Purpose: Return the height of one storage box.
-    /// Inputs: `copies` — how many copies the slot holds.
+    /// Inputs: `copies` — how many copies the place holds.
     /// Returns: `double`.
     /// Side effects: None.
     /// Notes: Local helper of [build].
@@ -204,15 +219,30 @@ class DataSetTopologyLayout {
       return storageHeader + body + storagePadding;
     }
 
+    // Arrays and free slots, plus any array member a link still names
+    // directly, so no copy is lost from the picture.
+    final placesOf = {
+      for (final device in ordered)
+        device.id: [
+          ...devicePlaces(device),
+          for (var i = 0; i < device.storage.length; i++)
+            if (device.storageArrays.any(
+                  (a) =>
+                      StoragePlace.array(device, a).memberIndices.contains(i),
+                ) &&
+                onSlot.containsKey('${device.id}:$i'))
+              StoragePlace.slot(device, i),
+        ],
+    };
     final heights = [
       for (final device in ordered)
         deviceHeader +
             devicePadding +
             [
-              for (var i = 0; i < device.storage.length; i++)
-                storageHeight(onSlot['${device.id}:$i']?.length ?? 0),
+              for (final place in placesOf[device.id]!)
+                storageHeight(onSlot['${device.id}:${place.key}']?.length ?? 0),
             ].reduce((a, b) => a + b) +
-            (device.storage.length - 1) * storageGap,
+            (placesOf[device.id]!.length - 1) * storageGap,
     ];
     final columns = _columnCount(heights);
     final tops = _packColumns(heights, columns);
@@ -227,8 +257,8 @@ class DataSetTopologyLayout {
       final left = padding + tops[d].column * (deviceWidth + deviceGap);
       final y = tops[d].top;
       var sy = y + deviceHeader;
-      for (var i = 0; i < device.storage.length; i++) {
-        final copies = onSlot['${device.id}:$i'] ?? const [];
+      for (final place in placesOf[device.id]!) {
+        final copies = onSlot['${device.id}:${place.key}'] ?? const [];
         final storageRect = Rect.fromLTWH(
           left + devicePadding,
           sy,
@@ -237,18 +267,18 @@ class DataSetTopologyLayout {
         );
         storageNodes.add(
           DataSetTopologyNode(
-            id: 'storage:${device.id}:$i',
+            id: 'storage:${device.id}:${place.key}',
             kind: DataSetTopologyNodeKind.storage,
             rect: storageRect,
             device: device,
-            storageIndex: i,
+            place: place,
           ),
         );
         for (var c = 0; c < copies.length; c++) {
           final r = copies[c];
           copyNodes.add(
             DataSetTopologyNode(
-              id: copyNodeId(r.dataSet.id, device.id, i),
+              id: copyNodeId(r.dataSet.id, device.id, place.key),
               kind: DataSetTopologyNodeKind.copy,
               rect: Rect.fromLTWH(
                 storageRect.left +
@@ -261,9 +291,12 @@ class DataSetTopologyLayout {
                 copyHeight,
               ),
               device: device,
-              storageIndex: i,
+              place: place,
               dataSet: r.dataSet,
               copyCount: replicasByDataSet[r.dataSet.id]!.length,
+              availableCount: availableCopyCount(
+                replicasByDataSet[r.dataSet.id]!,
+              ),
             ),
           );
         }
@@ -282,8 +315,8 @@ class DataSetTopologyLayout {
       maxBottom = math.max(maxBottom, deviceRect.bottom);
     }
 
-    // Copy boxes were placed device by device in affinity order, slot by
-    // slot, so this order chains each data set's copies along the canvas.
+    // Copy boxes were placed device by device in affinity order, place by
+    // place, so this order chains each data set's copies along the canvas.
     final copiesOf = <String, List<DataSetTopologyNode>>{};
     for (final node in copyNodes) {
       copiesOf.putIfAbsent(node.dataSet!.id, () => []).add(node);
@@ -374,15 +407,16 @@ class DataSetTopologyLayout {
   }
 
   /// Purpose: Build the id of a copy box.
-  /// Inputs: `dataSetId`, `deviceId`, `storageIndex`.
-  /// Returns: `copy:<dataSetId>@<deviceId>:<index>`.
+  /// Inputs: `dataSetId`, `deviceId`, `placeKey` — a slot index (int) or a
+  /// [StoragePlace.key].
+  /// Returns: `copy:<dataSetId>@<deviceId>:<place key>`.
   /// Side effects: None.
   /// Notes: Widget keys use `dataset-topology-node-<id>`.
   static String copyNodeId(
     String dataSetId,
     String deviceId,
-    int storageIndex,
-  ) => 'copy:$dataSetId@$deviceId:$storageIndex';
+    Object placeKey,
+  ) => 'copy:$dataSetId@$deviceId:$placeKey';
 
   /// Purpose: Order devices so that devices sharing data sets are adjacent.
   /// Inputs: `devices` — candidates in device-list order; `onDevice` —
@@ -439,7 +473,7 @@ class DataSetTopologyLayout {
                 n.dataSet!.id == selected.dataSet!.id,
               DataSetTopologyNodeKind.storage =>
                 n.device.id == selected.device.id &&
-                    n.storageIndex == selected.storageIndex,
+                    n.place!.key == selected.place!.key,
               DataSetTopologyNodeKind.device =>
                 n.device.id == selected.device.id,
             })
@@ -453,7 +487,7 @@ class DataSetTopologyLayout {
       }
       lit
         ..add(n.id)
-        ..add('storage:${n.device.id}:${n.storageIndex}')
+        ..add('storage:${n.device.id}:${n.place!.key}')
         ..add('device:${n.device.id}');
     }
     return DataSetTopologyHighlight(

@@ -770,6 +770,81 @@ class AppLocalizationsZh extends AppLocalizations {
   String get storageSerialNumber => '序列号';
 
   @override
+  String get storageStatus => '状态';
+
+  @override
+  String get storageStatusOk => '正常';
+
+  @override
+  String get storageStatusFailed => '故障';
+
+  @override
+  String get storageStatusOffline => '离线';
+
+  @override
+  String get storageStatusNote => '状态备注';
+
+  @override
+  String get storageStatusNoteHint => '例：2026-09-30 从阵列掉线';
+
+  @override
+  String get storageArrays => 'RAID 阵列';
+
+  @override
+  String get storageArrayAdd => '添加 RAID 阵列';
+
+  @override
+  String get storageArrayRemove => '移除 RAID 阵列';
+
+  @override
+  String get storageArrayName => '阵列名称';
+
+  @override
+  String get storageArrayNameHint => '例：存储池 1';
+
+  @override
+  String get storageArrayLevel => 'RAID 级别';
+
+  @override
+  String get storageArrayMembers => '成员硬盘';
+
+  @override
+  String get storageArrayHint => '阵列上的数据无论跨多少块硬盘都只算一份副本。一块硬盘最多属于一个阵列。';
+
+  @override
+  String get storageArrayNoMembers => '请先在上方添加存储。';
+
+  @override
+  String get storageArrayUnsaved => '保存后才能选择这块硬盘';
+
+  @override
+  String get storageArrayDegraded => '降级';
+
+  @override
+  String get storageArrayUnavailable => '已失效';
+
+  @override
+  String storageArraySummary(String level, int count) {
+    return '$level · $count 块硬盘';
+  }
+
+  @override
+  String storageInArray(String array) {
+    return '属于 $array';
+  }
+
+  @override
+  String dataSetCopiesUnavailable(int count) {
+    return '$count 份不可用';
+  }
+
+  @override
+  String get dataSetNoAvailableCopy => '没有可用副本';
+
+  @override
+  String get dataSetTopologyLegendUnavailable => '故障硬盘上的副本';
+
+  @override
   String get fetchFromInternet => '联网查询';
 
   @override
@@ -2843,6 +2918,81 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get storageSerialNumber => '序號';
+
+  @override
+  String get storageStatus => '狀態';
+
+  @override
+  String get storageStatusOk => '正常';
+
+  @override
+  String get storageStatusFailed => '故障';
+
+  @override
+  String get storageStatusOffline => '離線';
+
+  @override
+  String get storageStatusNote => '狀態備註';
+
+  @override
+  String get storageStatusNoteHint => '例：2026-09-30 從陣列掉線';
+
+  @override
+  String get storageArrays => 'RAID 陣列';
+
+  @override
+  String get storageArrayAdd => '新增 RAID 陣列';
+
+  @override
+  String get storageArrayRemove => '移除 RAID 陣列';
+
+  @override
+  String get storageArrayName => '陣列名稱';
+
+  @override
+  String get storageArrayNameHint => '例：儲存池 1';
+
+  @override
+  String get storageArrayLevel => 'RAID 等級';
+
+  @override
+  String get storageArrayMembers => '成員硬碟';
+
+  @override
+  String get storageArrayHint => '陣列上的資料無論跨多少顆硬碟都只算一份副本。一顆硬碟最多屬於一個陣列。';
+
+  @override
+  String get storageArrayNoMembers => '請先在上方新增儲存。';
+
+  @override
+  String get storageArrayUnsaved => '儲存後才能選擇這顆硬碟';
+
+  @override
+  String get storageArrayDegraded => '降級';
+
+  @override
+  String get storageArrayUnavailable => '已失效';
+
+  @override
+  String storageArraySummary(String level, int count) {
+    return '$level · $count 顆硬碟';
+  }
+
+  @override
+  String storageInArray(String array) {
+    return '屬於 $array';
+  }
+
+  @override
+  String dataSetCopiesUnavailable(int count) {
+    return '$count 份不可用';
+  }
+
+  @override
+  String get dataSetNoAvailableCopy => '沒有可用副本';
+
+  @override
+  String get dataSetTopologyLegendUnavailable => '故障硬碟上的副本';
 
   @override
   String get fetchFromInternet => '線上查詢';

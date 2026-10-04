@@ -1,6 +1,6 @@
 # lib/features/datasets/views/dataset_topology_page.dart
 
-全屏资料集拓扑（自 1.8.0 起），从数据集列表的应用栏（[`dataset_list_page.md`](dataset_list_page.md)，`_openTopology`）压入根导航器。设备是大框，其存储槽是其中的中框，每份数据集副本是其槽内的小框；同一数据集的各副本由同步连线相连。布局来自 [`../services/dataset_topology.md`](../services/dataset_topology.md)；画布是共享的 [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md)——点按选择，拖动或滚轮平移，捏合或 Ctrl + 滚轮缩放。见 [数据集](../../../../features/datasets.md#data-set-topology)。
+全屏资料集拓扑（自 1.8.0 起），从数据集列表的应用栏（[`dataset_list_page.md`](dataset_list_page.md)，`_openTopology`）压入根导航器。设备是大框，其存储位置——自 1.8.2 起为 RAID 阵列和空闲槽——是其中的中框，每份数据集副本是其位置内的小框；同一数据集的各副本由同步连线相连。布局来自 [`../services/dataset_topology.md`](../services/dataset_topology.md)；画布是共享的 [`TopologyCanvasViewer`](../../../shared/widgets/topology_canvas_viewer.md)——点按选择，拖动或滚轮平移，捏合或 Ctrl + 滚轮缩放。见 [数据集](../../../../features/datasets.md#data-set-topology)。
 
 类型别名 `DataSetTopologyInventory`（`reload` 返回的 `dataSets`、`devices` 记录）不单列。键：框 `dataset-topology-node-<id>`；应用栏 `dataset-topology-filter`、`dataset-topology-links`（同步连线，默认关闭；显示时画家图层的键为 `dataset-topology-links-layer`）、`dataset-topology-show-empty`、`dataset-topology-export`；`dataset-topology-legend-toggle`、`dataset-topology-legend`、`dataset-topology-selection-chip`、`dataset-topology-empty`；详情 `dataset-topology-details-sheet`、`dataset-topology-details-pane`、`dataset-topology-details-empty`、`dataset-topology-details-close`、`dataset-topology-card-<id>`、`dataset-topology-edit-<id>`；筛选 chip `dataset-topology-filter-all`、`dataset-topology-filter-device-<id>`。
 
@@ -21,10 +21,10 @@
 | `apply` | 嵌套函数（`_openFilters`） | B | 把筛选应用到页面和面板，并重置变换。 |
 | `_export` | 方法（`_DataSetTopologyPageState`） | B | 把带高亮的画布捕获为 `mydevice_dataset_topology.png` 并分享。 |
 | [`build`](#build) | 方法（组件，`_DataSetTopologyPageState`） | A | 应用栏、视图控件、图例条、画布、详情窗格。 |
-| `_buildLegendStrip` | 方法（组件辅助） | B | 图例开关、图例、选择 chip。 |
+| `_buildLegendStrip` | 方法（组件辅助） | B | 图例开关、图例（自 1.8.2 起含"不可用"条目）、选择 chip。 |
 | `entry` | 嵌套函数（`_buildLegendStrip`） | B | 一个图例条目。 |
 | `box` | 嵌套函数（`_buildLegendStrip`） | B | 一个框样例。 |
-| `_nodeLabel` | 顶层函数 | B | 设备名、存储标签或"emoji 名称"。 |
+| `_nodeLabel` | 顶层函数 | B | 设备名、位置标签（`placeLabel`）或"emoji 名称"。 |
 | `_DataSetTopologyCanvas`（构造函数） | 构造函数 | B | 由布局、高亮、同步连线开关和点按回调创建画布。 |
 | [`build`](#canvasbuild) | 方法（组件，`_DataSetTopologyCanvas`） | A | 设备和存储框、连线画家（打开时），然后是副本框。 |
 | `place` | 嵌套函数（`_DataSetTopologyCanvas.build`） | B | 把一个框放到其矩形处。 |
@@ -36,8 +36,8 @@
 | `shouldRepaint` | 方法（`_DataSetLinkPainter`） | B | 布局、选择或配色方案变化时重绘。 |
 | `_DataSetTopologyDetails`（构造函数） | 构造函数 | B | 为一个框创建详情。 |
 | [`build`](#detailsbuild) | 方法（组件，`_DataSetTopologyDetails`） | A | 框的标题，然后其上每个数据集一张卡片。 |
-| `_buildDataSetCard` | 方法（组件辅助，`_DataSetTopologyDetails`） | B | 以"设备 – 存储"列出数据集的副本，带编辑按钮。 |
-| `_isHere` | 方法（`_DataSetTopologyDetails`） | B | 副本是否位于所选框上。 |
+| `_buildDataSetCard` | 方法（组件辅助，`_DataSetTopologyDetails`） | B | 数据集的副本摘要，并以"设备 – 位置"列出其副本（不可用的以错误色加删除线），带编辑按钮。 |
+| `_isHere` | 方法（`_DataSetTopologyDetails`） | B | 副本是否位于所选框上（设备和位置键）。 |
 
 行数（30）与 `grep -c 'Purpose:' dataset_topology_page.dart`（30）精确匹配。
 
@@ -45,18 +45,18 @@
 
 ### `Color dataSetTopologyColor(ColorScheme cs, String dataSetId)` <a id="datasettopologycolor"></a>
 - **种类：** 顶层函数。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 30 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 32 行）。
 - **用途：** 选取数据集副本和同步连线的颜色。
 - **输入：** `cs`、`dataSetId`。
 - **返回：** 八种调色板颜色之一（配色方案的 primary 和 tertiary、青绿、靛蓝、橙、粉、绿、紫），以 id 的乘数 31 哈希为索引。
 - **副作用：** 无。
 - **算法：** 对各代码单元计算 `hash = (hash × 31 + unit) & 0x7fffffff`；`palette[hash % 8]`。
 - **用法：** 副本框和 `_DataSetLinkPainter`。
-- **备注：** 跨启动和跨设备稳定（不同于 `String.hashCode`）。错误色不在调色板中；它标记只有一份副本的数据集。
+- **备注：** 跨启动和跨设备稳定（不同于 `String.hashCode`）。错误色不在调色板中；它标记可用副本不超过一份的数据集和不可用的位置。
 
 ### `DataSetTopologyLayout _layout()` <a id="layoutfor"></a>
 - **种类：** `_DataSetTopologyPageState` 的方法。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 127 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 129 行）。
 - **用途：** 返回布局。
 - **输入：** 无。
 - **返回：** `DataSetTopologyLayout`。
@@ -67,7 +67,7 @@
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyPageState`） <a id="build"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 340 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 342 行）。
 - **用途：** 构建页面。
 - **输入：** `context`。
 - **返回：** 组件树。
@@ -78,7 +78,7 @@
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyCanvas`） <a id="canvasbuild"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 652 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 657 行）。
 - **用途：** 构建框和连线。
 - **输入：** `context`。
 - **返回：** 尺寸为 `layout.size` 的 `Stack`。
@@ -89,18 +89,18 @@
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyBox`） <a id="boxbuild"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 732 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 742 行）。
 - **用途：** 渲染一个框。
 - **输入：** `context`。
 - **返回：** 组件树。
 - **副作用：** 无。
-- **算法：** 设备：带 44 px 标题（类别图标、名称）的带边框框。存储：带 34 px 标题（存储图标、标签）、颜色更深的带边框框。副本：以数据集颜色填充的 chip（只有一份副本时用错误色），带标签和 `×n` 徽章。外面包着 `Semantics`（标签、种类或副本数、按钮、选中）、用于变暗的 `Opacity` 和 `Tooltip`。
+- **算法：** 设备：带 44 px 标题（类别图标、名称）的带边框框。存储：带 34 px 标题（槽为存储图标，RAID 阵列为图层图标，标签）、颜色更深的带边框框；不为 `ok` 的位置改为显示以 `dataset-topology-unhealthy-<id>` 为键的 `error_outline` 图标，`unavailable` 的位置还带错误色边框。副本：以数据集颜色填充的 chip（[`dataSetCopySummary`](dataset_copy_summary.md#datasetcopysummary) 发出警告时用错误色），带标签和徽章 `×total`，部分副本不可用时为 `×usable/total`；不可用位置上的副本变灰并加删除线。外面包着 `Semantics`（标签；存储为种类加位置的健康状况，副本为副本摘要——以及"不可用"；按钮、选中）、用于变暗的 `Opacity` 和 `Tooltip`。
 - **用法：** 画布中的 `place`。
 - **备注：** 设备和存储框只在标题上接收点按（`_frame`），因此在框体内的点按会到达那里的副本或背景。
 
 ### `void paint(Canvas canvas, Size size)`（`_DataSetLinkPainter`） <a id="paint"></a>
 - **种类：** `_DataSetLinkPainter` 的方法。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 902 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 952 行）。
 - **用途：** 绘制同步连线。
 - **输入：** `canvas`、`size`。
 - **返回：** 无。
@@ -111,11 +111,11 @@
 
 ### `Widget build(BuildContext context)`（`_DataSetTopologyDetails`） <a id="detailsbuild"></a>
 - **种类：** 方法（组件构建）。
-- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 1001 行）。
+- **来源：** `lib/features/datasets/views/dataset_topology_page.dart`（第 1051 行）。
 - **用途：** 渲染所选框的详情。
 - **输入：** `context`。
 - **返回：** 一个 `ListView`。
 - **副作用：** 无。
-- **算法：** 一个标题块（设备图标 / 存储图标 / emoji；名称；类别、设备名或副本数；窗格中的关闭按钮）。然后是框上的数据集——副本只显示它自己的数据集——以卡片呈现：emoji、名称、编辑按钮、"副本 · n 份副本"（或以错误色显示*仅一份副本*），以及每份副本一行，位于所选框上的打勾；没有时显示*没有资料集*。
+- **算法：** 一个标题块（设备图标 / 存储或图层图标 / emoji；名称；类别，存储为设备名连同阵列摘要和健康状况，副本为副本摘要；窗格中的关闭按钮）。然后是框上的数据集——副本只显示它自己的数据集——以卡片呈现：emoji、名称、编辑按钮、"副本 · <摘要>"（或以错误色单独显示警告摘要，经 [`dataSetReplicaSummary`](dataset_copy_summary.md#datasetreplicasummary)），以及每份副本一行，位于所选框上的打勾，所在位置不可用时带错误图标并加删除线；没有时显示*没有资料集*。
 - **用法：** 面板和窗格。
 - **备注：** 无。

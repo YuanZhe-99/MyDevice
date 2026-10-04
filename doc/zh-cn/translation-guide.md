@@ -157,6 +157,14 @@
 | copy count | 副本数 | 保存某数据集的存储槽数量 |
 | data set topology | 资料集拓扑 | 全屏的设备 → 存储 → 数据集视图（中文 UI 中 data set 译作 资料集） |
 | sync line | 同步连线 | 拓扑中连接同一数据集两份副本的连线 |
+| RAID array | RAID 阵列 | 一个 `StorageArray`：同一设备的若干硬盘按某个 RAID 级别组合；其上的数据算一份副本 |
+| member drive | 成员硬盘 | 属于某个 RAID 阵列的存储槽 |
+| place (of a copy) | 位置 | 副本可以存放的存储槽或 RAID 阵列（`StoragePlace`） |
+| drive status | 硬盘状态 | 正常 / 故障 / 离线（working / failed / offline） |
+| degraded | 降级 | 有故障成员但仍在容错范围内的阵列 |
+| data lost (array) | 已失效 | 失去的硬盘数超过其级别容错能力的阵列 |
+| usable copy | 可用副本 | 所在位置未故障、未离线、未失效的副本；"unavailable" = 不可用 |
+| fault tolerance | 容错能力 | 某个 RAID 级别允许失去的成员硬盘数量 |
 | weak linking | 弱链接 | 链接 FoundationModels 的方式，使应用在没有该框架的系统上仍能启动 |
 | hand-picked thumbnail | 手选缩略图 | 用户为设备选定的内置缩略图（`templateImage`） |
 | thumbnail candidate | 候选缩略图 | 排序后的选择网格中的一项 |

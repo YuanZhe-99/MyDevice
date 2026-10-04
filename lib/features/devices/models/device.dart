@@ -23,7 +23,11 @@ const _storageInfoJsonKeys = {
   'interface',
   'serialNumber',
   'brand',
+  'status',
+  'statusNote',
 };
+
+const _storageArrayJsonKeys = {'id', 'name', 'level', 'memberIndices'};
 
 const _moneyValueJsonKeys = {
   'amount',
@@ -52,6 +56,7 @@ const _deviceJsonKeys = {
   'ram',
   'ramType',
   'storage',
+  'storageArrays',
   'screenSize',
   'screenResolutionW',
   'screenResolutionH',
@@ -428,6 +433,93 @@ enum StorageInterface {
   }
 }
 
+/// Whether a storage device is working. A failed or offline drive is kept
+/// in the inventory but holds no usable data.
+enum StorageHealth {
+  ok,
+  failed,
+  offline;
+
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: `ok` is never written; an absent `status` means `ok`.
+  String get jsonValue => name;
+
+  /// Purpose: Parse a stored health value.
+  /// Inputs: `value`.
+  /// Returns: The health; `ok` for null or an unknown value.
+  /// Side effects: None.
+  /// Notes: `StorageInfo.fromJson` keeps an unknown value from a newer build
+  /// in `extraJson`, so it survives a save.
+  static StorageHealth fromJson(String? value) =>
+      StorageHealth.values.where((e) => e.name == value).firstOrNull ?? ok;
+}
+
+/// RAID level (or pooling scheme) of a storage array.
+enum RaidLevel {
+  raid0,
+  raid1,
+  raid5,
+  raid6,
+  raid10,
+  raidz1,
+  raidz2,
+  raidz3,
+  jbod,
+  other;
+
+  /// Purpose: Return the serialized enum value used in JSON data.
+  /// Inputs: None.
+  /// Returns: `String`.
+  /// Side effects: None.
+  /// Notes: None.
+  String get jsonValue => name;
+
+  /// Purpose: Return the level as it is usually written.
+  /// Inputs: None.
+  /// Returns: E.g. `RAID 5`, `RAID-Z2`, `JBOD`; `RAID` for `other`.
+  /// Side effects: None.
+  /// Notes: Not localized; these are technical names.
+  String get displayName => switch (this) {
+    RaidLevel.raid0 => 'RAID 0',
+    RaidLevel.raid1 => 'RAID 1',
+    RaidLevel.raid5 => 'RAID 5',
+    RaidLevel.raid6 => 'RAID 6',
+    RaidLevel.raid10 => 'RAID 10',
+    RaidLevel.raidz1 => 'RAID-Z1',
+    RaidLevel.raidz2 => 'RAID-Z2',
+    RaidLevel.raidz3 => 'RAID-Z3',
+    RaidLevel.jbod => 'JBOD',
+    RaidLevel.other => 'RAID',
+  };
+
+  /// Purpose: Return how many member drives may fail without losing data.
+  /// Inputs: `members` — the array's member count.
+  /// Returns: The tolerance, or null when the level does not define one
+  /// (`other`).
+  /// Side effects: None.
+  /// Notes: RAID 10 is counted conservatively as tolerating one failure —
+  /// two in the same mirror pair lose data.
+  int? faultTolerance(int members) => switch (this) {
+    RaidLevel.raid0 || RaidLevel.jbod => 0,
+    RaidLevel.raid1 => members - 1,
+    RaidLevel.raid5 || RaidLevel.raidz1 || RaidLevel.raid10 => 1,
+    RaidLevel.raid6 || RaidLevel.raidz2 => 2,
+    RaidLevel.raidz3 => 3,
+    RaidLevel.other => null,
+  };
+
+  /// Purpose: Parse a stored level.
+  /// Inputs: `value`.
+  /// Returns: The level; `other` for null or an unknown value.
+  /// Side effects: None.
+  /// Notes: None.
+  static RaidLevel fromJson(String? value) =>
+      RaidLevel.values.where((e) => e.name == value).firstOrNull ?? other;
+}
+
 /// Storage device information.
 class StorageInfo {
   final String? capacity; // e.g. "512 GB"
@@ -435,10 +527,16 @@ class StorageInfo {
   final StorageInterface? interface_;
   final String? serialNumber;
   final String? brand;
+
+  /// Whether the drive works; failed and offline drives stay listed.
+  final StorageHealth status;
+
+  /// Free text about a failure, e.g. when it went offline.
+  final String? statusNote;
   final Map<String, dynamic> extraJson;
 
   /// Purpose: Create a storage info instance.
-  /// Inputs: `extraJson`.
+  /// Inputs: `status` — defaults to `ok`; `statusNote`; `extraJson`.
   /// Returns: A new `StorageInfo` instance.
   /// Side effects: None.
   /// Notes: None.
@@ -448,8 +546,17 @@ class StorageInfo {
     this.interface_,
     this.serialNumber,
     this.brand,
+    this.status = StorageHealth.ok,
+    this.statusNote,
     this.extraJson = const {},
   });
+
+  /// Purpose: Tell whether the drive is working.
+  /// Inputs: None.
+  /// Returns: True when `status` is `ok`.
+  /// Side effects: None.
+  /// Notes: None.
+  bool get isHealthy => status == StorageHealth.ok;
 
   /// Purpose: Return whether empty is true.
   /// Inputs: None.
@@ -462,6 +569,8 @@ class StorageInfo {
       interface_ == null &&
       serialNumber == null &&
       brand == null &&
+      status == StorageHealth.ok &&
+      statusNote == null &&
       extraJson.isEmpty;
 
   /// Purpose: Return the current display string value.
@@ -505,6 +614,8 @@ class StorageInfo {
     if (interface_ != null) 'interface': interface_!.jsonValue,
     if (serialNumber != null) 'serialNumber': serialNumber,
     if (brand != null) 'brand': brand,
+    if (status != StorageHealth.ok) 'status': status.jsonValue,
+    if (statusNote != null) 'statusNote': statusNote,
   };
 
   /// Purpose: Create an instance from a JSON value, including the legacy string
@@ -513,7 +624,7 @@ class StorageInfo {
   /// Returns: A new `StorageInfo`.
   /// Side effects: None.
   /// Notes: A legacy string becomes `StorageInfo(capacity: json)`; unknown map
-  /// keys go to `extraJson`.
+  /// keys go to `extraJson`. A missing `status` means `ok`.
   factory StorageInfo.fromJson(dynamic json) {
     if (json is String) {
       // Legacy format: plain string like "512 GB"
@@ -526,7 +637,15 @@ class StorageInfo {
       interface_: StorageInterface.fromJson(map['interface'] as String?),
       serialNumber: map['serialNumber'] as String?,
       brand: map['brand'] as String?,
-      extraJson: unknownJsonFields(map, _storageInfoJsonKeys),
+      status: StorageHealth.fromJson(map['status'] as String?),
+      statusNote: map['statusNote'] as String?,
+      extraJson: {
+        ...unknownJsonFields(map, _storageInfoJsonKeys),
+        // A status this build does not know reads as ok but is written back.
+        if (map['status'] is String &&
+            !StorageHealth.values.any((e) => e.name == map['status']))
+          'status': map['status'],
+      },
     );
   }
 
@@ -537,6 +656,89 @@ class StorageInfo {
   /// Notes: Known fields always come from `this`; only `extraJson` is merged.
   StorageInfo mergeUnknownFieldsFrom(StorageInfo other, {StorageInfo? base}) {
     return StorageInfo.fromJson({
+      ...toJson(),
+      ...mergeUnknownJsonFields(
+        primary: extraJson,
+        secondary: other.extraJson,
+        base: base?.extraJson,
+      ),
+    });
+  }
+}
+
+/// A RAID array (or pool) built from some of a device's storage slots. Data
+/// on it is one copy, however many drives it spans.
+class StorageArray {
+  final String id;
+  final String name;
+  final RaidLevel level;
+
+  /// Indices into the device's `storage` list.
+  final List<int> memberIndices;
+  final Map<String, dynamic> extraJson;
+
+  /// Purpose: Create an array.
+  /// Inputs: `id` — generated when absent; `name` — may be empty; `level`;
+  /// `memberIndices`; `extraJson`.
+  /// Returns: A new `StorageArray`.
+  /// Side effects: None.
+  /// Notes: Data sets reference arrays by `id`, so it must stay stable.
+  StorageArray({
+    String? id,
+    this.name = '',
+    this.level = RaidLevel.other,
+    this.memberIndices = const [],
+    this.extraJson = const {},
+  }) : id = id ?? const Uuid().v4();
+
+  /// Purpose: Name the array for display.
+  /// Inputs: None.
+  /// Returns: `<level> · <name>`, or just the level when unnamed.
+  /// Side effects: None.
+  /// Notes: None.
+  String get displayString =>
+      name.isEmpty ? level.displayName : '${level.displayName} · $name';
+
+  /// Purpose: Serialize this array into a JSON-compatible map.
+  /// Inputs: None.
+  /// Returns: A JSON-compatible map.
+  /// Side effects: None.
+  /// Notes: Keep the output aligned with the persisted file and sync format.
+  Map<String, dynamic> toJson() => {
+    ...extraJson,
+    'id': id,
+    if (name.isNotEmpty) 'name': name,
+    'level': level.jsonValue,
+    'memberIndices': memberIndices,
+  };
+
+  /// Purpose: Create an instance from a JSON-compatible map.
+  /// Inputs: `json`.
+  /// Returns: A new `StorageArray`.
+  /// Side effects: None.
+  /// Notes: Unknown keys go to `extraJson`.
+  factory StorageArray.fromJson(Map<String, dynamic> json) => StorageArray(
+    id: json['id'] as String?,
+    name: json['name'] as String? ?? '',
+    level: RaidLevel.fromJson(json['level'] as String?),
+    memberIndices:
+        (json['memberIndices'] as List<dynamic>?)
+            ?.map((e) => e as int)
+            .toList() ??
+        const [],
+    extraJson: unknownJsonFields(json, _storageArrayJsonKeys),
+  );
+
+  /// Purpose: Merge preserved unknown JSON fields from another instance.
+  /// Inputs: `other`; optional `base` for the three-way merge.
+  /// Returns: `StorageArray`.
+  /// Side effects: None.
+  /// Notes: Known fields always come from `this`.
+  StorageArray mergeUnknownFieldsFrom(
+    StorageArray other, {
+    StorageArray? base,
+  }) {
+    return StorageArray.fromJson({
       ...toJson(),
       ...mergeUnknownJsonFields(
         primary: extraJson,
@@ -751,6 +953,9 @@ class Device {
   final String? ram;
   final RamType? ramType;
   final List<StorageInfo> storage;
+
+  /// RAID arrays built from slots of `storage`.
+  final List<StorageArray> storageArrays;
   final String? screenSize;
   final int? screenResolutionW;
   final int? screenResolutionH;
@@ -793,6 +998,7 @@ class Device {
     this.ram,
     this.ramType,
     this.storage = const [],
+    this.storageArrays = const [],
     this.screenSize,
     this.screenResolutionW,
     this.screenResolutionH,
@@ -947,6 +1153,7 @@ class Device {
     String? ram,
     RamType? ramType,
     List<StorageInfo>? storage,
+    List<StorageArray>? storageArrays,
     String? screenSize,
     int? screenResolutionW,
     int? screenResolutionH,
@@ -1009,6 +1216,7 @@ class Device {
       ram: clearRam ? null : (ram ?? this.ram),
       ramType: clearRamType ? null : (ramType ?? this.ramType),
       storage: storage ?? this.storage,
+      storageArrays: storageArrays ?? this.storageArrays,
       screenSize: clearScreenSize ? null : (screenSize ?? this.screenSize),
       screenResolutionW: clearScreenResolutionW
           ? null
@@ -1066,6 +1274,8 @@ class Device {
     if (ram != null) 'ram': ram,
     if (ramType != null) 'ramType': ramType!.jsonValue,
     if (storage.isNotEmpty) 'storage': storage.map((s) => s.toJson()).toList(),
+    if (storageArrays.isNotEmpty)
+      'storageArrays': storageArrays.map((a) => a.toJson()).toList(),
     if (screenSize != null) 'screenSize': screenSize,
     if (screenResolutionW != null) 'screenResolutionW': screenResolutionW,
     if (screenResolutionH != null) 'screenResolutionH': screenResolutionH,
@@ -1119,6 +1329,11 @@ class Device {
                     .map((e) => StorageInfo.fromJson(e))
                     .toList())
         : const [],
+    storageArrays:
+        (json['storageArrays'] as List<dynamic>?)
+            ?.map((e) => StorageArray.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
     screenSize: json['screenSize'] as String?,
     screenResolutionW: json['screenResolutionW'] as int?,
     screenResolutionH: json['screenResolutionH'] as int?,
@@ -1163,8 +1378,8 @@ class Device {
   /// Inputs: `other`; optional `base` for the three-way merge.
   /// Returns: `Device`.
   /// Side effects: None.
-  /// Notes: Recurses into `cpu`, `gpu`, `storage`, both prices and
-  /// `recurringCosts` so no nested unknown field is lost.
+  /// Notes: Recurses into `cpu`, `gpu`, `storage`, `storageArrays` (by id),
+  /// both prices and `recurringCosts` so no nested unknown field is lost.
   Device mergeUnknownFieldsFrom(Device other, {Device? base}) {
     final json = toJson();
     json.addAll(
@@ -1201,6 +1416,21 @@ class Device {
                     ? base.storage[i]
                     : null,
               )
+              .toJson(),
+      ];
+    }
+
+    if (storageArrays.isNotEmpty) {
+      final otherById = {for (final a in other.storageArrays) a.id: a};
+      final baseById = {for (final a in base?.storageArrays ?? []) a.id: a};
+      json['storageArrays'] = [
+        for (final a in storageArrays)
+          (otherById[a.id] == null
+                  ? a
+                  : a.mergeUnknownFieldsFrom(
+                      otherById[a.id]!,
+                      base: baseById[a.id],
+                    ))
               .toJson(),
       ];
     }

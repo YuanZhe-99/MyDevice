@@ -1565,6 +1565,144 @@ abstract class AppLocalizations {
   /// **'Serial Number'**
   String get storageSerialNumber;
 
+  /// No description provided for @storageStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get storageStatus;
+
+  /// No description provided for @storageStatusOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get storageStatusOk;
+
+  /// No description provided for @storageStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get storageStatusFailed;
+
+  /// No description provided for @storageStatusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get storageStatusOffline;
+
+  /// No description provided for @storageStatusNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Status note'**
+  String get storageStatusNote;
+
+  /// No description provided for @storageStatusNoteHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. dropped out of the array on 2026-09-30'**
+  String get storageStatusNoteHint;
+
+  /// No description provided for @storageArrays.
+  ///
+  /// In en, this message translates to:
+  /// **'RAID Arrays'**
+  String get storageArrays;
+
+  /// No description provided for @storageArrayAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add RAID array'**
+  String get storageArrayAdd;
+
+  /// No description provided for @storageArrayRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove RAID array'**
+  String get storageArrayRemove;
+
+  /// No description provided for @storageArrayName.
+  ///
+  /// In en, this message translates to:
+  /// **'Array name'**
+  String get storageArrayName;
+
+  /// No description provided for @storageArrayNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Pool 1'**
+  String get storageArrayNameHint;
+
+  /// No description provided for @storageArrayLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'RAID level'**
+  String get storageArrayLevel;
+
+  /// No description provided for @storageArrayMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Member drives'**
+  String get storageArrayMembers;
+
+  /// No description provided for @storageArrayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Data on an array counts as one copy, however many drives it spans. A drive belongs to at most one array.'**
+  String get storageArrayHint;
+
+  /// No description provided for @storageArrayNoMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add storage entries above first.'**
+  String get storageArrayNoMembers;
+
+  /// No description provided for @storageArrayUnsaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to pick this drive'**
+  String get storageArrayUnsaved;
+
+  /// No description provided for @storageArrayDegraded.
+  ///
+  /// In en, this message translates to:
+  /// **'Degraded'**
+  String get storageArrayDegraded;
+
+  /// No description provided for @storageArrayUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Data lost'**
+  String get storageArrayUnavailable;
+
+  /// No description provided for @storageArraySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{level} · {count} drives'**
+  String storageArraySummary(String level, int count);
+
+  /// No description provided for @storageInArray.
+  ///
+  /// In en, this message translates to:
+  /// **'In {array}'**
+  String storageInArray(String array);
+
+  /// No description provided for @dataSetCopiesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} unavailable'**
+  String dataSetCopiesUnavailable(int count);
+
+  /// No description provided for @dataSetNoAvailableCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'No usable copy'**
+  String get dataSetNoAvailableCopy;
+
+  /// No description provided for @dataSetTopologyLegendUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy on a failed drive'**
+  String get dataSetTopologyLegendUnavailable;
+
   /// No description provided for @fetchFromInternet.
   ///
   /// In en, this message translates to:

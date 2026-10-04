@@ -14,7 +14,8 @@ for the exact field list.
 
 A single `DataSet` can be on storage slots of multiple devices (multiple
 `DataSetStorageLink` entries), and on multiple slots of the same device
-(multiple indices in one link's `storageIndices`).
+(multiple indices in one link's `storageIndices`). Since 1.8.2 a link can also name whole RAID
+arrays of the device (`arrayIds`).
 
 ## Copies
 
@@ -30,6 +31,23 @@ out-of-range index and a slot listed twice. Everything that counts copies goes t
 grouped list and the topology — so they always agree. See
 [`dataset_placement.md`](../functions/features/datasets/services/dataset_placement.md).
 
+## Drive health and RAID arrays <a id="drive-health-and-raid-arrays"></a>
+
+Since 1.8.2 a copy lives on a **place** (`StoragePlace`): either one storage slot or one RAID
+array of a device (see [Devices](devices.md#drive-status-and-raid-arrays)). `devicePlaces` lists a
+device's places — its arrays first, then the slots in no array — and the edit page, the grouped
+list and the topology all show those, so a drive inside an array is reached through the array. A
+link that still names an array member directly (an older link, or one made before the array) keeps
+its copy visible: the member slot is listed after the device's places.
+
+A place has a health (`PlaceHealth`): a slot is *unavailable* when its drive is failed or offline;
+an array is *degraded* while its failed members are within the level's fault tolerance and
+*unavailable* beyond it. Copies on an unavailable place stay listed and drawn but do not count as
+usable: `availableCopyCount` counts the rest, and the shared `dataSetCopySummary` words it as "n
+copies · k unavailable" (led by "No usable copy" when none is left). A data set with at most one
+usable copy is drawn in the error colour. The edit page shows each place's state but keeps it
+tickable.
+
 ## Grouping the list
 
 Since 1.8.0 the data set list's app bar has a **Group** menu: *No grouping* (the default),
@@ -39,14 +57,16 @@ Since 1.8.0 the data set list's app bar has a **Group** menu: *No grouping* (the
 - **By device:** one group per device that holds at least one copy, in device-list order. A data
   set with copies on several devices appears under each of them; one with copies on two slots of
   the same device appears once there.
-- **By storage:** one group per storage slot, headed "device · storage". Slots are named by
+- **By storage:** one group per place — a RAID array ("device · RAID 5 · name") or a slot
+  ("device · storage"), arrays first. Slots are named by
   `storageSlotLabel`: the slot's summary (e.g. "8 TB HDD"), "Storage n" for an empty slot, and a
   `#n` suffix when two slots of one device would read the same.
 - **Not on any storage:** a last group for data sets that resolve to no copy (no links, or only
   dangling ones).
 
 In a group a tile's subtitle shows the copy count and where else the data set is ("Also on:
-…"); a data set with a single copy reads *Only one copy* in the error colour. Grouping keeps the
+…"); a data set with a single copy reads *Only one copy* in the error colour, and copies on failed
+drives are called out as unavailable (see [above](#drive-health-and-raid-arrays)). Grouping keeps the
 sort order inside each group, keeps swipe-to-delete at one column and the menu tile above it, and
 hides *Reorder*, since a data set may sit in several groups.
 
@@ -56,9 +76,12 @@ The account-tree action in the data set list's app bar opens a full-screen topol
 (`dataset_topology_page.dart`, laid out by the pure `DataSetTopologyLayout` in
 `dataset_topology.dart`):
 
-- **Nested boxes.** Each device is a large box with its icon and name; its storage slots are
-  medium boxes stacked inside it; each data set copy on a slot is a small box inside the slot,
-  two per row, with an `×n` copy-count badge. Devices with no storage slot are never drawn;
+- **Nested boxes.** Each device is a large box with its icon and name; its places — RAID arrays
+  (a layers icon) and then the slots in no array — are medium boxes stacked inside it; each data
+  set copy on a place is a small box inside it, two per row, with an `×n` copy-count badge
+  (`×usable/n` when some copies are unavailable). A failed or offline drive and a lost array get
+  an error border and icon, a degraded array the icon; copies on an unavailable place are greyed
+  and struck through. The legend explains the mark. Devices with no storage slot are never drawn;
   devices with storage but no copy only when *Show devices without data sets* is on.
 - **Sync lines.** Off by default since 1.8.1 (the timeline action in the app bar turns them
   on; the choice is not saved). When on, the copies of one data set are joined by soft curves — one chain through the
@@ -77,7 +100,8 @@ The account-tree action in the data set list's app bar opens a full-screen topol
   selection chip clears it.
 - **Details.** A bottom sheet on phones, a pane beside the canvas on split windows: what was
   tapped, then one card per data set on it listing every copy as "device – storage" (copies on
-  the selected box ticked) with an edit button. After the editor closes the topology reloads.
+  the selected box ticked, unavailable ones struck through in the error colour) with an edit
+  button. After the editor closes the topology reloads.
 - **View.** The same single canvas as the services topology: tap to select, drag to pan,
   pinch or Ctrl + wheel to zoom, the wheel to pan; zoom, Fit and Reset buttons; a device filter;
   a legend; PNG export of the canvas with its highlight.
@@ -104,12 +128,19 @@ static Future<void> remapDeviceStorageLinks({
   required String deviceId,
   required int oldSlotCount,
   required Map<int, int> indexMap,
+  Set<String>? keptArrayIds,
+  Map<int, String> arrayOfSlot = const {},
 })
 ```
 
 - `indexMap` maps each **old** slot index to its **new** slot index after the edit.
+- `keptArrayIds` (since 1.8.2) is the device's array ids after the edit: `arrayIds` not in it are
+  dropped. `arrayOfSlot` maps a **new** slot index to the array it now belongs to: a link to such a
+  slot is moved to the array (once), since an array's data is one copy. Array links are by id, so
+  slot moves never touch them.
 - If `indexMap` is the identity mapping for every index `0..oldSlotCount-1` (nothing
-  actually moved), the function returns immediately without touching any dataset.
+  actually moved), and neither `keptArrayIds` nor `arrayOfSlot` is given, the function returns
+  immediately without touching any dataset.
 - Otherwise it loads all datasets, and for every `DataSetStorageLink` whose `deviceId`
   matches, it re-maps each index in `storageIndices` through `indexMap`:
   - An index with a mapping (`indexMap[idx] != null`) is kept, remapped to its new
@@ -118,6 +149,7 @@ static Future<void> remapDeviceStorageLinks({
     (compacted) positions.
   - An index with **no** mapping (removed entirely, no corresponding new slot) is
     **dropped** from `storageIndices`.
+  - A link left with no slot and no array is removed.
 - Any `DataSet` whose links actually changed gets a bumped `modifiedAt` so the fix
   propagates through sync (see [WebDAV Sync](../sync.md)) instead of silently
   diverging between devices.

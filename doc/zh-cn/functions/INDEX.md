@@ -2,11 +2,13 @@
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **1659**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1786** 个声明——比 1659 多 127——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
+**总计：** 仓库 `/// Purpose:` 注释计数是 **1699**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1826** 个声明——比 1699 多 127——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
 
 **1.7.0 重新计数。**实测 `/// Purpose:` 计数为 1550（此前 1493），各行之和为 1676（此前 1616），因此差额由 123 增至 126：本次发布新增 60 个已文档化声明（六个 `features/profile/` 文件 44 个，`data_modules.dart` 5 个，`theme.dart` 5 个，`shell_scaffold.dart` 3 个，`device_storage.dart` 2 个，`app_settings.dart` 1 个），其中三个是没有 `Purpose:` 注释的常量或字段。
 
 **1.7.1 重新计数。**实测 `/// Purpose:` 计数为 1581（此前 1550），各行之和为 1708（此前 1676），因此差额由 126 增至 127：本次发布新增 32 个声明（新增两页 `avatar_editor.dart` 13 个和 `avatar_image.dart` 7 个，`device_storage.dart` 4 个，`shell_scaffold.dart` 3 个，`app_settings.dart` 2 个，`adaptive_layout.dart` 1 个，`profile_header.dart` 1 个，`profile_store.dart` 1 个），其中 31 个带有 `Purpose:` 注释（`shell_scaffold.dart` 多出的一行是第二个私有类，它没有该注释）。
+
+**1.8.2 重新计数。**实测 `/// Purpose:` 计数为 1699（此前 1659），各行之和为 1826（此前 1786），因此差额保持 127：RAID 阵列和硬盘健康状况新增 40 个声明，每一个都带有 `Purpose:` 注释——新增两页（`dataset_copy_summary.dart` 2 个、`storage_health_label.dart` 1 个），`device.dart` +12，`dataset_placement.dart` +14，`device_edit_page.dart` +5，`device_detail_page.dart` +2，`dataset.dart`、`dataset_storage.dart`、`dataset_topology.dart` 和 `dataset_edit_page.dart` 各 +1。`dataset_edit_page.md` 的行数说明此前写作 9，与 12 行和 12 条注释不符，现已更正。
 
 **1.8.1 重新计数。**`dataset_topology.dart` 新增 `storageHeight`、`_packColumns` 和 `_columnCount`（+3，其中两个 Tier A）：1659 条注释，1786 行，差额 127。
 
@@ -16,9 +18,9 @@
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 947 |
-| Tier B（仅索引行） | 839 |
-| **总计** | **1786** |
+| Tier A（完整条目） | 966 |
+| Tier B（仅索引行） | 860 |
+| **总计** | **1826** |
 
 ## 根（`lib/`）
 
@@ -54,11 +56,12 @@
 
 | 源文件 | 页面 | 声明 | Tier A |
 |---|---|---|---|
-| `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 12 | 12 |
-| `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 9 | 9 |
-| `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 8 | 3 |
-| `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 13 | 5 |
-| `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 12 | 3 |
+| `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 13 | 13 |
+| `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 10 | 10 |
+| `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 22 | 5 |
+| `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 14 | 5 |
+| `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 13 | 4 |
+| `lib/features/datasets/views/dataset_copy_summary.dart` | [features/datasets/views/dataset_copy_summary.md](features/datasets/views/dataset_copy_summary.md) | 2 | 2 |
 | `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 24 | 9 |
 | `lib/features/datasets/views/dataset_topology_page.dart` | [features/datasets/views/dataset_topology_page.md](features/datasets/views/dataset_topology_page.md) | 30 | 7 |
 
@@ -66,7 +69,7 @@
 
 | 源文件 | 页面 | 声明 | Tier A |
 |---|---|---|---|
-| `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 58 | 46 |
+| `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 70 | 55 |
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 40 | 37 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 39 | 27 |
@@ -75,14 +78,15 @@
 | `lib/features/devices/services/finance_insight_facts.dart` | [features/devices/services/finance_insight_facts.md](features/devices/services/finance_insight_facts.md) | 5 | 1 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 19 | 15 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
-| `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
-| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 63 | 19 |
+| `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 22 | 7 |
+| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 68 | 20 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 36 | 19 |
 | `lib/features/devices/views/device_image_editor_page.dart` | [features/devices/views/device_image_editor_page.md](features/devices/views/device_image_editor_page.md) | 22 | 6 |
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 45 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
 | `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 12 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
+| `lib/features/devices/widgets/storage_health_label.dart` | [features/devices/widgets/storage_health_label.md](features/devices/widgets/storage_health_label.md) | 1 | 1 |
 | `lib/features/devices/widgets/template_image_picker.dart` | [features/devices/widgets/template_image_picker.md](features/devices/widgets/template_image_picker.md) | 9 | 4 |
 
 ## features/network/
@@ -143,7 +147,7 @@
 
 ## l10n/
 
-`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1659/1786 手写声明）。
+`lib/l10n/` 已在 [l10n/INDEX.md](l10n/INDEX.md) 文档化（生成代码，不属上面 1699/1826 手写声明）。
 
 ## shared/
 
@@ -182,11 +186,11 @@
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
-| `features/datasets/` | 7 | 108 | 48 | 60 |
-| `features/devices/` | 18 | 499 | 284 | 215 |
+| `features/datasets/` | 8 | 128 | 55 | 73 |
+| `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
 | `features/services/` | 17 | 535 | 232 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 25 | 291 | 194 | 97 |
-| **总计** | **99** | **1786** | **947** | **839** |
+| **总计** | **101** | **1826** | **966** | **860** |

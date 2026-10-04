@@ -5,7 +5,9 @@ A read-only, single-`StatelessWidget` detail view for one `Device` (model source
 It renders the hero header, lifecycle/finance summary, CPU/GPU/memory/storage/display/other
 spec cards, an optional static location map (`flutter_map`), and notes — pulling in a brand/
 model/storage/OS logo whenever it can fuzzy-match the device's text fields against a bundled
-`assets/logos/*.svg` set. Editing is delegated entirely to `device_edit_page.dart`, opened from
+`assets/logos/*.svg` set. Since 1.8.2 the storage card also shows a drive's status when it is
+failed or offline (`device-storage-status-<i>`, with the status note), the array a slot belongs to,
+and one row per RAID array (`_arrayRow`). Editing is delegated entirely to `device_edit_page.dart`, opened from
 the app bar's edit action.
 
 ## Declarations
@@ -31,13 +33,33 @@ the app bar's edit action.
 | `_sectionTitle` | method (widget helper) | B | Render a section heading row with icon and optional brand logo. |
 | `_specCard` | method (widget helper) | B | Wrap a list of spec rows in a `Card`, or render nothing if all rows are empty. |
 | `_specRow` | method (widget helper) | B | Render one label/value row, or `null` if the value is empty. |
+| `_statusRow` | method (widget helper) | B | A spec row with an error icon and its value in the error colour (failed/offline drive, degraded/lost array). |
+| [`_arrayRow`](#_arrayrow) | method (widget helper) | A | The summary row of one RAID array, with its health. |
 | `_specRowWithLogo` | method (widget helper) | B | Render one label/value row with an optional small logo before the value. |
+
+Row count (22) matches `grep -c 'Purpose:' device_detail_page.dart` (22) exactly.
 
 ## Documentation
 
+### `Widget _arrayRow(ColorScheme cs, AppLocalizations l10n, Device device, StorageArray array)` <a id="_arrayrow"></a>
+- **Kind:** method of `DeviceDetailPage` (widget helper). **Since:** 1.8.2.
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 835)
+- **Purpose:** Build the summary row of one RAID array.
+- **Inputs:** `cs`, `l10n`, `device`, `array`.
+- **Returns:** `Widget` — labelled with the array's name (or "RAID arrays" when unnamed), reading
+  `storageArraySummary` (level and member count).
+- **Side effects:** None.
+- **Algorithm:** Wrap the array in a
+  [`StoragePlace`](../../datasets/services/dataset_placement.md#health) and switch on its health:
+  `ok` ⇒ a plain `_specRow`; `degraded` ⇒ `_statusRow` with "· Degraded"; `unavailable` ⇒
+  `_statusRow` with "· Data lost". Unhealthy rows are keyed `device-array-<id>`.
+- **Usage:** The storage card in `_buildSpecSections`, once per `device.storageArrays` entry,
+  after the slots.
+- **Notes:** The member count is the in-range, distinct member slots.
+
 ### `String? _detectBrandLogo()` <a id="_detectbrandlogo"></a>
 - **Kind:** method of `DeviceDetailPage`
-- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 114)
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 117)
 - **Purpose:** Find an SVG logo asset path matching the device's brand, if any.
 - **Inputs:** None (reads `device.brand`).
 - **Returns:** `String?` — an `assets/logos/*.svg` path, or `null` if `device.brand` is unset or
@@ -59,7 +81,7 @@ the app bar's edit action.
 
 ### `String? _detectModelLogo(String? model)` <a id="_detectmodellogo"></a>
 - **Kind:** static method of `DeviceDetailPage`
-- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 128)
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 131)
 - **Purpose:** Find an SVG logo asset path matching a CPU/GPU model string (e.g. `device.cpu.model`,
   `device.gpu.model`), reusing the brand logo table plus ARM GPU special cases.
 - **Inputs:** `model` — a free-text CPU/GPU model string, or `null`.
@@ -93,7 +115,7 @@ the app bar's edit action.
 
 ### `String? _detectStorageBrandLogo(String? brand)` <a id="_detectstoragebrandlogo"></a>
 - **Kind:** static method of `DeviceDetailPage`
-- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 146)
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 149)
 - **Purpose:** Find an SVG logo asset path matching a storage device's brand (e.g. an SSD/HDD
   vendor), using a separate, storage-specific brand table.
 - **Inputs:** `brand` — a storage entry's brand string, or `null`.
@@ -120,7 +142,7 @@ the app bar's edit action.
 
 ### `String? _detectOsLogo(String? os)` <a id="_detectoslogo"></a>
 - **Kind:** static method of `DeviceDetailPage`
-- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 162)
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 165)
 - **Purpose:** Find an SVG logo asset path matching a free-text OS string.
 - **Inputs:** `os` — `device.os`, or `null`.
 - **Returns:** `String?` — an `assets/logos/*.svg` path, or `null`.
@@ -147,7 +169,7 @@ the app bar's edit action.
 
 ### `String _moneyText(MoneyValue money)` <a id="_moneytext"></a>
 - **Kind:** method of `DeviceDetailPage`
-- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 235)
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 238)
 - **Purpose:** Format a `MoneyValue` for display, showing the converted default-currency amount
   alongside the original when the two currencies differ.
 - **Inputs:** `money` — a `MoneyValue` (amount + currency + a computed `convertedAmount` in
@@ -175,7 +197,7 @@ the app bar's edit action.
 
 ### `String _defaultMoneyText(double amount)` <a id="_defaultmoneytext"></a>
 - **Kind:** method of `DeviceDetailPage`
-- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 250)
+- **Source:** `lib/features/devices/views/device_detail_page.dart` (line 253)
 - **Purpose:** Format a plain amount (already expressed in the device's default currency, such as
   a computed total/daily cost) with the correct currency symbol.
 - **Inputs:** `amount` — a `double` already converted to the device's default currency.

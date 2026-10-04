@@ -4,10 +4,10 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1659** (per the Function Explanation
+**Totals:** the repo's `/// Purpose:` comment count is **1699** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
-[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1786** declarations — 127 more than
-1659 — because a number of real declarations across several files (especially the two large
+[l10n/INDEX.md](l10n/INDEX.md)). This index documents **1826** declarations — 127 more than
+1699 — because a number of real declarations across several files (especially the two large
 algorithm-heavy files `service_analysis.dart` and `service_topology_layout.dart`, the
 constants, enums, typedefs and private regular expressions of the 1.6.0 on-device AI files under
 `features/ai/` and the two insight fact builders, and the classes, enum, constants and typedefs of
@@ -23,6 +23,8 @@ toward the gap.
 
 **1.7.1 recount.** The measured `/// Purpose:` count is 1581 (1550 before) and the rows sum to 1708 (1676 before), so the gap grows from 126 to 127: the release added 32 declarations (`avatar_editor.dart` 13 and `avatar_image.dart` 7 as two new pages, `device_storage.dart` 4, `shell_scaffold.dart` 3, `app_settings.dart` 2, `adaptive_layout.dart` 1, `profile_header.dart` 1, `profile_store.dart` 1), 31 of them with a `Purpose:` comment (the extra `shell_scaffold.dart` row is the second private class, which has none).
 
+**1.8.2 recount.** The measured `/// Purpose:` count is 1699 (1659 before) and the rows sum to 1826 (1786 before), so the gap stays 127: RAID arrays and drive health added 40 declarations, every one with a `Purpose:` comment — two new pages (`dataset_copy_summary.dart` 2, `storage_health_label.dart` 1), `device.dart` +12, `dataset_placement.dart` +14, `device_edit_page.dart` +5, `device_detail_page.dart` +2, and `dataset.dart`, `dataset_storage.dart`, `dataset_topology.dart` and `dataset_edit_page.dart` +1 each. `dataset_edit_page.md`'s row-count line, which read 9 against 12 rows and 12 comments, is corrected.
+
 **1.8.1 recount.** `dataset_topology.dart` gained `storageHeight`, `_packColumns` and `_columnCount` (+3, two Tier A): 1659 comments, 1786 rows, gap 127.
 
 **1.8.0 recount.** The measured `/// Purpose:` count is 1656 (1581 before) and the rows sum to 1783 (1708 before), so the gap stays 127: four new pages (`topology_canvas_viewer.dart` 22, `dataset_topology_page.dart` 30, `dataset_topology.dart` 10, `dataset_placement.dart` 8), `dataset_list_page.dart` +6, `service_topology_page.dart` +1 and `service_topology_widgets.dart` −2 (`fitTransform` and its nested `offset` moved to the viewer), every one with a `Purpose:` comment. The Tier table's total, which read 1709 against 1708 rows, is corrected.
@@ -36,9 +38,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 947 |
-| Tier B (index row only) | 839 |
-| **Total** | **1786** |
+| Tier A (full entry) | 966 |
+| Tier B (index row only) | 860 |
+| **Total** | **1826** |
 
 ## Root (`lib/`)
 
@@ -74,11 +76,12 @@ its per-file row and both total tables in the same commit.
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
-| `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 12 | 12 |
-| `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 9 | 9 |
-| `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 8 | 3 |
-| `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 13 | 5 |
-| `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 12 | 3 |
+| `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 13 | 13 |
+| `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 10 | 10 |
+| `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 22 | 5 |
+| `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 14 | 5 |
+| `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 13 | 4 |
+| `lib/features/datasets/views/dataset_copy_summary.dart` | [features/datasets/views/dataset_copy_summary.md](features/datasets/views/dataset_copy_summary.md) | 2 | 2 |
 | `lib/features/datasets/views/dataset_list_page.dart` | [features/datasets/views/dataset_list_page.md](features/datasets/views/dataset_list_page.md) | 24 | 9 |
 | `lib/features/datasets/views/dataset_topology_page.dart` | [features/datasets/views/dataset_topology_page.md](features/datasets/views/dataset_topology_page.md) | 30 | 7 |
 
@@ -86,7 +89,7 @@ its per-file row and both total tables in the same commit.
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
-| `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 58 | 46 |
+| `lib/features/devices/models/device.dart` | [features/devices/models/device.md](features/devices/models/device.md) | 70 | 55 |
 | `lib/features/devices/services/chip_search_service.dart` | [features/devices/services/chip_search_service.md](features/devices/services/chip_search_service.md) | 13 | 13 |
 | `lib/features/devices/services/device_search_parsers.dart` | [features/devices/services/device_search_parsers.md](features/devices/services/device_search_parsers.md) | 40 | 37 |
 | `lib/features/devices/services/device_search_service.dart` | [features/devices/services/device_search_service.md](features/devices/services/device_search_service.md) | 39 | 27 |
@@ -95,14 +98,15 @@ its per-file row and both total tables in the same commit.
 | `lib/features/devices/services/finance_insight_facts.dart` | [features/devices/services/finance_insight_facts.md](features/devices/services/finance_insight_facts.md) | 5 | 1 |
 | `lib/features/devices/services/preset_service.dart` | [features/devices/services/preset_service.md](features/devices/services/preset_service.md) | 19 | 15 |
 | `lib/features/devices/views/chip_search_dialog.dart` | [features/devices/views/chip_search_dialog.md](features/devices/views/chip_search_dialog.md) | 11 | 5 |
-| `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 20 | 6 |
-| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 63 | 19 |
+| `lib/features/devices/views/device_detail_page.dart` | [features/devices/views/device_detail_page.md](features/devices/views/device_detail_page.md) | 22 | 7 |
+| `lib/features/devices/views/device_edit_page.dart` | [features/devices/views/device_edit_page.md](features/devices/views/device_edit_page.md) | 68 | 20 |
 | `lib/features/devices/views/device_finance_overview_page.dart` | [features/devices/views/device_finance_overview_page.md](features/devices/views/device_finance_overview_page.md) | 36 | 19 |
 | `lib/features/devices/views/device_image_editor_page.dart` | [features/devices/views/device_image_editor_page.md](features/devices/views/device_image_editor_page.md) | 22 | 6 |
 | `lib/features/devices/views/device_list_page.dart` | [features/devices/views/device_list_page.md](features/devices/views/device_list_page.md) | 45 | 16 |
 | `lib/features/devices/views/device_search_dialog.dart` | [features/devices/views/device_search_dialog.md](features/devices/views/device_search_dialog.md) | 20 | 7 |
 | `lib/features/devices/widgets/device_avatar.dart` | [features/devices/widgets/device_avatar.md](features/devices/widgets/device_avatar.md) | 12 | 0 |
 | `lib/features/devices/widgets/device_category_icon.dart` | [features/devices/widgets/device_category_icon.md](features/devices/widgets/device_category_icon.md) | 2 | 2 |
+| `lib/features/devices/widgets/storage_health_label.dart` | [features/devices/widgets/storage_health_label.md](features/devices/widgets/storage_health_label.md) | 1 | 1 |
 | `lib/features/devices/widgets/template_image_picker.dart` | [features/devices/widgets/template_image_picker.md](features/devices/widgets/template_image_picker.md) | 9 | 4 |
 
 ## features/network/
@@ -165,7 +169,7 @@ The synced profile (1.7.0): display name and avatar. See [../features/profile.md
 ## l10n/
 
 `lib/l10n/` is already documented at [l10n/INDEX.md](l10n/INDEX.md) (generated code, not part of
-the 1659/1786 hand-documented declarations above).
+the 1699/1826 hand-documented declarations above).
 
 ## shared/
 
@@ -204,11 +208,11 @@ the 1659/1786 hand-documented declarations above).
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 9 | 129 | 66 | 63 |
-| `features/datasets/` | 7 | 108 | 48 | 60 |
-| `features/devices/` | 18 | 499 | 284 | 215 |
+| `features/datasets/` | 8 | 128 | 55 | 73 |
+| `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
 | `features/services/` | 17 | 535 | 232 | 303 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 25 | 291 | 194 | 97 |
-| **Total** | **99** | **1786** | **947** | **839** |
+| **Total** | **101** | **1826** | **966** | **860** |

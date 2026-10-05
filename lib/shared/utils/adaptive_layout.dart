@@ -180,10 +180,12 @@ int listColumnCount({
   required double minItemWidth,
   required int preference,
 }) {
-  if (!canSplitLayout(screenWidth, screenHeight)) return 1;
-  final capacity = columnCapacity(contentWidth, minItemWidth: minItemWidth);
-  if (preference == listColumnsAuto) return capacity;
-  return preference.clamp(1, capacity);
+  return resolveLayoutColumns(
+    allowSplit: canSplitLayout(screenWidth, screenHeight),
+    contentWidth: contentWidth,
+    minItemWidth: minItemWidth,
+    preference: preference,
+  );
 }
 
 /// Smallest width, in logical pixels, the finance summary's metric column

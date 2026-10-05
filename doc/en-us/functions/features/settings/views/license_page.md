@@ -1,5 +1,7 @@
 # lib/features/settings/views/license_page.dart
 
+The notice includes MyApps-UI, all three consumed packages, source and GPL v3 URLs.
+
 `LicensePage` is a static settings sub-page that displays the app's GNU GPLv3 license text
 (embedded as a literal Dart string) in a scrollable, selectable text view. Since 1.6.0 the same
 string ends with a notice that the Simplified/Traditional Chinese conversion tables used by the

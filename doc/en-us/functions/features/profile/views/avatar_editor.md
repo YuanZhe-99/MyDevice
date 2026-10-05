@@ -1,5 +1,9 @@
 # lib/features/profile/views/avatar_editor.dart
 
+P3: shared declarations described below live in `myapps_profile`; this app
+file is a re-export or adapter preserving its public import and constructor shape.
+See [../../../../shared-ui.md](../../../../shared-ui.md).
+
 The full-screen avatar editor (1.7.1): after an image is picked (or the current avatar is reopened),
 the user frames the circle. Opened through `showAvatarEditor`, called by the profile dialog's
 `_editAvatar` ([`profile_header.md`](profile_header.md)); the pure image work is in

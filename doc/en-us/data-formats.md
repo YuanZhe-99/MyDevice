@@ -1,5 +1,7 @@
 # Data Formats
 
+P3 shared profile ownership and adapters: [shared-ui.md](shared-ui.md). Existing formats and module order are retained.
+
 This page documents every persisted model, the `extraJson` unknown-field preservation
 pattern, and the full persisted-data inventory. See [Architecture](architecture.md) for
 where these files live on disk, and [WebDAV Sync](sync.md) for how they merge across

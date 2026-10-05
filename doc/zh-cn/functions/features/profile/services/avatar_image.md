@@ -1,5 +1,9 @@
 # lib/features/profile/services/avatar_image.dart
 
+P3：下文公共声明位于 `myapps_profile`；应用文件为重新导出或适配，
+保留公开导入路径和构造器形式。
+见 [../../../../shared-ui.md](../../../../shared-ui.md)。
+
 头像编辑器背后的纯图像操作（1.7.1）。每个函数都是同步且只做内存分配，因此调用方用 `Isolate.run` 运行它们，让界面保持流畅。该文件是没有状态的 `library;`。见 [`../views/avatar_editor.md`](../views/avatar_editor.md)、[`profile_store.md`](profile_store.md) 和 [`../../../../features/profile.md`](../../../../features/profile.md)。
 
 ## 声明

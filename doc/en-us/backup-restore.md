@@ -1,5 +1,7 @@
 # Backup, Restore, and Export
 
+P3 shared profile ownership and adapters: [shared-ui.md](shared-ui.md). Existing formats and module order are retained.
+
 ## Hardware and network additions (1.9.0)
 
 Lists and membership configuration/CSV metadata travel in existing JSON modules

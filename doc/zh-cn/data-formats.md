@@ -1,5 +1,7 @@
 # 数据格式
 
+P3 公共资料实现与适配见 [shared-ui.md](shared-ui.md)，格式和模块顺序保持不变。
+
 本页文档化每个持久化模型、`extraJson` 未知字段保留模式和完整持久化数据清单。这些文件在磁盘上的位置见 [架构](architecture.md)，如何跨设备合并见 [WebDAV 同步](sync.md)。
 
 所示所有字段都是从 `lib/features/*/models/*.dart` 当前源码读取的实际构造函数/`toJson()`/`fromJson()` 字段，不是通用 Flutter 数据模型猜测。

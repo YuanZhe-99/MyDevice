@@ -1,5 +1,7 @@
 # WebDAV Sync
 
+P3 shared profile ownership and adapters: [shared-ui.md](shared-ui.md). Existing formats and module order are retained.
+
 ## Additive hardware and membership fields (1.9.0)
 
 GPU/display unknown fields merge by stable ID. Membership additions use the

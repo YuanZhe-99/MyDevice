@@ -1,5 +1,7 @@
 # MyDevice `lib/` Function Index
 
+Profile rows now document shared exports and app adapters; implementation ownership is in [shared-ui.md](../shared-ui.md).
+
 This is the top-level index of the hand-written Function Explanation Layer documentation for
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).

@@ -1,5 +1,7 @@
 # 架构
 
+共享 AI 运行时所有权及检出说明：[shared-ai.md](shared-ai.md)。
+
 P3 公共资料实现与适配见 [shared-ui.md](shared-ui.md)，格式和模块顺序保持不变。
 
 P2 使用公共导航和实际内容约束，见 [shared-ui.md](shared-ui.md)。

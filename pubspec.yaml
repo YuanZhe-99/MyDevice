@@ -8,6 +8,8 @@ environment:
   sdk: ^3.11.3
 
 dependencies:
+  myapps_ai:
+    path: packages/myapps_ai/packages/myapps_ai
   myapps_profile:
     path: packages/myapps_ui/packages/myapps_profile
   # Shared theme and adaptive foundation, pinned by the MyApps-UI submodule.

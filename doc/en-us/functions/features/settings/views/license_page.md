@@ -1,5 +1,7 @@
 # lib/features/settings/views/license_page.dart
 
+The notice also names MyApps-AI (myapps_ai), its source and GPL v3 license.
+
 The notice includes MyApps-UI, all three consumed packages, source and GPL v3 URLs.
 
 `LicensePage` is a static settings sub-page that displays the app's GNU GPLv3 license text

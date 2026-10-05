@@ -236,7 +236,7 @@ void main() {
                 prompt: 'y',
                 priority: AiPriority.background,
               )
-              .then((_) => done = true),
+              .then((_) => done = true, onError: (_) => false),
         );
         await pumpEventQueue();
         expect(done, isFalse);
@@ -360,7 +360,10 @@ void main() {
         GenAiStatus.downloadable,
       );
       expect(await statusFor({'status': 'notEnabled'}), GenAiStatus.notEnabled);
-      expect(await statusFor({'status': 'unsupported'}), GenAiStatus.unsupported);
+      expect(
+        await statusFor({'status': 'unsupported'}),
+        GenAiStatus.unsupported,
+      );
       expect(await statusFor({'status': 'someday'}), GenAiStatus.unknown);
       expect(await statusFor({'status': 3}), GenAiStatus.unavailable);
       expect(await statusFor({}), GenAiStatus.unavailable);

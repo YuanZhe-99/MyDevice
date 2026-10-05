@@ -1,5 +1,8 @@
 # On-device AI
 
+Dart execution and output utilities now use MyApps-AI v0.1.0 through thin app
+adapters. Native channels and business prompts remain here; see [shared-ai.md](shared-ai.md).
+
 Since 1.6.0, MyDevice!!!!! can use the device's own language model — Gemini Nano through Android
 AICore, or Apple Intelligence's model through the Foundation Models framework — to write a short
 **insight card** in two places: the cost picture and a suggestion on the **Financial Overview** page,

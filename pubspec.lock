@@ -493,6 +493,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.16.13"
+  myapps_ai:
+    dependency: "direct main"
+    description:
+      path: "packages/myapps_ai/packages/myapps_ai"
+      relative: true
+    source: path
+    version: "0.1.0"
   myapps_adaptive:
     dependency: "direct main"
     description:

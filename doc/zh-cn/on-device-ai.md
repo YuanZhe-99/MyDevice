@@ -1,5 +1,8 @@
 # 端侧 AI
 
+Dart 执行及输出工具通过薄适配器使用 MyApps-AI v0.1.0。原生通道及业务提示词
+仍留在应用，见 [shared-ai.md](shared-ai.md)。
+
 自 1.6.0 起，MyDevice!!!!! 可以使用设备自带的语言模型——通过 Android AICore 使用 Gemini Nano，或通过 Foundation
 Models 框架使用 Apple Intelligence 的模型——在两处写一张简短的**洞察卡片**：**财务总览**页面上是成本概况和一条建议；
 **服务**总览上是对自托管配置的总结和建议。本页记录其规则、代码的布局、每张卡片获得的内容、结果如何缓存，以及仍需

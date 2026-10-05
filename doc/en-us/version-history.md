@@ -1,5 +1,14 @@
 # Version history
 
+## 1.10.5 — Shared system on-device AI
+
+Adopt MyApps-AI v0.2.0 for Dart execution, output validation and the Android/Apple
+native plugin. Remove duplicate native bridges and retain app prompts, facts,
+preferences and cache formats. Cancel native requests on timeout and invalidate
+late replies after disabling AI or changing model preference. Add shared package
+license attribution. Analysis and 626 tests passed (10 skipped); Android, iOS,
+macOS and Windows x64/ARM64 builds passed before tagging.
+
 ## 1.10.4 — P5 regions and shared-license attribution
 
 Shared automatic/selected column decisions and feature-aware designed settings

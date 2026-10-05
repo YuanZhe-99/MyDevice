@@ -1,5 +1,10 @@
 # lib/shared/utils/adaptive_layout.dart
 
+下文的公共阈值和 `canSplitLayout`、`useNavigationRail`、`columnCapacity`、
+`listRowCount` 现在重新导出自 `myapps_adaptive`，不再是本地实现的声明。
+业务约束和 Flutter 避让仍保留在此文件。
+见 [../../../shared-ui.md](../../../shared-ui.md)。
+
 全应用范围的自适应布局策略：决定布局是否可以分栏的 `splitMinWidth`、`splitMinHeight` 和 `splitMinAspect` 阈值；多列列表用的 `listTileGap`、`listMaxColumns` 和 `listColumnsAuto`；壳导航栏用的 `navRailMinWidth` 和 `navRailWidth`；服务概览用的 `serviceMetricMinWidth`、`serviceMetricMaxColumns` 和 `topologyActionsRowMinWidth`；财务摘要卡用的 `financeSummaryMetricMinWidth`、`financeSummaryGap`、`financeSummaryMinColumns` 和 `financeSummaryMaxColumns`；搜索对话框用的 `dialogInsetHorizontal`、`dialogInsetVertical`、`dialogMaxWidth` 和 `dialogMinBodyHeight`；四个多列列表用的 `deviceTileMinWidth`、`networkTileMinWidth`、`dataSetTileMinWidth` 和 `serviceCardMinWidth`；财务总览并排行用的 `financeSummaryPaneMinWidth` 和 `financeChartMinWidth`；网络编辑表单用的 `formMaxWidth`；emoji 选择器用的 `emojiCellMinWidth`、`emojiCellGap` 和 `emojiMaxColumns`；引导式访问路径页的模式卡片用的 `accessPatternCardMinWidth` 和 `accessPatternMaxColumns`；可拖拽表单用的 `sheetCompactHeight` 和 `sheetMaxSize`；以及设置家族用的 `settingsRightPaneMinWidth` 和 `readingMaxWidth`。其上有十七个纯函数（最后一个 `navBarAwarePadding` 是唯一接触 Flutter 的）。
 
 该模块的宽度逻辑刻意只依赖 `dart:core`——`canSplitLayout` 正因此接收两个 double 而非 `Size`——所以这些助手可直接单元测试；自 1.7.1 起文件为 `navBarAwarePadding`（它需要 `BuildContext`）单独导入 `package:flutter/widgets.dart`。每个助手都能直接单元测试（`test/adaptive_layout_test.dart`），渲染结果则由 `test/shell_nav_ui_test.dart`、`test/dialog_layout_ui_test.dart`、`test/list_columns_ui_test.dart`、`test/list_columns_more_ui_test.dart` 和 `test/service_columns_ui_test.dart` 在真实设备几何上单独覆盖。

@@ -1,5 +1,7 @@
 # Adaptive layout
 
+Shared implementation ownership and fresh-clone instructions: [shared-ui.md](shared-ui.md).
+
 This is the app-wide rule for **when a layout may split** — into panes or columns on a foldable's
 inner panel, a tablet or a desktop window — and, once it may, **how many columns** it gets. A
 second, narrower rule decides **where navigation lives**. All of it lives in

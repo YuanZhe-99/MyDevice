@@ -1,5 +1,7 @@
 # 自适应布局
 
+公共实现归属及全新克隆的接入说明见 [shared-ui.md](shared-ui.md)。
+
 这是全应用范围的规则，决定**布局何时可以分栏**——在折叠屏内屏、平板或桌面窗口上拆成窗格（pane）或多列——以及一旦允许，**能容纳多少列**。第二条更窄的规则决定**导航放在哪里**。它们全部位于 [`lib/shared/utils/adaptive_layout.dart`](functions/shared/utils/adaptive_layout.md)，该模块刻意只 import `dart:core`，因此每个决策无需组件（widget）树即可直接单元测试。
 
 这些约定是 MyAnime 在 1.5.2 – 1.5.6 发布中推导出来的，此处原样采用，让同一台设备在本系列每个应用中得到相同答案。数字离开推理毫无价值，所以推理写在这里。

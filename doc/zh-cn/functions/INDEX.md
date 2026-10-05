@@ -48,7 +48,7 @@
 | `lib/app/flavor.dart` | [app/flavor.md](app/flavor.md) | 4 | 1 |
 | `lib/app/router.dart` | [app/router.md](app/router.md) | 1 | 0 |
 | `lib/app/data_modules.dart` | [app/data_modules.md](app/data_modules.md) | 19 | 17 |
-| `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 8 | 7 |
+| `lib/app/theme.dart` | [app/theme.md](app/theme.md) | 7 | 6 |
 
 ## features/ai/
 

@@ -1,5 +1,8 @@
 # Architecture
 
+Shared theme and adaptive foundations now come from MyApps-UI; see
+[shared-ui.md](shared-ui.md) for ownership, integration and update order.
+
 This page covers the app shell, navigation, state management, theming, localization, and
 overall repository layout of MyDevice!!!!!. For data-level details see
 [Data Formats](data-formats.md); for the sync engine see [WebDAV Sync](sync.md).

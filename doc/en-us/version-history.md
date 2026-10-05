@@ -1,5 +1,10 @@
 # Version history
 
+## 1.10.9 — Shared WebDAV configuration controls
+
+Adopt DATA v1.0.5 connection and operation controls and AI v0.4.3 common
+preferences. Keep controllers, credentials, confirmations and conflict callbacks local.
+
 ## 1.10.8 — Unified settings presentation
 
 Use MyApps-UI v0.1.6 full-width appearance/navigation rows, MyApps-DATA v1.0.4

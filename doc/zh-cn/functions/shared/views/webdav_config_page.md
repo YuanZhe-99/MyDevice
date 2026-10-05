@@ -1,5 +1,8 @@
 # lib/shared/views/webdav_config_page.dart
 
+MyApps-DATA 呈现连接字段、保存与测试、手动与强制同步、自动同步和断开控件。
+控制器、校验、确认、冲突解决和操作回调留在应用。凭据和线上格式不变。
+
 `WebDAVConfigPage` 是 WebDAV 同步设置页：它编辑/保存 `WebDAVConfig`、测试连接，并经 [`WebDAVService`](../services/webdav_service.md) 驱动每个前台同步操作（手动同步、强制上传、强制下载、冲突解决），经 [`AutoSyncService`](../services/auto_sync_service.md) 报告结果并在传输在途时持有 [`SyncWakeLock`](../services/sync_wake_lock.md)。这是 [WebDAV 同步](../../../sync.md)（9 步流程、手动-vs-自动同步语义、唤醒锁和强制上传/下载）端到端描述、[同步演练](../../../examples/sync-walkthrough.md) 具体走查的页面。嵌套 `_ConflictDialog` 是 [三方合并](../../../algorithms/three-way-merge.md) 冲突输出的 UI 半边——每个 `RecordConflict` 一个对话框，由 `_resolveConflicts` 顺序显示。
 
 **行数说明：** `grep -c 'Purpose:' webdav_config_page.dart` 返回 **23**，与本文件 23 个真实声明精确匹配——每个块都恰好坐在其文档化声明上方；本文件无错附块、无未文档化声明。

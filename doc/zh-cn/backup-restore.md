@@ -109,7 +109,7 @@ class RestoreResult {
 
 ## Markdown 导出 <a id="markdown-export"></a>
 
-`import_export_service.dart` 也产生覆盖设备、网络、数据集和服务的 LLM 友好 Markdown 导出——含服务端点、路由、跳、Docker Compose 备注和分组公共目标（`extraJson.publicTargets`，见 [服务与拓扑](features/services-topology.md)）。设备导出相关时含生命周期和财务信息（`v0.4.0` 随设备生命周期/财务添加；服务数据 `v0.5.6` 添加）。
+`import_export_service.dart` 也产生覆盖设备、网络、数据集和服务的 LLM 友好 Markdown 导出——含服务端点、路由、跳、Docker Compose 备注和分组公共目标（`extraJson.publicTargets`，见 [服务与拓扑](features/services-topology.md)）。设备导出相关时含生命周期和财务信息（`v0.4.1` 随设备生命周期/财务添加；服务数据 `v0.5.6` 添加）。
 
 ## `image_service.dart`
 

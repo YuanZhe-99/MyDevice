@@ -29,7 +29,7 @@ P3 公共资料实现与适配见 [shared-ui.md](shared-ui.md)，格式和模块
 - **RAID 阵列**（自 1.8.2 起）：`storageArrays`（`List<StorageArray>`，为空时省略）；每个有 `id`（UUID，稳定——数据集链接到它）、`name`（为空时省略）、`level`（`RaidLevel`：`raid0`、`raid1`、`raid5`、`raid6`、`raid10`、`raidz1`、`raidz2`、`raidz3`、`jbod`、`other`）、`memberIndices`（`List<int>`，指向 `storage` 的索引），加 `extraJson`。一块硬盘最多属于一个阵列（由编辑器保证）。`Device.mergeUnknownFieldsFrom` 按 `id` 合并阵列的未知字段。旧构建通过 `extraJson` 保留整个 `storageArrays` 键，以及每个存储条目中的 `status`/`statusNote`。
 - **显示/电池/操作系统：** `screenSize`、`screenResolutionW`、`screenResolutionH`、`battery`、`os`。派生 `ppi` getter 从分辨率和解析屏幕对角线计算像素密度。
 - **位置：** `locationName`、`latitude`、`longitude`（由 [地图](features/map.md) 使用）。
-- **生命周期/财务**（`v0.4.0` 添加）：
+- **生命周期/财务**（`v0.4.1` 添加）：
   - `purchaseDate`、`releaseDate`、`acquisitionType`（`DeviceAcquisitionType`：`purchased`、`leased`、`purchasedWithSubscription`、`other`）。
   - `isRetired`、`retiredDate`；`isSold`、`soldPrice`（`MoneyValue`）。
   - `purchasePrice`（`MoneyValue`）。

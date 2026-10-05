@@ -2,10 +2,10 @@
 
 ## 所有权
 
-A4 使用 MyApps-AI v0.3.0 缓存条目序列化及一次备用生成。模块键、指纹、存储、
+当前实现使用 MyApps-AI v0.4.1 缓存条目序列化及一次备用生成。模块键、指纹、存储、
 提示词和解析器仍留在应用，财务备用策略保持不变。
 
-MyApps-AI v0.3.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myapps_ai`。
+MyApps-AI v0.4.1 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myapps_ai`。
 全新检出先执行 `git submodule update --init --recursive`，再执行 `flutter pub get`。
 依赖路径为 `packages/myapps_ai/packages/myapps_ai`。
 
@@ -26,3 +26,6 @@ MyApps-AI v0.3.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myap
 适配器变更后运行 flutter analyze 和应用测试套件。共享包测试覆盖独立能力状态和
 晚到结果失效。共享 CI 已通过 Android ARM64、iOS/macOS release 构建和 Apple 弱链接。
 消费者 release 构建及真机推理仍是独立检查。
+
+共享呈现使用 myapps_ai_ui，设置文案、功能门控和操作由应用负责。
+洞察调度使用 AiInsightCoordinator，应用回调负责生成、JSON 存储、模块键、提示词与解析。

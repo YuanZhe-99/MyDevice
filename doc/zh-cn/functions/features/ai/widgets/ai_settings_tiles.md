@@ -1,5 +1,7 @@
 # lib/features/ai/widgets/ai_settings_tiles.dart
 
+共享实现现位于 MyApps-AI v0.4.1，本页描述应用适配器。
+
 `AiSettingsTiles` 于 1.6.0 新增（移植自 MyDay!!!!!，MyDay 取自 MyAnime!!!!!），构建「端侧 AI」设置分区的各行：「使用端侧 AI」开关、
 带操作的模型状态行、「使用更快的模型」（Android，仅当两种尺寸都有提供时）、关于模型归属的说明、一个折叠的
 「技术详情」，以及「清除已生成的洞察」。在 Windows、Linux 和 Web 上它什么也不渲染；`settings_page.dart` 在这些

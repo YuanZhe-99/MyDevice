@@ -1,5 +1,7 @@
 # lib/features/settings/views/license_page.dart
 
+MyApps-AI 授权声明包含 myapps_ai_ui。
+
 声明同时列出 MyApps-AI（myapps_ai）、源码及 GPL v3 授权。
 
 声明列出 MyApps-UI、使用的三个包、源码和 GPL v3 链接。

@@ -1,5 +1,7 @@
 # lib/features/ai/services/insight_service.dart
 
+Shared implementation now lives in MyApps-AI v0.4.1; this page describes the app adapter.
+
 _answer delegates bounded fallback execution to MyApps-AI v0.3.0
 generateWithFallback, retaining the app's fallback selection policy.
 

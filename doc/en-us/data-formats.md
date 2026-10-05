@@ -58,7 +58,7 @@ PPI is calculated independently for each display. Template assets accept the sam
   parsed screen diagonal.
 - **Location:** `locationName`, `latitude`, `longitude` (used by
   [Map](features/map.md)).
-- **Lifecycle/finance** (added in `v0.4.0`):
+- **Lifecycle/finance** (added in `v0.4.1`):
   - `purchaseDate`, `releaseDate`, `acquisitionType` (`DeviceAcquisitionType`:
     `purchased`, `leased`, `purchasedWithSubscription`, `other`).
   - `isRetired`, `retiredDate`; `isSold`, `soldPrice` (`MoneyValue`).

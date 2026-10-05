@@ -41,7 +41,7 @@ Radeon 880M 核显和 RTX 5070 Laptop 独显。模板更新不会自动覆盖已
 
 ## 生命周期与财务跟踪 <a id="lifecycle-and-finance-tracking"></a>
 
-`v0.4.0` 添加。源码确认（`Device.lifecycleStatus`）：
+`v0.4.1` 添加。源码确认（`Device.lifecycleStatus`）：
 
 ```dart
 DeviceLifecycleStatus get lifecycleStatus {

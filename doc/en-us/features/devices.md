@@ -64,7 +64,7 @@ fields.
 
 ## Lifecycle and finance tracking
 
-Added in `v0.4.0`. Confirmed in source (`Device.lifecycleStatus`):
+Added in `v0.4.1`. Confirmed in source (`Device.lifecycleStatus`):
 
 ```dart
 DeviceLifecycleStatus get lifecycleStatus {

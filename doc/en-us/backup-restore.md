@@ -186,7 +186,7 @@ devices, networks, datasets, and services — including service endpoints, route
 Docker Compose notes, and grouped public targets (`extraJson.publicTargets`, see
 [Services and Topology](features/services-topology.md)). Device export includes
 lifecycle and finance information when relevant (added alongside device
-lifecycle/finance in `v0.4.0`; service data added in `v0.5.6`).
+lifecycle/finance in `v0.4.1`; service data added in `v0.5.6`).
 
 ## `image_service.dart`
 

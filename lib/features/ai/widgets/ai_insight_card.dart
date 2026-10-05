@@ -1,3 +1,5 @@
+import 'package:myapps_ai_ui/myapps_ai_ui.dart';
+export 'package:myapps_ai_ui/myapps_ai_ui.dart' show AiInsightSection;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -6,28 +8,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../shared/providers/app_settings.dart';
-import '../services/ai_insights_cache.dart';
 import '../services/genai_backend.dart';
 import '../services/insight_language.dart';
 import '../services/insight_prompts.dart';
 import '../services/insight_service.dart';
 import '../services/on_device_ai_service.dart';
-
-/// A titled group of insight lines inside a card.
-class AiInsightSection {
-  /// The section heading.
-  final String title;
-
-  /// The slot ids whose lines belong here.
-  final Set<String> slotIds;
-
-  /// Purpose: Create a section.
-  /// Inputs: `title`, `slotIds`.
-  /// Returns: A new `AiInsightSection`.
-  /// Side effects: None.
-  /// Notes: Lines whose slot is in no section are shown first, ungrouped.
-  const AiInsightSection(this.title, this.slotIds);
-}
 
 /// Builds a card's request for the current language and time, or returns
 /// null when the module has nothing to talk about yet.
@@ -140,9 +125,12 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
   void _armBoundaryTimer(DateTime now) {
     _boundaryTimer?.cancel();
     final next = DateTime(now.year, now.month, now.day + 1);
-    _boundaryTimer = Timer(next.difference(now) + const Duration(seconds: 1), () {
-      if (mounted) setState(() {});
-    });
+    _boundaryTimer = Timer(
+      next.difference(now) + const Duration(seconds: 1),
+      () {
+        if (mounted) setState(() {});
+      },
+    );
   }
 
   /// Purpose: Ask the store to make this card current after the frame.
@@ -274,179 +262,26 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard> {
     AiInsightStore store,
     AiInsightRequest request,
   ) {
-    final theme = Theme.of(context);
-    final state = store.stateOf(widget.module);
-    final generating = state.phase == AiInsightPhase.generating;
-    final entry = state.entry;
-    final dim = generating || state.stale;
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
-    final header = Row(
-      children: [
-        Icon(
-          Icons.auto_awesome_outlined,
-          size: 18,
-          color: theme.colorScheme.primary,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            l10n.aiInsightTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        IconButton(
-          tooltip: l10n.aiRegenerate,
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.refresh, size: 20),
-          onPressed: generating
-              ? null
-              : () => unawaited(store.ensure(request, force: true)),
-        ),
-        if (widget.compact)
-          Icon(
-            _expanded ? Icons.expand_less : Icons.expand_more,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-      ],
-    );
-
-    final body = <Widget>[];
-    if (entry != null && entry.status == AiInsightStatus.skipped) {
-      body.add(Text(l10n.aiInsightSkipped, style: muted));
-    } else if (entry != null && entry.lines.isNotEmpty) {
-      final lineStyle = theme.textTheme.bodyMedium?.copyWith(
-        color: dim
-            ? theme.colorScheme.onSurface.withValues(alpha: 0.6)
-            : theme.colorScheme.onSurface,
-      );
-      final lines = [
-        for (var i = 0; i < entry.lines.length; i++)
-          (i < entry.slots.length ? entry.slots[i] : '', entry.lines[i]),
-      ];
-      final sectioned = {for (final s in widget.sections) ...s.slotIds};
-      Widget bullet(String text) => Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('•  ', style: lineStyle),
-            Expanded(child: Text(text, style: lineStyle)),
-          ],
-        ),
-      );
-      if (widget.compact && !_expanded) {
-        body.add(
-          Text(
-            lines.first.$2,
-            style: lineStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        );
-      } else {
-        for (final (slot, text) in lines) {
-          if (!sectioned.contains(slot)) body.add(bullet(text));
-        }
-        for (final section in widget.sections) {
-          final own = [
-            for (final (slot, text) in lines)
-              if (section.slotIds.contains(slot)) text,
-          ];
-          if (own.isEmpty) continue;
-          body
-            ..add(const SizedBox(height: 8))
-            ..add(
-              Text(
-                section.title,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            )
-            ..addAll(own.map(bullet));
-        }
-      }
-    } else if (state.phase != AiInsightPhase.failed) {
-      body.add(Text(l10n.aiGenerating, style: muted));
-    }
-
-    if (state.phase == AiInsightPhase.failed) {
-      final hint = switch (state.failure) {
-        GenAiFailure.quota => l10n.aiQuotaHint,
-        GenAiFailure.background => l10n.aiForegroundHint,
-        _ => l10n.aiInsightFailed,
-      };
-      body.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(hint, style: muted),
-        ),
-      );
-    }
-
-    final showDetails = !widget.compact || _expanded;
-    if (showDetails && widget.footnote != null && entry != null) {
-      body.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(widget.footnote!, style: muted),
-        ),
-      );
-    }
-    if (showDetails && entry != null && entry.status == AiInsightStatus.ok) {
-      final time = MaterialLocalizations.of(context).formatTimeOfDay(
-        TimeOfDay.fromDateTime(entry.generatedAt.toLocal()),
-      );
-      body.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            '${l10n.aiGeneratedLabel} · ${l10n.aiGeneratedAt(time)}',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      margin: widget.margin,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          InkWell(
-            onTap: widget.compact
-                ? () => setState(() => _expanded = !_expanded)
-                : null,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 8, 0),
-              child: header,
-            ),
-          ),
-          SizedBox(
-            height: 2,
-            child: generating
-                ? const LinearProgressIndicator(minHeight: 2)
-                : null,
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: body,
-            ),
-          ),
-        ],
+    return MyAppsAiInsightCard(
+      state: store.stateOf(widget.module),
+      labels: AiInsightLabels(
+        aiInsightTitle: l10n.aiInsightTitle,
+        aiRegenerate: l10n.aiRegenerate,
+        aiInsightSkipped: l10n.aiInsightSkipped,
+        aiGenerating: l10n.aiGenerating,
+        aiQuotaHint: l10n.aiQuotaHint,
+        aiForegroundHint: l10n.aiForegroundHint,
+        aiInsightFailed: l10n.aiInsightFailed,
+        aiGeneratedLabel: l10n.aiGeneratedLabel,
+        generatedAt: l10n.aiGeneratedAt,
       ),
+      onRefresh: () => unawaited(store.ensure(request, force: true)),
+      compact: widget.compact,
+      expanded: _expanded,
+      onToggle: () => setState(() => _expanded = !_expanded),
+      sections: widget.sections,
+      footnote: widget.footnote,
+      margin: widget.margin,
     );
   }
 }

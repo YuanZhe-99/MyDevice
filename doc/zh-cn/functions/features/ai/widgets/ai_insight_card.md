@@ -1,5 +1,7 @@
 # lib/features/ai/widgets/ai_insight_card.dart
 
+共享实现现位于 MyApps-AI v0.4.1，本页描述应用适配器。
+
 `AiInsightCard`，放在 [财务总览](../../devices/views/device_finance_overview_page.md) 页和 [服务总览](../../services/views/service_list_page.md) 上的端侧 AI 洞察卡片，外加 `AiInsightSection`（带标题的一组行）和 `AiInsightRequestBuilder` 回调类型。除非平台可能有端侧模型且用户打开了端侧 AI，否则卡片什么都不渲染；打开时，它从页面已加载的数据构建请求，请 [`AiInsightStore`](../services/insight_service.md) 让自己保持最新，并渲染存储的状态：模型未就绪时的一行提示、生成中的进度条、各行（过时时变暗）、失败提示，以及带时间的「在本设备上生成」标签。它还把计时器重新设到下一个本地午夜，使一直开着的页面在指纹仅因时间变化时也会更新。事实和槽位来自 [`insight_prompts.dart`](../services/insight_prompts.md)，缓存条目形状来自 [`ai_insights_cache.dart`](../services/ai_insights_cache.md)，模型状态来自 [`OnDeviceAiService`](../services/on_device_ai_service.md)。见 [端侧 AI — 洞察卡片](../../../../on-device-ai.md#insight-cards)。
 
 ## 声明

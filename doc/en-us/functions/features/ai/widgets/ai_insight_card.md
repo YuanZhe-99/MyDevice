@@ -1,5 +1,7 @@
 # lib/features/ai/widgets/ai_insight_card.dart
 
+Shared implementation now lives in MyApps-AI v0.4.1; this page describes the app adapter.
+
 `AiInsightCard`, the on-device AI insight card placed on the
 [Financial overview](../../devices/views/device_finance_overview_page.md) page and the
 [Services Overview](../../services/views/service_list_page.md), plus `AiInsightSection` (a titled group of lines) and the `AiInsightRequestBuilder` callback

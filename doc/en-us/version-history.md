@@ -1,5 +1,11 @@
 # Version history
 
+## 1.10.7 — Shared insight orchestration and presentation
+
+MyApps-AI v0.4.1 owns insight cache scheduling, request coalescing, stale-result
+rejection, cards and prompt settings. Apps supply facts, prompts, parsing, storage,
+labels and interactions. Clearing generated insights invalidates running answers.
+
 ## 1.10.6 — Shared insight entries and fallback
 
 Use MyApps-AI v0.3.0 cache entries and bounded fallback generation. Preserve
@@ -56,7 +62,7 @@ Local verification: analysis passed; full Flutter suite 625 passed, 10 skipped.
 - `v0.3.1`: Windows ARM64 CI fix, no app version bump.
 - `v0.3.2`: Referenced-only image sync and improved sync error/warning reporting.
 - `v0.3.3`: Periodic auto-sync, storage-layer save notifications, auto-sync UI refresh, unknown-field preservation.
-- `v0.4.0`: Device lifecycle and finance tracking, exchange-rate support, financial overview, retired/sold cleanup, Markdown/detail finance output.
+- `v0.4.1`: Device lifecycle and finance tracking, exchange-rate support, financial overview, retired/sold cleanup, Markdown/detail finance output.
 - `v0.4.1`: Financial overview analysis page with asset distribution and log daily-cost history/future trend chart; unified circular device avatar rendering for custom images and category fallbacks.
 - `v0.5.0`: Manual Services tab for service/endpoint/port/route notes, multi-hop access paths, Docker Compose notes/copy, advisory port conflicts, service templates, service sync/backup/ZIP import-export, and local API service stats.
 - `v0.5.1`: Services topology overview, grouped access routes, quick access-route creation, and FRP/port-forward remote-entry visualization for shared VPS/domain mappings.

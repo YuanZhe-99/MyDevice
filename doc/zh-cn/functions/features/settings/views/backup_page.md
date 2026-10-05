@@ -1,5 +1,8 @@
 # lib/features/settings/views/backup_page.dart
 
+DATA 的 MyAppsBackupSettings 管理每日备份和保留期呈现。页面保留偏好持久化、
+备份操作和恢复守卫。
+
 `BackupPage` 是本地备份的设置子页：它经 [`BackupService`](../../../shared/services/backup_service.md) 列出既有 `backups/backup_*.json` 捆绑、让用户创建新备份、切换自动备份和保留，并恢复或删除既有。恢复是本文件安全关键路径——它经 [`WebDAVService`](../../../shared/services/webdav_service.md) 和 [`AutoSyncService`](../../../shared/services/auto_sync_service.md) 直接与 WebDAV 自动同步交互，并在 [`SyncWakeLock`](../../../shared/services/sync_wake_lock.md) 下强制上传。本页流程所坐的完整备份格式、去重和恢复验证模型见 [备份、恢复与导出](../../../../backup-restore.md)，`_handlePostRestoreSync` 触发的同步语义见 [WebDAV 同步](../../../../sync.md)。
 
 **行数说明：** `grep -c 'Purpose:' backup_page.dart` 返回 **16**，与本文件 16 个真实声明精确匹配——每个块都恰好坐在其文档化声明上方；本文件无错附块、无未文档化尾部声明。

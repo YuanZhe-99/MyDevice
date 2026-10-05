@@ -1,5 +1,8 @@
 # lib/features/settings/views/backup_page.dart
 
+MyAppsBackupSettings from DATA owns daily-backup and retention presentation.
+The page retains preference persistence, backup operations and restore safeguards.
+
 `BackupPage` is the Settings sub-page for local backups: it lists existing `backups/backup_*.json`
 bundles via [`BackupService`](../../../shared/services/backup_service.md), lets the user create a
 new backup, toggle auto-backup and retention, and restore or delete an existing one. Restoring is

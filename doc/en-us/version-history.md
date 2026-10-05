@@ -1,5 +1,11 @@
 # Version history
 
+## 1.10.8 — Unified settings presentation
+
+Use MyApps-UI v0.1.6 full-width appearance/navigation rows, MyApps-DATA v1.0.4
+data actions and backup controls, and MyApps-AI v0.4.2. Keep application settings,
+routes and domain workflows independent.
+
 ## 1.10.7 — Shared insight orchestration and presentation
 
 MyApps-AI v0.4.1 owns insight cache scheduling, request coalescing, stale-result

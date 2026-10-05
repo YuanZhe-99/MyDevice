@@ -1,5 +1,8 @@
 # lib/features/ai/services/insight_service.dart
 
+_answer delegates bounded fallback execution to MyApps-AI v0.3.0
+generateWithFallback, retaining the app's fallback selection policy.
+
 `AiInsightStore`, the owner of the insight cards: it computes each request's fingerprint, shows the
 cached entry when the fingerprint matches, otherwise runs the on-device model through
 [`OnDeviceAiService`](on_device_ai_service.md), parses and stores the reply in

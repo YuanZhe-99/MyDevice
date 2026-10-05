@@ -2,7 +2,11 @@
 
 ## Ownership
 
-MyApps-AI v0.2.0 is embedded at `packages/myapps_ai` using the relative sibling
+A4 uses MyApps-AI v0.3.0 for cache entry serialization and one-shot fallback
+generation. Module keys, fingerprinting, storage, prompts and parsers remain here.
+The finance fallback policy is preserved.
+
+MyApps-AI v0.3.0 is embedded at `packages/myapps_ai` using the relative sibling
 URL `../MyApps-AI.git`. Run `git submodule update --init --recursive` before
 `flutter pub get` in a fresh checkout. The dependency is
 `packages/myapps_ai/packages/myapps_ai`.

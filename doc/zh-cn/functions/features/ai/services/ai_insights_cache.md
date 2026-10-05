@@ -1,5 +1,8 @@
 # lib/features/ai/services/ai_insights_cache.dart
 
+下文 AiInsightEntry 和 AiInsightStatus 现在重新导出 MyApps-AI v0.3.0 共享实现。
+模块容器和磁盘读写仍在应用，JSON 格式不变。
+
 已生成洞察卡片的设备本地缓存，即应用数据文件夹中的 `ai_insights.json`：`AiInsightEntry` 模型（一张卡片）、`AiInsights` 容器（每个 `InsightModule` 一个条目），以及读取、写入和删除该文件的静态 `AiInsightsCache`。它刻意**不是**已注册的数据模块：从不同步，从不进入备份包或 ZIP 导出，也没有保留 schema。与数据文件不同，无法读取的缓存按空处理，因为它可重建，丢失它只需每张卡片重新生成一次。与 MyAnime!!!!! 的同名文件不同，它按模块而非按记录建键，且没有清理逻辑。唯一的消费方是 [`AiInsightStore`](insight_service.md)。见 [端侧 AI — 缓存与指纹](../../../../on-device-ai.md#cache-and-fingerprint) 和 [数据格式 — `ai_insights.json`](../../../../data-formats.md#ai_insightsjson)。
 
 ## 声明

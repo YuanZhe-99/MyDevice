@@ -1,5 +1,7 @@
 # lib/features/ai/services/insight_service.dart
 
+_answer 将有限备用执行委托 MyApps-AI v0.3.0 generateWithFallback，保留应用备用选择策略。
+
 `AiInsightStore`，洞察卡片的所有者：它计算每个请求的指纹，指纹匹配时显示已缓存的条目，否则经 [`OnDeviceAiService`](on_device_ai_service.md) 运行端侧模型，解析回复并存入 [`ai_insights.json`](ai_insights_cache.md)，并告诉卡片（[`ai_insight_card.md`](../widgets/ai_insight_card.md)）显示什么。每个模块至多一个生成在运行或等待：期间到达的请求替换待处理的请求，指纹已不再是最新的结果会被丢弃。请求可携带更朴素的 `fallbackFacts`（源自 MyDay v1.5.1），当模型拒绝主事实或对其返回无法解析的内容时，存储会把它发送一次。提示与解析来自 [`insight_prompts.md`](insight_prompts.md)；失败代码与状态报告来自 [`genai_backend.md`](genai_backend.md)。见 [端侧 AI — 缓存与指纹](../../../../on-device-ai.md#cache-and-fingerprint)。
 
 ## 声明

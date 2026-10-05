@@ -1,5 +1,8 @@
 # lib/features/ai/services/ai_insights_cache.dart
 
+AiInsightEntry and AiInsightStatus below are now shared re-exports from MyApps-AI
+v0.3.0. Module containers and disk I/O stay local; JSON format is unchanged.
+
 The device-local cache of generated insight cards, `ai_insights.json` in the app data folder:
 the `AiInsightEntry` model (one card), the `AiInsights` container (one entry per `InsightModule`),
 and the static `AiInsightsCache` that reads, writes and deletes the file. It is deliberately

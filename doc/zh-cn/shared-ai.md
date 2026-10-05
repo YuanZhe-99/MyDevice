@@ -2,7 +2,10 @@
 
 ## 所有权
 
-MyApps-AI v0.2.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myapps_ai`。
+A4 使用 MyApps-AI v0.3.0 缓存条目序列化及一次备用生成。模块键、指纹、存储、
+提示词和解析器仍留在应用，财务备用策略保持不变。
+
+MyApps-AI v0.3.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myapps_ai`。
 全新检出先执行 `git submodule update --init --recursive`，再执行 `flutter pub get`。
 依赖路径为 `packages/myapps_ai/packages/myapps_ai`。
 

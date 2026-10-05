@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:myapps_ai/myapps_ai.dart' show generateWithFallback;
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
@@ -186,7 +187,9 @@ class AiInsightStore extends ChangeNotifier {
   Future<AiInsights> _cached() {
     final c = _cache;
     if (c != null) return Future.value(c);
-    return _loading ??= _load().catchError((Object _) => AiInsights()).then((value) {
+    return _loading ??= _load().catchError((Object _) => AiInsights()).then((
+      value,
+    ) {
       _cache ??= value;
       _loading = null;
       return _cache!;
@@ -216,10 +219,7 @@ class AiInsightStore extends ChangeNotifier {
       return;
     }
     if (!_ai.canGenerate) {
-      _set(
-        module,
-        AiInsightState(entry: entry, stale: entry != null),
-      );
+      _set(module, AiInsightState(entry: entry, stale: entry != null));
       return;
     }
     if (!force && _latest[module] == fingerprint) {
@@ -281,9 +281,7 @@ class AiInsightStore extends ChangeNotifier {
         final numbers = parsed.keys.toList()..sort();
         final entry = AiInsightEntry(
           fingerprint: fingerprint,
-          lines: [
-            for (final n in numbers) request.language.finish(parsed[n]!),
-          ],
+          lines: [for (final n in numbers) request.language.finish(parsed[n]!)],
           slots: [for (final n in numbers) facts.slots[n - 1].id],
           status: AiInsightStatus.ok,
           generatedAt: _clock().toUtc(),
@@ -338,7 +336,10 @@ class AiInsightStore extends ChangeNotifier {
       if (!f && cached != null && cached.fingerprint == fp) {
         // The facts went back to what is already cached (a task ticked and
         // unticked again).
-        _set(module, AiInsightState(phase: AiInsightPhase.ready, entry: cached));
+        _set(
+          module,
+          AiInsightState(phase: AiInsightPhase.ready, entry: cached),
+        );
         return;
       }
       if (_ai.canGenerate) {
@@ -409,13 +410,12 @@ class AiInsightStore extends ChangeNotifier {
   ) async {
     final primary = request.facts;
     final fallback = request.fallbackFacts;
-    try {
-      final parsed = await _generateParsed(primary, request.language, force);
-      if (parsed.isNotEmpty || fallback == null) return (primary, parsed);
-    } on GenAiException catch (e) {
-      if (e.failure != GenAiFailure.guardrail || fallback == null) rethrow;
-    }
-    return (fallback, await _generateParsed(fallback, request.language, force));
+    return generateWithFallback(
+      primary: primary,
+      fallback: fallback,
+      generate: (facts) => _generateParsed(facts, request.language, force),
+      usable: (parsed) => parsed.isNotEmpty,
+    );
   }
 
   /// Purpose: Put an entry into the cache and persist it.

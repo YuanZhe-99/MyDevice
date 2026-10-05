@@ -1,5 +1,10 @@
 # Version history
 
+## 1.10.6 — Shared insight entries and fallback
+
+Use MyApps-AI v0.3.0 cache entries and bounded fallback generation. Preserve
+existing cache JSON, module keys, storage and finance fallback selection.
+
 ## 1.10.5 — Shared system on-device AI
 
 Adopt MyApps-AI v0.2.0 for Dart execution, output validation and the Android/Apple

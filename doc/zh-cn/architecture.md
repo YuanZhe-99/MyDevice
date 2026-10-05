@@ -128,7 +128,7 @@ lib/
   l10n/
 packages/
   myapps_data/           (共享同步/备份引擎，git 子模块)
-  on_device_ai_apple/    (iOS/macOS 的 Foundation Models 桥接，v1.6.0)
+  myapps_ai_platform/    (iOS/macOS 的 Foundation Models 桥接，v1.6.0)
 ```
 
 （改编自 `AGENTS.md`；`lib/shared/widgets/map_picker_page.dart` 和 `lib/features/devices/widgets/device_avatar.dart` 也住在那些目录下——见 [地图](features/map.md) 和 [设备](features/devices.md)。）

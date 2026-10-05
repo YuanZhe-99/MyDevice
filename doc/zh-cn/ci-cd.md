@@ -29,7 +29,7 @@ GitHub Release 工件在标签推送时上传。
 - Windows ARM64 Inno 输出由 `iscc /DARM64 installer.iss` 控制。
 - 操作版本：`actions/checkout@v7`、`actions/setup-java@v5`、`actions/upload-artifact@v7`、`actions/download-artifact@v8`、`softprops/action-gh-release@v3`（从 GitHub 弃用的 Node 20 基础大版本升上来）。下次标签发布前用 `workflow_dispatch` 运行验证工作流变更。
 - 已知剩余警告：Android 作业仍为 `package_info_plus`、`share_plus`、`shared_preferences_android`、`wakelock_plus` 和 `file_picker` 打印 Flutter 的 "plugins that apply KGP" 警告。应用侧已迁移（AGP 9.1.1，无应用级 `kotlin-android`）；剩余警告仅插件侧，截至 2026-07 那些插件的最新发布仍应用 KGP。完全消除需要每个插件发布 Built-in Kotlin 支持后翻转 `android.builtInKotlin=true`；尝试时用真实 APK/AAB 构建验证。
-- `ios` 和 `macos` 作业对构建出的应用运行 `tool/check_weak_link.sh`（v1.6.0）。只要有任何链接 FoundationModels 的二进制不是弱链接，或根本没有二进制链接它（`on_device_ai_apple` 插件没有进入构建），构建就失败。macOS 包名含 `!`，因此路径总是加引号。在较旧 Xcode 上失败意味着 runner 镜像缺少 26 SDK——修 runner，而不是代码。见[端侧 AI](on-device-ai.md#weak-linking)。
+- `ios` 和 `macos` 作业对构建出的应用运行 `tool/check_weak_link.sh`（v1.6.0）。只要有任何链接 FoundationModels 的二进制不是弱链接，或根本没有二进制链接它（`myapps_ai_platform` 插件没有进入构建），构建就失败。macOS 包名含 `!`，因此路径总是加引号。在较旧 Xcode 上失败意味着 runner 镜像缺少 26 SDK——修 runner，而不是代码。见[端侧 AI](on-device-ai.md#weak-linking)。
 
 ## 命令
 

@@ -8,20 +8,17 @@ import io.flutter.plugin.common.MethodChannel
 import java.io.File
 
 class MainActivity : FlutterActivity() {
-    /** The bridge to Android AICore; see [GenAiChannel]. */
-    private val genAi = GenAiChannel(this)
 
     /**
-     * Purpose: Register the share and on-device AI channels for the Flutter engine.
+     * Purpose: Register the share channel and generated plugins for the Flutter engine.
      * Inputs: `flutterEngine`.
      * Returns: None.
      * Side effects: Installs the `com.yuanzhe.my_device/share` and
-     * `com.yuanzhe.my_device/genai` method-channel handlers.
-     * Notes: [GenAiChannel] creates no AICore client here; see its own note on why.
+     * shared AI plugin handlers through generated registration.
+     * Notes: AI clients are created lazily by myapps_ai_platform.
      */
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        genAi.attach(flutterEngine)
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.yuanzhe.my_device/share")
             .setMethodCallHandler { call, result ->
@@ -49,15 +46,4 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    /**
-     * Purpose: Release the AICore client when the activity goes away.
-     * Inputs: None.
-     * Returns: None.
-     * Side effects: Closes the on-device model session and cancels any request.
-     * Notes: A model left open holds an AICore session, a shared device resource.
-     */
-    override fun onDestroy() {
-        genAi.detach()
-        super.onDestroy()
-    }
 }

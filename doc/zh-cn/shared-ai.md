@@ -2,14 +2,15 @@
 
 ## 所有权
 
-MyApps-AI v0.1.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myapps_ai`。
+MyApps-AI v0.2.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myapps_ai`。
 全新检出先执行 `git submodule update --init --recursive`，再执行 `flutter pub get`。
 依赖路径为 `packages/myapps_ai/packages/myapps_ai`。
 
 `genai_backend.dart` 保留既有通道名称并导出共享类型。
 `on_device_ai_service.dart` 负责单例和 Riverpod provider，共享代码负责执行。
 `output_validation.dart` 导出共享清理工具。原生通道、业务提示词、事实、解析器和
-缓存格式留在应用。授权页列出 myapps_ai 及 GPL v3 源码。
+缓存格式留在应用，原生通道由共享 myapps_ai_platform 插件注册。
+授权页列出 myapps_ai、myapps_ai_platform 及 GPL v3 源码。
 
 ## 行为
 
@@ -20,4 +21,5 @@ MyApps-AI v0.1.0 通过相对同级 URL `../MyApps-AI.git` 嵌入 `packages/myap
 ## 验证
 
 适配器变更后运行 flutter analyze 和应用测试套件。共享包测试覆盖独立能力状态和
-晚到结果失效。本步骤原生代码不变；平台整合发布前需验证 release 构建与 Apple 弱链接。
+晚到结果失效。共享 CI 已通过 Android ARM64、iOS/macOS release 构建和 Apple 弱链接。
+消费者 release 构建及真机推理仍是独立检查。

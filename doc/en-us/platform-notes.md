@@ -34,7 +34,7 @@ local API server, system tray, and launch-at-startup integration. See
   them, sandboxed network requests and the local API server break.
 - App icons are generated with `flutter_launcher_icons`; keep the macOS section in
   `flutter_launcher_icons.yaml` in sync.
-- On-device AI (v1.6.0) uses the local `packages/on_device_ai_apple` plugin, shared with iOS; the
+- On-device AI (v1.6.0) uses the local `packages/myapps_ai_platform` plugin, shared with iOS; the
   FoundationModels framework is weak-linked and CI checks it with `tool/check_weak_link.sh`. No
   entitlement is added. See [On-device AI](on-device-ai.md#apple-the-foundation-models-framework).
 

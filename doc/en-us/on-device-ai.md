@@ -1,7 +1,8 @@
 # On-device AI
 
 Dart execution and output utilities now use MyApps-AI v0.1.0 through thin app
-adapters. Native channels and business prompts remain here; see [shared-ai.md](shared-ai.md).
+adapters. Native channels now use MyApps-AI v0.2.0's shared plugin; business prompts
+remain here. See [shared-ai.md](shared-ai.md).
 
 Since 1.6.0, MyDevice!!!!! can use the device's own language model — Gemini Nano through Android
 AICore, or Apple Intelligence's model through the Foundation Models framework — to write a short
@@ -66,8 +67,8 @@ this platform" line.
 | `lib/features/devices/services/finance_insight_facts.dart` | Device finance facts |
 | `lib/features/services/services/service_insight_facts.dart` | Services facts |
 | `lib/shared/utils/chinese_convert.dart` | Simplified ↔ Traditional conversion, copied from MyDay |
-| `android/app/src/main/kotlin/com/yuanzhe/my_device/GenAiChannel.kt` | The Android bridge to ML Kit GenAI |
-| `packages/on_device_ai_apple/` | A local Flutter plugin with one shared Darwin source for iOS and macOS |
+| `packages/myapps_ai/packages/myapps_ai_platform/android/src/main/kotlin/com/yuanzhe/myapps_ai/GenAiChannel.kt` | The Android bridge to ML Kit GenAI |
+| `packages/myapps_ai/packages/myapps_ai_platform/` | A local Flutter plugin with one shared Darwin source for iOS and macOS |
 
 The Settings section *On-device AI* sits between *Data* and *Desktop*. The switches are stored as
 `onDeviceAiEnabled` and `onDeviceAiPreferFast` in `storage_config.json` (see
@@ -75,7 +76,7 @@ The Settings section *On-device AI* sits between *Data* and *Desktop*. The switc
 `AppSettingsNotifier` pushes both into `OnDeviceAiService` at startup, and `main()` starts the
 service's lifecycle listener.
 
-The channel is `com.yuanzhe.my_device/genai` on all three platforms. Its methods are `status`
+The channel is `com.yuanzhe.myapps_ai/genai` on all three platforms. Its methods are `status`
 (`force`, `preferFast`), `info` (`locale`), `download` (Android only), `generate` (`instructions`,
 `prompt`, `maxOutputTokens`, `temperature`, `topK`), `choose` (Apple only; unused by MyDevice but
 kept so the plugin matches MyDay's), `prewarm` and `cancel`. `platformMayHaveOnDeviceModel` is true

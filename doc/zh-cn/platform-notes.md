@@ -19,7 +19,7 @@ Windows、macOS、iOS 和 Android 的平台特定注意，加仅桌面本地 API
 - `AppDelegate.swift` 在最后一个窗口关闭时保持应用存活，并暴露 **dock 可见性**方法通道（`com.yuanzhe.my_device/dock`——在 `tray_service.dart` 方法 `setDockIconVisible` 确认）。
 - `DebugProfile.entitlements` 和 `Release.entitlements` 都必须含 `com.apple.security.network.client` 和 `com.apple.security.network.server`；没有它们，沙盒网络请求和本地 API 服务器会坏。
 - 应用图标用 `flutter_launcher_icons` 生成；保持 `flutter_launcher_icons.yaml` 中 macOS 小节同步。
-- 端侧 AI（v1.6.0）使用本地 `packages/on_device_ai_apple` 插件，与 iOS 共用；FoundationModels 框架弱链接，CI 用 `tool/check_weak_link.sh` 检查。不添加任何 entitlement。见[端侧 AI](on-device-ai.md#apple-the-foundation-models-framework)。
+- 端侧 AI（v1.6.0）使用本地 `packages/myapps_ai_platform` 插件，与 iOS 共用；FoundationModels 框架弱链接，CI 用 `tool/check_weak_link.sh` 检查。不添加任何 entitlement。见[端侧 AI](on-device-ai.md#apple-the-foundation-models-framework)。
 
 ## iOS
 

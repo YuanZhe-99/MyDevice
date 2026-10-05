@@ -1,7 +1,7 @@
 # 端侧 AI
 
 Dart 执行及输出工具通过薄适配器使用 MyApps-AI v0.1.0。原生通道及业务提示词
-仍留在应用，见 [shared-ai.md](shared-ai.md)。
+使用 v0.2.0 共享插件，业务提示词留在应用，见 [shared-ai.md](shared-ai.md)。
 
 自 1.6.0 起，MyDevice!!!!! 可以使用设备自带的语言模型——通过 Android AICore 使用 Gemini Nano，或通过 Foundation
 Models 框架使用 Apple Intelligence 的模型——在两处写一张简短的**洞察卡片**：**财务总览**页面上是成本概况和一条建议；
@@ -54,14 +54,14 @@ Models 框架使用 Apple Intelligence 的模型——在两处写一张简短�
 | `lib/features/devices/services/finance_insight_facts.dart` | 设备财务事实 |
 | `lib/features/services/services/service_insight_facts.dart` | 服务事实 |
 | `lib/shared/utils/chinese_convert.dart` | 简体 ↔ 繁体转换，复制自 MyDay |
-| `android/app/src/main/kotlin/com/yuanzhe/my_device/GenAiChannel.kt` | 通往 ML Kit GenAI 的 Android 桥接 |
-| `packages/on_device_ai_apple/` | 一个本地 Flutter 插件，iOS 和 macOS 共用一份 Darwin 源码 |
+| `packages/myapps_ai/packages/myapps_ai_platform/android/src/main/kotlin/com/yuanzhe/myapps_ai/GenAiChannel.kt` | 通往 ML Kit GenAI 的 Android 桥接 |
+| `packages/myapps_ai/packages/myapps_ai_platform/` | 一个本地 Flutter 插件，iOS 和 macOS 共用一份 Darwin 源码 |
 
 设置中的*端侧 AI*分区位于*数据*和*桌面*之间。开关经 `DeviceStorage` 以 `onDeviceAiEnabled` 和
 `onDeviceAiPreferFast` 存放在 `storage_config.json` 中（见 [`data-formats.md`](data-formats.md#storage_configjson)）；
 `AppSettingsNotifier` 在启动时把两者推入 `OnDeviceAiService`，`main()` 启动该服务的生命周期监听器。
 
-三个平台上的通道都是 `com.yuanzhe.my_device/genai`。它的方法有 `status`（`force`、`preferFast`）、`info`
+三个平台上的通道都是 `com.yuanzhe.myapps_ai/genai`。它的方法有 `status`（`force`、`preferFast`）、`info`
 （`locale`）、`download`（仅 Android）、`generate`（`instructions`、`prompt`、`maxOutputTokens`、`temperature`、
 `topK`）、`choose`（仅 Apple；MyDevice 不使用，但保留以使插件与 MyDay 一致）、`prewarm` 和 `cancel`。
 `platformMayHaveOnDeviceModel` 在 Android、iOS 和 macOS 上为 true；在其他所有平台上，后端不触碰通道就回答

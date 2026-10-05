@@ -19,7 +19,7 @@ class MethodChannelGenAiBackend extends shared.MethodChannelGenAiBackend {
   MethodChannelGenAiBackend([MethodChannel? channel])
     : super(channel ?? const MethodChannel(channelName));
 
-  static const channelName = 'com.yuanzhe.my_device/genai';
+  static const channelName = shared.MethodChannelGenAiBackend.channelName;
 
   /// Purpose: Map a native error. Inputs: code. Returns: failure.
   /// Side effects: None. Notes: Compatibility for app tests.

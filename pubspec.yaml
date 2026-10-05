@@ -27,10 +27,7 @@ dependencies:
   # After a fresh clone: git submodule update --init
   myapps_data:
     path: packages/myapps_data
-  # Local plugin: Apple Foundation Models bridge for on-device AI (iOS and
-  # macOS only). Copied from MyDay!!!!!. See doc/en-us/on-device-ai.md.
-  on_device_ai_apple:
-    path: packages/on_device_ai_apple
+  # Native on-device AI is registered by the transitive myapps_ai_platform plugin.
 
   # State management
   flutter_riverpod: ^1.0.4

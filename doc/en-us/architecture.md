@@ -154,7 +154,7 @@ lib/
   l10n/
 packages/
   myapps_data/           (shared sync/backup engines, git submodule)
-  on_device_ai_apple/    (Foundation Models bridge for iOS/macOS, v1.6.0)
+  myapps_ai_platform/    (Foundation Models bridge for iOS/macOS, v1.6.0)
 ```
 
 (Adapted from `AGENTS.md`; `lib/shared/widgets/map_picker_page.dart` and

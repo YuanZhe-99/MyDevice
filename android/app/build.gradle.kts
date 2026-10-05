@@ -64,18 +64,7 @@ android {
     }
 }
 
-dependencies {
-    // On-device generative AI through Android AICore (Gemini Nano), used
-    // only when the user turns on "Use on-device AI". It makes no network
-    // call of its own. A beta API with no deprecation policy, so the version
-    // is exact rather than dynamic. Same version as MyAnime!!!!! and
-    // MyDay!!!!!. Which model a device serves is decided at run time by
-    // GenAiChannel.probePrompt, never here. See doc/en-us/on-device-ai.md.
-    implementation("com.google.mlkit:genai-prompt:1.0.0-beta4")
-    // The Prompt API suspends and returns a Flow; the coroutine runtime is
-    // not pulled in by the Flutter Android embedding, so it is declared here.
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-}
+// AI libraries and release consumer rules come from myapps_ai_platform.
 
 flutter {
     source = "../.."

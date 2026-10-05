@@ -42,7 +42,7 @@ GitHub Release artifacts are uploaded on tag push.
   ships Built-in Kotlin support; verify with real APK/AAB builds when attempting it.
 - The `ios` and `macos` jobs run `tool/check_weak_link.sh` on the built app (v1.6.0). It fails the
   build unless every binary linking FoundationModels links it weakly, and also when nothing links it
-  (the `on_device_ai_apple` plugin did not make it in). The macOS bundle name contains `!`, so the
+  (the `myapps_ai_platform` plugin did not make it in). The macOS bundle name contains `!`, so the
   path is always quoted. A failure on an older Xcode means the runner image lacks the 26 SDK — fix
   the runner, not the code. See [On-device AI](on-device-ai.md#weak-linking).
 

@@ -1,5 +1,9 @@
 # Version history
 
+## 1.10.10 — Compact horizontal settings choices
+
+Pin MyApps-UI v0.1.7 for centered wrapped labels and horizontal fold-pane choices.
+
 ## 1.10.9 — Shared WebDAV configuration controls
 
 Adopt DATA v1.0.5 connection and operation controls and AI v0.4.3 common

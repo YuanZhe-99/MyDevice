@@ -506,7 +506,7 @@ packages:
       path: "packages/myapps_ui/packages/myapps_adaptive"
       relative: true
     source: path
-    version: "0.1.6"
+    version: "0.1.7"
   myapps_ai_platform:
     dependency: transitive
     description:
@@ -534,7 +534,7 @@ packages:
       path: "packages/myapps_ui/packages/myapps_profile"
       relative: true
     source: path
-    version: "0.1.6"
+    version: "0.1.7"
   native_toolchain_c:
     dependency: transitive
     description:
@@ -573,7 +573,7 @@ packages:
       path: "packages/myapps_ui/packages/myapps_ui"
       relative: true
     source: path
-    version: "0.1.6"
+    version: "0.1.7"
   package_info_plus:
     dependency: "direct main"
     description:

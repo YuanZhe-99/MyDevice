@@ -1,5 +1,8 @@
 # lib/features/datasets/views/dataset_list_page.dart
 
+P2：布局函数传入页面上下文并使用实际导航内容约束；
+全窗口路由不扣除不存在的导航。
+
 数据集首页（见 [数据集](../../../../features/datasets.md)）。拥有数据集列表的加载/排序/重排状态，对照活设备列表交叉引用 [`DataSetStorageLink`](../models/dataset.md#datasetstoragelink-new) 索引构建每个块存储摘要副标题，并驱动由 [`DataSetStorage`](../services/dataset_storage.md) 支撑的增/改/删流程。注册到 `AutoSyncService`（`../../../../shared/services/auto_sync_service.md`），使后台同步带入新本地数据时列表自我刷新——与 [`device_list_page.md`](../../devices/views/device_list_page.md) 和 [`network_list_page.md`](../../network/views/network_list_page.md) 使用的相同模式。
 
 自 1.8.0 起，应用栏还会打开[资料集拓扑](dataset_topology_page.md)（`_openTopology`，键 `dataset-topology`）和一个**分组**菜单（键 `dataset-group`，菜单项 `dataset-group-mode-<none|device|storage>`），其选择保存为 `datasetGroupMode`。分组列表由 `_buildGroupedList` 依据 [`groupDataSets`](../services/dataset_placement.md#groupdatasets) 构建：标题键为 `dataset-group-<group key>`，其后跟着该组的列表块，块的副标题变为副本数和"其他位置：…"（`_groupedSubtitle`）；分组时隐藏*调整顺序*。见 [数据集](../../../../features/datasets.md#grouping-the-list)。

@@ -1,5 +1,8 @@
 # lib/features/datasets/views/dataset_list_page.dart
 
+P2: layout helpers now receive this page context and use actual shell constraints;
+full-window routes do not subtract navigation they do not contain.
+
 The datasets home screen (see [Datasets](../../../../features/datasets.md)). Owns the dataset
 list's load/sort/reorder state, builds each tile's storage-summary subtitle by cross-referencing
 [`DataSetStorageLink`](../models/dataset.md#datasetstoragelink-new) indices against the live

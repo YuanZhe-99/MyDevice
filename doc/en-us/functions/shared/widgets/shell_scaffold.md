@@ -1,5 +1,9 @@
 # lib/shared/widgets/shell_scaffold.dart
 
+P2: this file delegates all navigation rendering to `MyAppsNavigationShell`.
+Floating bar/item implementations described below now live only in MyApps-UI.
+App routes, filters and callbacks remain here. See [../../../shared-ui.md](../../../shared-ui.md).
+
 `ShellScaffold` is the `go_router` `ShellRoute` body: the five tabs
 (Devices/Services/Network/Datasets/Settings) wrapping whichever tab page is active, rendered as a
 bottom bar on a window narrower than 600 logical pixels and as a side `NavigationRail` from 600 up.
@@ -16,12 +20,6 @@ navigation-position setting (1.7.1) can keep the bar. Both are built from the sa
 | [`_currentIndex`](#currentindex) | method (`ShellScaffold`) | A | Derive the selected tab index from the current route. |
 | [`_destinations`](#destinations) | method (`ShellScaffold`) | A | Describe the five destinations once, icons and all. |
 | `build` | method (`ShellScaffold`) | B | Compose the `Scaffold` with the Expressive bar, the classic bar or a rail. |
-| [`_ExpressiveNavBar`](#expressivenavbar) | class (private) | A | The compact floating pill that is the Expressive bottom bar. |
-| `_ExpressiveNavBar.new` | constructor | B | Create the bar from `destinations`, `selectedIndex`, `onSelected`. |
-| `_ExpressiveNavBar.build` | method | B | Build the island and its items. |
-| [`_ExpressiveNavItem`](#expressivenavitem) | class (private) | A | One destination of the bar: icon, plus its label while selected. |
-| `_ExpressiveNavItem.new` | constructor | B | Create one item from `destination`, `selected`, `onTap`. |
-| `_ExpressiveNavItem.build` | method | B | Build the tappable pill. |
 | `_ShellDestination` constructor | constructor | B | Hold one destination's outlined icon, filled icon and label. |
 
 ## Documentation

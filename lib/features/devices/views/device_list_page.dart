@@ -513,7 +513,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
     // The gate reads the whole screen; the capacity reads what the list gets
     // after the navigation rail and the tiles' 16 dp horizontal margin.
     final screen = MediaQuery.sizeOf(context);
-    final contentWidth = shellContentWidth(screen.width) - 32;
+    final contentWidth = shellContentWidth(screen.width, context: context) - 32;
     final capacity = canSplitLayout(screen.width, screen.height)
         ? columnCapacity(contentWidth, minItemWidth: deviceTileMinWidth)
         : 1;

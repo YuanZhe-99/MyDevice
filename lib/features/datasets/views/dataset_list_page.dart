@@ -367,7 +367,7 @@ class _DataSetListPageState extends State<DataSetListPage> {
     // Gate on the whole screen; measure capacity from what the list gets
     // after the navigation rail and the 8 dp the multi-column rows add.
     final screen = MediaQuery.sizeOf(context);
-    final contentWidth = shellContentWidth(screen.width) - 16;
+    final contentWidth = shellContentWidth(screen.width, context: context) - 16;
     final capacity = canSplitLayout(screen.width, screen.height)
         ? columnCapacity(contentWidth, minItemWidth: dataSetTileMinWidth)
         : 1;

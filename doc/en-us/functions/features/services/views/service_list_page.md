@@ -1,5 +1,8 @@
 # lib/features/services/views/service_list_page.dart
 
+P2: layout helpers now receive this page context and use actual shell constraints;
+full-window routes do not subtract navigation they do not contain.
+
 The Services tab's top-level page, described conceptually in
 [Services and Topology](../../../../features/services-topology.md): `ServiceListPage` and
 `_ServiceListPageState` with its four views (overview/by-device/routes/ports). The overview's

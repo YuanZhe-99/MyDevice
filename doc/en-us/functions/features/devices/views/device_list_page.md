@@ -1,5 +1,8 @@
 # lib/features/devices/views/device_list_page.dart
 
+P2: layout helpers now receive this page context and use actual shell constraints;
+full-window routes do not subtract navigation they do not contain.
+
 The device inventory's home screen (see [Devices](../../../../features/devices.md)). Owns the
 device list's load/sort/filter/group state, the financial-summary header card that links to
 `device_finance_overview_page.dart`, add/edit/delete/reorder flows backed by

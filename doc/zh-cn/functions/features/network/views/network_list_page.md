@@ -1,5 +1,8 @@
 # lib/features/network/views/network_list_page.dart
 
+P2：布局函数传入页面上下文并使用实际导航内容约束；
+全窗口路由不扣除不存在的导航。
+
 网络首页（见 [网络](../../../../features/networks.md)）。拥有网络列表的加载/排序/重排状态、每个 [`Network`](../models/network.md#network-new) 一张卡片（带逐类型 logo/图标），和由 [`NetworkStorage`](../services/network_storage.md) 支撑的增/改/详情导航流程。与设备/数据集列表页不同，本页**不**向 `AutoSyncService` 注册本地数据变更通知——它只在从压入返回时重载（见下面声明表 [`_buildNetworkCard`](#buildnetworkcard-note)）。
 
 ## 声明

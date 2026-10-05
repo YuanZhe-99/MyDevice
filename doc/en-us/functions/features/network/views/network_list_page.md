@@ -1,5 +1,8 @@
 # lib/features/network/views/network_list_page.dart
 
+P2: layout helpers now receive this page context and use actual shell constraints;
+full-window routes do not subtract navigation they do not contain.
+
 The networks home screen (see [Networks](../../../../features/networks.md)). Owns the network
 list's load/sort/reorder state, one card per [`Network`](../models/network.md#network-new) (with a
 per-type logo/icon), and the add/edit/detail navigation flow backed by

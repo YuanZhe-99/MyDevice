@@ -265,7 +265,7 @@ class _ServiceListPageState extends State<ServiceListPage> {
     // after the navigation rail and their 8 dp padding. The overview is a
     // heterogeneous scroll and never takes columns, so its button is hidden.
     final screen = MediaQuery.sizeOf(context);
-    final contentWidth = shellContentWidth(screen.width) - 16;
+    final contentWidth = shellContentWidth(screen.width, context: context) - 16;
     final capacity = canSplitLayout(screen.width, screen.height)
         ? columnCapacity(contentWidth, minItemWidth: serviceCardMinWidth)
         : 1;

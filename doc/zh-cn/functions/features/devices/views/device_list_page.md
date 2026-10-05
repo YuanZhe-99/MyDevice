@@ -1,5 +1,8 @@
 # lib/features/devices/views/device_list_page.dart
 
+P2：布局函数传入页面上下文并使用实际导航内容约束；
+全窗口路由不扣除不存在的导航。
+
 设备清单首页（见 [设备](../../../../features/devices.md)）。拥有设备列表的加载/排序/过滤/分组状态、链接到 `device_finance_overview_page.dart` 的财务摘要页头卡片、由 `lib/features/devices/services/device_storage.dart` 支撑的增/改/删/重排流程，和"从模板添加"底部面板（`_TemplatePicker`，用 `lib/features/devices/services/preset_service.dart`）。它注册到 `AutoSyncService`（`lib/shared/services/auto_sync_service.dart`），使后台同步带入新本地数据时列表自我刷新。在线搜索 FAB（`_addFromSearch`，接到 `chip_search_dialog`/`device_search_dialog` 的姊妹 `showDeviceSearchDialog`）门控在 `AppFlavor.deviceSearchExposed` 后（目前等于 `AppFlavor.isFull`；作为独立开关，使该快捷入口可隐藏而搜索服务保留）——此满足的商店风格门控要求见 [在线搜索与预设](../../../../features/online-search-and-presets.md)（4 个调用点中的第 4 个）。
 
 ## 声明

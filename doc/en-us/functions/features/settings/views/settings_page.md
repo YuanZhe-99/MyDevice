@@ -1,5 +1,9 @@
 # lib/features/settings/views/settings_page.dart
 
+Group rendering and single-choice segments delegate to myapps_ui. The app
+retains labels, state callbacks, routes and storage. Common ARB values are validated
+by shared_l10n_test; see [../../../../shared-ui.md](../../../../shared-ui.md).
+
 `SettingsPage` is the app's top-level Settings screen: theme/locale/currency preferences (via
 [`appSettingsProvider`](../../../shared/providers/app_settings.md)), data export/import/storage
 location, the on-device AI section (since 1.6.0, between Data and Desktop:

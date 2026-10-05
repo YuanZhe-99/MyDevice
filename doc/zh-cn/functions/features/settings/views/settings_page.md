@@ -1,5 +1,8 @@
 # lib/features/settings/views/settings_page.dart
 
+分组显示及单选分段委托 myapps_ui，应用保留文案、状态回调、路由和存储。
+shared_l10n_test 验证公共 ARB 值，见 [../../../../shared-ui.md](../../../../shared-ui.md)。
+
 `SettingsPage` 是应用顶层设置屏：主题/语言区域/货币偏好（经 [`appSettingsProvider`](../../../shared/providers/app_settings.md)）、数据导出/导入/存储位置、端侧 AI 小节（自 1.6.0 起位于数据与桌面之间：`platformMayHaveOnDeviceModel` 时为 [`AiSettingsTiles`](../../ai/widgets/ai_settings_tiles.md)，否则为一行 `aiNotSupportedHere`）、仅桌面托盘/自动启动/本地 API 服务器小节，并链接到 [`WebDAVConfigPage`](../../../shared/views/webdav_config_page.md)、[`BackupPage`](backup_page.md)、[`PrivacyPolicyPage`](privacy_policy_page.md) 和 [`LicensePage`](license_page.md)。它经 [`AutoSyncService`](../../../shared/services/auto_sync_service.md) 内联浮出 WebDAV 同步健康，并驱动 [`ImportExportService`](../../../shared/services/import_export_service.md) 做 ZIP/Markdown 导出和 ZIP 导入——那些调用依赖的格式细节和路径遍历保护见 [备份、恢复与导出 — ZIP 导出/导入](../../../../backup-restore.md#zip-exportimport)。仅桌面小节遵循 [平台说明 — 桌面本地 API 服务器](../../../../platform-notes.md#desktop-local-api-server)。
 
 **行数说明：** `grep -c 'Purpose:' settings_page.dart` 返回 **25**，与本文件 25 个真实声明精确匹配——每个块都恰好坐在其文档化声明上方；本文件无错附块、无未文档化声明。

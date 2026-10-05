@@ -1,5 +1,7 @@
 # MyDevice `lib/` 函数索引
 
+设置显示委托 myapps_ui，见 [shared-ui.md](../shared-ui.md)。
+
 资料条目现在描述公共导出和应用适配，实现归属见 [shared-ui.md](../shared-ui.md)。
 
 1.9.0 更新设备模型/编辑/详情/预设、网络模型/存储/详情、API 和 Markdown 输出。

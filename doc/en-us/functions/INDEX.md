@@ -1,5 +1,7 @@
 # MyDevice `lib/` Function Index
 
+Settings rendering delegates to myapps_ui; see [shared-ui.md](../shared-ui.md).
+
 Profile rows now document shared exports and app adapters; implementation ownership is in [shared-ui.md](../shared-ui.md).
 
 This is the top-level index of the hand-written Function Explanation Layer documentation for

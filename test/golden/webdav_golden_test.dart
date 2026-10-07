@@ -19,6 +19,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import 'package:my_device/shared/services/backup_service.dart';
 import 'package:my_device/shared/services/import_export_service.dart';
 import 'package:my_device/shared/services/webdav_service.dart';
+import 'package:my_device/shared/services/webdav_privacy.dart';
 
 import '../../packages/myapps_data/test/golden/fake_webdav_server.dart';
 import '../../packages/myapps_data/test/golden/request_recorder.dart';
@@ -143,6 +144,7 @@ void main() {
   Future<_Sandbox> newSandbox() async {
     final dir = await Directory.systemTemp.createTemp('mydevice_golden_');
     PathProviderPlatform.instance = _FakePathProvider(dir.path);
+    await WebDavPrivacy.store.acknowledge(WebDavPrivacy.noticeVersion);
     final server = FakeWebDAVServer();
     final recorder = RequestRecorder(server);
     return _Sandbox(dir, server, recorder);

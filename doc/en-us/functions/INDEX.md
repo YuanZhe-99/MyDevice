@@ -1,5 +1,6 @@
 # MyDevice `lib/` Function Index
 
+
 WebDAVConfigPage.build delegates generic settings controls to myapps_data.
 Its declarations are unchanged; application operation callbacks remain here.
 
@@ -11,7 +12,7 @@ This is the top-level index of the hand-written Function Explanation Layer docum
 `lib/` in the MyDevice repo. Each row links to a per-source-file page under
 `doc/en-us/functions/` mirroring the `lib/` tree (with `.dart` replaced by `.md`).
 
-**Totals:** the repo's `/// Purpose:` comment count is **1719** (per the Function Explanation
+**Historical extraction totals:** the repo's `/// Purpose:` comment count is **1719** (per the Function Explanation
 Layer convention in `AGENTS.md`, excluding generated `lib/l10n/` code — see
 [l10n/INDEX.md](l10n/INDEX.md)). This index documents **1862** declarations — 143 more than
 1719 — because a number of real declarations across several files (especially the two large
@@ -49,12 +50,15 @@ its per-file row and both total tables in the same commit.
 |---|---|
 | Tier A (full entry) | 983 |
 | Tier B (index row only) | 879 |
-| **Total** | **1862** |
+| **Total** | **108** | **1861** | **958** | **903** |
 
 ## Root (`lib/`)
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
+| `lib/features/ai/services/ai_source_backend.dart` | [features/ai/services/ai_source_backend.md](features/ai/services/ai_source_backend.md) | 21 | 0 |
+| `lib/features/ai/widgets/ai_source_controls.dart` | [features/ai/widgets/ai_source_controls.md](features/ai/widgets/ai_source_controls.md) | 4 | 0 |
+| `lib/shared/services/webdav_privacy.dart` | [shared/services/webdav_privacy.md](shared/services/webdav_privacy.md) | 3 | 0 |
 | `lib/main.dart` | [main.md](main.md) | 1 | 1 |
 
 ## app/
@@ -226,12 +230,13 @@ the 1719/1862 hand-documented declarations above).
 |---|---|---|---|---|
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
-| `features/ai/` | 9 | 129 | 66 | 63 |
+| `features/ai/` | 11 | 90 | 20 | 70 |
 | `features/datasets/` | 8 | 128 | 55 | 73 |
 | `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
 | `features/services/` | 17 | 571 | 249 | 322 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 25 | 291 | 194 | 97 |
-| **Total** | **101** | **1862** | **983** | **879** |
+| `shared/` | 26 | 288 | 192 | 96 |
+| **Total** | **108** | **1861** | **958** | **903** |
+Current per-file table sum: 108 files, 1861 declarations (958 Tier A, 903 Tier B).

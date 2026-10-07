@@ -1,5 +1,9 @@
 # Version history
 
+## 1.10.12 — AI sources and WebDAV consent (2026-10-07)
+
+Complete P0/P1 (+0.0.2): explicit platform backend dependency, unified settings, local CPU models (Qwen3.5 0.8B/2B, Gemma 4 E2B, 4-bit), explicit downloads and device-local source persistence. D1 requires privacy acknowledgement before all WebDAV requests and visibly pauses existing configurations. Pin AI v0.5.2, UI v0.1.8, DATA v1.1.0.
+
 ## 1.10.10 — Compact horizontal settings choices
 
 Pin MyApps-UI v0.1.7 for centered wrapped labels and horizontal fold-pane choices.
@@ -80,7 +84,7 @@ Local verification: analysis passed; full Flutter suite 625 passed, 10 skipped.
 - `v0.4.1`: Device lifecycle and finance tracking, exchange-rate support, financial overview, retired/sold cleanup, Markdown/detail finance output.
 - `v0.4.1`: Financial overview analysis page with asset distribution and log daily-cost history/future trend chart; unified circular device avatar rendering for custom images and category fallbacks.
 - `v0.5.0`: Manual Services tab for service/endpoint/port/route notes, multi-hop access paths, Docker Compose notes/copy, advisory port conflicts, service templates, service sync/backup/ZIP import-export, and local API service stats.
-- `v0.5.1`: Services topology overview, grouped access routes, quick access-route creation, and FRP/port-forward remote-entry visualization for shared VPS/domain mappings.
+- `v0.5.2`: Services topology overview, grouped access routes, quick access-route creation, and FRP/port-forward remote-entry visualization for shared VPS/domain mappings.
 - `v0.5.2`: Interactive Services topology nodes, right-side public/VPS layout, real topology icons, LAN/VPN/Public access lanes, and explicit FRP service-on-VPS relationships.
 - `v0.5.3`: Services topology full-screen select/move modes, passive overview preview, grouped multi-target routes through `extraJson.publicTargets`, hidden/generated route names, and corrected FRP path semantics so control ports stay out of public access paths.
 - `v0.5.4`: Services topology removes the tiny home preview, makes direct/VPN and VPS branches parallel after the source endpoint, adds in-page 90-degree topology rotation without changing system orientation, and adds PNG export/share.
@@ -89,9 +93,9 @@ Local verification: analysis passed; full Flutter suite 625 passed, 10 skipped.
 - `v0.5.7`: Services topology gives endpoint and remote-entry ports compact secondary cards, shifts same-device public reverse-proxy paths such as Caddy to forward/public columns for clearer left-to-right flow, and updates edge anchoring so same-column and backward routes place arrows more naturally.
 - `v0.5.8`: Services overview cards and topology actions now reflow by screen width so narrow devices do not squeeze titles vertically; topology edges add corridor offsets for same-column and adjacent-column orthogonal routes to reduce overlapping arrows.
 - `v0.5.9`: Services topology replaces fixed role columns with compressed graph-rank placement, renders endpoints/remote entries as square port chips, and precomputes obstacle-avoiding A* orthogonal edge paths before painting.
-- `v0.5.10`: Services topology shows FRP ingress and public ports as sibling FRP port chips, connects source endpoints to the FRP ingress port, and hardens orthogonal routing so arrows leave and enter nodes perpendicularly while avoiding element interiors.
-- `v0.5.11`: Services topology compacts sparse route rows, improves edge routing track choices and congestion costs, and narrows duplicate public target warnings to cross-device or overlapping-source-port cases.
-- `v0.5.12`: Services topology opens faster by deferring and caching full-screen layout work, trying fast clear orthogonal routes before A* routing, and reusing obstacle-derived routing tracks.
+- `v0.5.20`: Services topology shows FRP ingress and public ports as sibling FRP port chips, connects source endpoints to the FRP ingress port, and hardens orthogonal routing so arrows leave and enter nodes perpendicularly while avoiding element interiors.
+- `v0.5.21`: Services topology compacts sparse route rows, improves edge routing track choices and congestion costs, and narrows duplicate public target warnings to cross-device or overlapping-source-port cases.
+- `v0.5.22`: Services topology opens faster by deferring and caching full-screen layout work, trying fast clear orthogonal routes before A* routing, and reusing obstacle-derived routing tracks.
 - `v0.6.0`: Local API refresh adds lifecycle/finance/device detail fields, read-only network/dataset/service endpoints, richer cross-module stats, service route export over the API, and updated AstrBot integration coverage.
 - `v1.0.0`: Pre-release audit hardening — WebDAV downloads distinguish 404 from errors so transient failures can never overwrite the remote or cascade into cross-device deletions, upload failures (including ETag `If-Match` 412 conflicts) surface as per-file sync errors instead of silent success, conflict-resolution finalize reports failures, identical-content concurrent edits no longer raise conflicts, all `modifiedAt` timestamps are written in UTC, dataset storage links are re-mapped when device storage slots are removed, Basic Auth is enforced on loopback when API credentials are configured, and versions are unified to `1.0.0+27` / MSIX `1.0.0.0` / installer `1.0.0`.
 - `v1.0.1`: Device home cards now show per-device daily cost when finance data and service dates allow it, remove CPU/storage from card subtitles, and versions are unified to `1.0.1+28` / MSIX `1.0.1.0` / installer `1.0.1`.

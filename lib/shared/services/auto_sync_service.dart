@@ -15,6 +15,7 @@ import 'package:myapps_data/myapps_data.dart' as shared;
 
 import 'backup_service.dart';
 import 'webdav_service.dart';
+import 'webdav_privacy.dart';
 
 /// Singleton service that triggers WebDAV sync automatically when enabled.
 class AutoSyncService {
@@ -30,7 +31,10 @@ class AutoSyncService {
   late final shared.AutoSyncScheduler _scheduler = shared.AutoSyncScheduler(
     isAutoSyncActive: () async {
       final config = await WebDAVService.loadConfig();
-      return config != null && config.isConfigured && config.autoSync;
+      return config != null &&
+          config.isConfigured &&
+          config.autoSync &&
+          await WebDavPrivacy.allowed();
     },
     runSync: () async {
       final config = await WebDAVService.loadConfig();

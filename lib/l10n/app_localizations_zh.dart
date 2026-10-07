@@ -9,6 +9,106 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get aiLocalPrivacyPolicy =>
+      '本地 AI 模型：您可以主动从 Hugging Face 下载 Qwen3.5 0.8B/2B 或 Gemma 4 E2B（4bit）。下载服务器会获知您的 IP 地址，但不会收到应用记录。文件使用固定的 SHA-256 校验，仅保留在本设备，不进入同步、备份或 ZIP 导出。推理在本设备的 CPU 上运行，不向服务器发送提示词。移除模型文件会保留已有生成内容。模型不会自动下载。';
+
+  @override
+  String get webdavPrivacyTitle => 'WebDAV 隐私提醒';
+
+  @override
+  String get webdavPrivacyIntro => '启用同步前，请了解将发送的数据。';
+
+  @override
+  String get webdavPrivacyData => '同步的数据';
+
+  @override
+  String get webdavPrivacyOptional => '引用的图片';
+
+  @override
+  String get webdavPrivacyDestination => '您配置的服务器';
+
+  @override
+  String get webdavPrivacyEncryption => '服务器上的存储';
+
+  @override
+  String get webdavPrivacyTransport => '连接安全';
+
+  @override
+  String get webdavPrivacyHttps => 'HTTPS 加密传输中的数据，但服务器管理员仍可读取存储的数据。';
+
+  @override
+  String get webdavPrivacyHttp => 'HTTP 不加密连接，数据和凭据可能泄露；仅使用私有网络不代表已加密。';
+
+  @override
+  String get webdavPrivacyNoThirdParties => '同步仅向您配置的 WebDAV 服务器发送数据。';
+
+  @override
+  String get webdavPrivacyConfirm => '我已了解，继续';
+
+  @override
+  String get webdavPrivacyInventory => '设备、网络、数据集、服务和个人资料';
+
+  @override
+  String get webdavPrivacyImages => '引用的照片与个人头像';
+
+  @override
+  String get webdavPrivacyPlaintext => 'JSON 记录和图片没有应用层加密。服务器访问权限决定谁能读取它们。';
+
+  @override
+  String get webdavPrivacyPaused => '同步已暂停，请在本设备上查看并确认隐私提醒。';
+
+  @override
+  String get webdavPrivacyReview => '查看提醒';
+
+  @override
+  String get aiSourceTitle => 'AI 来源与模型';
+
+  @override
+  String get aiSourceAuto => '自动（系统 AI）';
+
+  @override
+  String get aiSourceSystem => '系统 AI';
+
+  @override
+  String get aiSourceNeedsPreparation => '使用前请准备模型';
+
+  @override
+  String get aiLocalModels => '本地模型';
+
+  @override
+  String get aiModelInstalled => '已安装';
+
+  @override
+  String get aiModelDownloading => '正在下载';
+
+  @override
+  String get aiModelVerifying => '正在校验';
+
+  @override
+  String get aiModelFailed => '模型操作失败。请检查存储空间和连接后重试。';
+
+  @override
+  String get aiModelNotInstalled => '未安装';
+
+  @override
+  String get aiModelVerify => '校验';
+
+  @override
+  String get aiModelRemove => '移除模型文件';
+
+  @override
+  String get aiModelRemoveBody => '仅移除已下载的模型文件，模型记录和生成历史会保留。';
+
+  @override
+  String get aiSourceClearBody => 'AI 来源已更改。是否清除之前来源生成的内容？选择保留会保留现有内容。';
+
+  @override
+  String get aiSourceKeep => '保留现有内容';
+
+  @override
+  String get aiActionCancel => '取消';
+
+  @override
   String get networkImportReassign => '此节点将从原设备移至所选设备；原设备仍保留在设备清单中。';
 
   @override
@@ -2281,6 +2381,106 @@ class AppLocalizationsZh extends AppLocalizations {
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
 class AppLocalizationsZhTw extends AppLocalizationsZh {
   AppLocalizationsZhTw() : super('zh_TW');
+
+  @override
+  String get aiLocalPrivacyPolicy =>
+      '本機 AI 模型：您可以主動從 Hugging Face 下載 Qwen3.5 0.8B/2B 或 Gemma 4 E2B（4bit）。下載伺服器會得知您的 IP 位址，但不會收到應用程式記錄。檔案使用固定的 SHA-256 驗證，僅保留在本裝置，不進入同步、備份或 ZIP 匯出。推論在本裝置的 CPU 上執行，不向伺服器傳送提示詞。移除模型檔案會保留已有生成內容。模型不會自動下載。';
+
+  @override
+  String get webdavPrivacyTitle => 'WebDAV 隱私提醒';
+
+  @override
+  String get webdavPrivacyIntro => '啟用同步前，請了解將傳送的資料。';
+
+  @override
+  String get webdavPrivacyData => '同步的資料';
+
+  @override
+  String get webdavPrivacyOptional => '引用的圖片';
+
+  @override
+  String get webdavPrivacyDestination => '您設定的伺服器';
+
+  @override
+  String get webdavPrivacyEncryption => '伺服器上的儲存';
+
+  @override
+  String get webdavPrivacyTransport => '連線安全';
+
+  @override
+  String get webdavPrivacyHttps => 'HTTPS 加密傳輸中的資料，但伺服器管理員仍可讀取儲存的資料。';
+
+  @override
+  String get webdavPrivacyHttp => 'HTTP 不加密連線，資料和憑證可能洩漏；僅使用私人網路不代表已加密。';
+
+  @override
+  String get webdavPrivacyNoThirdParties => '同步僅向您設定的 WebDAV 伺服器傳送資料。';
+
+  @override
+  String get webdavPrivacyConfirm => '我已了解，繼續';
+
+  @override
+  String get webdavPrivacyInventory => '裝置、網路、資料集、服務和個人資料';
+
+  @override
+  String get webdavPrivacyImages => '引用的照片與個人頭像';
+
+  @override
+  String get webdavPrivacyPlaintext => 'JSON 記錄和圖片沒有應用層加密。伺服器存取權限決定誰能讀取它們。';
+
+  @override
+  String get webdavPrivacyPaused => '同步已暫停，請在本裝置上檢視並確認隱私提醒。';
+
+  @override
+  String get webdavPrivacyReview => '檢視提醒';
+
+  @override
+  String get aiSourceTitle => 'AI 來源與模型';
+
+  @override
+  String get aiSourceAuto => '自動（系統 AI）';
+
+  @override
+  String get aiSourceSystem => '系統 AI';
+
+  @override
+  String get aiSourceNeedsPreparation => '使用前請準備模型';
+
+  @override
+  String get aiLocalModels => '本機模型';
+
+  @override
+  String get aiModelInstalled => '已安裝';
+
+  @override
+  String get aiModelDownloading => '正在下載';
+
+  @override
+  String get aiModelVerifying => '正在驗證';
+
+  @override
+  String get aiModelFailed => '模型操作失敗。請檢查儲存空間和連線後重試。';
+
+  @override
+  String get aiModelNotInstalled => '未安裝';
+
+  @override
+  String get aiModelVerify => '驗證';
+
+  @override
+  String get aiModelRemove => '移除模型檔案';
+
+  @override
+  String get aiModelRemoveBody => '僅移除已下載的模型檔案，模型記錄和生成歷史會保留。';
+
+  @override
+  String get aiSourceClearBody => 'AI 來源已變更。是否清除之前來源生成的內容？選擇保留會保留現有內容。';
+
+  @override
+  String get aiSourceKeep => '保留現有內容';
+
+  @override
+  String get aiActionCancel => '取消';
 
   @override
   String get networkImportReassign => '此節點將從原裝置移至所選裝置；原裝置仍保留在裝置清單中。';

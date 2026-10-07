@@ -20,7 +20,8 @@ class PrivacyPolicyPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context);
-    final text = _getText(locale);
+    final text =
+        '${_getText(locale)}\n\n${l10n.aiLocalPrivacyPolicy}\n\n${l10n.webdavPrivacyPlaintext}\n${l10n.webdavPrivacyHttp}\n${l10n.webdavPrivacyPaused}';
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsPrivacyPolicy)),

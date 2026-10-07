@@ -249,3 +249,5 @@ as the optional `templateImage` device field (1.6.1).
 The thumbnail pipeline (`lib/shared/utils/device_image_processing.dart`) is pure Dart on
 `package:image` — a runtime dependency since 1.6.1 — with no Flutter imports, so the same code
 runs in the in-app image editor (inside `Isolate.run`) and in `dart run tool/...`.
+
+AI source routing and WebDAV device consent: see [shared-ai.md](shared-ai.md) and [sync.md](sync.md).

@@ -338,3 +338,6 @@ The settings list is a `ListView` with no explicit padding, so it already clears
 The hosted detail pages (WebDAV, Backup, Privacy policy, License) are also pushed full screen on
 narrow windows; their explicit scroll paddings go through `navBarAwarePadding` (Backup's `ListView`
 sets none).
+
+
+Current integration uses MyApps-AI v0.5.2, explicit platform injection, app-owned source routing and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).

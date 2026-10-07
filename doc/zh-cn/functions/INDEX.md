@@ -1,5 +1,6 @@
 # MyDevice `lib/` 函数索引
 
+
 WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量不变，
 应用操作回调留在此处。
 
@@ -12,6 +13,9 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 
 | 源文件 | 页面 | 声明数 | Tier A |
 |---|---|---|---|
+| `lib/features/ai/services/ai_source_backend.dart` | [features/ai/services/ai_source_backend.md](features/ai/services/ai_source_backend.md) | 21 | 0 |
+| `lib/features/ai/widgets/ai_source_controls.dart` | [features/ai/widgets/ai_source_controls.md](features/ai/widgets/ai_source_controls.md) | 4 | 0 |
+| `lib/shared/services/webdav_privacy.dart` | [shared/services/webdav_privacy.md](shared/services/webdav_privacy.md) | 3 | 0 |
 | `lib/features/devices/widgets/hardware_entries_editor.dart` | [features/devices/widgets/hardware_entries_editor.md](features/devices/widgets/hardware_entries_editor.md) | 12 | 5 |
 | `lib/features/network/services/tailscale_csv.dart` | [features/network/services/tailscale_csv.md](features/network/services/tailscale_csv.md) | 4 | 4 |
 | `lib/features/network/views/network_config_page.dart` | [features/network/views/network_config_page.md](features/network/views/network_config_page.md) | 6 | 2 |
@@ -19,7 +23,7 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 
 这是 MyDevice 仓库 `lib/` 的手写 Function Explanation Layer 文档顶层索引。每行链接到 `doc/en-us/functions/` 下镜像 `lib/` 树（`.dart` 替换为 `.md`）的逐源文件页。
 
-**总计：** 仓库 `/// Purpose:` 注释计数是 **1719**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1862** 个声明——比 1719 多 143——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
+**历史提取总计：** 仓库 `/// Purpose:` 注释计数是 **1719**（按 `AGENTS.md` 的 Function Explanation Layer 约定，排除生成 `lib/l10n/` 代码——见 [l10n/INDEX.md](l10n/INDEX.md)）。此索引文档化 **1862** 个声明——比 1719 多 143——因为几个文件中若干真实声明（尤其两个算法密集大文件 `service_analysis.dart` 和 `service_topology_layout.dart`，1.6.0 `features/ai/` 下端侧 AI 文件与两个洞察事实构建器中的常量、枚举、typedef 和私有正则表达式，以及 `device_search_service.dart` 和 `device_search_parsers.dart` 的类、枚举、常量和 typedef）源码完全无 `/// Purpose:` 文档注释，或个别情况（`service_analysis.dart`）注释错附到调用点语句而非真实声明。每种情况都在其文件页以对账行数说明显式点出；不静默发明任何东西强凑整数。1.6.1 文档审核为 `device.dart` 尾部的 27 个声明和 `device_search_service.dart` 中的三个构造函数补上了缺失的注释块，因此它们不再计入差额。
 
 **1.7.0 重新计数。**实测 `/// Purpose:` 计数为 1550（此前 1493），各行之和为 1676（此前 1616），因此差额由 123 增至 126：本次发布新增 60 个已文档化声明（六个 `features/profile/` 文件 44 个，`data_modules.dart` 5 个，`theme.dart` 5 个，`shell_scaffold.dart` 3 个，`device_storage.dart` 2 个，`app_settings.dart` 1 个），其中三个是没有 `Purpose:` 注释的常量或字段。
 
@@ -204,12 +208,13 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 |---|---|---|---|---|
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
-| `features/ai/` | 9 | 129 | 66 | 63 |
+| `features/ai/` | 11 | 90 | 20 | 70 |
 | `features/datasets/` | 8 | 128 | 55 | 73 |
 | `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
 | `features/services/` | 17 | 571 | 249 | 322 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
-| `shared/` | 25 | 291 | 194 | 97 |
+| `shared/` | 26 | 288 | 192 | 96 |
 | **总计** | **101** | **1862** | **983** | **879** |
+当前逐文件表合计：108 个文件、1861 个声明（Tier A 958，Tier B 903）。

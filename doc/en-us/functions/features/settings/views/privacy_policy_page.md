@@ -35,3 +35,6 @@ otherwise select the Simplified Chinese text for Taiwan locales too.
 ## Bottom padding behind the floating bar (since 1.7.1)
 
 The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../../../shared/utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the `SingleChildScrollView` (padding 16), which is also a settings detail pane page. On a pushed route the extra inset is just the system's, so nothing changes there.
+
+
+Current integration uses MyApps-AI v0.5.2, explicit platform injection, app-owned source routing and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).

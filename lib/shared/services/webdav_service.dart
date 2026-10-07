@@ -9,6 +9,8 @@
 /// `lib/app/data_modules.dart`; the hardcoded `_dataFileNames` list is gone.
 library;
 
+import 'webdav_privacy.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:myapps_data/myapps_data.dart' as shared;
 import 'package:myapps_data/myapps_data.dart' show SyncProgress;
@@ -149,8 +151,8 @@ class WebDAVService {
   /// Returns: `Future<bool>` — true for HTTP 207 or 404.
   /// Side effects: Issues one PROPFIND.
   /// Notes: 404 counts as reachable because the collection may not exist yet.
-  static Future<bool> testConnection(shared.WebDAVConfig config) =>
-      _engine.testConnection(config);
+  static Future<bool> testConnection(shared.WebDAVConfig config) async =>
+      await WebDavPrivacy.allowed() && await _engine.testConnection(config);
 
   /// Purpose: Run a full two-way sync under the remote upload lock.
   /// Inputs: `config`, `autoResolve` (false everywhere in production, I4).
@@ -161,6 +163,12 @@ class WebDAVService {
     shared.WebDAVConfig config, {
     bool autoResolve = false,
   }) async {
+    if (!await WebDavPrivacy.allowed()) {
+      return const SyncResult(
+        success: false,
+        error: 'WebDAV privacy acknowledgement required',
+      );
+    }
     return _toSyncResult(await _engine.sync(config, autoResolve: autoResolve));
   }
 
@@ -175,6 +183,7 @@ class WebDAVService {
     PendingSync pending,
     Map<String, dynamic> resolutions,
   ) async {
+    if (!await WebDavPrivacy.allowed()) return false;
     final enginePending = pending.enginePending;
     if (enginePending == null) return false;
     return _engine.finalizePendingSync(config, enginePending, {
@@ -189,6 +198,12 @@ class WebDAVService {
   /// Side effects: Overwrites remote files, uploads images, saves bases.
   /// Notes: Remote changes since the last sync are lost.
   static Future<SyncResult> forceUpload(shared.WebDAVConfig config) async {
+    if (!await WebDavPrivacy.allowed()) {
+      return const SyncResult(
+        success: false,
+        error: 'WebDAV privacy acknowledgement required',
+      );
+    }
     return _toSyncResult(await _engine.forceUpload(config));
   }
 
@@ -198,6 +213,12 @@ class WebDAVService {
   /// Side effects: Replaces local data files and bases, downloads images.
   /// Notes: Local changes since the last sync are lost.
   static Future<SyncResult> forceDownload(shared.WebDAVConfig config) async {
+    if (!await WebDavPrivacy.allowed()) {
+      return const SyncResult(
+        success: false,
+        error: 'WebDAV privacy acknowledgement required',
+      );
+    }
     return _toSyncResult(await _engine.forceDownload(config));
   }
 

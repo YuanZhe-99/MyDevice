@@ -76,3 +76,6 @@ rows above. The class-level comment on `AiSettingsTiles` carries no `/// Purpose
 - **Notes:** Every row after the switch, including "Clear generated insights", is shown only while
   the switch is on. `unsupported` is worded as needing iOS 26 or macOS 26 with Apple Intelligence;
   it is what the Apple plugin reports on iOS and macOS older than 26.
+
+
+Current integration uses MyApps-AI v0.5.2, explicit platform injection, app-owned source routing and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).

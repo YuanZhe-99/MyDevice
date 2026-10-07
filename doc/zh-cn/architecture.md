@@ -181,3 +181,5 @@ WebDAV 同步引擎、备份引擎、ZIP 传输引擎和自动同步调度器**�
 
 缩略图管线（`lib/shared/utils/device_image_processing.dart`）是基于 `package:image` 的纯 Dart 代码（自 1.6.1 起为运行时依赖），
 不导入 Flutter，因此同一份代码既在应用内图片编辑器中（在 `Isolate.run` 内）运行，也在 `dart run tool/...` 中运行。
+
+AI 来源路由与 WebDAV 设备确认：见 [shared-ai.md](shared-ai.md) 与 [sync.md](sync.md)。

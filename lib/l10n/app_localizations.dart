@@ -101,6 +101,204 @@ abstract class AppLocalizations {
     Locale('zh', 'TW'),
   ];
 
+  /// No description provided for @aiLocalPrivacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Local AI models: You can explicitly download Qwen3.5 0.8B/2B or Gemma 4 E2B (4-bit) from Hugging Face. Downloads reveal your IP address to the host, but send no app records. Files are checked against a pinned SHA-256 and remain on this device, excluded from sync, backups and ZIP exports. Inference uses the CPU on your device and sends no prompts to a server. Removing files keeps existing generated content. Models are not downloaded automatically.'**
+  String get aiLocalPrivacyPolicy;
+
+  /// No description provided for @webdavPrivacyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'WebDAV privacy notice'**
+  String get webdavPrivacyTitle;
+
+  /// No description provided for @webdavPrivacyIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Review what will be sent before enabling synchronization.'**
+  String get webdavPrivacyIntro;
+
+  /// No description provided for @webdavPrivacyData.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronized data'**
+  String get webdavPrivacyData;
+
+  /// No description provided for @webdavPrivacyOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Referenced images'**
+  String get webdavPrivacyOptional;
+
+  /// No description provided for @webdavPrivacyDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Your configured server'**
+  String get webdavPrivacyDestination;
+
+  /// No description provided for @webdavPrivacyEncryption.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage on the server'**
+  String get webdavPrivacyEncryption;
+
+  /// No description provided for @webdavPrivacyTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection security'**
+  String get webdavPrivacyTransport;
+
+  /// No description provided for @webdavPrivacyHttps.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTPS encrypts data in transit. Server administrators can still read stored data.'**
+  String get webdavPrivacyHttps;
+
+  /// No description provided for @webdavPrivacyHttp.
+  ///
+  /// In en, this message translates to:
+  /// **'HTTP does not encrypt the connection. Data and credentials may be exposed; a private network alone does not provide encryption.'**
+  String get webdavPrivacyHttp;
+
+  /// No description provided for @webdavPrivacyNoThirdParties.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync sends data only to your configured WebDAV server.'**
+  String get webdavPrivacyNoThirdParties;
+
+  /// No description provided for @webdavPrivacyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'I understand; continue'**
+  String get webdavPrivacyConfirm;
+
+  /// No description provided for @webdavPrivacyInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices, networks, datasets, services and profile'**
+  String get webdavPrivacyInventory;
+
+  /// No description provided for @webdavPrivacyImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Referenced photos and profile avatar'**
+  String get webdavPrivacyImages;
+
+  /// No description provided for @webdavPrivacyPlaintext.
+  ///
+  /// In en, this message translates to:
+  /// **'JSON records and images are stored without application-level encryption. Server access determines who can read them.'**
+  String get webdavPrivacyPlaintext;
+
+  /// No description provided for @webdavPrivacyPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is paused until you review the privacy notice on this device.'**
+  String get webdavPrivacyPaused;
+
+  /// No description provided for @webdavPrivacyReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review notice'**
+  String get webdavPrivacyReview;
+
+  /// No description provided for @aiSourceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI source and model'**
+  String get aiSourceTitle;
+
+  /// No description provided for @aiSourceAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic (system AI)'**
+  String get aiSourceAuto;
+
+  /// No description provided for @aiSourceSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System AI'**
+  String get aiSourceSystem;
+
+  /// No description provided for @aiSourceNeedsPreparation.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepare the model before use'**
+  String get aiSourceNeedsPreparation;
+
+  /// No description provided for @aiLocalModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Local models'**
+  String get aiLocalModels;
+
+  /// No description provided for @aiModelInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Installed'**
+  String get aiModelInstalled;
+
+  /// No description provided for @aiModelDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading'**
+  String get aiModelDownloading;
+
+  /// No description provided for @aiModelVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying'**
+  String get aiModelVerifying;
+
+  /// No description provided for @aiModelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Model operation failed. Check storage and connection, then retry.'**
+  String get aiModelFailed;
+
+  /// No description provided for @aiModelNotInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'Not installed'**
+  String get aiModelNotInstalled;
+
+  /// No description provided for @aiModelVerify.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify'**
+  String get aiModelVerify;
+
+  /// No description provided for @aiModelRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove model files'**
+  String get aiModelRemove;
+
+  /// No description provided for @aiModelRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Only downloaded model files are removed. Model records and generated history are kept.'**
+  String get aiModelRemoveBody;
+
+  /// No description provided for @aiSourceClearBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The AI source has changed. Clear content generated by the previous source? Keeping it preserves existing content.'**
+  String get aiSourceClearBody;
+
+  /// No description provided for @aiSourceKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep existing content'**
+  String get aiSourceKeep;
+
+  /// No description provided for @aiActionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get aiActionCancel;
+
   /// No description provided for @networkImportReassign.
   ///
   /// In en, this message translates to:

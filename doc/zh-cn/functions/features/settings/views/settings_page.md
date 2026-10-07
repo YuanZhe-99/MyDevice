@@ -236,3 +236,6 @@ shared_l10n_test 验证公共 ARB 值，见 [../../../../shared-ui.md](../../../
 - **侧边导航栏位置**——一个 `ListTile`（`Icons.swap_horiz`，`settingsRailSide` / `settingsRailSideDesc`）和一个带*左侧* / *右侧*（`align_horizontal_left` / `align_horizontal_right` 图标）的 `SegmentedButton<bool>`，调用 `setNavRailOnRight`。只要位置不是*全部底部*就显示，因为只有那时才会出现导航栏。
 
 设置列表是没有显式内边距的 `ListView`，因此本来就会避开悬浮栏。被托管的详情页（WebDAV、备份、隐私政策、许可证）在窄窗口上也以全屏方式推入；它们显式的滚动内边距经 `navBarAwarePadding` 处理（备份页的 `ListView` 没有设置）。
+
+
+当前接入 MyApps-AI v0.5.2，显式注入平台后端，使用应用所属来源路由与统一设置骨架。WebDAV 入口在任何网络请求前要求设备本地提醒确认；具体见同步概念文档。

@@ -601,3 +601,7 @@ label to roughly two and a half times its real width. Widget tests here therefor
 Chinese (`Locale('zh')`), whose glyphs really are square, so they measure the real production layout
 rather than a font artifact. Keep it that way; a test that "fixes" the locale back to English will
 report overflows that do not exist in production.
+
+## Model management
+
+Local model management is a pushed, scrollable route without a split breakpoint. Shared model tiles use the available content width; the parent settings pane retains its existing geometry. Online source management in MyAnime uses the shared scrollable editor.

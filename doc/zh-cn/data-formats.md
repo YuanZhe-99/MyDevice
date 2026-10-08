@@ -204,7 +204,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 
 默认应用数据目录是桌面 `Documents/MyDevice` 或移动平台应用文档目录。自定义存储路径存储在 `storage_config.json`，而它本身总是留在默认文件夹；更改路径会移动存储文件夹中的其他一切——数据文件、备份、图像、`.sync_base/`、`webdav_config.json`、`ai_insights.json`——并报告留下的任何东西（见 [`storage_config.json`](#storage_configjson)、[架构 — 核心架构规则](architecture.md#core-architecture-rules)、`DeviceStorage.getAppDir()`）。
 
-- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、数据集列表的分组 `datasetGroupMode`（不分组时缺席；见[下文](#storage_configjson-key-datasetgroupmode)）、首页列表上次的状态筛选 `deviceStatusFilter`（为“全部”时缺席）、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)），以及端侧 AI 开关 `onDeviceAiEnabled` 和 `onDeviceAiPreferFast`（v1.6.0）——只在为 `true` 时写入、关闭时移除，属于本设备，因为是否有模型是设备的属性；见[端侧 AI](on-device-ai.md)）。
+- **`storage_config.json`** — 平台默认文件夹中的唯一文件（见[下文](#storage_configjson)），保存本地、不同步偏好（主题、语言区域、备份设置、排序偏好、数据集列表的分组 `datasetGroupMode`（不分组时缺席；见[下文](#storage_configjson-key-datasetgroupmode)）、首页列表上次的状态筛选 `deviceStatusFilter`（为“全部”时缺席）、默认货币、汇率设置、自定义存储路径、托盘/最小化/关闭到托盘标志、本地 API 端口/凭据，以及四个列表列数偏好 `deviceListColumns`、`networkListColumns`、`dataSetListColumns` 和 `serviceListColumns`——钉住时为 1–4 的整数，自动时缺席；见[自适应布局](adaptive-layout.md#how-many-columns)），以及端侧 AI 开关 `onDeviceAiEnabled` 和 `onDeviceAiPreferFast`（v1.6.0）——只在为 `true` 时写入、关闭时移除，属于本设备，因为是否有模型是设备的属性，以及（v1.11.0）路由器键 `aiComputePreference`、`aiGpuFailures`、`aiCustomModels` 和 `aiModelAliases`，分别保存本地模型计算选择、GPU 失败记录、自定义 Hugging Face 模型和模型名称——从不同步，也不进入备份；见[端侧 AI](on-device-ai.md)）。
 - **`webdav_config.json`** — 仅本地 WebDAV 凭据/配置；绝不同步。
 - **`.sync_base/`** — 上次成功同步的逐数据文件基础快照（`device_data.json`、`network_data.json`、`dataset_data.json`、`service_data.json`），用于三方合并；也持有 `upload_lock.json`，用于下次启动检测中断上传的进行中上传本地记录。见 [WebDAV 同步](sync.md)。
 - **`backups/`** — 完整 v2 捆绑格式和 blob 存储布局见 [备份与恢复](backup-restore.md)。
@@ -295,6 +295,6 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 
 ## AI 来源与 WebDAV 隐私
 
-MyApps-AI v0.5.3 显式拆分运行时、平台、模型、本地 UI 和 llama.cpp 包。设置使用统一分区骨架。全局来源选择保存在设备本地（`aiSourceSelection`），默认系统 AI，不会自动回退到在线来源。Qwen3.5 0.8B/2B Q4_K_M 与 Gemma 4 E2B Q4_0 在 CPU 上运行。下载仅由明确操作触发，使用固定地址与 SHA-256，保存在 `ai_models/`，不进入数据模块、同步、备份或 ZIP。模型租约避免使用中移除文件。切换来源取消旧任务并释放模型资源。MyNihongo 的系统校对保持独立。
+MyApps-AI v0.6.0 新增 `myapps_ai_sources`：`createAiSourceRouter` 返回共享的 `AiSourceRouter`，取代应用自有的 `AiSourceBackend`。共享来源分区提供来源选择、本地模型入口和本地模型的 GPU 开关（仅在 GPU 已验证时显示）；MyDevice 没有在线来源。全局来源选择仍保存在设备本地（`aiSourceSelection`），默认系统 AI，不会自动回退到在线来源。路由器还会写入设备本地键 `aiComputePreference`、`aiGpuFailures`、`aiCustomModels` 和 `aiModelAliases`，它们从不同步，也不进入备份。本地模型（Qwen3.5 0.8B/2B Q4_K_M、Gemma 4 E2B Q4_0）显示路由器提供的友好名称，例如 `Qwen: Qwen3.5 0.8B (Q4_K_M)`，并可重命名；可在强制警告后从 Hugging Face 仓库添加自定义 GGUF 模型。除非打开 GPU 开关，否则只用 CPU 运行。下载仅由明确操作触发，使用固定地址与 SHA-256，保存在 `ai_models/`，不进入数据模块、同步、备份或 ZIP。模型租约避免使用中移除文件。切换来源取消旧任务并释放模型资源。AI 设置中的技术详情使用 `MyAppsAiDiagnosticsView` 与 `router.diagnostics()`：列出每个包含的后端（应用与平台、选择、系统 AI、llama.cpp 库与设备、每个本地模型），可复制。MyNihongo 的系统校对保持独立。
 
 WebDAV 第 1 版提醒必须在每个设备上确认后，才能测试连接、手动/强制同步或后台同步。记录保存在设备本地 storage_config.json。已有配置保持不变，同步暂停时 WebDAV 页面显示查看提醒横幅。拒绝不保存配置、不发出请求。JSON/图片没有应用层加密；HTTPS 加密传输，HTTP 不加密。线格式、锁和冲突策略保持不变。

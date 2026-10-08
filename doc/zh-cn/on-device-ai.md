@@ -50,7 +50,7 @@ Models 框架使用 Apple Intelligence 的模型——在两处写一张简短�
 | `lib/features/ai/services/ai_insights_cache.dart` | `AiInsightsCache`：`ai_insights.json`，本设备的缓存 |
 | `lib/features/ai/services/insight_service.dart` | `AiInsightStore`：指纹、缓存或生成、合并请求、失败处理 |
 | `lib/features/ai/widgets/ai_insight_card.dart` | `AiInsightCard`：卡片及其全部状态 |
-| `lib/features/ai/widgets/ai_settings_tiles.dart` | `AiSettingsTiles`：开关、状态行、尺寸偏好、说明、技术详情和*清除已生成的洞察* |
+| `lib/features/ai/widgets/ai_settings_tiles.dart` | `AiSettingsTiles`：开关、状态行、尺寸偏好、说明、技术详情（自 1.11.0 起完整且可复制）和*清除已生成的洞察* |
 | `lib/features/devices/services/finance_insight_facts.dart` | 设备财务事实 |
 | `lib/features/services/services/service_insight_facts.dart` | 服务事实 |
 | `lib/shared/utils/chinese_convert.dart` | 简体 ↔ 繁体转换，复制自 MyDay |

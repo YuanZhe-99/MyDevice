@@ -56,8 +56,8 @@ its per-file row and both total tables in the same commit.
 
 | Source file | Page | Declarations | Tier A |
 |---|---|---|---|
-| `lib/features/ai/services/ai_source_backend.dart` | [features/ai/services/ai_source_backend.md](features/ai/services/ai_source_backend.md) | 21 | 0 |
-| `lib/features/ai/widgets/ai_source_controls.dart` | [features/ai/widgets/ai_source_controls.md](features/ai/widgets/ai_source_controls.md) | 4 | 0 |
+| `lib/features/ai/services/ai_source_backend.dart` | [features/ai/services/ai_source_backend.md](features/ai/services/ai_source_backend.md) | 1 | 0 |
+| `lib/features/ai/widgets/ai_source_controls.dart` | [features/ai/widgets/ai_source_controls.md](features/ai/widgets/ai_source_controls.md) | 8 | 0 |
 | `lib/shared/services/webdav_privacy.dart` | [shared/services/webdav_privacy.md](shared/services/webdav_privacy.md) | 3 | 0 |
 | `lib/main.dart` | [main.md](main.md) | 1 | 1 |
 

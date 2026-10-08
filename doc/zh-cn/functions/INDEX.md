@@ -13,8 +13,8 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 
 | 源文件 | 页面 | 声明数 | Tier A |
 |---|---|---|---|
-| `lib/features/ai/services/ai_source_backend.dart` | [features/ai/services/ai_source_backend.md](features/ai/services/ai_source_backend.md) | 21 | 0 |
-| `lib/features/ai/widgets/ai_source_controls.dart` | [features/ai/widgets/ai_source_controls.md](features/ai/widgets/ai_source_controls.md) | 4 | 0 |
+| `lib/features/ai/services/ai_source_backend.dart` | [features/ai/services/ai_source_backend.md](features/ai/services/ai_source_backend.md) | 1 | 0 |
+| `lib/features/ai/widgets/ai_source_controls.dart` | [features/ai/widgets/ai_source_controls.md](features/ai/widgets/ai_source_controls.md) | 8 | 0 |
 | `lib/shared/services/webdav_privacy.dart` | [shared/services/webdav_privacy.md](shared/services/webdav_privacy.md) | 3 | 0 |
 | `lib/features/devices/widgets/hardware_entries_editor.dart` | [features/devices/widgets/hardware_entries_editor.md](features/devices/widgets/hardware_entries_editor.md) | 12 | 5 |
 | `lib/features/network/services/tailscale_csv.dart` | [features/network/services/tailscale_csv.md](features/network/services/tailscale_csv.md) | 4 | 4 |

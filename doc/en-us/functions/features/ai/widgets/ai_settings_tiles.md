@@ -61,7 +61,7 @@ rows above. The class-level comment on `AiSettingsTiles` carries no `/// Purpose
      `report.hasSizeChoice`.
   4. The notes: on Android, who downloads the model and why it cannot be removed here; on Apple,
      that the system manages it.
-  5. A collapsed *Technical details* tile with selectable text: status name and code, detail,
+  5. Since 1.11.0, a collapsed *Technical details* tile (`MyAppsAiDiagnosticsView` over `router.diagnostics()`) that lists every included backend, copyable: app and platform, selection, system AI, llama.cpp library and devices, each local model. It replaces the earlier tile with selectable text: status name and code, detail,
      variant, served and refused variants, model name, token limit, AICore version (or "not
      installed" on Android), SDK, device, compatibility, OS version and locale support, each only
      when known.
@@ -78,4 +78,4 @@ rows above. The class-level comment on `AiSettingsTiles` carries no `/// Purpose
   it is what the Apple plugin reports on iOS and macOS older than 26.
 
 
-Current integration uses MyApps-AI v0.5.3, explicit platform injection, app-owned source routing and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).
+Current integration uses MyApps-AI v0.6.0, explicit platform injection, the shared source router and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).

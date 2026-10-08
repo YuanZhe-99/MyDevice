@@ -14,7 +14,7 @@ class OnDeviceAiService extends shared.OnDeviceAiService {
   OnDeviceAiService({GenAiBackend? backend, super.now})
     : super(backend: backend ?? sourceBackend);
 
-  static final sourceBackend = AiSourceBackend();
+  static final sourceBackend = createAiSourceRouter();
 
   static OnDeviceAiService instance = OnDeviceAiService();
   static const timeout = shared.OnDeviceAiService.timeout;

@@ -63,7 +63,7 @@ this platform" line.
 | `lib/features/ai/services/ai_insights_cache.dart` | `AiInsightsCache`: `ai_insights.json`, the per-device cache |
 | `lib/features/ai/services/insight_service.dart` | `AiInsightStore`: the fingerprint, cache-or-generate, coalescing, failure handling |
 | `lib/features/ai/widgets/ai_insight_card.dart` | `AiInsightCard`: the card and all its states |
-| `lib/features/ai/widgets/ai_settings_tiles.dart` | `AiSettingsTiles`: the switch, the status row, the size preference, the notes, technical details and *Clear generated insights* |
+| `lib/features/ai/widgets/ai_settings_tiles.dart` | `AiSettingsTiles`: the switch, the status row, the size preference, the notes, technical details (complete and copyable since 1.11.0) and *Clear generated insights* |
 | `lib/features/devices/services/finance_insight_facts.dart` | Device finance facts |
 | `lib/features/services/services/service_insight_facts.dart` | Services facts |
 | `lib/shared/utils/chinese_convert.dart` | Simplified ↔ Traditional conversion, copied from MyDay |

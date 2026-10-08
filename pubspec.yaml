@@ -2,7 +2,7 @@ name: my_device
 description: "MyDevice!!!!! — Your personal device inventory"
 publish_to: 'none'
 
-version: 1.10.13+72
+version: 1.11.0+73
 
 environment:
   sdk: ^3.11.3
@@ -22,6 +22,8 @@ dependencies:
     path: packages/myapps_ai/packages/myapps_ai_models
   myapps_ai_local_ui:
     path: packages/myapps_ai/packages/myapps_ai_local_ui
+  myapps_ai_sources:
+    path: packages/myapps_ai/packages/myapps_ai_sources
   myapps_profile:
     path: packages/myapps_ui/packages/myapps_profile
   # Shared theme and adaptive foundation, pinned by the MyApps-UI submodule.
@@ -117,7 +119,7 @@ msix_config:
   display_name: MyDevice!!!!!
   publisher_display_name: yuanzhe
   identity_name: com.yuanzhe.mydevice
-  msix_version: 1.10.13.0
+  msix_version: 1.11.0.0
   logo_path: assets/icon/app_icon.png
   capabilities: internetClient
   install_certificate: false

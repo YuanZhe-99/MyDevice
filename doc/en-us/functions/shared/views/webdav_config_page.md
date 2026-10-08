@@ -317,4 +317,4 @@ documents; there are no misattached blocks and no undocumented declarations in t
 The Expressive bottom bar floats over the page (`ShellScaffold` uses `extendBody`), so a scroll view with an explicit `padding` passes it through `navBarAwarePadding(context, ...)` (see [`adaptive_layout.md`](../utils/adaptive_layout.md)) to scroll its last content above the bar. Covered here: the form `ListView` (padding 16), which is also the settings detail pane's page. On a pushed route the extra inset is just the system's, so nothing changes there.
 
 
-Current integration uses MyApps-AI v0.5.3, explicit platform injection, app-owned source routing and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).
+Current integration uses MyApps-AI v0.6.0, explicit platform injection, the shared source router and the unified settings skeleton. WebDAV entry points require device-local notice acknowledgement before any network request; see [sync.md](../../../sync.md).

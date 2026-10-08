@@ -171,24 +171,14 @@ class _AiSettingsTilesState extends ConsumerState<AiSettingsTiles> {
               storageNote: l10n.aiModelStorageNote,
             ),
         ],
-        diagnostics: MyAppsAiDiagnostics(
-          title: l10n.aiTechnicalDetails,
-          groups: [
-            AiDiagnosticGroup(backend.selection.global, [
-              'status: ${ai.report.status.name} (${ai.report.code})',
-              if (ai.report.detail != null) 'detail: ${ai.report.detail}',
-              if (ai.report.variant != null) 'variant: ${ai.report.variant}',
-              if (ai.report.served != null) 'served: ${ai.report.served}',
-              if (ai.report.refused != null) 'refused: ${ai.report.refused}',
-              if (ai.report.baseModelName != null)
-                'model: ${ai.report.baseModelName}',
-              if (ai.report.tokenLimit != null)
-                'tokenLimit: ${ai.report.tokenLimit}',
-              if (ai.coreInfo?.versionName != null)
-                l10n.aiCoreVersion(ai.coreInfo!.versionName!),
-              if (ai.coreInfo?.device != null) 'device: ${ai.coreInfo!.device}',
-            ]),
-          ],
+        diagnostics: MyAppsAiDiagnosticsView(
+          load: () => backend.diagnostics(localeTag: _localeTag()),
+          labels: AiDiagnosticsLabels(
+            title: l10n.aiTechnicalDetails,
+            copy: l10n.aiDiagnosticsCopy,
+            copied: l10n.aiDiagnosticsCopied,
+            notIncluded: l10n.aiDiagnosticsNotIncluded,
+          ),
         ),
         data: [
           ListTile(

@@ -46,9 +46,9 @@ These services have their own privacy policies, which we encourage you to review
 
 ## On-Device AI (optional, since 1.6.0)
 
-The Financial Overview and Services pages can optionally show short summaries and suggestions written by the language model built into your device — Gemini Nano through Android AICore, or the model that is part of Apple Intelligence on iOS 26 and macOS 26 or later. This is off by default and runs only after you turn on **Use on-device AI** in Settings. It is not available on Windows or Linux.
+The Financial Overview, Services and Data Sets pages can optionally show short summaries and suggestions written by the language model built into your device — Gemini Nano through Android AICore, or the model that is part of Apple Intelligence on iOS 26 and macOS 26 or later. This is off by default and runs only after you turn on **Use on-device AI** in Settings. It is not available on Windows or Linux.
 
-- Everything the model does happens on your device. It is given only figures the app has already calculated: for the Financial Overview, cost totals and daily costs, cost by category, recurring-cost totals and the names of a few devices; for Services, counts of services, endpoints, access paths, ports and warnings by type. Serial numbers, notes, locations, host names, IP addresses, URLs and port numbers are never given to it.
+- Everything the model does happens on your device. It is given only figures the app has already calculated: for the Financial Overview, cost totals and daily costs, cost by category, recurring-cost totals and the names of a few devices; for Services, counts of services, endpoints, access paths, ports and warnings by type, and how many services the busiest host runs; for Data Sets, how many copies each data set has, where they are healthy, and the names of up to two data sets most at risk. Serial numbers, notes, locations, host names, IP addresses, URLs and port numbers are never given to it.
 
 - On Android, the model is downloaded by the AICore system service from Google, and only when you tap Download in Settings. On Apple devices the model is part of Apple Intelligence and is managed by the system.
 

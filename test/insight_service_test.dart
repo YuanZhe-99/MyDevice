@@ -235,6 +235,17 @@ void main() {
       expect(parsed, {1: '体重在下降。', 2: '继续保持。'});
     });
 
+    test('a reasoning draft never wins over the answer', () {
+      final parsed = parseInsightReply(
+        '<|channel>thought\n1: Draft one.\n2: Draft two.\n<channel|>'
+        '1: Final one.\n2: Final two.',
+        2,
+        'en',
+      );
+      expect(parsed, {1: 'Final one.', 2: 'Final two.'});
+      expect(parseInsightReply('<think>\n1: Cut off', 1, 'en'), isEmpty);
+    });
+
     test('drops over-long lines rather than truncating', () {
       final parsed = parseInsightReply('1: ${'a' * 240}', 1, 'en');
       expect(parsed, isEmpty);
@@ -264,7 +275,7 @@ void main() {
       );
       expect(insightInstructions(_en), contains('English'));
       expect(insightInstructions(_en), contains('never invent numbers'));
-      expect(insightInstructions(_en), contains('Do not repeat'));
+      expect(insightInstructions(_en), contains('NEVER merely list totals'));
     });
 
     test('period and bold numbering are read, not stripped as lists', () {

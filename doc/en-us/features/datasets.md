@@ -163,6 +163,16 @@ removes device storage slots must do the same" is called out directly in `AGENTS
 it's easy to add a new storage-editing UI path that forgets this step and silently
 corrupts dataset links.
 
+## On-device AI insight <a id="on-device-ai-insight"></a>
+
+Since 1.11.1, with on-device AI turned on, the list shows a compact `AiInsightCard`
+(`InsightModule.datasets`) above the data sets; it is hidden while reordering. Its facts come from
+`buildDatasetInsightFacts` ([dataset_insight_facts.dart](../functions/features/datasets/services/dataset_insight_facts.md)):
+copy counts as [Copies](#copies) counts them, data sets whose two or more copies all sit on one
+device (one machine failing loses them), copies on degraded arrays and on retired or sold devices,
+and the two highest-risk data sets by name. Placement itself still ignores a device's lifecycle;
+only the card reports it. See [On-device AI](../on-device-ai.md).
+
 ## Related
 
 - [`dataset_topology.md`](../functions/features/datasets/services/dataset_topology.md) and

@@ -4,9 +4,13 @@ import '../../../l10n/app_localizations.dart';
 import '../../../shared/services/auto_sync_service.dart';
 import '../../../shared/utils/adaptive_layout.dart';
 import '../../../shared/widgets/adaptive_tile_grid.dart';
+import '../../ai/services/insight_prompts.dart';
+import '../../ai/services/insight_service.dart';
+import '../../ai/widgets/ai_insight_card.dart';
 import '../../devices/models/device.dart';
 import '../../devices/services/device_storage.dart';
 import '../models/dataset.dart';
+import '../services/dataset_insight_facts.dart';
 import '../services/dataset_placement.dart';
 import '../services/dataset_storage.dart';
 import 'dataset_copy_summary.dart';
@@ -513,25 +517,58 @@ class _DataSetListPageState extends State<DataSetListPage> {
                 );
               },
             )
-          : _groupMode != DataSetGroupMode.none
-          ? _buildGroupedList(sorted, columns, l10n)
-          : columns > 1
-          ? ListView.builder(
-              padding: navBarAwarePadding(
-                context,
-                const EdgeInsets.symmetric(horizontal: 8),
-              ),
-              itemCount: listRowCount(sorted.length, columns),
-              itemBuilder: (context, index) => adaptiveTileRow(
-                rowIndex: index,
-                columns: columns,
-                itemCount: sorted.length,
-                itemBuilder: (i) => _buildMenuTile(sorted[i], l10n),
-              ),
-            )
-          : ListView.builder(
-              itemCount: sorted.length,
-              itemBuilder: (context, index) => _buildSwipeTile(sorted[index]),
+          : Column(
+              children: [
+                // On-device AI backup-health suggestions (v1.11.1). Renders
+                // nothing unless the platform has a model and the user
+                // turned it on; compact so the list keeps its room.
+                AiInsightCard(
+                  module: InsightModule.datasets,
+                  compact: true,
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  buildRequest: (language, now) {
+                    InsightFacts? facts({required bool names}) =>
+                        buildDatasetInsightFacts(
+                          now: now,
+                          datasets: _datasets,
+                          devices: _devices,
+                          includeNames: names,
+                        );
+                    final full = facts(names: true);
+                    return full == null
+                        ? null
+                        : AiInsightRequest(
+                            facts: full,
+                            language: language,
+                            now: now,
+                            fallbackFacts: facts(names: false),
+                          );
+                  },
+                ),
+                Expanded(
+                  child: _groupMode != DataSetGroupMode.none
+                      ? _buildGroupedList(sorted, columns, l10n)
+                      : columns > 1
+                      ? ListView.builder(
+                          padding: navBarAwarePadding(
+                            context,
+                            const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          itemCount: listRowCount(sorted.length, columns),
+                          itemBuilder: (context, index) => adaptiveTileRow(
+                            rowIndex: index,
+                            columns: columns,
+                            itemCount: sorted.length,
+                            itemBuilder: (i) => _buildMenuTile(sorted[i], l10n),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: sorted.length,
+                          itemBuilder: (context, index) =>
+                              _buildSwipeTile(sorted[index]),
+                        ),
+                ),
+              ],
             ),
     );
   }

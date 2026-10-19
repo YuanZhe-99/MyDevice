@@ -7,6 +7,12 @@ P2：布局函数传入页面上下文并使用实际导航内容约束；
 
 自 1.8.0 起，应用栏还会打开[资料集拓扑](dataset_topology_page.md)（`_openTopology`，键 `dataset-topology`）和一个**分组**菜单（键 `dataset-group`，菜单项 `dataset-group-mode-<none|device|storage>`），其选择保存为 `datasetGroupMode`。分组列表由 `_buildGroupedList` 依据 [`groupDataSets`](../services/dataset_placement.md#groupdatasets) 构建：标题键为 `dataset-group-<group key>`，其后跟着该组的列表块，块的副标题变为副本数和"其他位置：…"（`_groupedSubtitle`）；分组时隐藏*调整顺序*。见 [数据集](../../../../features/datasets.md#grouping-the-list)。
 
+自 1.11.1 起，非排序模式下，列表位于一张紧凑的
+[`AiInsightCard`](../../ai/widgets/ai_insight_card.md)（`InsightModule.datasets`，外边距
+`fromLTRB(16, 8, 16, 0)`）之下，二者放在 `Column` 中，列表在 `Expanded` 里。请求由
+[`buildDatasetInsightFacts`](../services/dataset_insight_facts.md) 带名称构建，不带名称的同样事实作为
+`fallbackFacts`；端侧 AI 关闭时卡片不渲染任何内容。
+
 ## 声明
 
 | 声明 | 种类 | Tier | 用途 |

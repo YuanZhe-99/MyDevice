@@ -61,11 +61,18 @@ and `reviewDevice` (one device or category worth reviewing, for example to retir
      each with its device count.
   4. `- Highest daily-cost devices in service:` — in-service devices with a positive daily cost,
      highest first, at most `financeInsightMaxNames`, each as `label` plus the daily cost.
+     Since 1.11.1 it is followed by `- Daily cost of devices in service:` — their summed daily
+     cost and the highest one's share as a whole percent, worked out in Dart.
   5. `- Recurring costs on devices in service:` — `none`, or the entry and device counts, the
      kinds by count, the monthly-billed and yearly-billed totals (`price.convertedAmount`) and the
      combined yearly total (`monthly × 12 + yearly`).
+     Since 1.11.1, when there are recurring costs, `- Daily burden of recurring fees:` gives the
+     yearly total ÷ 365.
   6. `- Retired or sold:` — the retired count, the sold count, how many sold devices have a resale
      price and the resale total (`soldPrice.convertedAmount`).
+     Since 1.11.1 `- Retired and not sold:` follows when retired, unsold devices have a purchase
+     price: their count and purchase total, naming them (`label`) when there are at most
+     `financeInsightMaxNames`.
   7. `- Oldest devices in service:` — in-service devices with a purchase date, oldest first, at
      most `financeInsightMaxNames`, each as `label`, `since <date>` and its `serviceDays`.
   8. Return `InsightFacts(module: InsightModule.deviceFinance, lines, slots:

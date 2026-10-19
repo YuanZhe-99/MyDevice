@@ -10,15 +10,20 @@ const int serviceInsightMaxBreakdown = 5;
 
 /// The slots the services card asks for.
 const List<InsightSlot> serviceInsightSlots = [
-  InsightSlot('setupSummary', 'Sum up this self-hosting setup.'),
+  InsightSlot(
+    'setupSummary',
+    'Assess the architecture balance, including runtime consolidation and '
+        'whether too many services depend on a single host.',
+  ),
   InsightSlot(
     'warningAdvice',
-    'One suggestion about the warnings or port conflicts, or say that none '
-        'need attention.',
+    'Prioritize the most urgent fix among inactive hosts, port conflicts, or '
+        'duplicate URLs, or confirm the topology is clean.',
   ),
   InsightSlot(
     'exposureAdvice',
-    'One suggestion about how the services are exposed or organised.',
+    'Give one concrete security or routing suggestion regarding public vs '
+        'private access paths and hop complexity.',
   ),
 ];
 
@@ -99,7 +104,10 @@ Map<String, int> _countBy<T>(Iterable<T> items, String Function(T) keyOf) {
 /// Notes: Counts and enum names only. The builder never sends a service or
 /// access-path name, a bind address, a path, a URL, a hop host, a port
 /// number, a tag, a note or a compose file; names are read only to count
-/// duplicates. `quotedTerms` is [serviceInsightTechTerms]. Warnings and
+/// duplicates. The host-concentration line names the busiest host's device
+/// category, never its name; the public share uses
+/// `serviceAccessLaneForRoute`, the lane the topology draws. `quotedTerms`
+/// is [serviceInsightTechTerms]. Warnings and
 /// conflicts come from the same `service_analysis`
 /// functions the Overview shows, so the card and the list agree.
 InsightFacts? buildServiceInsightFacts({
@@ -143,11 +151,22 @@ InsightFacts? buildServiceInsightFacts({
     for (final e in endpoints)
       if (e.networkId != null) e.networkId!,
   };
-  final sameNameOnDevice =
-      _countBy(services, (s) => '${s.deviceId}|${s.name.trim().toLowerCase()}')
-          .values
-          .where((n) => n > 1)
-          .length;
+  final sameNameOnDevice = _countBy(
+    services,
+    (s) => '${s.deviceId}|${s.name.trim().toLowerCase()}',
+  ).values.where((n) => n > 1).length;
+  // Single point of failure: the host carrying the most services, by
+  // device category only (no name is sent).
+  final perHost = _countBy(services, (s) => s.deviceId).entries.toList()
+    ..sort((a, b) {
+      final byCount = b.value.compareTo(a.value);
+      return byCount != 0 ? byCount : a.key.compareTo(b.key);
+    });
+  final busiest = perHost.first;
+  final busiestKind = deviceMap[busiest.key]?.category.name ?? 'unknown device';
+  final publicRoutes = routes
+      .where((r) => serviceAccessLaneForRoute(r) == ServiceAccessLane.public)
+      .length;
   final duplicateUrls = warnings
       .where((w) => w.kind == ServiceWarningKind.duplicateFinalUrl)
       .length;
@@ -161,6 +180,8 @@ InsightFacts? buildServiceInsightFacts({
         '${_breakdown(_countBy(services, (s) => s.runtime?.name ?? 'unspecified'))}',
     '- Hosts: ${hostIds.length} devices run services; $inactiveHosts of them '
         'are retired or sold',
+    '- Host concentration: the busiest host ($busiestKind) runs '
+        '${busiest.value} of ${services.length} services',
     '- Endpoints: ${endpoints.length}; by protocol: '
         '${_breakdown(_countBy(endpoints, (e) => e.protocol.name))}; by scope: '
         '${_breakdown(_countBy(endpoints, (e) => e.scope.name))}',
@@ -173,6 +194,8 @@ InsightFacts? buildServiceInsightFacts({
           '${_breakdown(_countBy(routes, (r) => r.accessLevel.name))}; '
           'by method: ${_breakdown(methods)}; '
           'average ${factNumber(hopCount / routes.length)} hops',
+    if (routes.isNotEmpty)
+      '- Publicly exposed access paths: $publicRoutes of ${routes.length}',
     '- Networks referenced by endpoints: ${networkIds.length}',
     '- Warnings: ${warnings.length}; by kind: '
         '${_breakdown(_countBy(warnings, (w) => w.kind.name))}',

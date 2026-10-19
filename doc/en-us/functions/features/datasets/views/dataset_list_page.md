@@ -22,6 +22,12 @@ grouped list is built by `_buildGroupedList` from
 and "Also on: …" (`_groupedSubtitle`); *Reorder* is hidden while grouped. See
 [Datasets](../../../../features/datasets.md#grouping-the-list).
 
+Since 1.11.1, outside reorder mode, the list sits under a compact
+[`AiInsightCard`](../../ai/widgets/ai_insight_card.md) (`InsightModule.datasets`, margin
+`fromLTRB(16, 8, 16, 0)`) inside a `Column`, the list in `Expanded`. Its request is built by
+[`buildDatasetInsightFacts`](../services/dataset_insight_facts.md) with names, and the same facts
+without names as `fallbackFacts`; the card renders nothing while on-device AI is off.
+
 ## Declarations
 
 | Declaration | Kind | Tier | Purpose |

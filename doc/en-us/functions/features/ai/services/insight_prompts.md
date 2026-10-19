@@ -15,10 +15,10 @@ builders use so that fingerprints do not move with float noise. The fact builder
 
 | Declaration | Kind | Tier | Purpose |
 |---|---|---|---|
-| `insightPromptVersion` | top-level const (`int`) | B | Prompt version `1` (MyDevice 1.6.0), part of every fingerprint; bump when wording or builder output changes. |
+| `insightPromptVersion` | top-level const (`int`) | B | Prompt version `2` (MyDevice 1.11.1; `1` since 1.6.0), part of every fingerprint; bump when wording or builder output changes. |
 | `insightLineMaxLength` | top-level const (`int`) | B | `200`: the longest line kept, in characters; longer lines are dropped (the same limit as MyDay's v1.5.1). |
 | `insightMaxOutputTokens` | top-level const (`int`) | B | `400`: the output budget for one card. |
-| `InsightModule` (enum) | enum | B | `deviceFinance` / `services`; the name is the key in `ai_insights.json`. |
+| `InsightModule` (enum) | enum | B | `deviceFinance` / `services` / `datasets` (1.11.1); the name is the key in `ai_insights.json`. |
 | [`InsightSlot` (constructor)](#insightslot-new) | const constructor (`InsightSlot`) | A | Create one numbered request. |
 | [`InsightFacts` (constructor)](#insightfacts-new) | const constructor (`InsightFacts`) | A | Create a card's facts and requested answers. |
 | [`canonical`](#canonical) | method (`InsightFacts`) | A | Serialize the facts for fingerprinting. |
@@ -97,12 +97,12 @@ only a plain doc comment), and the four private regular expressions `_answerLine
 - **Returns:** `String` — one English paragraph.
 - **Side effects:** None.
 - **Algorithm:** A fixed template that states "The person's locale is `<localeTag>`", casts the
-  model as a private assistant in a personal device-inventory app, asks it, using only the facts
-  given, to answer each numbered question with one short sentence in `<name>` under 30 words in
-  the form `"<number>: <sentence>"`, tells it not to repeat the facts or the questions, to be
-  concrete, calm and kind, to write every amount with the currency code exactly as the facts give
-  it (never a currency sign or a translated currency name), and forbids medical, legal or
-  investment advice, diagnoses and invented numbers.
+  model as an analytical assistant in a personal device and homelab app, asks it, using only the
+  facts given, to answer each numbered question with one concise sentence in `<name>` under 30
+  words in the form `"<number>: <sentence>"`, tells it never merely to list totals or counts
+  already on screen but to diagnose cost efficiency, single points of failure or maintenance
+  priorities with a concrete action, to write every amount with the exact currency code from the
+  facts, and forbids investment advice and invented numbers (prompt version 2, 1.11.1).
 - **Usage:** `instructions: insightInstructions(language),`
   (`lib/features/ai/services/insight_service.dart`, `AiInsightStore._generateParsed`).
 - **Notes:** One template for every module. The locale sentence is the form Apple documents; the
@@ -146,7 +146,8 @@ only a plain doc comment), and the four private regular expressions `_answerLine
      over 200 characters) or when the normalized sentence equals one of the normalized asks; then
      replace every quoted term of at least 2 runes with a space in a copy and return `null` unless
      `matchesScript(copy, languageCode)` holds; otherwise return the cleaned (unreplaced) sentence.
-  2. Remove only the inline marks `_inlineMarks` (code fences, `**`, `__`, backticks) from the
+  2. Remove reasoning blocks from the whole reply with MyApps-AI's `stripThinking` (1.11.1: a
+     draft inside them reads like a numbered answer), then only the inline marks `_inlineMarks` (code fences, `**`, `__`, backticks) from the
      reply and split on `\n`. `stripMarkdown` is deliberately **not** used: it also deletes a
      `1. ` list marker, which is the very number being looked for (the reason a reply numbered
      `1. …` parsed to nothing in MyDay's v1.5.0).

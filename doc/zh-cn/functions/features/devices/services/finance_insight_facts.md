@@ -30,8 +30,11 @@
   2. `- Today:`、`- Currency:`、`- Devices:`（全部设备数、带成本数据的数量，以及服役中 / 已退役 / 已售出计数）、`- Total cost of ownership to date:`（`totalCost(asOf: now)` 之和）和 `- Total daily cost:`（`averageDailyCost(asOf: now)` 之和，两位小数，`<货币> per day`）。
   3. `- Cost by category:`——只计正的单设备总额，与资产分布图规则相同；分类按总额排序，至多 `financeInsightMaxCategories` 个，各带设备数。
   4. `- Highest daily-cost devices in service:`——日均成本为正的服役中设备，从高到低，至多 `financeInsightMaxNames` 个，每个为 `label` 加日均成本。
+     1.11.1 起其后接 `- Daily cost of devices in service:`——它们的日均成本合计以及最高者所占的整数百分比，在 Dart 侧算好。
   5. `- Recurring costs on devices in service:`——`none`，或条目数与设备数、按数量排列的种类、按月计费与按年计费的总额（`price.convertedAmount`）以及合计年额（`monthly × 12 + yearly`）。
+     1.11.1 起，有周期费用时 `- Daily burden of recurring fees:` 给出年度合计 ÷ 365。
   6. `- Retired or sold:`——已退役数、已售出数、带转售价格的已售出设备数和转售总额（`soldPrice.convertedAmount`）。
+     1.11.1 起，若已退役未售出的设备有购买价格，接着写 `- Retired and not sold:`：数量与购买总额，至多 `financeInsightMaxNames` 台时以 `label` 点名。
   7. `- Oldest devices in service:`——带购买日期的服役中设备，从最老开始，至多 `financeInsightMaxNames` 个，每个为 `label`、`since <date>` 及其 `serviceDays`。
   8. 返回 `InsightFacts(module: InsightModule.deviceFinance, lines, slots: deviceFinanceInsightSlots, quotedTerms)`。
 - **用法：**

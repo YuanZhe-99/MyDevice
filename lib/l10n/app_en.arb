@@ -769,7 +769,7 @@
   "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } },
   "aiSectionTitle": "On-device AI",
   "aiUseOnDevice": "Use on-device AI",
-  "aiUseOnDeviceDesc": "Off by default. Writes short summaries and suggestions on the Financial Overview and Services pages with the model built into this device. Nothing leaves the device, and the results are kept only on this device.",
+  "aiUseOnDeviceDesc": "Off by default. Writes short summaries and suggestions on the Financial Overview, Services and Data Sets pages with the model built into this device. Nothing leaves the device, and the results are kept only on this device.",
   "aiNotSupportedHere": "On-device AI is not available on this platform.",
   "aiStatusAvailable": "Ready",
   "aiStatusUnavailable": "Not available on this device",

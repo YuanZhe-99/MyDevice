@@ -78,6 +78,10 @@ longer names before the shorter names they contain (`Cloudflare Tunnel` before `
      `none`, or the count by `accessLevel`, by method and the average hop count
      ([`factNumber`](../../ai/services/insight_prompts.md#factnumber)); `- Networks referenced by
      endpoints:`; `- Warnings:` by kind; `- Duplicates:`.
+     Since 1.11.1 `- Host concentration:` names the busiest host's device category (never its
+     name) and how many of the services it runs, and, when there are access paths,
+     `- Publicly exposed access paths:` counts those whose `serviceAccessLaneForRoute` is
+     `public`.
   6. Return `InsightFacts(module: InsightModule.services, lines, slots: serviceInsightSlots,
      quotedTerms: serviceInsightTechTerms)`.
 - **Usage:**

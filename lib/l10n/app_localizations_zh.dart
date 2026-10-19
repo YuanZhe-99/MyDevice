@@ -2097,7 +2097,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aiUseOnDeviceDesc =>
-      '默认关闭。借助本设备内置的模型，在财务总览和服务页面写出简短的总结与建议。任何内容都不会离开本设备，结果也只保存在本设备上。';
+      '默认关闭。借助本设备内置的模型，在财务总览、服务和资料集页面写出简短的总结与建议。任何内容都不会离开本设备，结果也只保存在本设备上。';
 
   @override
   String get aiNotSupportedHere => '此平台不支持端侧 AI。';
@@ -4563,7 +4563,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aiUseOnDeviceDesc =>
-      '預設關閉。借助本裝置內建的模型，在財務總覽和服務頁面寫出簡短的總結與建議。任何內容都不會離開本裝置，結果也只儲存在本裝置上。';
+      '預設關閉。借助本裝置內建的模型，在財務總覽、服務和資料集頁面寫出簡短的總結與建議。任何內容都不會離開本裝置，結果也只儲存在本裝置上。';
 
   @override
   String get aiNotSupportedHere => '此平台不支援裝置端 AI。';

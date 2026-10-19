@@ -112,9 +112,9 @@ Note: Versions distributed through the App Store and Google Play (store flavor) 
 
 On-Device AI (optional, since 1.6.0)
 
-The Financial Overview and Services pages can optionally show short summaries and suggestions written by the language model built into your device — Gemini Nano through Android AICore, or the model that is part of Apple Intelligence on iOS 26 and macOS 26 or later. This is off by default and runs only after you turn on "Use on-device AI" in Settings. It is not available on Windows or Linux.
+The Financial Overview, Services and Data Sets pages can optionally show short summaries and suggestions written by the language model built into your device — Gemini Nano through Android AICore, or the model that is part of Apple Intelligence on iOS 26 and macOS 26 or later. This is off by default and runs only after you turn on "Use on-device AI" in Settings. It is not available on Windows or Linux.
 
-• Everything the model does happens on your device. It is given only figures the app has already calculated: for the Financial Overview, cost totals and daily costs, cost by category, recurring-cost totals and the names of a few devices; for Services, counts of services, endpoints, access paths, ports and warnings by type. Serial numbers, notes, locations, host names, IP addresses, URLs and port numbers are never given to it.
+• Everything the model does happens on your device. It is given only figures the app has already calculated: for the Financial Overview, cost totals and daily costs, cost by category, recurring-cost totals and the names of a few devices; for Services, counts of services, endpoints, access paths, ports and warnings by type, and how many services the busiest host runs; for Data Sets, how many copies each data set has, where they are healthy, and the names of up to two data sets most at risk. Serial numbers, notes, locations, host names, IP addresses, URLs and port numbers are never given to it.
 
 • On Android, the model is downloaded by the AICore system service from Google, and only when you tap Download in Settings. On Apple devices the model is part of Apple Intelligence and is managed by the system.
 
@@ -179,9 +179,9 @@ MyDevice!!!!! 仅在以下情况下访问互联网：
 
 端侧 AI（可选，自 1.6.0 起）
 
-财务总览和服务页面可以选择显示由您设备内置的语言模型写出的简短总结与建议——Android 上通过 AICore 使用 Gemini Nano，iOS 26 和 macOS 26 及以上使用 Apple Intelligence 的模型。此功能默认关闭，只有在您于设置中开启「使用端侧 AI」后才会运行。Windows 和 Linux 上不提供。
+财务总览、服务和资料集页面可以选择显示由您设备内置的语言模型写出的简短总结与建议——Android 上通过 AICore 使用 Gemini Nano，iOS 26 和 macOS 26 及以上使用 Apple Intelligence 的模型。此功能默认关闭，只有在您于设置中开启「使用端侧 AI」后才会运行。Windows 和 Linux 上不提供。
 
-• 模型的所有处理都在您的设备上完成。它只会拿到应用已经算好的数字：财务总览为成本合计和日均成本、按类别的成本、周期费用合计以及少数几台设备的名称；服务为按类型统计的服务、端点、访问路径、端口和警告数量。序列号、备注、位置、主机名、IP 地址、URL 和端口号永远不会交给模型。
+• 模型的所有处理都在您的设备上完成。它只会拿到应用已经算好的数字：财务总览为成本合计和日均成本、按类别的成本、周期费用合计以及少数几台设备的名称；服务为按类型统计的服务、端点、访问路径、端口和警告数量，以及最繁忙主机运行的服务数；资料集为每个资料集的副本数与副本健康状况，以及最多两个风险最高的资料集名称。序列号、备注、位置、主机名、IP 地址、URL 和端口号永远不会交给模型。
 
 • 在 Android 上，模型由系统服务 AICore 从 Google 下载，并且只在您于设置中点「下载」时才开始。在 Apple 设备上，模型属于 Apple Intelligence，由系统管理。
 
@@ -246,9 +246,9 @@ MyDevice!!!!! 僅在以下情況下存取網際網路：
 
 裝置端 AI（可選，自 1.6.0 起）
 
-財務總覽和服務頁面可以選擇顯示由您裝置內建的語言模型寫出的簡短總結與建議——Android 上透過 AICore 使用 Gemini Nano，iOS 26 和 macOS 26 及以上使用 Apple Intelligence 的模型。此功能預設關閉，只有在您於設定中開啟「使用裝置端 AI」後才會執行。Windows 和 Linux 上不提供。
+財務總覽、服務和資料集頁面可以選擇顯示由您裝置內建的語言模型寫出的簡短總結與建議——Android 上透過 AICore 使用 Gemini Nano，iOS 26 和 macOS 26 及以上使用 Apple Intelligence 的模型。此功能預設關閉，只有在您於設定中開啟「使用裝置端 AI」後才會執行。Windows 和 Linux 上不提供。
 
-• 模型的所有處理都在您的裝置上完成。它只會拿到應用程式已經算好的數字：財務總覽為成本合計和日均成本、按類別的成本、週期費用合計以及少數幾台裝置的名稱；服務為按類型統計的服務、端點、存取路徑、連接埠和警告數量。序號、備註、位置、主機名稱、IP 位址、URL 和連接埠號永遠不會交給模型。
+• 模型的所有處理都在您的裝置上完成。它只會拿到應用程式已經算好的數字：財務總覽為成本合計和日均成本、按類別的成本、週期費用合計以及少數幾台裝置的名稱；服務為按類型統計的服務、端點、存取路徑、連接埠和警告數量，以及最繁忙主機執行的服務數；資料集為每個資料集的副本數與副本健康狀況，以及最多兩個風險最高的資料集名稱。序號、備註、位置、主機名稱、IP 位址、URL 和連接埠號永遠不會交給模型。
 
 • 在 Android 上，模型由系統服務 AICore 從 Google 下載，並且只在您於設定中點「下載」時才開始。在 Apple 裝置上，模型屬於 Apple Intelligence，由系統管理。
 
@@ -313,9 +313,9 @@ MyDevice!!!!! は以下の場合にのみインターネットにアクセスし
 
 オンデバイスAI（任意、1.6.0 以降）
 
-財務概要とサービスの各ページでは、端末に内蔵された言語モデル（Android では AICore 経由の Gemini Nano、iOS 26 / macOS 26 以降では Apple Intelligence のモデル）が書いた短い要約と提案を表示できます。初期状態ではオフで、設定で「オンデバイスAIを使う」をオンにした後にのみ動作します。Windows と Linux では利用できません。
+財務概要、サービス、データセットの各ページでは、端末に内蔵された言語モデル（Android では AICore 経由の Gemini Nano、iOS 26 / macOS 26 以降では Apple Intelligence のモデル）が書いた短い要約と提案を表示できます。初期状態ではオフで、設定で「オンデバイスAIを使う」をオンにした後にのみ動作します。Windows と Linux では利用できません。
 
-• モデルの処理はすべて端末内で行われます。モデルに渡されるのは、アプリが計算済みの数値だけです：財務概要では費用の合計と1日あたりの費用、カテゴリ別の費用、継続費用の合計と数台のデバイス名、サービスでは種類別のサービス・エンドポイント・アクセス経路・ポート・警告の件数です。シリアル番号、メモ、場所、ホスト名、IP アドレス、URL、ポート番号がモデルに渡されることはありません。
+• モデルの処理はすべて端末内で行われます。モデルに渡されるのは、アプリが計算済みの数値だけです：財務概要では費用の合計と1日あたりの費用、カテゴリ別の費用、継続費用の合計と数台のデバイス名、サービスでは種類別のサービス・エンドポイント・アクセス経路・ポート・警告の件数と最も多くのサービスを動かすホストのサービス数、データセットでは各データセットのコピー数と状態、最もリスクの高い最大2件のデータセット名です。シリアル番号、メモ、場所、ホスト名、IP アドレス、URL、ポート番号がモデルに渡されることはありません。
 
 • Android では、モデルは AICore システムサービスが Google からダウンロードし、設定で「ダウンロード」をタップしたときだけ行われます。Apple のデバイスでは、モデルは Apple Intelligence の一部としてシステムが管理します。
 

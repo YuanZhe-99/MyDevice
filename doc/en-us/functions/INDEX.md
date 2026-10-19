@@ -48,9 +48,9 @@ its per-file row and both total tables in the same commit.
 
 | Tier | Count |
 |---|---|
-| Tier A (full entry) | 983 |
-| Tier B (index row only) | 879 |
-| **Total** | **108** | **1861** | **958** | **903** |
+| Tier A (full entry) | 959 |
+| Tier B (index row only) | 905 |
+| **Total** | **1864** |
 
 ## Root (`lib/`)
 
@@ -91,6 +91,7 @@ its per-file row and both total tables in the same commit.
 |---|---|---|---|
 | `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 13 | 13 |
 | `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 10 | 10 |
+| `lib/features/datasets/services/dataset_insight_facts.dart` | [features/datasets/services/dataset_insight_facts.md](features/datasets/services/dataset_insight_facts.md) | 3 | 1 |
 | `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 22 | 5 |
 | `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 14 | 5 |
 | `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 13 | 4 |
@@ -231,12 +232,12 @@ the 1719/1862 hand-documented declarations above).
 | Root (`lib/`) | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 11 | 90 | 20 | 70 |
-| `features/datasets/` | 8 | 128 | 55 | 73 |
+| `features/datasets/` | 9 | 131 | 56 | 75 |
 | `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
 | `features/services/` | 17 | 571 | 249 | 322 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 26 | 288 | 192 | 96 |
-| **Total** | **108** | **1861** | **958** | **903** |
-Current per-file table sum: 108 files, 1861 declarations (958 Tier A, 903 Tier B).
+| **Total** | **109** | **1864** | **959** | **905** |
+Current per-file table sum: 109 files, 1864 declarations (959 Tier A, 905 Tier B).

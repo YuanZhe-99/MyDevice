@@ -75,6 +75,15 @@ static Future<void> remapDeviceStorageLinks({
 
 设备编辑器在用户编辑/重排/移除存储条目时跟踪每个存储行的**原始槽索引**，保存时带结果的旧→新索引映射调用 `remapDeviceStorageLinks()`。这正是 `AGENTS.md` 直接点名"任何重排或移除设备存储槽的新代码路径必须同样做"的原因——容易添加忘记此步骤并静默损坏数据集链接的新存储编辑 UI 路径。
 
+## 端侧 AI 洞察 <a id="on-device-ai-insight"></a>
+
+自 1.11.1 起，开启端侧 AI 后，列表会在资料集上方显示一张紧凑的 `AiInsightCard`
+（`InsightModule.datasets`），排序时隐藏。它的事实来自 `buildDatasetInsightFacts`
+（[dataset_insight_facts.dart](../functions/features/datasets/services/dataset_insight_facts.md)）：
+按[副本](#copies)的规则计数的副本数量、两个及以上副本却都在同一台设备上的资料集（一台机器故障就会全部丢失）、
+位于降级阵列和已退役或售出设备上的副本，以及风险最高的两个资料集名称。放置本身仍不考虑设备的生命周期，
+只有卡片会报告它。参见[端侧 AI](../on-device-ai.md)。
+
 ## 相关
 
 - [`dataset_topology.md`](../functions/features/datasets/services/dataset_topology.md) 和 [`dataset_topology_page.md`](../functions/features/datasets/views/dataset_topology_page.md) 了解拓扑的布局和页面。

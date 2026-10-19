@@ -14,14 +14,24 @@ const int financeInsightMaxCategories = 5;
 const List<InsightSlot> deviceFinanceInsightSlots = [
   InsightSlot(
     'costSummary',
-    'Describe the overall cost and daily-cost picture of these devices.',
+    'Identify which category or device drives the largest share of daily '
+        'ownership cost versus long-serving low-daily-cost gear.',
   ),
-  InsightSlot('costAdvice', 'One practical suggestion about spending on devices.'),
-  InsightSlot('recurringSummary', 'Sum up the recurring costs.'),
+  InsightSlot(
+    'costAdvice',
+    'Give one concrete tactic to lower daily ownership cost (e.g. extending '
+        'lifespan of high-daily-cost gear or selling retired hardware).',
+  ),
+  InsightSlot(
+    'recurringSummary',
+    'Assess how much recurring fees add to the daily/annual ownership burden '
+        'and which cost kind dominates.',
+  ),
   InsightSlot(
     'reviewDevice',
-    'Name one device or category worth reviewing, for example to retire or '
-        'sell, and say why.',
+    'Name one specific device or category to review—either a high-daily-cost '
+        'item or retired gear that could be sold for resale recovery—and '
+        'explain why.',
   ),
 ];
 
@@ -98,11 +108,8 @@ InsightFacts? buildDeviceFinanceInsightFacts({
     ..sort((a, b) => b.value.$1.compareTo(a.value.$1));
   if (categories.isNotEmpty) {
     lines.add(
-      '- Cost by category: ${[
-        for (final e in categories.take(financeInsightMaxCategories))
-          '${e.key.name} ${_money(e.value.$1, cur)} '
-              '(${e.value.$2} device${e.value.$2 == 1 ? '' : 's'})',
-      ].join('; ')}',
+      '- Cost by category: ${[for (final e in categories.take(financeInsightMaxCategories)) '${e.key.name} ${_money(e.value.$1, cur)} '
+            '(${e.value.$2} device${e.value.$2 == 1 ? '' : 's'})'].join('; ')}',
     );
   }
 
@@ -114,10 +121,16 @@ InsightFacts? buildDeviceFinanceInsightFacts({
   ]..sort((a, b) => b.$2.compareTo(a.$2));
   if (daily.isNotEmpty) {
     lines.add(
-      '- Highest daily-cost devices in service: ${[
-        for (final (d, v) in daily.take(financeInsightMaxNames))
-          '${label(d)} ${factNumber(v, 2)} $cur per day',
-      ].join('; ')}',
+      '- Highest daily-cost devices in service: ${[for (final (d, v) in daily.take(financeInsightMaxNames)) '${label(d)} ${factNumber(v, 2)} $cur per day'].join('; ')}',
+    );
+    // The share is worked out here: a small model cannot divide reliably.
+    final inServiceDaily = daily.fold(0.0, (s, e) => s + e.$2);
+    final (top, topDaily) = daily.first;
+    lines.add(
+      '- Daily cost of devices in service: ${factNumber(inServiceDaily, 2)} '
+      '$cur per day across ${daily.length} '
+      'device${daily.length == 1 ? '' : 's'}; ${label(top)} alone is '
+      '${(topDaily / inServiceDaily * 100).round()}% of it',
     );
   }
 
@@ -144,16 +157,21 @@ InsightFacts? buildDeviceFinanceInsightFacts({
         }
       }
     }
-    final kindText = (kinds.entries.toList()
-          ..sort((a, b) => b.value.compareTo(a.value)))
-        .map((e) => '${e.key.name} ${e.value}')
-        .join(', ');
+    final kindText =
+        (kinds.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
+            .map((e) => '${e.key.name} ${e.value}')
+            .join(', ');
     lines.add(
       '- Recurring costs on devices in service: $entries entries on '
       '${recurringDevices.length} device${recurringDevices.length == 1 ? '' : 's'} '
       '($kindText); monthly-billed ${_money(monthly, cur)} per month, '
       'yearly-billed ${_money(yearly, cur)} per year, '
       'together ${_money(monthly * 12 + yearly, cur)} per year',
+    );
+    final perDay = (monthly * 12 + yearly) / 365;
+    lines.add(
+      '- Daily burden of recurring fees: ${factNumber(perDay, 2)} $cur per '
+      'day added to the ownership cost of devices in service',
     );
   }
 
@@ -169,6 +187,24 @@ InsightFacts? buildDeviceFinanceInsightFacts({
     '${_money(resale, cur)}',
   );
 
+  // Retired but unsold hardware: what it cost new is the pool resale could
+  // recover part of.
+  final idle = devices
+      .where(
+        (d) =>
+            d.lifecycleStatus == DeviceLifecycleStatus.retired &&
+            d.purchasePrice != null,
+      )
+      .toList();
+  if (idle.isNotEmpty) {
+    final paid = idle.fold(0.0, (s, d) => s + d.purchasePrice!.convertedAmount);
+    lines.add(
+      '- Retired and not sold: ${idle.length} '
+      'device${idle.length == 1 ? '' : 's'} bought for ${_money(paid, cur)} '
+      'in total${idle.length <= financeInsightMaxNames ? ': ${idle.map(label).join('; ')}' : ''}',
+    );
+  }
+
   // Oldest devices still in service, by purchase date.
   final oldest = [
     for (final d in devices)
@@ -176,11 +212,8 @@ InsightFacts? buildDeviceFinanceInsightFacts({
   ]..sort((a, b) => a.purchaseDate!.compareTo(b.purchaseDate!));
   if (oldest.isNotEmpty) {
     lines.add(
-      '- Oldest devices in service: ${[
-        for (final d in oldest.take(financeInsightMaxNames))
-          '${label(d)} since ${factDate(d.purchaseDate!)}, '
-              '${d.serviceDays(asOf: now)} days',
-      ].join('; ')}',
+      '- Oldest devices in service: ${[for (final d in oldest.take(financeInsightMaxNames)) '${label(d)} since ${factDate(d.purchaseDate!)}, '
+            '${d.serviceDays(asOf: now)} days'].join('; ')}',
     );
   }
 

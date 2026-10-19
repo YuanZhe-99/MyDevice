@@ -6,10 +6,10 @@
 
 | 声明 | 种类 | Tier | 用途 |
 |---|---|---|---|
-| `insightPromptVersion` | 顶层常量（`int`） | B | 提示版本 `1`（MyDevice 1.6.0），属于每个指纹；措辞或构建器输出改变时递增。 |
+| `insightPromptVersion` | 顶层常量（`int`） | B | 提示版本 `2`（MyDevice 1.11.1；1.6.0 起为 `1`），属于每个指纹；措辞或构建器输出改变时递增。 |
 | `insightLineMaxLength` | 顶层常量（`int`） | B | `200`：保留行的最大长度（字符）；更长的行被丢弃（与 MyDay v1.5.1 的上限相同）。 |
 | `insightMaxOutputTokens` | 顶层常量（`int`） | B | `400`：一张卡片的输出预算。 |
-| `InsightModule`（枚举） | 枚举 | B | `deviceFinance` / `services`；名称即 `ai_insights.json` 中的键。 |
+| `InsightModule`（枚举） | 枚举 | B | `deviceFinance` / `services` / `datasets`（1.11.1）；名称即 `ai_insights.json` 中的键。 |
 | [`InsightSlot`（构造函数）](#insightslot-new) | const 构造函数（`InsightSlot`） | A | 创建一个编号请求。 |
 | [`InsightFacts`（构造函数）](#insightfacts-new) | const 构造函数（`InsightFacts`） | A | 创建卡片的事实与所请求的答案。 |
 | [`canonical`](#canonical) | 方法（`InsightFacts`） | A | 为计算指纹序列化事实。 |
@@ -71,7 +71,7 @@
 - **输入：** `language`——见 [`insight_language.md`](insight_language.md)。
 - **返回：** `String`——一段英文。
 - **副作用：** 无。
-- **算法：** 固定模板：声明 "The person's locale is `<localeTag>`"，把模型设定为个人设备清单应用中的私人助手，要求只用给定事实、以 `<name>` 用一句 30 词以内的短句回答每个编号问题，格式为 `"<number>: <sentence>"`，告诉它不要重复事实或问题，要具体、平和、友善，每个金额都按事实给出的原样写货币代码（绝不用货币符号或翻译后的货币名称），并禁止医疗、法律或投资建议、诊断和捏造数字。
+- **算法：** 固定模板：声明 "The person's locale is `<localeTag>`"，把模型设定为个人设备与家庭实验室应用中的分析助手，要求只用给定事实、以 `<name>` 用一句 30 词以内的简洁句子回答每个编号问题，格式为 `"<number>: <sentence>"`，告诉它绝不要只罗列屏幕上已有的合计或数量，而要以具体行动诊断成本效率、单点故障或维护优先级，每个金额都按事实中的货币代码原样书写，并禁止投资建议和捏造数字（提示词版本 2，1.11.1）。
 - **用法：** `instructions: insightInstructions(language),`（`lib/features/ai/services/insight_service.dart`，`AiInsightStore._generateParsed`）。
 - **备注：** 所有模块共用一个模板。区域设置句采用 Apple 文档中的形式；回复语言也被显式点名。刻意保持简短：回复形状在 [`insightPrompt`](#insightprompt) 末尾再次写明。货币代码一句为 MyDevice 独有；它与财务构建器把货币代码列为引用词配合，使文字系统检查不会因拉丁字母丢弃中文或日文句子。任何措辞修改都需要递增 `insightPromptVersion`。
 
@@ -95,7 +95,7 @@
 - **副作用：** 无。
 - **算法：**
   1. 用 [`_normalize`](#_normalize) 把每个 ask 规范化为一个集合。定义 `accept(raw)`：`cleanSentence(raw, maxLength: insightLineMaxLength)`，其为 `null`（空或超过 200 字符）或规范化后的句子等于某个规范化后的 ask 时返回 `null`；然后在副本中把每个至少 2 个码点的引用词替换为空格，除非 `matchesScript(copy, languageCode)` 成立，否则返回 `null`；否则返回清理后（未替换）的句子。
-  2. 只从回复中移除内联标记 `_inlineMarks`（代码围栏、`**`、`__`、反引号），按 `\n` 拆分。刻意**不**使用 `stripMarkdown`：它还会删除 `1. ` 列表标记，而那正是要找的编号（这就是 MyDay v1.5.0 中编号为 `1. …` 的回复解析为空的原因）。
+  2. 先用 MyApps-AI 的 `stripThinking` 去掉整段回复中的推理块（1.11.1：其中的草稿看起来像带编号的答案），再只从回复中移除内联标记 `_inlineMarks`（代码围栏、`**`、`__`、反引号），按 `\n` 拆分。刻意**不**使用 `stripMarkdown`：它还会删除 `1. ` 列表标记，而那正是要找的编号（这就是 MyDay v1.5.0 中编号为 `1. …` 的回复解析为空的原因）。
   3. 对每行：匹配 `_answerLine`（`^\s*(\d+)\s*[:：.)、]\s*(.+?)\s*$`）时直接得到正文。否则匹配 `_bareNumber`（单独的数字，可选分隔符）时取下一非空行为正文，除非没有下一行或它本身就是 `_answerLine`；循环索引跳到该行。其他行忽略。任一匹配都设置 `numbered`。
   4. 跳过 `1..slotCount` 以外的编号和已出现过的编号（首次出现者胜出）；`accept(body)` 非 null 时以编号存储。
   5. 若有任一行带编号（或 `slotCount` 为 0），返回。否则按顺序遍历各行，跳过空行和匹配 `_heading` 的行（最多 60 个字符且以冒号结尾），把 `accept(line)` 依次赋给槽位 1、2、……直到达到 `slotCount`；被 `accept` 拒绝的行仍占用其槽位编号。

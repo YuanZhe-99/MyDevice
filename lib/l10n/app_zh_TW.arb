@@ -739,7 +739,7 @@
   "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } },
   "aiSectionTitle": "裝置端 AI",
   "aiUseOnDevice": "使用裝置端 AI",
-  "aiUseOnDeviceDesc": "預設關閉。借助本裝置內建的模型，在財務總覽和服務頁面寫出簡短的總結與建議。任何內容都不會離開本裝置，結果也只儲存在本裝置上。",
+  "aiUseOnDeviceDesc": "預設關閉。借助本裝置內建的模型，在財務總覽、服務和資料集頁面寫出簡短的總結與建議。任何內容都不會離開本裝置，結果也只儲存在本裝置上。",
   "aiNotSupportedHere": "此平台不支援裝置端 AI。",
   "aiStatusAvailable": "可以使用",
   "aiStatusUnavailable": "本裝置不支援",

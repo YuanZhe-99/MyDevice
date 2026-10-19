@@ -43,6 +43,7 @@
   3. `findServiceReferenceWarnings(services:, routes:, devices:, networks:)`（[`service_analysis.md`](service_analysis.md#findservicereferencewarnings)）。
   4. 遍历访问路径：总跳数与跳转方式（`h.method?.name`）计数。收集端点引用的不同网络 id。统计去除首尾空白并转小写后在同一设备上重复的服务名（按 `deviceId|name`），以及种类为 `duplicateFinalUrl` 的警告数。
   5. 各行：`- Today:`；带按 `state` 分项的 `- Services:`；`- Services by kind:`；`- Runtimes:`（无运行时为 `unspecified`）；`- Hosts:`；按 `protocol` 和 `scope` 的 `- Endpoints:`；带确定与潜在冲突的 `- Distinct listening ports:`；`- Access paths:`——`none`，或按 `accessLevel` 的数量、按方式的分项和平均跳数（[`factNumber`](../../ai/services/insight_prompts.md#factnumber)）；`- Networks referenced by endpoints:`；按种类的 `- Warnings:`；`- Duplicates:`。
+     1.11.1 起，`- Host concentration:` 写出最繁忙主机的设备类别（从不写名称）及其运行的服务数；有访问路径时，`- Publicly exposed access paths:` 统计 `serviceAccessLaneForRoute` 为 `public` 的路径数。
   6. 返回 `InsightFacts(module: InsightModule.services, lines, slots: serviceInsightSlots, quotedTerms: serviceInsightTechTerms)`。
 - **用法：**
   ```dart

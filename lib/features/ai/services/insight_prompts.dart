@@ -3,7 +3,7 @@ import 'output_validation.dart';
 
 /// Bump when any wording below, or the facts a builder emits, changes in a
 /// way that should replace cached insights. Part of every fingerprint.
-const int insightPromptVersion = 1;
+const int insightPromptVersion = 2;
 
 /// The longest insight line shown, in characters. Longer lines are dropped,
 /// not truncated. Thirty English words with a device name or two can pass
@@ -16,7 +16,7 @@ const int insightMaxOutputTokens = 400;
 
 /// Which card an insight belongs to. The name is the key in
 /// `ai_insights.json`, so it must never be renamed.
-enum InsightModule { deviceFinance, services }
+enum InsightModule { deviceFinance, services, datasets }
 
 /// One numbered answer the model is asked for.
 class InsightSlot {
@@ -70,11 +70,8 @@ class InsightFacts {
   /// Returns: `String` — stable for equal facts.
   /// Side effects: None.
   /// Notes: Changing any line or slot changes the fingerprint.
-  String canonical() => [
-    module.name,
-    ...lines,
-    slots.map((s) => s.id).join('|'),
-  ].join('\n');
+  String canonical() =>
+      [module.name, ...lines, slots.map((s) => s.id).join('|')].join('\n');
 }
 
 /// Purpose: Build the system instructions for one card.
@@ -82,18 +79,19 @@ class InsightFacts {
 /// Returns: `String`.
 /// Side effects: None.
 /// Notes: Written in English with the locale sentence Apple documents; the
-/// reply language is named explicitly. One template for every module. Short
-/// on purpose: the reply shape is spelled out again at the end of the prompt.
+/// reply language is named explicitly. One template for every module. Since
+/// prompt version 2 it asks for a diagnosis and an action rather than a
+/// restatement of the totals the page already shows.
 String insightInstructions(InsightLanguage language) =>
     "The person's locale is ${language.localeTag}. "
-    'You are a private assistant inside a personal device-inventory app. '
+    'You are an analytical assistant inside a personal device and homelab app. '
     'Using only the facts given, answer each numbered question with one '
-    'short sentence in ${language.name}, under 30 words, in the form '
-    '"<number>: <sentence>". Do not repeat the facts or the questions. '
-    'Be concrete, calm and kind. Write every amount with the currency code '
-    'exactly as the facts give it, never a currency sign or a translated '
-    'currency name. Never give medical, legal or investment advice, never '
-    'diagnose, and never invent numbers that are not in the facts.';
+    'concise sentence in ${language.name}, under 30 words, in the form '
+    '"<number>: <sentence>". '
+    'NEVER merely list totals or counts already on screen; diagnose cost '
+    'efficiency, single points of failure, or maintenance priorities with a '
+    'concrete action. Write every amount with the exact currency code from '
+    'the facts. Never give investment advice and never invent numbers.';
 
 /// Purpose: Build the prompt for one card.
 /// Inputs: `facts`.
@@ -136,7 +134,8 @@ final _inlineMarks = RegExp(r'(```[a-zA-Z]*|\*\*|__|`)');
 /// `asks` — the questions, so an echoed question is not taken as an answer.
 /// Returns: `Map<int, String>` — slot number (1-based) to sentence.
 /// Side effects: None.
-/// Notes: Bold and code marks are stripped first; list markers are kept
+/// Notes: Reasoning blocks (`stripThinking`), then bold and code marks are
+/// stripped first; list markers are kept
 /// because `1. ` is a numbering. Three shapes are accepted, in order of
 /// preference: `<number>: <sentence>`; a number alone on a line with the
 /// sentence on the next; and, only when no line is numbered at all, the first
@@ -169,7 +168,8 @@ Map<int, String> parseInsightReply(
   // Only inline marks are removed here: `stripMarkdown` would also drop a
   // `1. ` list marker, which is the very number being looked for. That is
   // why a reply numbered `1. …` parsed to nothing in v1.5.0.
-  final lines = reply.replaceAll(_inlineMarks, '').split('\n');
+  // Reasoning goes first: a draft inside it looks like a numbered answer.
+  final lines = stripThinking(reply).replaceAll(_inlineMarks, '').split('\n');
   final out = <int, String>{};
   var numbered = false;
   for (var i = 0; i < lines.length; i++) {
@@ -213,9 +213,8 @@ Map<int, String> parseInsightReply(
 /// Returns: `String` — lower-case, without punctuation or spaces.
 /// Side effects: None.
 /// Notes: Internal helper used within this file only.
-String _normalize(String s) => s
-    .toLowerCase()
-    .replaceAll(RegExp(r'[\s\p{P}]+', unicode: true), '');
+String _normalize(String s) =>
+    s.toLowerCase().replaceAll(RegExp(r'[\s\p{P}]+', unicode: true), '');
 
 /// Purpose: Shorten a user-typed title for a fact line.
 /// Inputs: `title`, `maxRunes`.

@@ -460,7 +460,7 @@ generated insights* in Settings deletes it.
 }
 ```
 
-- Keys under `insights` are `deviceFinance` and `services`. Unknown keys and malformed entries are
+- Keys under `insights` are `deviceFinance`, `services` and (since 1.11.1) `datasets`. Unknown keys and malformed entries are
   dropped on read.
 - `fingerprint` is the hex SHA-256 described in
   [on-device-ai.md](on-device-ai.md#cache-and-fingerprint); a card regenerates only when it changes.

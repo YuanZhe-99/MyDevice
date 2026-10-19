@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_device/features/ai/services/insight_prompts.dart';
+import 'package:my_device/features/datasets/models/dataset.dart';
+import 'package:my_device/features/datasets/services/dataset_insight_facts.dart';
 import 'package:my_device/features/devices/models/device.dart';
 import 'package:my_device/features/devices/services/finance_insight_facts.dart';
 import 'package:my_device/features/network/models/network.dart';
@@ -76,7 +78,11 @@ void main() {
       purchasePrice: _cny(4000),
       soldPrice: _cny(1500),
     );
-    final noCost = Device(id: 'n', name: 'Router', category: DeviceCategory.router);
+    final noCost = Device(
+      id: 'n',
+      name: 'Router',
+      category: DeviceCategory.router,
+    );
 
     InsightFacts build({bool names = true}) => buildDeviceFinanceInsightFacts(
       now: now,
@@ -120,7 +126,9 @@ void main() {
           'retired 0, sold 1',
         ),
       );
-      final resale = lines.singleWhere((l) => l.startsWith('- Retired or sold'));
+      final resale = lines.singleWhere(
+        (l) => l.startsWith('- Retired or sold'),
+      );
       expect(resale, contains('1 sold with a resale price totalling 1500 CNY'));
     });
 
@@ -152,27 +160,84 @@ void main() {
         expect(text, isNot(contains(name)));
       }
       expect(plain.quotedTerms, ['CNY']);
-      expect(
-        plain.slots.map((s) => s.id),
-        full.slots.map((s) => s.id),
-      );
+      expect(plain.slots.map((s) => s.id), full.slots.map((s) => s.id));
       expect(plain.module, InsightModule.deviceFinance);
     });
 
     test('equal inputs give an equal canonical form', () {
       expect(build().canonical(), build().canonical());
     });
+
+    test('works out the in-service daily share and the recurring burden', () {
+      final lines = build().lines;
+      final share = lines.singleWhere(
+        (l) => l.startsWith('- Daily cost of devices in service'),
+      );
+      expect(share, contains('across 2 devices'));
+      expect(share, matches(RegExp(r'alone is \d+% of it$')));
+      expect(
+        lines,
+        contains(
+          '- Daily burden of recurring fees: 1.32 CNY per day added to the '
+          'ownership cost of devices in service',
+        ),
+      );
+      // Nothing is retired without being sold in this fixture.
+      expect(
+        lines.where((l) => l.startsWith('- Retired and not sold')),
+        isEmpty,
+      );
+    });
+
+    test('retired, unsold hardware is the resale pool', () {
+      final shelf = Device(
+        id: 'old',
+        name: 'Shelf Camera',
+        category: DeviceCategory.other,
+        purchaseDate: DateTime(2019, 1, 1),
+        purchasePrice: _cny(2600),
+        isRetired: true,
+        retiredDate: DateTime(2024, 1, 1),
+      );
+      final facts = buildDeviceFinanceInsightFacts(
+        now: now,
+        devices: [laptop, shelf],
+        defaultCurrency: 'CNY',
+      )!;
+      expect(
+        facts.lines,
+        contains(
+          '- Retired and not sold: 1 device bought for 2600 CNY in total: '
+          'Shelf Camera (other)',
+        ),
+      );
+      final plain = buildDeviceFinanceInsightFacts(
+        now: now,
+        devices: [laptop, shelf],
+        defaultCurrency: 'CNY',
+        includeNames: false,
+      )!;
+      expect(plain.lines.join('\n'), isNot(contains('Shelf Camera')));
+    });
   });
 
   group('service facts', () {
-    final host = Device(id: 'h', name: 'HOST-NAME', category: DeviceCategory.desktop);
+    final host = Device(
+      id: 'h',
+      name: 'HOST-NAME',
+      category: DeviceCategory.desktop,
+    );
     final retiredHost = Device(
       id: 'r',
       name: 'Retired Host',
       category: DeviceCategory.desktop,
       isRetired: true,
     );
-    final lan = Network(id: 'net', name: 'NET-NAME', type: NetworkType.values.first);
+    final lan = Network(
+      id: 'net',
+      name: 'NET-NAME',
+      type: NetworkType.values.first,
+    );
     final web = ServiceNode(
       id: 'web',
       deviceId: 'h',
@@ -269,10 +334,15 @@ void main() {
 
     test('reports counts, conflicts and access paths by enum name', () {
       final lines = build().lines;
-      expect(lines[1], startsWith('- Services: 3; by state: active 2, deprecated 1'));
+      expect(
+        lines[1],
+        startsWith('- Services: 3; by state: active 2, deprecated 1'),
+      );
       expect(
         lines,
-        contains('- Hosts: 2 devices run services; 1 of them are retired or sold'),
+        contains(
+          '- Hosts: 2 devices run services; 1 of them are retired or sold',
+        ),
       );
       final ports = lines.singleWhere((l) => l.startsWith('- Distinct'));
       expect(ports, contains('port conflicts: 1 definite'));
@@ -282,11 +352,137 @@ void main() {
       expect(lines, contains('- Networks referenced by endpoints: 1'));
     });
 
+    test('reports the busiest host by category and the public share', () {
+      final lines = build().lines;
+      expect(
+        lines,
+        contains(
+          '- Host concentration: the busiest host (desktop) runs 2 of 3 '
+          'services',
+        ),
+      );
+      expect(
+        lines.where((l) => l.startsWith('- Publicly exposed access paths: ')),
+        hasLength(1),
+      );
+      expect(lines.join('\n'), isNot(contains('HOST-NAME')));
+    });
+
     test('quotes only tech names, and the canonical form is stable', () {
       final facts = build();
       expect(facts.quotedTerms, serviceInsightTechTerms);
       expect(facts.module, InsightModule.services);
       expect(facts.canonical(), build().canonical());
+    });
+  });
+
+  group('dataset facts', () {
+    final nas = Device(
+      id: 'nas',
+      name: 'NAS-NAME',
+      category: DeviceCategory.other,
+      storage: [
+        for (var i = 0; i < 3; i++)
+          StorageInfo(
+            capacity: '8 TB',
+            status: i == 0 ? StorageHealth.failed : StorageHealth.ok,
+          ),
+        const StorageInfo(capacity: '4 TB'),
+        const StorageInfo(capacity: '4 TB'),
+      ],
+      storageArrays: [
+        StorageArray(
+          id: 'pool',
+          name: 'Pool',
+          level: RaidLevel.raid5,
+          memberIndices: const [0, 1, 2],
+        ),
+      ],
+    );
+    final oldPc = Device(
+      id: 'pc',
+      name: 'PC-NAME',
+      category: DeviceCategory.desktop,
+      isRetired: true,
+      storage: const [StorageInfo(capacity: '2 TB')],
+    );
+    final media = DataSet(
+      id: 'media',
+      name: 'Media',
+      emoji: '🎬',
+      storageLinks: const [
+        DataSetStorageLink(deviceId: 'nas', arrayIds: ['pool']),
+        DataSetStorageLink(deviceId: 'pc', storageIndices: [0]),
+      ],
+    );
+    final photos = DataSet(
+      id: 'photos',
+      name: 'Photos',
+      emoji: '📷',
+      storageLinks: const [
+        DataSetStorageLink(deviceId: 'nas', storageIndices: [3, 4]),
+      ],
+    );
+    final notes = DataSet(id: 'notes', name: 'Notes', emoji: '🗒️');
+
+    InsightFacts build({bool names = true}) => buildDatasetInsightFacts(
+      now: now,
+      datasets: [media, photos, notes],
+      devices: [nas, oldPc],
+      includeNames: names,
+    )!;
+
+    test('null when there are no data sets', () {
+      expect(
+        buildDatasetInsightFacts(now: now, datasets: const [], devices: [nas]),
+        isNull,
+      );
+    });
+
+    test('counts copies, single-device redundancy and risky places', () {
+      final lines = build().lines;
+      expect(lines, contains('- Datasets: 3'));
+      expect(
+        lines,
+        contains(
+          '- Available copies: 1 with none, 0 with exactly one, '
+          '2 with two or more',
+        ),
+      );
+      expect(lines, contains('- Two or more copies but all on one device: 1'));
+      expect(
+        lines,
+        contains('- Datasets with a copy on a degraded RAID array: 1'),
+      );
+      expect(
+        lines,
+        contains('- Datasets with a copy on a retired or sold device: 1'),
+      );
+      expect(
+        lines,
+        contains(
+          '- Highest-risk datasets: Notes (no available copy); '
+          'Photos (2 available copies on one device)',
+        ),
+      );
+    });
+
+    test('names only data sets, and the fallback names none', () {
+      final full = build();
+      expect(full.quotedTerms, containsAll(['Notes', 'Photos']));
+      final text = full.lines.join('\n');
+      for (final marker in ['NAS-NAME', 'PC-NAME', '🎬', '📷']) {
+        expect(text, isNot(contains(marker)), reason: marker);
+      }
+      final plain = build(names: false);
+      expect(plain.lines.join('\n'), isNot(contains('Photos')));
+      expect(plain.quotedTerms, isEmpty);
+      expect(plain.slots.map((s) => s.id), [
+        'redundancySummary',
+        'healthRisk',
+        'backupAdvice',
+      ]);
+      expect(plain.module, InsightModule.datasets);
     });
   });
 }

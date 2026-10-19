@@ -1,5 +1,19 @@
 # Version history
 
+## 1.11.1 — Sharper AI insights and a Data Sets card (2026-10-19)
+
+Pin MyApps-AI v0.6.2, whose `stripThinking` removes a model's reasoning blocks before a reply is
+read; `parseInsightReply` now calls it first, so a numbered draft inside reasoning can no longer be
+shown as the answer. The insight prompts move to version 2: the instructions ask for a diagnosis
+with a concrete action instead of a restatement of the totals on screen, and the Financial Overview
+and Services cards get new questions. The finance facts add the in-service daily-cost total and the
+costliest device's share of it, recurring fees per day, and retired-but-unsold devices with their
+purchase total; the services facts add the busiest host's service count (by device category) and
+how many access paths are public. A new compact card on the Data Sets list (`InsightModule.datasets`)
+reports copy counts, data sets whose copies all sit on one device, copies on degraded arrays or on
+retired or sold devices, and the two highest-risk data sets. The privacy policy and the AI setting's
+description name the Data Sets page.
+
 ## 1.11.0 — Friendly model names, GPU option and custom models (2026-10-08)
 
 Pin MyApps-AI v0.6.0. Local models show friendly names such as `Qwen: Qwen3.5 0.8B (Q4_K_M)` and can

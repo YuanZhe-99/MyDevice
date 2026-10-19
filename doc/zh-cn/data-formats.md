@@ -275,7 +275,7 @@ VPS 条目使用的对象形态，用于承载那些有意不收入 `cpus.json` 
 }
 ```
 
-- `insights` 下的键是 `deviceFinance` 和 `services`。未知键和格式错误的条目在读取时丢弃。
+- `insights` 下的键是 `deviceFinance`、`services` 以及（1.11.1 起）`datasets`。未知键和格式错误的条目在读取时丢弃。
 - `fingerprint` 是 [on-device-ai.md](on-device-ai.md#cache-and-fingerprint) 中描述的十六进制 SHA-256；卡片只在它变化时重新生成。
 - `lines` 按槽位顺序保存经过校验的句子，`slots` 保存每句对应的槽位 id，因此即使前面的某个槽位被丢弃，卡片也能把各行归到对应的分区标题下。
 - `status` 为 `ok`，或在模型拒绝（`guardrail`）或无法使用该语言写作时为 `skipped`；跳过的条目没有行，在指纹变化之前不会重试。

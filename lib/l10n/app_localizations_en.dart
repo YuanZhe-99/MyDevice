@@ -2153,7 +2153,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aiUseOnDeviceDesc =>
-      'Off by default. Writes short summaries and suggestions on the Financial Overview and Services pages with the model built into this device. Nothing leaves the device, and the results are kept only on this device.';
+      'Off by default. Writes short summaries and suggestions on the Financial Overview, Services and Data Sets pages with the model built into this device. Nothing leaves the device, and the results are kept only on this device.';
 
   @override
   String get aiNotSupportedHere =>

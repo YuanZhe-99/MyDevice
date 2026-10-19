@@ -729,7 +729,7 @@
   "@listColumnsCount": { "placeholders": { "count": { "type": "int" } } },
   "aiSectionTitle": "端侧 AI",
   "aiUseOnDevice": "使用端侧 AI",
-  "aiUseOnDeviceDesc": "默认关闭。借助本设备内置的模型，在财务总览和服务页面写出简短的总结与建议。任何内容都不会离开本设备，结果也只保存在本设备上。",
+  "aiUseOnDeviceDesc": "默认关闭。借助本设备内置的模型，在财务总览、服务和资料集页面写出简短的总结与建议。任何内容都不会离开本设备，结果也只保存在本设备上。",
   "aiNotSupportedHere": "此平台不支持端侧 AI。",
   "aiStatusAvailable": "可以使用",
   "aiStatusUnavailable": "本设备不支持",

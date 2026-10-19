@@ -12,7 +12,7 @@ holds the rules, how the code is laid out, what each card is given, how results 
 still has to be checked on a device.
 
 The model layer is a port of MyDay!!!!!'s (1.5.x), which is itself a port of MyAnime!!!!!'s and
-MyNihongo!!!!!'s; the two insight cards and their fact builders are MyDevice's own.
+MyNihongo!!!!!'s; the insight cards (two since 1.6.0, three since 1.11.1) and their fact builders are MyDevice's own.
 
 > **Last verified:** 2026-09-28, against MyDay's port and the published libraries.
 > **Not verified on a device.** Neither an Android device with AICore nor an Apple device with
@@ -122,13 +122,17 @@ and time.
 |---|---|---|
 | Financial Overview | After the daily-cost trend card. Collapsed to one preview line in the stacked layout; full when the summary and the distribution chart sit side by side. | `costSummary`, `costAdvice`, `reviewDevice` under *Costs*; `recurringSummary` under *Recurring Costs*. |
 | Services (Overview) | After the warnings card, before *Access paths*. Only when there is at least one service. | `setupSummary`, `warningAdvice`, `exposureAdvice`. |
+| Data Sets (since 1.11.1) | Above the list, collapsed to one preview line; hidden while reordering. Only when there is at least one data set. | `redundancySummary`, `healthRisk`, `backupAdvice`. |
 
 ### What each card is given
 
 Facts are English `- key: value` lines computed by a pure builder, rounded so that a fingerprint
 does not change with float noise. The model is asked to answer each numbered question with one
 sentence under 30 words in the UI language, using only the facts, writing amounts with the currency
-code exactly as given, with no medical, legal or investment advice and no invented numbers. The
+code exactly as given, with no investment advice and no invented numbers. Since prompt version 2
+(1.11.1) it is told never merely to list totals already on screen but to diagnose cost efficiency,
+single points of failure or maintenance priorities with a concrete action; the builders therefore
+work out shares and per-day figures in Dart, because a small model divides badly. The
 prompt is `Facts:`, the lines, `Questions:`, the numbered questions, and then the exact reply
 template (`1: <sentence>` …), because a small model keeps to a shape it has just seen far better
 than to one described in prose.
@@ -136,13 +140,16 @@ than to one described in prose.
 The reply parser (`parseInsightReply`) accepts `<number>: <sentence>` with `:`, `：`, `.`, `)` or
 `、` as the separator, a number alone on a line followed by its sentence, and — only when nothing
 at all is numbered — the first prose lines in order. It drops a line that merely echoes a question,
-a line over 200 characters, and a line in the wrong script. Bold and code marks are removed; list
-markers are kept.
+a line over 200 characters, and a line in the wrong script. Reasoning blocks (`<think>`,
+`<|think|>`, `<|channel>thought`) are removed from the whole reply first with MyApps-AI's
+`stripThinking` (1.11.1), since a draft inside them reads like a numbered answer. Bold and code marks
+are removed; list markers are kept.
 
 | Card | Sent | Never sent |
 |---|---|---|
-| Financial Overview | The date and default currency; device counts by status and how many have cost data; total cost of ownership and total daily cost; cost by category (top 5, positive totals only, as the distribution chart); the three in-service devices with the highest daily cost and the three oldest in service, by name (trimmed to 30 characters) and category; recurring costs on in-service devices — entry and device counts, counts by kind, monthly-billed per month, yearly-billed per year, and the annual total; retired and sold counts and the resale total. If the model declines these or answers nothing usable, a second try sends the same facts naming categories only (`fallbackFacts`). | Serial numbers, notes, location names and coordinates, brand and model, storage serial numbers, recurring cost names |
-| Services | The date; service counts by state, kind and runtime (top 5 each); how many devices host services and how many of those are retired or sold; endpoint counts by protocol and scope; the number of distinct listening ports and of definite and potential port conflicts; access paths by access level and hop method, and the average hop count; how many networks endpoints reference; warnings by kind; repeated service names on one device and access paths sharing a final URL | Service, access-path, endpoint and hop names or labels; bind addresses, host names, paths and URLs; port numbers; tags, notes and Compose files |
+| Financial Overview | The date and default currency; device counts by status and how many have cost data; total cost of ownership and total daily cost; cost by category (top 5, positive totals only, as the distribution chart); the three in-service devices with the highest daily cost and the three oldest in service, by name (trimmed to 30 characters) and category; recurring costs on in-service devices — entry and device counts, counts by kind, monthly-billed per month, yearly-billed per year, and the annual total; retired and sold counts and the resale total; the in-service daily-cost total and the share of the highest-daily-cost device; recurring fees per day; retired-but-unsold devices and their purchase total, naming up to three (since 1.11.1). If the model declines these or answers nothing usable, a second try sends the same facts naming categories only (`fallbackFacts`). | Serial numbers, notes, location names and coordinates, brand and model, storage serial numbers, recurring cost names |
+| Services | The date; service counts by state, kind and runtime (top 5 each); how many devices host services and how many of those are retired or sold; endpoint counts by protocol and scope; the number of distinct listening ports and of definite and potential port conflicts; access paths by access level and hop method, and the average hop count; how many networks endpoints reference; warnings by kind; repeated service names on one device and access paths sharing a final URL; since 1.11.1 the busiest host's service count, by device category, and how many access paths are public |  Service, access-path, endpoint and hop names or labels; bind addresses, host names, paths and URLs; port numbers; tags, notes and Compose files |
+| Data Sets | The date; the data set count; how many have no, exactly one, or two or more available copies (as `availableCopyCount` counts them); how many keep two or more copies all on one device; how many have a copy on a degraded RAID array or on a retired or sold device; the two highest-risk data sets by name (trimmed to 30 characters). If the model declines these or answers nothing usable, a second try sends the same facts without names (`fallbackFacts`). | Device names, emoji, storage capacities and notes, paths, serial numbers |
 
 A `guardrail` refusal is cached as *skipped* so it is not retried until the facts change.
 

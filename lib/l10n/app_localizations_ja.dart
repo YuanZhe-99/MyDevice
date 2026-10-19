@@ -2110,7 +2110,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aiUseOnDeviceDesc =>
-      '初期状態ではオフです。この端末に内蔵されたモデルで、財務概要とサービスの各ページに短い要約と提案を書きます。何も端末の外に送信されず、結果もこの端末にだけ保存されます。';
+      '初期状態ではオフです。この端末に内蔵されたモデルで、財務概要、サービス、データセットの各ページに短い要約と提案を書きます。何も端末の外に送信されず、結果もこの端末にだけ保存されます。';
 
   @override
   String get aiNotSupportedHere => 'このプラットフォームではオンデバイスAIを利用できません。';

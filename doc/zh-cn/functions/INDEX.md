@@ -41,9 +41,9 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 
 | Tier | 数量 |
 |---|---|
-| Tier A（完整条目） | 983 |
-| Tier B（仅索引行） | 879 |
-| **总计** | **1862** |
+| Tier A（完整条目） | 959 |
+| Tier B（仅索引行） | 905 |
+| **总计** | **1864** |
 
 ## 根（`lib/`）
 
@@ -81,6 +81,7 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 |---|---|---|---|
 | `lib/features/datasets/models/dataset.dart` | [features/datasets/models/dataset.md](features/datasets/models/dataset.md) | 13 | 13 |
 | `lib/features/datasets/services/dataset_storage.dart` | [features/datasets/services/dataset_storage.md](features/datasets/services/dataset_storage.md) | 10 | 10 |
+| `lib/features/datasets/services/dataset_insight_facts.dart` | [features/datasets/services/dataset_insight_facts.md](features/datasets/services/dataset_insight_facts.md) | 3 | 1 |
 | `lib/features/datasets/services/dataset_placement.dart` | [features/datasets/services/dataset_placement.md](features/datasets/services/dataset_placement.md) | 22 | 5 |
 | `lib/features/datasets/services/dataset_topology.dart` | [features/datasets/services/dataset_topology.md](features/datasets/services/dataset_topology.md) | 14 | 5 |
 | `lib/features/datasets/views/dataset_edit_page.dart` | [features/datasets/views/dataset_edit_page.md](features/datasets/views/dataset_edit_page.md) | 13 | 4 |
@@ -209,12 +210,12 @@ WebDAVConfigPage.build 将通用设置控件委托给 myapps_data。声明数量
 | 根（`lib/`） | 1 | 1 | 1 | 0 |
 | `app/` | 5 | 34 | 25 | 9 |
 | `features/ai/` | 11 | 90 | 20 | 70 |
-| `features/datasets/` | 8 | 128 | 55 | 73 |
+| `features/datasets/` | 9 | 131 | 56 | 75 |
 | `features/devices/` | 19 | 519 | 296 | 223 |
 | `features/network/` | 5 | 77 | 43 | 34 |
 | `features/profile/` | 8 | 66 | 33 | 33 |
 | `features/services/` | 17 | 571 | 249 | 322 |
 | `features/settings/` | 4 | 46 | 21 | 25 |
 | `shared/` | 26 | 288 | 192 | 96 |
-| **总计** | **101** | **1862** | **983** | **879** |
-当前逐文件表合计：108 个文件、1861 个声明（Tier A 958，Tier B 903）。
+| **总计** | **109** | **1864** | **959** | **905** |
+当前逐文件表合计：109 个文件、1864 个声明（Tier A 959，Tier B 905）。

@@ -101,7 +101,7 @@ jobs:
           name: windows-installer-x64-full
           path: build/installer/*.exe
 
-  # ── Windows ARM64 installer (full, Flutter master — stable has no ARM64 engine yet) ──
+  # ── Windows ARM64 installer (full, Flutter stable cloned from git) ──
   windows-arm64:
     runs-on: windows-11-arm
     env:
@@ -116,15 +116,22 @@ jobs:
           # GitHub copy here, so the default GITHUB_TOKEN suffices.
           submodules: recursive
 
-      - name: Setup Flutter master (ARM64 engine only on master)
+      # The published Windows archive is x64 and carries an x64 Dart, which makes
+      # the tool build an x64 app. A git clone of the stable tag fetches the
+      # engine halves matching this Arm machine (stable engines ship windows-arm64
+      # artifacts), and a fixed tag keeps DLL hashes stable for Defender reputation.
+      # Never clone master: its head can fail to build flutter_tools, and doctor
+      # then retries forever.
+      - name: Setup Flutter stable (git clone for the ARM64 engine)
         shell: pwsh
         run: |
           git clone https://github.com/flutter/flutter.git `
-            --branch master --depth 1 `
+            --branch $env:FLUTTER_VERSION --depth 1 `
             "$env:USERPROFILE\flutter"
           Add-Content $env:GITHUB_PATH "$env:USERPROFILE\flutter\bin"
 
       - name: Flutter doctor
+        timeout-minutes: 15
         run: flutter doctor
 
       - run: flutter pub get

@@ -18,7 +18,7 @@ in CI, so the default `GITHUB_TOKEN` is sufficient.
 | --- | --- | --- | --- |
 | `android` | `ubuntu-latest` | APK (full) + AAB (store) | Java 17, optional signing secrets |
 | `windows-x64` | `windows-latest` | Inno x64 installer | Stable Flutter `3.44.2`, `iscc installer.iss` |
-| `windows-arm64` | `windows-11-arm` | Inno ARM64 installer | Flutter master for the ARM64 engine, `iscc /DARM64 installer.iss` |
+| `windows-arm64` | `windows-11-arm` | Inno ARM64 installer | Flutter stable tag cloned from git for the ARM64 engine, `iscc /DARM64 installer.iss` |
 | `ios` | `macos-latest` | Sideload IPA | Release, no codesign; FoundationModels weak-link check |
 | `macos` | `macos-latest` | DMG | Uses `create-dmg`; FoundationModels weak-link check |
 
@@ -30,6 +30,12 @@ GitHub Release artifacts are uploaded on tag push.
 - GitHub `secrets` cannot be used directly in step `if` expressions; route them through job-level
   `env`.
 - Windows ARM64 Inno output is controlled by `iscc /DARM64 installer.iss`.
+- Windows ARM64 clones the Flutter stable tag `FLUTTER_VERSION` with git instead of using
+  `subosito/flutter-action`: the published Windows archive is x64-only and would build an x64 app,
+  while a git checkout downloads the engine matching the Arm runner (stable engines ship
+  `windows-arm64` artifacts). The fixed tag keeps DLL hashes stable for Windows Defender reputation.
+  Do not clone Flutter master: on 2026-10-29 its head failed to build `flutter_tools`, and
+  `flutter doctor` retried until the job timed out. `flutter doctor` now has a 15-minute timeout.
 - Action versions: `actions/checkout@v7`, `actions/setup-java@v5`, `actions/upload-artifact@v7`,
   `actions/download-artifact@v8`, `softprops/action-gh-release@v3` (bumped from the Node 20-based
   majors GitHub deprecated). Validate workflow changes with a `workflow_dispatch` run before the next

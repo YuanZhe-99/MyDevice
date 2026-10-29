@@ -16,7 +16,7 @@ P2 使用公共导航和实际内容约束，见 [shared-ui.md](shared-ui.md)。
 | --- | --- | --- | --- |
 | `android` | `ubuntu-latest` | APK（full）+ AAB（store） | Java 17，可选签名机密 |
 | `windows-x64` | `windows-latest` | Inno x64 安装器 | 稳定 Flutter `3.44.2`，`iscc installer.iss` |
-| `windows-arm64` | `windows-11-arm` | Inno ARM64 安装器 | ARM64 引擎的 Flutter master，`iscc /DARM64 installer.iss` |
+| `windows-arm64` | `windows-11-arm` | Inno ARM64 安装器 | ARM64 引擎用从 git 克隆的 Flutter stable 标签，`iscc /DARM64 installer.iss` |
 | `ios` | `macos-latest` | 侧载 IPA | Release，无 codesign；FoundationModels 弱链接检查 |
 | `macos` | `macos-latest` | DMG | 用 `create-dmg`；FoundationModels 弱链接检查 |
 
@@ -27,6 +27,10 @@ GitHub Release 工件在标签推送时上传。
 - 保持工作流 Flutter 版本与 Dart SDK 约束对齐。
 - GitHub `secrets` 不能直接在步骤 `if` 表达式中使用；经作业级 `env` 路由它们。
 - Windows ARM64 Inno 输出由 `iscc /DARM64 installer.iss` 控制。
+- Windows ARM64 用 git 克隆 Flutter stable 标签 `FLUTTER_VERSION`，而不是使用 `subosito/flutter-action`：官方发布的 Windows
+  压缩包只有 x64，会构建出 x64 应用；git 检出则会下载与 Arm runner 匹配的引擎（stable 引擎提供 `windows-arm64` 产物）。固定的标签让
+  DLL 哈希保持稳定，便于累积 Windows Defender 信誉。不要克隆 Flutter master：2026-10-29 时其最新提交无法编译 `flutter_tools`，
+  `flutter doctor` 一直重试直到任务超时。`flutter doctor` 现设有 15 分钟超时。
 - 操作版本：`actions/checkout@v7`、`actions/setup-java@v5`、`actions/upload-artifact@v7`、`actions/download-artifact@v8`、`softprops/action-gh-release@v3`（从 GitHub 弃用的 Node 20 基础大版本升上来）。下次标签发布前用 `workflow_dispatch` 运行验证工作流变更。
 - 已知剩余警告：Android 作业仍为 `package_info_plus`、`share_plus`、`shared_preferences_android`、`wakelock_plus` 和 `file_picker` 打印 Flutter 的 "plugins that apply KGP" 警告。应用侧已迁移（AGP 9.1.1，无应用级 `kotlin-android`）；剩余警告仅插件侧，截至 2026-07 那些插件的最新发布仍应用 KGP。完全消除需要每个插件发布 Built-in Kotlin 支持后翻转 `android.builtInKotlin=true`；尝试时用真实 APK/AAB 构建验证。
 - `ios` 和 `macos` 作业对构建出的应用运行 `tool/check_weak_link.sh`（v1.6.0）。只要有任何链接 FoundationModels 的二进制不是弱链接，或根本没有二进制链接它（`myapps_ai_platform` 插件没有进入构建），构建就失败。macOS 包名含 `!`，因此路径总是加引号。在较旧 Xcode 上失败意味着 runner 镜像缺少 26 SDK——修 runner，而不是代码。见[端侧 AI](on-device-ai.md#weak-linking)。
